@@ -16,21 +16,32 @@ import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
+/**
+ * Classical rumor mongering algorithm by <a
+ * href="http://doi.acm.org/10.1145/41840.41841"> Demers et al. </a>. This is
+ * the non-blind version.
+ * 
+ * @author giuliano
+ */
 public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserver {
 
+	// ----------------------------------------------------------------------
+	// Parameter keys.
+	// ----------------------------------------------------------------------
+	
 	/**
 	 * Probability with which a hot rumor will stop being transmitted.
 	 */
-	private static final String PAR_GIVEUP_PROBABILITY = "giveupProbability";
+	private static final String PAR_GIVEUP_PROBABILITY = "giveup_probability";
 	
 	/**
-	 * Parameter indicating the transmit size for the rumor mongering lists.
+	 * How many rumors at a time this protocol will transmit.
 	 */
-	private static final String PAR_TRANSMIT_SIZE = "rumorTransmitSize";
-
-	private static final ArrayList<Boolean> fResponseBuffer = new ArrayList<Boolean>();
+	private static final String PAR_TRANSMIT_SIZE = "chunk_size";
 	
-	private RumorList fRumorList;
+	// ----------------------------------------------------------------------
+	// Parameter storage.
+	// ----------------------------------------------------------------------
 	
 	private int fRumorTransmitSize;
 	
@@ -38,11 +49,23 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	private final int fProtocolId;
 	
+	// ----------------------------------------------------------------------
+	// Protocol state.
+	// ----------------------------------------------------------------------
+
+	private static final ArrayList<Boolean> fResponseBuffer = new ArrayList<Boolean>();
+	
+	private RumorList fRumorList;
+	
+	// ----------------------------------------------------------------------
+	
 	public DemersRumorMonger(String prefix, int protocolId, int snLinkableId, Random rnd) {
 		this(Configuration.getDouble(prefix + "." + PAR_GIVEUP_PROBABILITY),
 				Configuration.getInt(prefix + "." + PAR_TRANSMIT_SIZE, Integer.MAX_VALUE),
 				protocolId, snLinkableId, rnd); 
 	}
+	
+	// ----------------------------------------------------------------------
 	
 	public DemersRumorMonger(double giveUp, int rumorTransmitSize,
 			int protocolId, int snLinkableId, Random rnd) {
@@ -51,6 +74,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 		fSnLinkableId = snLinkableId;
 		fProtocolId = protocolId;
 	}
+	
+	// ----------------------------------------------------------------------
 
 	/**
 	 * Performs a non-blind rumor monger exchange between sender and receiver.
@@ -75,6 +100,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 		
 		return true;
 	}
+	
+	// ----------------------------------------------------------------------
 	
 	private int receiveRumor(Node ours, Node sender, List<Tweet> outsideRumors,
 			ArrayList<Boolean> responseBuffer, int protocolID,
@@ -129,10 +156,28 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 
 		return i;
 	}
+
+	// ----------------------------------------------------------------------
+	
+	private void addTweet(Node owner, int sequenceNumber) {
+		fRumorList.add(new Tweet(owner, sequenceNumber));
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public int throttling() {
+		return 1;
+	}
+	
+	// ----------------------------------------------------------------------
+	// IEventObserver interface.
+	// ----------------------------------------------------------------------
 	
 	public void tweeted(Node owner, int sequenceNumber) {
 		addTweet(owner, sequenceNumber);
 	}
+	
+	// ----------------------------------------------------------------------
 
 	public void eventDelivered(Node sender, Node receiver, Node owner,
 			int start, int end) {
@@ -141,16 +186,13 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 		}
 	}
 	
-	private void addTweet(Node owner, int sequenceNumber) {
-		fRumorList.add(new Tweet(owner, sequenceNumber));
-	}
-	
-	public int throttling() {
-		return 1;
-	}
-	
+	// ----------------------------------------------------------------------
+		
 	public void duplicateReceived(Node sender, Node receiver, Node owner,
 			int start, int end) { }
+	
+	// ----------------------------------------------------------------------
+
 }
 
 //----------------------------------------------------------------------
@@ -161,14 +203,23 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
  */
 class RumorList implements Cloneable {
 
+	/**
+	 * The rumors we are currently transmitting.
+	 */
 	private LinkedList<Tweet> fHotRumors = new LinkedList<Tweet>();
-
 	private List<Tweet> fRoHotRumors = Collections.unmodifiableList(fHotRumors);
 
+	/**
+	 * See {@link DemersRumorMonger#PAR_GIVEUP_PROBABILITY}.
+	 */
 	private double fGiveupProbability;
 
+	/** Maximum size for the hot rumor list. If the list overgrows this, the "coldest"
+	 * rumors start being evicted.
+	 */
 	private int fMaxSize;
 
+	/** Random number generator. */
 	private Random fRandom;
 
 	public RumorList(int maxSize, double giveupProbability, Random rnd) {
@@ -206,6 +257,8 @@ class RumorList implements Cloneable {
 				}
 				// .. or demotes the Tweet.
 				else if (it.hasPrevious()) {
+					// The painful dance with the iterators is to 
+					// be efficient with the linked list.
 					Tweet evt = it.next();
 					it.previous();
 					Tweet previous = it.previous();
