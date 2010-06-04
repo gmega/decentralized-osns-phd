@@ -1,0 +1,3 @@
+# Loads the graph from file.
+graph.FileGraphReader(file_name="$resources/$input") -> reader;
+*reader.load_graph() -> graph;

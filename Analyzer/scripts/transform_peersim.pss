@@ -1,0 +1,5 @@
+# Writes a graph into an adjacency list (that peersim can read).
+# author: Giuliano Mega
+
+graph.GraphWriter() -> writer;
+*writer.write_PSD(filename="$output");

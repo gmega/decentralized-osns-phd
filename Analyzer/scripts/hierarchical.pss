@@ -1,0 +1,12 @@
+# Applies hierarchical clustering a number of times.
+# Author: Giuliano Mega
+
+# Loads the graph from file.
+graph.FileGraphReader(file_name="/Users/giuliano/Work/Doutorado/Workspace/GraphAnalyzer2/resources/Black_friends.txt") -> reader;
+*reader.load_graph() -> graph;
+
+sn.transformers.make_simple() -> graph;
+
+sn.transformers.remove_isolates() -> graph;
+
+sn.snippets.reduce_till_collapse();

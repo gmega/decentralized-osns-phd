@@ -1,0 +1,13 @@
+# Author: Giuliano Mega
+
+# Generates Watts and Strogatz graph
+sn.generators.Watts_Strogatz(n="int:600",k="int:8",p="float:0.1") -> graph;
+
+# Removes self-edges and duplicates
+sn.transformers.make_simple() -> graph;
+
+# As well as eventual isolated edges
+sn.transformers.remove_isolates() -> graph;
+
+# Computes the community statistics
+sn.snippets.compare_community_data(write="~giuliano/Work/Doutorado/Drawings");

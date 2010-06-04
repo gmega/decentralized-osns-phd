@@ -1,0 +1,19 @@
+# Wiring script for creating a Friend-of-Friend network.
+# Author: Giuliano Mega
+
+# Loads the graph from file.
+graph.FileGraphReader(file_name="$HOME/resources/Black_friends.txt") -> writer;
+*writer.load_graph() -> graph;
+
+# Indexes adjacencies without building the actual intersection graph.
+sn.transformers.index_adjacencies() -> intersection_builder;
+
+# Deallocates the old graph or we run out of memory.
+*(graph="int:0");
+
+# Builds the actual FoF net.
+sn.transformers.compute_common_friend_network(max_fanout="int:5") -> graph;
+
+# Writes it to a file.
+graph.GraphWriter() -> writer;
+*writer.write(file_name="$HOME/outputs/crap.txt");

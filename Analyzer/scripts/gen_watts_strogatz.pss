@@ -1,0 +1,7 @@
+# Author: Giuliano Mega
+
+# Generates Watts and Strogatz graph
+sn.generators.Watts_Strogatz(n="int:$n",k="int:$k",p="float:$p") -> graph;
+
+# Removes disconnected parts
+sn.transformers.remove_isolates() -> graph;

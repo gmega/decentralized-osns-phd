@@ -1,0 +1,8 @@
+# Wiring script for calculating the clustering coefficient of a network.
+# Author: Giuliano Mega
+
+sn.metrics.NodeCountingClusteringComputer() -> computer;
+util.misc.vertex_range() -> id_list;
+
+sn.metrics.avg_clustering_coefficient() -> value;
+util.misc._print();

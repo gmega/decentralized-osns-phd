@@ -1,0 +1,8 @@
+# Wiring script for calculating the connectedness of a network.
+# Author: Giuliano Mega
+
+sn.metrics.FriendConnectednessComputer(cutoff="int:$cutoff") -> computer;
+util.misc.vertex_range() -> id_list;
+
+sn.metrics.avg_measure() -> value;
+util.misc._print();
