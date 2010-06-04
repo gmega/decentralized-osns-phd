@@ -1,0 +1,65 @@
+# Adapted from PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 5
+
+network.size 6
+
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/workspace/Social_Peer_Sampling/test/resources/greedy_test.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# ------------------------------------------------------------------
+# Deterministic selector.
+# ------------------------------------------------------------------
+
+protocol.selector DeterministicSelector
+
+# ------------------------------------------------------------------
+# Component computation service.
+# ------------------------------------------------------------------
+
+protocol.ccs ComponentComputationService
+protocol.ccs.fast_graph_protocol sn
+
+# ------------------------------------------------------------------
+# The newscasting application.
+# ------------------------------------------------------------------
+
+protocol.app			NewscastApplication 
+{	 
+
+	# Base configuration.
+	social_neighborhood sn
+	tweet_probability 	1
+	tweet_until 		1
+	verbose
+	
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	component_computer 	ccs
+	
+	# Anti-entropy configuration.
+	ae.selector			selector
+	ae.percentage 		0.0
+	
+	# Greedy diffusion rumor mongering.
+	rumor greedy
+	rumor.selector selector
+	rumor.chunk_size 1
+	rumor.bloom_false_positive 0.01
+}
+
+# ------------------------------------------------------------------
+# Initializers.
+# ------------------------------------------------------------------
+init.0 DeterministicSelectionReader
+init.0.application app
+init.0.deterministic_selector selector
+init.0.file /home/giuliano/workspace/Social_Peer_Sampling/test/resources/greedy_test.choices
