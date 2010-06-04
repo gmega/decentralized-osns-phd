@@ -27,8 +27,8 @@ public class DeterministicSelectionReader implements Control {
 	
 	public DeterministicSelectionReader(String prefix) {
 		fFile = new File(Configuration.getString(prefix + "." + PAR_FILE));
-		fSelectorId = Configuration.getPid(prefix + PAR_DETERMINISTIC_SEL);
-		fAppId = Configuration.getPid(prefix + PAR_APP);
+		fSelectorId = Configuration.getPid(prefix + "." + PAR_DETERMINISTIC_SEL);
+		fAppId = Configuration.getPid(prefix + "." + PAR_APP);
 	}
 
 	public boolean execute() {
@@ -43,7 +43,7 @@ public class DeterministicSelectionReader implements Control {
 		BufferedReader reader = new BufferedReader(new FileReader(fFile));
 		
 		// Disables tweeting for everyone.
-		for (int i = 1; i < Network.size(); i++) {
+		for (int i = 0; i < Network.size(); i++) {
 			((NewscastApplication) Network.get(i).getProtocol(fAppId)).toggleTweeting();
 		}
 		
@@ -51,7 +51,7 @@ public class DeterministicSelectionReader implements Control {
 		String spec [] = line.split(" ");
 
 		// First line specifies who tweets.
-		for (int i = 1; i < spec.length; i++) {
+		for (int i = 0; i < spec.length; i++) {
 			long nodeId = Long.parseLong(spec[i]);
 			NewscastApplication app = (NewscastApplication) PeersimUtils
 				.lookupNode(nodeId).getProtocol(fAppId);
@@ -65,7 +65,7 @@ public class DeterministicSelectionReader implements Control {
 			DeterministicSelector selector = (DeterministicSelector) PeersimUtils
 			.lookupNode(nodeId).getProtocol(fSelectorId);
 			for (int i = 1; i < spec.length; i++) {
-				selector.addChoice(Long.parseLong(spec[i]));
+				selector.addChoice(spec[i]);
 			}
 		}
 		

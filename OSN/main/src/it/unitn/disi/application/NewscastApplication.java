@@ -345,7 +345,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	// ----------------------------------------------------------------------
 
 	private boolean shouldTweet() {
-		if (((int) CommonState.getTime()) > fTweetUntil) {
+		if (fSuppressTweeting || ((int) CommonState.getTime()) > fTweetUntil) {
 			return false;
 		}
 		return CommonState.r.nextDouble() < fTweetProbability;
@@ -420,7 +420,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		// ----------------------------------------------------------------------
 
 		public void tweeted(Node owner, int sequenceNumber) {
-			log(fBuffer, 0, TWEETED.magicNumber(), // event
+			log(fBuffer, TWEETED.magicNumber(), // event
 					// type
 					owner.getID(), // tweeting node (us)
 					sequenceNumber, // sequence number
@@ -436,7 +436,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			// When digests are exchanged, they flow from the node
 			// initiating the anti-entropy exchange to the pairing node.
 			// (The initiating node tells the pair what it doesn't have).
-			log(fBuffer, 0, EXCHANGE_DIGESTS
+			log(fBuffer, EXCHANGE_DIGESTS
 					.magicNumber(), // Event type
 					sender.getID(), // ID of the digest sender.
 					receiver.getID(), // ID of digest receiver.
@@ -450,7 +450,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 
 		public void duplicateReceived(Node sender, Node receiver, Node owner,
 				int start, int end) {
-			log(fBuffer, 0, DUPLICATE_TWEET
+			log(fBuffer, DUPLICATE_TWEET
 					.magicNumber(), // event type
 					sender.getID(), // id of the sender
 					receiver.getID(), // id of the receiver
@@ -474,7 +474,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			}
 
 			if (start == -1) {
-				log(fBuffer, 0, DELIVER_SINGLE_TWEET
+				log(fBuffer, DELIVER_SINGLE_TWEET
 						.magicNumber(), // event type
 						tweeting.getID(), // node owning the tweet
 						sending.getID(), // the sending node.
@@ -482,7 +482,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 						finish, // sequence number of the tweet
 						CommonState.getTime()); // simulation time
 			} else {
-				log(fBuffer, 0, DELIVER_TWEET_RANGE
+				log(fBuffer, DELIVER_TWEET_RANGE
 						.magicNumber(), // event type
 						tweeting.getID(), // node owning the tweet
 						sending.getID(), receiving.getID(), // node receiving

@@ -2,14 +2,17 @@ package it.unitn.disi.application;
 
 import java.util.ArrayList;
 
+import javax.management.RuntimeErrorException;
+
 import peersim.core.Network;
 import peersim.core.Node;
+import peersim.core.Protocol;
 import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.protocol.selectors.ISelectionFilter;
 
-public class DeterministicSelector implements IPeerSamplingService {
+public class DeterministicSelector implements IPeerSamplingService, Protocol {
 	
-	private ArrayList<Long> fChoices = new ArrayList<Long>();
+	private ArrayList<String> fChoices = new ArrayList<String>();
 	
 	private int fCurrent = 0;
 	
@@ -17,7 +20,7 @@ public class DeterministicSelector implements IPeerSamplingService {
 		
 	}
 	
-	public void addChoice(Long id){
+	public void addChoice(String id){
 		fChoices.add(id);
 	}
 
@@ -26,14 +29,25 @@ public class DeterministicSelector implements IPeerSamplingService {
 	}
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		long nextId = fChoices.get(fCurrent++);
+		
+		if (fCurrent == fChoices.size()) {
+			return null;
+		}
+		
+		String s = fChoices.get(fCurrent++);
+		if (s.equals("n")) {
+			return null;
+		}
+		
+		long nextId = Long.parseLong(s);
+		
+		System.err.println("[node " + source.getID() + " selects " + nextId + "]");
 		
 		for(int i = 0; i < Network.size(); i++) {
 			Node candidate = Network.get(i);
 			if (nextId == candidate.getID()) {
 				if (!filter.canSelect(candidate)) {
-					throw new IllegalStateException("Canoot select " + nextId
-							+ " due to filtering constraints.");
+					return null;
 				}
 				
 				return filter.selected(candidate);
@@ -45,6 +59,16 @@ public class DeterministicSelector implements IPeerSamplingService {
 
 	public boolean supportsFiltering() {
 		return true;
+	}
+	
+	public Object clone() {
+		try {
+			DeterministicSelector selector = (DeterministicSelector) super.clone();
+			selector.fChoices = new ArrayList<String>(this.fChoices);
+			return selector;
+		} catch (CloneNotSupportedException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 }

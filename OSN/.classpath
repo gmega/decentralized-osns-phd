@@ -8,6 +8,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="/Utilities/lib/easymock-2.5.2.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Utilities"/>
-	<classpathentry kind="lib" path="/Utilities/lib/google-collect-1.0-rc3.jar"/>
+	<classpathentry kind="lib" path="/Utilities/lib/google-collect-1.0-rc3.jar" sourcepath="/home/giuliano/Software/guava-r05/guava-src-r05.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

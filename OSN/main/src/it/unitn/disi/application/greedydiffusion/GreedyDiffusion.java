@@ -49,12 +49,6 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 	 * {@link Linkable}.
 	 */
 	private final int fSocialNetworkId;
-	
-	/**
-	 * Id of the {@link ComponentComputationService}. 
-	 */
-	private final int fCCSId;
-
 
 	/**
 	 * False positive probability for bloom filters.
@@ -104,21 +98,20 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 		}
 	};
 	
-	public GreedyDiffusion(int adaptableId, int socialNetworkId, int ccsId, String prefix) {
-		this(adaptableId, socialNetworkId, ccsId,
+	public GreedyDiffusion(int adaptableId, int socialNetworkId, String prefix) {
+		this(adaptableId, socialNetworkId, 
 				Configuration.getInt(prefix + "." + PAR_CHUNK_SIZE),
 				Configuration.getInt(prefix + "." + PAR_WINDOW_SIZE),
 				Configuration.getDouble(prefix + "." + PAR_BLOOM_FALSE_POSITIVE));
 	}
 
-	public GreedyDiffusion(int adaptableId, int socialNetworkId, int ccsId,
+	public GreedyDiffusion(int adaptableId, int socialNetworkId,
 			int chunkSize, int windowSize, double bFFalsePositive) {
 		fAdaptableId = adaptableId;
 		fSocialNetworkId = socialNetworkId;
 		fChunkSize = chunkSize;
 		fWindowSize = windowSize;
 		fBFFalsePositive = bFFalsePositive;
-		fCCSId = ccsId;
 	}
 	
 	// ----------------------------------------------------------------------
@@ -142,21 +135,13 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 		/** Sends message + history to the peer. **/
 		BloomFilter<Long> feedback = diffusionObject(peer).receiveMessage(
 				source, peer, message, history);
+		
+		// Incorporates the receiver into our history.
+		history.add(peer.getID());
 
 		/** Incorporates feedback information, if there was feedback. */
 		if (feedback != null) {
 			this.mergeHistories(source, peer, message, history, feedback);
-		}
-		/**
-		 * No feedback. Just add the receiver to the history. <BR>
-		 * <BR>
-		 * NOTE: we don't do this before because, in case there is feedback, the
-		 * receiver will be incorporated into our history by the merge
-		 * operation. Otherwise we screw up the element counter in the bloom
-		 * filter.
-		 **/
-		else {
-			history.add(peer.getID());
 		}
 		
 		return true;
@@ -245,13 +230,21 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 		
 		/** Hands the message over to the application layer. If the message isn't
 		 * a duplicate, we need to forward it as well. */
-		if (!app.receiveTweet(this, sender, receiver, tweet)) {
+		if (app.receiveTweet(this, sender, receiver, tweet)) {
 			addPending(sender, receiver, tweet, history);
 		}
 		/** Message is a duplicate. Tries to return something useful. */
 		else {
-			// TODO Add call to merge histories here as well.
 			ourHistory = cacheLookup(tweet);
+			// Incorporates the history we received into ours.
+			if (ourHistory != null) {
+				ourHistory.merge(history);
+			} 
+			// Or, if the history has been evicted, just cache a copy
+			// of whatever we got.
+			else {
+				cache(tweet, cloneHistory(history));
+			}
 		}
 
 		return ourHistory;
@@ -279,8 +272,9 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 		Linkable ourSn = (Linkable) receiver.getProtocol(fSocialNetworkId);
 		Linkable originator = (Linkable) tweet.fNode.getProtocol(fSocialNetworkId);
 		
-		/** Makes a clone of the received history. */
-		BloomFilter<Long> ourHistory = cloneHistory(history);
+		/** Clones or initializes our history. */
+		BloomFilter<Long> ourHistory = (history == null) ? initializeHistory(
+				tweet, receiver) : cloneHistory(history);
 		// Add ourselves to the history.
 		ourHistory.add(receiver.getID());
 		
@@ -326,13 +320,13 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 	 * 
 	 * This method is rather similar to {@link #addPending(Node, Node, Tweet, BloomFilter)}. 
 	 */
-	private void mergeHistories(Node sender, Node receiver, Tweet tweet,
-			BloomFilter<Long> ours, BloomFilter<Long> feedback) {
-		Linkable ourSn = (Linkable) receiver.getProtocol(fSocialNetworkId);
+	private void mergeHistories(Node ourNode, Node feedbackNode, Tweet tweet,
+			BloomFilter<Long> ourFilter, BloomFilter<Long> feedbackFilter) {
+		Linkable ourSn = (Linkable) ourNode.getProtocol(fSocialNetworkId);
 		Linkable originator = (Linkable) tweet.fNode.getProtocol(fSocialNetworkId);
 		
 		// First, merges the neighbor's history into ours.
-		ours.merge(feedback);
+		ourFilter.merge(feedbackFilter);
 
 		/** Now, we need to:
 		 * 1 - determine, from the new information received, which neighbors 
@@ -349,7 +343,7 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 			// Checks if the neighbor is shared with the originator, AND
 			// it is in the history.
 			else if (originator.contains(neighbor)
-					&& ours.contains(neighbor.getID())) {
+					&& ourFilter.contains(neighbor.getID())) {
 				// Note that this might not result in a real removal.
 				fPending.remove(neighbor, tweet);
 			}
@@ -359,16 +353,12 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 	// ----------------------------------------------------------------------
 	
 	public BloomFilter<Long> initializeHistory(Tweet tweet, Node ours) {
-		// Determines the size of the component we are disseminating over.
+		// Determines the size of the neighborhood over which we are disseminating.
 		Node central = tweet.fNode;
-		ComponentComputationService ccs = (ComponentComputationService) central
-				.getProtocol(fCCSId);
+		Linkable socialNeighborhood = (Linkable) central.getProtocol(fSocialNetworkId);
+		int bloomFilterSize = (int) BloomFilter.requiredBitSetSizeFor(fBFFalsePositive, socialNeighborhood.degree());
 		
-		int componentIndex = ccs.componentOf(central, (int) ours.getID());
-		int componentSize = ccs.members(central, componentIndex).size();
-		int bloomFilterSize = (int) BloomFilter.requiredBitSetSizeFor(fBFFalsePositive, componentSize);
-		
-		BloomFilter<Long> bloom = new BloomFilter<Long>(bloomFilterSize, componentSize);
+		BloomFilter<Long> bloom = new BloomFilter<Long>(bloomFilterSize, socialNeighborhood.degree());
 		return bloom;
 	}
 	

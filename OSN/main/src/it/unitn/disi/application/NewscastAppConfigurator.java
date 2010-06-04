@@ -84,8 +84,7 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 
 	private void configureGreedyDiffusion(NewscastApplication app,
 			int protocolId, int socialNetworkId) {
-		int ccsid = Configuration.getPid(fPrefix + "." + PAR_CCSID);		
-		GreedyDiffusion gd = new GreedyDiffusion(protocolId, socialNetworkId, ccsid, fPrefix);
+		GreedyDiffusion gd = new GreedyDiffusion(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
 		app.setAdapter(GreedyDiffusion.class, null, gd);
 		app.addStrategy(gd, selector(PAR_RUMOR_MONGER),
 				new FallThroughReference<ISelectionFilter>(gd),

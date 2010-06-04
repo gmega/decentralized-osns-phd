@@ -17,7 +17,7 @@ public enum NewscastEvents implements IBinaryEvent{
 	 * <li>Long: simulation time of the event.</li>
 	 * </ol>
 	 */
-	TWEETED((byte)3, "%1$s: (%3$d) by %2$d @ (%4$d)s", 
+	TWEETED((byte)3, "%1$s: (%3$d) by %2$d @ %4$ds", 
 			Long.class, Integer.class, Long.class),
 	
 	/**
@@ -77,7 +77,7 @@ public enum NewscastEvents implements IBinaryEvent{
 	 * <li>Long: simulation time of the event.</li>
 	 * </ol>
 	 */
-	DUPLICATE_TWEET((byte)7, "%1$s: (%2$d,%5$d) to %4$d from %3$d @ %6$d", 
+	DUPLICATE_TWEET((byte)7, "%1$s: (%4$d,%5$d) to %3$d from %2$d @ %6$d", 
 			Long.class, Long.class, Long.class, Integer.class, Long.class);
 	
 	// ----------------------------------------------------------------------
