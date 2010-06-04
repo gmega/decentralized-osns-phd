@@ -1,0 +1,31 @@
+<project name="Analyzer-J" default="compile-analyzer" basedir=".">
+
+	<property name="src" location="main/src" />
+	<property name="build" location="bin" />
+	<property name="lib.path" location="./lib"/>
+	<property name="output.lib.path" location="../Utilities/lib-gen"/>
+
+	<path id="analyzer.compile.path">
+		<pathelement location="${lib.path}/jep-2.4.1.jar" />
+		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+	</path>
+
+	<target name="compile-analyzer">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}" />
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac srcdir="${src}" destdir="${build}" classpathref="analyzer.compile.path" />
+	</target>
+
+	<target name="build-analyzer-jar" depends="compile-analyzer">
+		<jar destfile="${output.lib.path}/analyzer-j.jar">
+			<fileset dir="${build}"/>
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+				<attribute name="Main-Class" value="it.unitn.disi.cli.GenericDriver" />
+				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar peersim.jar peersim-extras.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
