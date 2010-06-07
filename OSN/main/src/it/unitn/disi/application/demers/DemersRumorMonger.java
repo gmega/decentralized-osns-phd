@@ -116,34 +116,32 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 
 		/**
 		 * Goes through the list of "receivable" rumors. We won't decide to
-		 * receive a rumor until we know that it might be useful.
+		 * receive a rumor until we know that it might be useful. 
 		 */
 		for (i = 0; it.hasNext() && total < fRumorTransmitSize; i++) {
 			Tweet evt = it.next();
 			Boolean wasNew;
 
 			// We don't know the node, so we don't care about this rumor.
-			// Since the hypothesis is that the sender knows which friends
-			// we share, we have to make it as if the sender had never
-			// sent this rumor.
-			//
-			// Setting the response flag to true, in this case, gets us
-			// exactly that effect.
 			if (!sn.contains(evt.fNode)) {
+				// Since the hypothesis is that the sender knows which friends
+				// we share, we have to make it as if the sender had never
+				// sent this rumor.
+				//
+				// Setting the response flag to true, in this case, gets us
+				// exactly that effect.
 				wasNew = true;
 			}
 
 			// We know the node. So it means this rumor has been sent.
 			else {
-				wasNew = !application.knows(evt);
-				// See if the rumor is new or not.
+				// Delivers message to application.
+				wasNew = application.receiveTweet(this, sender, ours, evt);
+				// Was it a duplicate?
 				if (wasNew) {
-					// It's actually new, make it a hot rumor.
+					// Nope. Make it a hot rumor.
 					fRumorList.add(evt);
 				}
-				
-				// Hands over the event to the application in any case.
-				application.receiveTweet(this, sender, ours, evt);
 				total++;
 			}
 
@@ -221,12 +219,16 @@ class RumorList implements Cloneable {
 
 	/** Random number generator. */
 	private Random fRandom;
+	
+	//----------------------------------------------------------------------
 
 	public RumorList(int maxSize, double giveupProbability, Random rnd) {
 		fMaxSize = maxSize;
 		fGiveupProbability = giveupProbability;
 		fRandom = rnd;
 	}
+	
+	//----------------------------------------------------------------------
 
 	public void add(Tweet evt) {
 		// Hottest rumors are at the END of the list.
@@ -235,14 +237,20 @@ class RumorList implements Cloneable {
 			fHotRumors.removeFirst();
 		}
 	}
+	
+	//----------------------------------------------------------------------
 
 	public int size() {
 		return fHotRumors.size();
 	}
+	
+	//----------------------------------------------------------------------
 
 	public List<Tweet> getList() {
 		return fRoHotRumors;
 	}
+	
+	//----------------------------------------------------------------------
 
 	public void demote(ArrayList<Boolean> mask, int size) {
 		ListIterator<Tweet> it = fHotRumors.listIterator(start(size));
@@ -257,8 +265,12 @@ class RumorList implements Cloneable {
 				}
 				// .. or demotes the Tweet.
 				else if (it.hasPrevious()) {
-					// The painful dance with the iterators is to 
-					// be efficient with the linked list.
+					/**
+					 * This piece of code simply pushes an element one position
+					 * back into the list. The painful dance with the iterators
+					 * is to be efficient with the linked list implementation,
+					 * and avoid O(n) access.
+					 */
 					Tweet evt = it.next();
 					it.previous();
 					Tweet previous = it.previous();
@@ -274,10 +286,16 @@ class RumorList implements Cloneable {
 			}
 		}
 	}
+	
+	//----------------------------------------------------------------------
 
 	private int start(int size) {
 		return Math.max(0, fHotRumors.size() - size);
 	}
+	
+	//----------------------------------------------------------------------
+	// Protocol interface.
+	//----------------------------------------------------------------------
 
 	public Object clone() {
 		try {
