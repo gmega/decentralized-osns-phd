@@ -27,22 +27,21 @@ public class RandomSelectorOverLinkable implements IPeerSamplingService, Protoco
 		fCache = new PermutingCache(pid);
 	}
 	
-	public Node selectPeer(Node source, ISelectionFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public boolean supportsFiltering() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
-
+	
 	public Node selectPeer(Node source) {
+		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
+	}
+	
+	public Node selectPeer(Node source, ISelectionFilter filter) {
 		fCache.shuffle(source);
 		// Performs the selection.
 		for (int i = 0; i < fCache.size(); i++) {
-			if (fCache.get(i).isUp()) {
-				return fCache.get(i);
+			Node candidate = fCache.get(i);
+			if (filter.canSelect(candidate)) {
+				return filter.selected(candidate);
 			}
 		}
 

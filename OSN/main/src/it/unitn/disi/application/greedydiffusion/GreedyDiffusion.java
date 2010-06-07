@@ -149,8 +149,13 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 	
 	// ----------------------------------------------------------------------
 	
-	public int throttling() {
-		return fChunkSize;
+	public int throttling(Node target) {
+		Set<Tweet> pendings = fPending.get(target);
+		if (pendings == null) {
+			return 0;
+		}
+		
+		return Math.min(fChunkSize, pendings.size());
 	}
 	
 	// ----------------------------------------------------------------------
@@ -426,4 +431,25 @@ public class GreedyDiffusion implements IContentExchangeStrategy, ISelectionFilt
 	}
 	
 	// ----------------------------------------------------------------------
+	// Monitoring methods.
+	// ----------------------------------------------------------------------
+	
+	public int cacheHits() {
+		return fCacheHits;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public int cacheReads() {
+		return fCacheAccesses;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public double cacheHitRate() {
+		if (fCacheAccesses == 0) {
+			return 1.0;
+		}
+		return ((double) fCacheHits) / fCacheAccesses;
+	}
 }

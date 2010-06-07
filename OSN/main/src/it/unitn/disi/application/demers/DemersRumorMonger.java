@@ -163,7 +163,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	// ----------------------------------------------------------------------
 	
-	public int throttling() {
+	public int throttling(Node node) {
 		return 1;
 	}
 	

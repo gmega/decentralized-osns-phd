@@ -280,32 +280,48 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		 * selectors.
 		 */
 		for (int i = 0; i < fStrategies.size(); i++) {
-			if (runStrategy(i)) {
-				StrategyEntry entry = fStrategies.get(i);
-				
-				IContentExchangeStrategy strategy = entry.strategy;
-				IPeerSamplingService selector = entry.selector.get(ourNode);
-				ISelectionFilter filter = entry.filter.get(ourNode);
-				
-				Node peer;
-				if (selector.supportsFiltering()) {
-					peer = selector.selectPeer(ourNode, filter);
-				} else {
-					peer = selector.selectPeer(ourNode);
-				}
-				
-				if (peer == null) {
-					continue;
-				}
+			if (!runStrategy(i)) {
+				continue;
+			}
+			
+			StrategyEntry entry = fStrategies.get(i);
+			IContentExchangeStrategy strategy = entry.strategy;
+			IPeerSamplingService selector = entry.selector.get(ourNode);
+			ISelectionFilter filter = entry.filter.get(ourNode);
 
-				int runs = strategy.throttling();
-				for (int j = 0; j < runs; j++) {
-					if (!strategy.doExchange(ourNode, peer)) {
-						break;
-					}
+			// Selects a peer using the preconfigured filter.
+			Node peer;
+			if (selector.supportsFiltering()) {
+				peer = selector.selectPeer(ourNode, filter);
+			} else {
+				peer = selector.selectPeer(ourNode);
+			}
+
+			// No peer from this selector -- this strategy skips the round.
+			if (peer == null) {
+				continue;
+			}
+			
+			// Increases the selection count.
+			NewscastApplication other = (NewscastApplication) peer.getProtocol(protocolID);
+			other.contacted();
+
+			// Gets the throttling. It cannot be zero, as zero throttling
+			// means the peer shouldn't have passed the selection filter.
+			int runs = strategy.throttling(peer);
+			if (runs <= 0) {
+				throw new IllegalStateException(
+						"Negative or zero throttling are not allowed.");
+			}
+			
+			// Performs the actual exchanges.
+			for (int j = 0; j < runs; j++) {
+				if (!strategy.doExchange(ourNode, peer)) {
+					break;
 				}
 			}
 		}
+
 	}
 
 	// ----------------------------------------------------------------------
@@ -392,7 +408,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 
 	public Object clone() {
 		// Cloning here is tricky because of loose coupling. Therefore, calling
-		// configure is the best way out, but it won't produce clones, but
+		// configure is the best way out, but it won't produce clones: only
 		// fresh instances.
 		try {
 			NewscastApplication cloned = (NewscastApplication) super.clone();

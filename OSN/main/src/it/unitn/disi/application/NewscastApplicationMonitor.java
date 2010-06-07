@@ -18,7 +18,7 @@ import peersim.util.IncrementalStats;
 
 public class NewscastApplicationMonitor implements Control {
 	
-	private static final String PAR_NEWSCAST_APP = "newscastapp";
+	private static final String PAR_NEWSCAST_APP = "application";
 	
 	private static final String PAR_DUMPS = "dumprounds";
 	

@@ -166,7 +166,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		return true;
 	}
 	
-	public int throttling() {
+	public int throttling(Node node) {
 		while (!fPendings.isEmpty()) {
 			ISend op = fPendings.getFirst();
 			if (!op.done()) {

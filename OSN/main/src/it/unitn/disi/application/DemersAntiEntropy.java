@@ -46,7 +46,7 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 		return true;
 	}
 
-	public int throttling() {
+	public int throttling(Node source) {
 		return 1;
 	}
 }

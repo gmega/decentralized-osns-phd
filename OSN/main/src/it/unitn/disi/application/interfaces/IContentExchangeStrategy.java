@@ -32,7 +32,10 @@ public interface IContentExchangeStrategy {
 	 *         diffusion at a low cost. The meaning is implementation-specific,
 	 *         but it is a hint as to how many times the
 	 *         {@link #doExchange(Node, Node)} method should be called
-	 *         per-round.
+	 *         per-round.<BR>
+	 *         <BR>
+	 *         If the implementor does not care about throttling, then it should
+	 *         return 1.
 	 */
-	public int throttling();
+	public int throttling(Node node);
 }
