@@ -1,5 +1,6 @@
-package it.unitn.disi;
+package it.unitn.disi.application.selectors;
 
+import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.protocol.selectors.ISelectionFilter;
 import it.unitn.disi.utils.PermutingCache;
 import peersim.config.Configuration;

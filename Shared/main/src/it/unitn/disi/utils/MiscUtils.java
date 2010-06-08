@@ -125,4 +125,8 @@ public class MiscUtils {
 
 		return inCommon;
 	}
+	
+	public static double log2(double input) {
+		return Math.log(input)/Math.log(2.0);
+	}
 }

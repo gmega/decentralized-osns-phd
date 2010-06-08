@@ -1,5 +1,7 @@
-package it.unitn.disi;
+package it.unitn.disi.application.selectors;
 
+import it.unitn.disi.IPeerSamplingService;
+import it.unitn.disi.RouletteWheel;
 import it.unitn.disi.protocol.selectors.IPeerSelector;
 import it.unitn.disi.protocol.selectors.ISelectionFilter;
 import peersim.config.Configuration;
