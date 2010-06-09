@@ -11,13 +11,13 @@ import com.skjegstad.utils.BloomFilter;
 import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.IAdaptable;
 import it.unitn.disi.application.ComponentComputationService;
+import it.unitn.disi.application.IAdaptable;
 import it.unitn.disi.application.IApplication;
 import it.unitn.disi.application.Tweet;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.application.interfaces.IEventObserver;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 
 /**
  * Greedy diffusion is a smarter flooding algorithm which tries to keep a tab on

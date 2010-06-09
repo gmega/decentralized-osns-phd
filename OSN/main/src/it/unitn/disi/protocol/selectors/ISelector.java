@@ -1,5 +1,6 @@
 package it.unitn.disi.protocol.selectors;
 
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.protocol.IView;
 import peersim.core.Node;
 
@@ -9,7 +10,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public interface IPeerSelector {
+public interface ISelector {
 
 	/**
 	 * Selects a {@link Node}.<BR>
@@ -19,13 +20,13 @@ public interface IPeerSelector {
 	 * The actual semantics of how this constraint affects selection is
 	 * implementation-dependent.
 	 * 
-	 * <b>NOTE:</b> Individual {@link IPeerSelector} implementations may both:
+	 * <b>NOTE:</b> Individual {@link ISelector} implementations may both:
 	 * <ol>
 	 * <li>expect the {@link IView} to be ordered in a specific way;
 	 * <li>reorder the {@link IView}.
 	 * </ol>
 	 * Care must be taken, therefore, to guarantee that the {@link IView} always
-	 * satisfies the {@link IPeerSelector} implementation assumptions.
+	 * satisfies the {@link ISelector} implementation assumptions.
 	 * 
 	 * @param filter
 	 *            an {@link ISelectionFilter} which constrains selection.

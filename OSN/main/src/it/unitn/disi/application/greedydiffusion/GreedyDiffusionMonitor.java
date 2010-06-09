@@ -1,6 +1,6 @@
 package it.unitn.disi.application.greedydiffusion;
 
-import it.unitn.disi.IAdaptable;
+import it.unitn.disi.application.IAdaptable;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;

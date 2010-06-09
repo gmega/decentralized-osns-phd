@@ -5,11 +5,11 @@ import static it.unitn.disi.application.NewscastEvents.DELIVER_TWEET_RANGE;
 import static it.unitn.disi.application.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.application.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.application.NewscastEvents.TWEETED;
-import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.application.EventRegistry.Info;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.application.interfaces.IEventObserver;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
@@ -230,7 +230,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	// ----------------------------------------------------------------------
 
 	protected void addStrategy(IContentExchangeStrategy strategy,
-			IReference<IPeerSamplingService> selector,
+			IReference<IPeerSelector> selector,
 			IReference<ISelectionFilter> filter, double probability) {
 		fStrategies.add(new StrategyEntry(strategy, selector, filter,
 				probability));
@@ -286,7 +286,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			
 			StrategyEntry entry = fStrategies.get(i);
 			IContentExchangeStrategy strategy = entry.strategy;
-			IPeerSamplingService selector = entry.selector.get(ourNode);
+			IPeerSelector selector = entry.selector.get(ourNode);
 			ISelectionFilter filter = entry.filter.get(ourNode);
 
 			// Selects a peer using the preconfigured filter.
@@ -800,12 +800,12 @@ class StrategyEntry {
 
 	public final IContentExchangeStrategy strategy;
 	public final IReference<ISelectionFilter> filter;
-	public final IReference<IPeerSamplingService> selector;
+	public final IReference<IPeerSelector> selector;
 
 	public final double probability;
 
 	public StrategyEntry(IContentExchangeStrategy strategy,
-			IReference<IPeerSamplingService> selector,
+			IReference<IPeerSelector> selector,
 			IReference<ISelectionFilter> filter, double probability) {
 		this.strategy = strategy;
 		this.selector = selector;

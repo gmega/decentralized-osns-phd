@@ -1,7 +1,7 @@
 package it.unitn.disi.application;
 
 import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.RouletteWheel;
+import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 
 import java.util.Iterator;

@@ -1,10 +1,10 @@
 package it.unitn.disi.application;
 
-import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.application.demers.DemersRumorMonger;
 import it.unitn.disi.application.greedydiffusion.GreedyDiffusion;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.application.probabrm.ProbabilisticRumorMonger;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
 import it.unitn.disi.utils.FallThroughReference;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.ProtocolReference;
@@ -102,8 +102,8 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 		app.addSubscriber(demersRm);
 	}
 	
-	private IReference<IPeerSamplingService> selector(String prefix) {
-		return new ProtocolReference<IPeerSamplingService>(Configuration
+	private IReference<IPeerSelector> selector(String prefix) {
+		return new ProtocolReference<IPeerSelector>(Configuration
 				.getPid(fPrefix + "." + prefix + "." + PAR_SELECTOR));
 	}
 	

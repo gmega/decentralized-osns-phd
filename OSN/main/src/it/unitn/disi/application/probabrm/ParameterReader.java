@@ -1,6 +1,6 @@
 package it.unitn.disi.application.probabrm;
 
-import it.unitn.disi.IAdaptable;
+import it.unitn.disi.application.IAdaptable;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.Pair;
 

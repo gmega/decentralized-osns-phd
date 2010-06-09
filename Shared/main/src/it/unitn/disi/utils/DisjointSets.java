@@ -1,3 +1,7 @@
+/**
+ * Sucked from: http://www.cs.berkeley.edu/~jrs/61bs00/hw/hw9/set/DisjointSets.java 
+ */
+
 package it.unitn.disi.utils;
 
 /**

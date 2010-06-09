@@ -1,7 +1,7 @@
 package it.unitn.disi.protocol;
 
-import it.unitn.disi.protocol.selectors.IPeerSelector;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
+import it.unitn.disi.protocol.selectors.ISelector;
 import peersim.core.Node;
 
 
@@ -10,11 +10,11 @@ import peersim.core.Node;
  * single object. In essence, a chained selector will try one selector after the
  * other, until proper results are yielded.
  */
-class PeerSelectorChain implements IPeerSelector {
+class PeerSelectorChain implements ISelector {
 
-	private IPeerSelector[] fChain;
+	private ISelector[] fChain;
 
-	public PeerSelectorChain(IPeerSelector[] chain) {
+	public PeerSelectorChain(ISelector[] chain) {
 		fChain = chain;
 	}
 

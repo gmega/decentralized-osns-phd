@@ -8,9 +8,9 @@ import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.IPeerSamplingService;
-import it.unitn.disi.RouletteWheel;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
+import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.MutableSimplePair;
 
@@ -21,7 +21,7 @@ import it.unitn.disi.utils.MutableSimplePair;
  * 
  * @author giuliano
  */
-public class AntiCentralitySelector implements IPeerSamplingService {
+public class AntiCentralitySelector implements IPeerSelector {
 	
 	private static final String PAR_LINKABLE = "linkable";
 	

@@ -1,9 +1,9 @@
 package it.unitn.disi.application.selectors;
 
-import it.unitn.disi.IPeerSamplingService;
-import it.unitn.disi.RouletteWheel;
-import it.unitn.disi.protocol.selectors.IPeerSelector;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
+import it.unitn.disi.protocol.selectors.ISelector;
+import it.unitn.disi.util.RouletteWheel;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Node;
@@ -13,7 +13,7 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
-public class GenericCompositeSelector implements IPeerSamplingService, Protocol {
+public class GenericCompositeSelector implements IPeerSelector, Protocol {
 
 	private static final String PAR_SELECTOR = "members";
 
@@ -64,7 +64,7 @@ public class GenericCompositeSelector implements IPeerSamplingService, Protocol 
 	}
 
 	/**
-	 * Generic implementation for {@link IPeerSamplingService#selectPeer(Node)}.
+	 * Generic implementation for {@link IPeerSelector#selectPeer(Node)}.
 	 * This implementation will either use a random or random + round robin
 	 * selection policy for picking the peer sampling strategy, based on the
 	 * {@value #PAR_CHOICE} parameter. In essence, if {@value #PAR_CHOICE}:<BR>
@@ -117,10 +117,10 @@ public class GenericCompositeSelector implements IPeerSamplingService, Protocol 
 	protected Node doSelect(Node source, ISelectionFilter filter, int selectorId) {
 		Object object = source.getProtocol(selectorId);
 
-		if (object instanceof IPeerSamplingService) {
-			return ((IPeerSamplingService) object).selectPeer(source);
-		} else if (object instanceof IPeerSelector) {
-			return ((IPeerSelector) object).selectPeer(filter);
+		if (object instanceof IPeerSelector) {
+			return ((IPeerSelector) object).selectPeer(source);
+		} else if (object instanceof ISelector) {
+			return ((ISelector) object).selectPeer(filter);
 		}
 
 		throw new ClassCastException(filter.getClass().getName());

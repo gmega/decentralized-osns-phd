@@ -1,5 +1,6 @@
 package it.unitn.disi.protocol.selectors;
 
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import peersim.config.Configuration;
 import peersim.core.Node;
 

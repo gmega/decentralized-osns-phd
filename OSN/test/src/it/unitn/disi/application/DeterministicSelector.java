@@ -7,10 +7,10 @@ import javax.management.RuntimeErrorException;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
-import it.unitn.disi.IPeerSamplingService;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 
-public class DeterministicSelector implements IPeerSamplingService, Protocol {
+public class DeterministicSelector implements IPeerSelector, Protocol {
 	
 	private ArrayList<String> fChoices = new ArrayList<String>();
 	

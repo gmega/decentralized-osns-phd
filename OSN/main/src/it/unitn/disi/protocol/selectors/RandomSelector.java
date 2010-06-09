@@ -1,5 +1,6 @@
 package it.unitn.disi.protocol.selectors;
 
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.protocol.IView;
 
 import java.util.Random;

@@ -6,7 +6,7 @@ import it.unitn.disi.application.IApplication;
 import it.unitn.disi.application.Tweet;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.application.interfaces.IEventObserver;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.PeersimUtils;
 

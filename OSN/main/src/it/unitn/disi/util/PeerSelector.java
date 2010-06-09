@@ -1,17 +1,18 @@
-package it.unitn.disi.protocol;
+package it.unitn.disi.util;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**
- * PeerSelector is a utility class for helping bridge a {@link Linkable} and an
- * {@link IPeerSamplingService}. It merely keeps track of which elements in the
- * cache have already been selected.
+ * PeerSelector is a utility class for helping bridge a {@link Linkable} and a
+ * sampling service. It keeps track of which elements in the view have already
+ * been selected, such that repeated elements can be filtered out even as the
+ * view is shuffled and re-shuffled.
  * 
  * XXX There is ample room for optimizations, but I wanted to keep this simple
  * and <b>bug free</b> above all.

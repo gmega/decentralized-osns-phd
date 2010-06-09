@@ -2,7 +2,7 @@ package it.unitn.disi.protocol.selectors;
 
 import it.unitn.disi.protocol.IView;
 
-public abstract class AbstractPeerSelector implements IPeerSelector {
+public abstract class AbstractPeerSelector implements ISelector {
 	
 	protected IView fView;
 	

@@ -1,11 +1,11 @@
 package it.unitn.disi.protocol;
 
 import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.IRebootable;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.protocol.View.BufferHandler;
-import it.unitn.disi.protocol.selectors.IPeerSelector;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.protocol.selectors.ISelector;
 import it.unitn.disi.protocol.selectors.RandomSelector;
 import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.MiscUtils;
@@ -39,7 +39,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class SocialPeerSampling implements IPeerSamplingService, IRebootable,
+public class SocialPeerSampling implements IPeerSelector, IRebootable,
 		CDProtocol, IDynamicLinkable {
 
 	// --------------------------------------------------------------------------
@@ -130,7 +130,7 @@ public class SocialPeerSampling implements IPeerSamplingService, IRebootable,
 	/**
 	 * Pluggable algorithm for selecting peers for the peersampling exchanges.
 	 */
-	private IPeerSelector fSelector;
+	private ISelector fSelector;
 
 	/**
 	 * Selection filter for constraining peer exchanges.

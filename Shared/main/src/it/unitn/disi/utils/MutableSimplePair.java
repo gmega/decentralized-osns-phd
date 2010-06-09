@@ -19,4 +19,8 @@ public class MutableSimplePair<K, V> {
 		this.a = a;
 		this.b = b;
 	}
+	
+	public String toString() {
+		return "(" + this.a + ", " + this.b + ")";
+	}
 }

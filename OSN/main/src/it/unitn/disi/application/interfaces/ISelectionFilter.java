@@ -1,12 +1,10 @@
-package it.unitn.disi.protocol.selectors;
+package it.unitn.disi.application.interfaces;
 
 import peersim.core.Node;
-import peersim.core.Protocol;
 
 /**
- * Selection filters help decouple exclusion heuristics from the selection
- * algorithms themselves. In essence, an {@link ISelectionFilter} can tell
- * whether a given {@link Node} is good for selection or not.
+ * A {@link ISelectionFilter} can tell whether a given {@link Node} is good for
+ * selection or not.
  */
 public interface ISelectionFilter {
 
@@ -19,7 +17,7 @@ public interface ISelectionFilter {
 	public boolean canSelect(Node node);
 
 	/**
-	 * This method should be called once for every selection that is made.
+	 * Informs the filter that a given node has been selected.
 	 * 
 	 * @param node
 	 *            the node that has been selected. If no node was selected, this

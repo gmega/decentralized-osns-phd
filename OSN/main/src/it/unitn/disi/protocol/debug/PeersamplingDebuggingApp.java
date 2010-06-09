@@ -1,6 +1,6 @@
 package it.unitn.disi.protocol.debug;
 
-import it.unitn.disi.IPeerSamplingService;
+import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.utils.MultiCounter;
 
 import java.util.Collections;
@@ -32,7 +32,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 	// --------------------------------------------------------------------------
 
 	/**
-	 * Reference to an object implementing the {@link IPeerSamplingService}
+	 * Reference to an object implementing the {@link IPeerSelector}
 	 * interface.
 	 */
 	private static final String PAR_PSS = "pss";
@@ -102,7 +102,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 	}
 
 	public void nextCycle(Node node, int protocolID) {
-		IPeerSamplingService service = (IPeerSamplingService) node
+		IPeerSelector service = (IPeerSelector) node
 				.getProtocol(fPeersamplingId);
 		Node peer = service.selectPeer(node);
 		if (peer == null) {

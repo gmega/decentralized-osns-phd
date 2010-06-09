@@ -11,7 +11,7 @@ import org.junit.Test;
 import peersim.core.Node;
 import it.unitn.disi.TestLinkable;
 import it.unitn.disi.TestUtils;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 
 public class TestFriendsInCommonSelector {
 	@Test public void selectPeer() throws Exception{

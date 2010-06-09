@@ -1,7 +1,7 @@
 package it.unitn.disi.application.selectors;
 
-import it.unitn.disi.IPeerSamplingService;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.PermutingCache;
 import peersim.config.Configuration;
 import peersim.core.Linkable;
@@ -14,7 +14,7 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
-public class RandomSelectorOverLinkable implements IPeerSamplingService, Protocol {
+public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 
 	private static final String PAR_LINKABLE = "linkable";
 	

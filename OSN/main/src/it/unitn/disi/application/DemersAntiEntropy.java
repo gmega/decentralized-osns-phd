@@ -1,6 +1,5 @@
 package it.unitn.disi.application;
 
-import it.unitn.disi.IAdaptable;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.PeersimUtils;

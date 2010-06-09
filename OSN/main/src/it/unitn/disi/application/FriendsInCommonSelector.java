@@ -1,8 +1,8 @@
 package it.unitn.disi.application;
 
 import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.IPeerSamplingService;
-import it.unitn.disi.protocol.selectors.ISelectionFilter;
+import it.unitn.disi.application.interfaces.IPeerSelector;
+import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.OrderingUtils;
 
 import java.util.Random;
@@ -13,7 +13,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class FriendsInCommonSelector implements IPeerSamplingService, Protocol {
+public class FriendsInCommonSelector implements IPeerSelector, Protocol {
 
 	private static final String PAR_PROTOCOL = "linkable";
 
