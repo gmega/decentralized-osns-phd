@@ -8,11 +8,13 @@ import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
+import peersim.core.Protocol;
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.MutableSimplePair;
+import it.unitn.disi.utils.Pair;
 
 /**
  * Anti-centrality privileges nodes with low centrality. As it is, the
@@ -21,7 +23,7 @@ import it.unitn.disi.utils.MutableSimplePair;
  * 
  * @author giuliano
  */
-public class AntiCentralitySelector implements IPeerSelector {
+public class AntiCentralitySelector implements IPeerSelector, Protocol {
 	
 	private static final String PAR_LINKABLE = "linkable";
 	
@@ -37,34 +39,47 @@ public class AntiCentralitySelector implements IPeerSelector {
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		Linkable neighborhood = (Linkable) source.getProtocol(fLinkable);
-		RouletteWheel wheel = makeWheel(neighborhood, filter);
-		return neighborhood.getNeighbor(wheel.spin());
+		
+		Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> result = makeWheel(
+				neighborhood, filter);
+		// If we have a null, means the filter vetoed all neighbors.
+		if (result == null) {
+			return null;
+		}
+		
+		RouletteWheel wheel = result.a;
+		ArrayList<MutableSimplePair<Integer, Integer>> friends = result.b;
+		return filter.selected(neighborhood.getNeighbor(friends.get(wheel.spin()).b));
 	}
 
 	public boolean supportsFiltering() {
 		return true;
 	}
 	
-	private RouletteWheel makeWheel(Linkable neighborhood, ISelectionFilter filter) {
+	private Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> makeWheel(
+			Linkable neighborhood, ISelectionFilter filter) {
 		ArrayList<MutableSimplePair<Integer, Integer>> fof = new ArrayList<MutableSimplePair<Integer, Integer>>();
 
-		// Computes the centrality metric (friends-in-common, in this case).
+		// Computes the centrality metric.
 		int total = 0;
 		for (int i = 0; i < neighborhood.degree(); i++) {
 			Node neighbor = neighborhood.getNeighbor(i);
 			if(!filter.canSelect(neighbor)){
 				continue;
 			}
-			int weight = MiscUtils.countIntersections(neighborhood, neighbor,
-					fLinkable) + 1;
+			int weight = centrality(neighborhood, neighbor);
 			total += weight;
 			fof.add(new MutableSimplePair<Integer, Integer>(weight, i));
+		}
+		
+		// If there are no neighbors to choose from, return null.
+		if (fof.size() == 0) {
+			return null;
 		}
 		
 		// Sorts the array by the centrality metric (lower centrality first).
 		Collections.sort(fof,
 				new Comparator<MutableSimplePair<Integer, Integer>>() {
-					@Override
 					public int compare(MutableSimplePair<Integer, Integer> o1,
 							MutableSimplePair<Integer, Integer> o2) {
 						return o1.a - o2.a;
@@ -82,10 +97,28 @@ public class AntiCentralitySelector implements IPeerSelector {
 		// Now computes the probabilities.
 		double [] probabs = new double[fof.size()];
 		for (int i = 0; i < probabs.length; i++) {
-			probabs[fof.get(i).b] = ((double) fof.get(i).a)/total;
+			probabs[i] = ((double) fof.get(i).a)/total;
 		}
-		
-		return new RouletteWheel(probabs, CommonState.r);
+				
+		return new Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>>(
+				new RouletteWheel(probabs, CommonState.r), fof);
 	}
+	
+	private int centrality(Linkable neighborhood, Node neighbor) {
+		return MiscUtils.countIntersections(neighborhood, neighbor,
+				fLinkable) + 1;
+	}
+	
+	// ----------------------------------------------------------------------
+	// Cloneable requirements.
+	// ----------------------------------------------------------------------
 
+	public Object clone() {
+		try {
+			return super.clone();
+		} catch (Exception ex) {
+			throw new RuntimeException();
+		}
+	}
+	
 }
