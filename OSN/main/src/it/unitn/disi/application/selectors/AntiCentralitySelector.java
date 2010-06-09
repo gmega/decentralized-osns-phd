@@ -1,29 +1,29 @@
 package it.unitn.disi.application.selectors;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 
 import peersim.config.Configuration;
 import peersim.core.CommonState;
+import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.IPeerSamplingService;
 import it.unitn.disi.RouletteWheel;
-import it.unitn.disi.application.LinkableSortedFriendCollection;
 import it.unitn.disi.protocol.selectors.ISelectionFilter;
-import it.unitn.disi.utils.SharedBuffer;
+import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.MutableSimplePair;
 
 /**
- * Anti-centrality privileges nodes with low centrality.  
+ * Anti-centrality privileges nodes with low centrality. As it is, the
+ * implementation is <b>very</b> inefficient, but at least I'm reasonable sure
+ * that it does what it is supposed to.
  * 
  * @author giuliano
  */
 public class AntiCentralitySelector implements IPeerSamplingService {
 	
 	private static final String PAR_LINKABLE = "linkable";
-	
-
-	
-	private RouletteWheel fWheel;
 	
 	private int fLinkable;
 	
@@ -36,50 +36,56 @@ public class AntiCentralitySelector implements IPeerSamplingService {
 	}
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
+		Linkable neighborhood = (Linkable) source.getProtocol(fLinkable);
+		RouletteWheel wheel = makeWheel(neighborhood, filter);
+		return neighborhood.getNeighbor(wheel.spin());
 	}
 
 	public boolean supportsFiltering() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 	
-	private RouletteWheel getWheel(Node node) {
-		if (fWheel != null) {
-			return fWheel;
-		}
-		
-		// Sorts neighbors by centrality (friends in common with our node).
-		LinkableSortedFriendCollection col = new LinkableSortedFriendCollection(fLinkable);
-		col.sortByFriendsInCommon(node);
-		
-		// Computes the sum of all degrees.
-		double total = 0.0;
-		for (int i = 0; i < col.size(); i++) {
-			total += col.friendsInCommon(i) + 1;
-		}
-		
-		// Normalizes the degree by the sum. 
-		Double [] probs = new Double[col.size()];
-		for (int i = 0; i < col.size(); i++) {
-			probs[i] = ((double)col.friendsInCommon(i) + 1)/total;
-		}
-		
-		// Sorts 
-		Arrays.sort(probs, new Comparator<Double>() {
-			public int compare(Double v1, Double v2) {
-				return (int) Math.signum(v1 - v2);
-			}
-		});
-		
-		double [] probsPrim = new double[probs.length];
-		for (int i = 0; i < probsPrim.length; i++) {
-			probsPrim[i] = probs[i];
-		}
+	private RouletteWheel makeWheel(Linkable neighborhood, ISelectionFilter filter) {
+		ArrayList<MutableSimplePair<Integer, Integer>> fof = new ArrayList<MutableSimplePair<Integer, Integer>>();
 
-		fWheel = new RouletteWheel(probsPrim, CommonState.r);
-		return fWheel;
+		// Computes the centrality metric (friends-in-common, in this case).
+		int total = 0;
+		for (int i = 0; i < neighborhood.degree(); i++) {
+			Node neighbor = neighborhood.getNeighbor(i);
+			if(!filter.canSelect(neighbor)){
+				continue;
+			}
+			int weight = MiscUtils.countIntersections(neighborhood, neighbor,
+					fLinkable) + 1;
+			total += weight;
+			fof.add(new MutableSimplePair<Integer, Integer>(weight, i));
+		}
+		
+		// Sorts the array by the centrality metric (lower centrality first).
+		Collections.sort(fof,
+				new Comparator<MutableSimplePair<Integer, Integer>>() {
+					@Override
+					public int compare(MutableSimplePair<Integer, Integer> o1,
+							MutableSimplePair<Integer, Integer> o2) {
+						return o1.a - o2.a;
+					}
+				});
+		
+		// Inverts the centrality scores.
+		int last = (int) Math.floor(fof.size()/2.0) - 1;
+		for (int i = 0; i <= last ; i++) {
+			Integer tmp = fof.get(i).a;
+			fof.get(i).a = fof.get(fof.size() - i - 1).a;
+			fof.get(fof.size() - i - 1).a = tmp;
+		}
+		
+		// Now computes the probabilities.
+		double [] probabs = new double[fof.size()];
+		for (int i = 0; i < probabs.length; i++) {
+			probabs[fof.get(i).b] = ((double) fof.get(i).a)/total;
+		}
+		
+		return new RouletteWheel(probabs, CommonState.r);
 	}
 
 }
