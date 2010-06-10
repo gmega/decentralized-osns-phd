@@ -172,12 +172,14 @@ class DataPagePrinter:
         print_separator = False
         with open_output(self._output) as file:
             for title, data_page in data_source.statistics(self._statistic):
+                if print_separator:
+                    print >> file, "-"
+                else:
+                    print_separator = True
                 keys = data_page.keys()
                 keys.sort()
                 for key in keys:
                     print >> file, key,data_page[key]
-                
-                print >> file, "-"                    
 
 #==========================================================================
 
@@ -211,35 +213,33 @@ class Statistics:
 
     def statistics(self, statistic):
         if len(self._special_rounds) == 0:
-            yield ("Simulation [" + statistic + "]", self.__simulation_statistics__(statistic))
+            yield ("Simulation [" + statistic + "]", self.__statistics__(statistic))
         else:
             for i in self._special_rounds:
                 yield ("Round " + str(i) +" [" + statistic + "]", 
-                       self.__round_statistics__(statistic, i))
+                       self.__statistics__(statistic, i))
 
-    def __round_statistics__(self, statistic, round):
+    def __statistics__(self, statistic, round=None):
         data = {}
         for node in self:
             value = 0
             if statistic == MODE_LATENCY:
-                value = node.latency(round) / float(node.load(round, type=MSG_DELIVERED))
+                load = float(node.load(round, type=MSG_DELIVERED))
+                latency = node.latency(round)
+                # Sanity check
+                if load == 0:
+                    if latency != 0:
+                        raise Exception("Assertion failure.")
+                    else:
+                        load = 1.0
+                value = latency/load
+
             else:
                 value = node.load(round)
+            
             data[node.id] = value
         
         return data
-
-    
-    def __simulation_statistics__(self, statistic):
-        data = {}
-        for node in self:
-            if statistic == MODE_LATENCY:
-                data[node.id] = node.latency() / float(node.load(type=MSG_DELIVERED))
-            else:
-                data[node.id] = node.load()
-                        
-        return data 
-
 
     def __iter__(self):
         return self._descriptors.itervalues()
