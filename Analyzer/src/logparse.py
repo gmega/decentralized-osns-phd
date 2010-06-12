@@ -12,12 +12,14 @@ import re
 import cProfile
 from io import StringIO
 import os
+import math
 
 #==========================================================================
 # Constants.
 #==========================================================================
 
 MODE_LOAD = "load"
+MODE_DUPS = "duplicates"
 MODE_LATENCY = "latency"
 
 #==========================================================================
@@ -86,8 +88,10 @@ def configure_printers(specs):
         if len(spec_part) == 3:
             output = spec_part[2]
         
-        if spec_part[1] == "squash":
-            printers.append(SquashStatisticsPrinter(spec_part[0], output))
+        if spec_part[1] == "average":
+            printers.append(SquashStatisticsPrinter(spec_part[0], output, True))
+        elif spec_part[1] == "total":
+            printers.append(SquashStatisticsPrinter(spec_part[0], output, False))
         elif spec_part[1] == "pernode":
             printers.append(DataPagePrinter(spec_part[0], output))
 
@@ -144,9 +148,10 @@ def open_output(output):
 
 class SquashStatisticsPrinter:
     
-    def __init__(self, statistic, output):
+    def __init__(self, statistic, output, average):
         self._statistic = statistic
         self._output = output
+        self._average = average
         
     def do_print(self, data_source):
         with open_output(self._output) as file:
@@ -158,7 +163,10 @@ class SquashStatisticsPrinter:
         for value in data.values():
             total += value
     
-        return float(total) / len(data)
+        if self._average:
+            total = float(total)/len(data)
+    
+        return total
     
 #==========================================================================
 
@@ -233,7 +241,8 @@ class Statistics:
                     else:
                         load = 1.0
                 value = latency/load
-
+            elif statistic == MODE_DUPS:
+                value = node.load(round, type=MSG_DUPLICATE)
             else:
                 value = node.load(round)
             
@@ -375,6 +384,34 @@ class FileWrapper:
     def __exit__(self, type, value, traceback):
         self._delegate.close()
          
+#==========================================================================
+# Transformers for parsing logs.
+#==========================================================================
+
+class ConvergenceAnalyzer:
+    
+    def __init__(self, input, column=0, epsilon=0.01):
+        self._input = input
+        self._column = column
+        self._epsilon = float(epsilon)
+    
+    def execute(self):
+        last = sys.maxint
+        round = 1
+        with open(self._input, "r") as file:
+            for line in file:
+                line_parts = line.split(" ")
+                current = float(line_parts[int(self._column)])
+                
+                if (abs(current - last)) < (self._epsilon*last):
+                    print "Convergence at round [ " + str(round) + "] with value " + str(current) + "."
+                    return
+                
+                last = current
+                round += 1                
+        
+        print "No convergence." 
+                
 #==========================================================================
 
 if __name__ == '__main__':
