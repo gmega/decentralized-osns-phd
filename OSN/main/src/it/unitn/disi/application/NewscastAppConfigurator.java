@@ -123,7 +123,7 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 			return 1.0;
 		}
 		
-		return Configuration.getDouble(percentageName);
+		return Double.parseDouble(Configuration.getString(percentageName));
 	}
 
 }

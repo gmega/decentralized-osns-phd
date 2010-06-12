@@ -12,6 +12,7 @@ import peersim.core.Node;
 import it.unitn.disi.TestLinkable;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
+import it.unitn.disi.application.selectors.CentralitySelector;
 
 public class TestFriendsInCommonSelector {
 	@Test public void selectPeer() throws Exception{
@@ -31,7 +32,7 @@ public class TestFriendsInCommonSelector {
 			});
 		
 		Random r = new Random(42);
-		FriendsInCommonSelector slktor = new FriendsInCommonSelector(0, 0.4, 0, r);
+		CentralitySelector slktor = new CentralitySelector(0, 0.4, 0, r);
 		Node node = lnk.get(0);
 		Set<Integer> selectedSet = new HashSet<Integer>();
 		

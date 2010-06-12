@@ -1,8 +1,6 @@
 package it.unitn.disi.application;
 
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
-import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.PeersimUtils;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -23,20 +21,18 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 			return false;
 		}
 
-		IAdaptable adaptable = (IAdaptable) source.getProtocol(fProtocolId);
-		IAdaptable peerAdaptable = (IAdaptable) target.getProtocol(fProtocolId);
+		NewscastApplication application = (NewscastApplication) source.getProtocol(fProtocolId);
+		NewscastApplication peerApplication = (NewscastApplication) target.getProtocol(fProtocolId);
 		
-		Linkable ourSn = (Linkable) PeersimUtils.getLinkable(source, fProtocolId,
-				fSnLinkableId);
-		Linkable peerSn = (Linkable) PeersimUtils.getLinkable(target, fProtocolId,
-				fSnLinkableId);
+		Linkable ourSn = (Linkable) source.getProtocol(fSnLinkableId);
+		Linkable peerSn = (Linkable) source.getProtocol(fSnLinkableId);
 
 		// Anti-entropy means merging the event histories.
-		IMergeObserver observer = (IMergeObserver) adaptable.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
-		IMergeObserver peerObserver = (IMergeObserver) peerAdaptable.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
+		IMergeObserver observer = (IMergeObserver) application.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
+		IMergeObserver peerObserver = (IMergeObserver) peerApplication.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
 		
-		EventStorage storage = (EventStorage) adaptable.getAdapter(EventStorage.class, null);
-		EventStorage peerStorage = (EventStorage) peerAdaptable.getAdapter(EventStorage.class, null);
+		EventStorage storage = (EventStorage) application.getStorage();
+		EventStorage peerStorage = (EventStorage) peerApplication.getStorage();
 		
 		// Merges the peer's store into ours.
 		storage.merge(target, source, peerStorage, observer, ourSn);

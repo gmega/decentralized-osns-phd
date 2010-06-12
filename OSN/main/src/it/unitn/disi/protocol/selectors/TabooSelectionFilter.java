@@ -3,12 +3,13 @@ package it.unitn.disi.protocol.selectors;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import peersim.config.Configuration;
 import peersim.core.Node;
+import peersim.core.Protocol;
 
 /**
  * 
  * @author giuliano
  */
-public class TabooSelectionFilter implements ISelectionFilter {
+public class TabooSelectionFilter implements ISelectionFilter, Protocol {
 	
 	private static final String PAR_R = "r";
 

@@ -525,7 +525,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			if (fVerbose) {
 				System.out.println(fCodec.toString(event));
 			}
-			
+
 			int len = fCodec.encodeEvent(buf, 0, event);
 			NewscastApplication.this.log(len);
 		}
@@ -711,7 +711,7 @@ interface IApplicationConfigurator {
 
 //----------------------------------------------------------------------
 
-class BroadcastBus {
+class BroadcastBus implements IMergeObserver {
 	
 	private final ArrayList<IEventObserver> fDelegates = new ArrayList<IEventObserver>();
 	
