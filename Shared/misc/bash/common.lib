@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# Module for common bash functions.
+#
+# Return values are stored in variable COMMON_RETURN.
+#
+
+############################################################### 
+#
+# Performs an averaging step using the python analyzer. 
+#
+# Parameters:
+#
+# 1 -> file set (.text, .tmp, and .b) containing the averages;
+# 2 -> step of the averaging procedure. 
+#
+############################################################### 
+
+function step_average {
+    echo Performing averaging step $2 for element $1.
+    if [ -e $1.text ] 
+    then 
+	analyzer -V avg=./$1.text:input=$1.b:step=$2 -t python util.cli.AverageColumns > $1.tmp
+    else
+	mv $1.b $1.tmp
+    fi
+    
+    rm $1.text $1.b
+    mv $1.tmp $1.text
+}
+
+############################################################### 
+#
+# Builds a colon-separated file list from the results produced
+# by an ls command.
+#
+############################################################### 
+
+function file_list {
+    LIST=""
+    for i in `ls $1`;
+    do 
+	LIST=$LIST:$i
+    done
+    LIST=${LIST:1:`expr length $LIST`}
+
+    COMMON_RETURN=$LIST
+}
+
+############################################################### 
+#
+# Silly helper for checking parameters.
+#
+############################################################### 
+
+function checkpar {
+    if [ $1 -ne $2 ]
+    then
+	echo Incorrect number of arguments -- expected $1 but got $2.
+	exit
+    fi
+}
+
+echo "Sourced common.lib." >&2

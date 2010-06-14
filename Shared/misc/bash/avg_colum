@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat $1 | head -10 | tr " " "\t" | cut -f13 | tr "\n" " " | perl -ne 'use List::Util qw(sum);  @arr = split(" ", $_); print sum(@arr)/@arr."\n"'

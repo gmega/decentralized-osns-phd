@@ -1,0 +1,2 @@
+#!/bin/bash
+java -Xmx2048m -server -cp $HOME/workspace/Social_Peer_Sampling/bin:$HOME/workspace/peersim/bin:$HOME/workspace/Utilities/lib/ext-1.1.1.jar:$HOME/workspace/Utilities/lib/jep-2.4.1.jar:$HOME/workspace/extras/bin:$HOME/workspace/Utilities/bin:$HOME/workspace/Utilities/lib/colt-1.2.0.jar:$HOME/workspace/Utilities/lib/google-collect-1.0-rc3.jar:$HOME/workspace/Experiments/bin:$HOME/workspace/CyclonProject/bin peersim.Simulator "$@"
