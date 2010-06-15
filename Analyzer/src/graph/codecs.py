@@ -7,8 +7,8 @@ import util
 
 from igraph import *
 from logging import *
-from util.misc import ProgressTracker, igraph_neighbors, FileProgressTracker
 from resources import *
+from misc.util import FileProgressTracker
 
 # Global module _logger.
 logger = logging.getLogger(__name__)

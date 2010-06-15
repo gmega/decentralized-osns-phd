@@ -3,13 +3,14 @@ Created on 16/lug/2009
 
 @author: giuliano
 '''
-from graph_codecs import GraphLoader
 import igraph
 import sys
 
 import logging
 from graph.util import igraph_neighbors, neighbors_in_common,\
     count_neighbors_in_common
+from misc.reflection import get_object
+from graph.codecs import GraphLoader
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class SharedHubs:
     ''' Counts the shared hubs in a neighborhood. '''   
  
-    def __init__(self, input, percentile=0.9, decoder="graph_codecs.AdjacencyListDecoder"):
+    def __init__(self, input, percentile=0.9, decoder="graph.codecs.AdjacencyListDecoder"):
         self._input = input
         self._percentile = percentile
         self._decoder = get_object(decoder)
@@ -65,19 +66,19 @@ class SharedHubs:
 
 class OuterDegree:
     
-    def __init__(self, input, decoder="graph_codecs.AdjacencyListDecoder", vertex_list=None):
+    def __init__(self, input, decoder="graph.codecs.AdjacencyListDecoder", vertex_list=None):
         self._loader = GraphLoader(input, get_object(decoder))
-        self._vertex_list = vertex_list
+        self._vertex_list = eval(vertex_list)
         
     def execute(self):
         graph = self._loader.load_graph()
         
-        if vertex_list is None:
-            vertex_list = range(0, length(graph.vs))
+        if self._vertex_list is None:
+            self._vertex_list = range(0, length(graph.vs))
             
-        for vertex_id in vertex_list:
+        for vertex_id in self._vertex_list:
             for neighbor in igraph_neighbors(vertex_id, graph):
-                print vertex_id,neighbor,count_neighbors_in_common(vertex_id, neighbor)
+                print vertex_id,neighbor,count_neighbors_in_common(vertex_id, neighbor, graph)
                 
 
 # =========================================================================

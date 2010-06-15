@@ -9,9 +9,7 @@ import re
 import types
 
 import logging
-
-from util.parsing import *
-from util.reflection import *
+from misc.parsing import Lexer
 
 logger = logging.getLogger(__name__)
 

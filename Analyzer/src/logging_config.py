@@ -5,7 +5,6 @@ Logging configuration file.
 '''
 import logging
 from logging import *
-from util.misc import *
 
 #create logger
 logger = logging.getLogger()
