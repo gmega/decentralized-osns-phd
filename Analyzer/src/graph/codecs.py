@@ -1,7 +1,5 @@
 '''    
-Created on 03/lug/2009
-
-@author: giuliano
+Utilties for reading and writing graphs from and to various formats.
 '''
 import igraph
 import logging

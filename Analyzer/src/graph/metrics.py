@@ -14,7 +14,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def avg_measure(id_list, computer):
     
     tracker = ProgressTracker("computing avg. measure [%s]" % computer.__class__.__name__, len(id_list)) 
@@ -156,73 +155,3 @@ class NodeCountingClusteringComputer(object):
                     triangles = triangles + 1
         
         return (2*float(triangles))/float(triplets)
-   
-   
-def degree_distribution(graph):
-    return [(x[0], x[2]) for x in graph.degree_distribution(1).bins()]
-
-
-def cumulative_degree_distribution(graph, *l):
-    
-    if len(l) == 0:
-        return []
-
-    c = [(l[0][0], graph.vcount())]
-    
-    for i in range(1, len(l)):
-        degree, quantity = c[i - 1]
-        c.append((l[i][0], quantity - l[i - 1][1]))
-    
-    return c
-
-
-def simple_replication_sets(graph, n_count, file):
-    tracker = ProgressTracker("computing simple replication sets", len(graph.vs))
-    tracker.start_task()
-    
-    for v_id in range(0, len(graph.vs)):
-        set, trust, radius = pick_simple_replication_set(graph, v_id, n_count)
-        print >>file, trust, radius, len(set)
-        tracker.tick()
-    
-    tracker.done()
-
-
-def pick_simple_replication_set(graph, vertex, n_count):
-    radius = 0
-    distance_sum = 0
-    R_v = set()
-    
-    # Does a BFS until it reaches the n_count.
-    for next, distance, parent in graph.bfsiter(vertex, advanced=True):
-        if next.index == vertex:
-            continue
-        if len(R_v) == n_count:
-            break
-        distance_sum += distance
-        radius = distance if radius < distance else radius
-        R_v.add(next)
-        
-    return (R_v, float(distance_sum)/len(R_v), radius)
-
-
-def print_statistics(graph, basic=True, cc_ig=True, acc_ig=False, acc_nc=False, md=True):
-    if basic:
-        print "Basic graph information:", graph
-    
-    if cc_ig:
-        print "Global clustering coefficient (igraph):", graph.transitivity_undirected()
-    
-    if acc_ig:
-        print "Average clustering coefficient (igraph):", avg_measure(0, graph.vcount(), IGraphTransitivityComputer(graph))
-        
-    if acc_nc:
-        pass
-        #print "Average clustering coefficient (node counting):", avg_measure(graph, nodeCountingClusteringComputer)
-        
-    if md:
-        print "Mean degree", graph.degree_distribution()._get_mean(), "max degree", graph.maxdegree()
-    
-    return graph
-    
-

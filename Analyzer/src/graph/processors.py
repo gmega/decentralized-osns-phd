@@ -11,8 +11,9 @@ from sn.metrics import avg_measure, NodeCountingClusteringComputer
 from sn.transformers import snowball_sample
 import numpy
 import sys
+
 class Unify:
-    
+ 
     
     def __init__(self, input, directed=False, decoder="graph_codecs.AdjacencyListDecoder", 
                  encoder="graph_codecs.AdjacencyListEncoder"):
@@ -26,29 +27,6 @@ class Unify:
         loader = GraphLoader(self._input, self._decoder, self._directed, True)
         graph = loader.load_graph()
         self._encoder(sys.stdout).encode(graph)
-
-
-class PrintDegrees:
-    """ Prints the degrees of a graph. 
-    """
-    
-    def __init__(self, input, decoder, directed=False):
-        """ @param input: the file containing the graph.
-            @param decoder: the decoder to use for reading the graph.
-            @param directed: whether the graph is directed or not.
-        """
-        
-        self._input = input
-        self._decoder = get_object(decoder)
-        self._directed = directed
-        
-    
-    def execute(self):
-        loader = GraphLoader(self._input, self._decoder, self._directed, True)
-        graph = loader.load_graph()
-        
-        for i in range(0, len(graph.vs)):
-            print loader.id_of(i), graph.degree(i)
 
 
 class AvgClustering:
@@ -115,43 +93,7 @@ class GenIrregularlyClustered:
     
     
     def execute(self):
-        theGraph = IrregularlyClustered(self._n, self._pairs, self._neighborhood)
-        
-        pt = ProgressTracker("patch graph", len(theGraph.vs))
-        pt.start_task()
-        # Now patches the graph. For each vertex in the graph ...
-        for i in range(0, len(theGraph.vs)):
-            neighbors = igraph_neighbors(i, theGraph)
-            
-            for j in neighbors:
-            
-                fic = friends_in_common(i, j, theGraph)
-                # ... if a pair does not satisfy the friend-in-common constraint ...
-                if fic < self._epsilon:
-                    # ... arbitrarily patches the graph by causing the sides of the
-                    # pair to befriend each others friends. 
-                    delta = friends_not_in_common_set(i, j, theGraph)
-                    delta.remove(i)
-                    delta.remove(j)
-                    required = self._epsilon - fic
-                    if len(delta) < required:
-                        print "Unable to satisfy connectivity constraint."
-                        return
-                    
-                    to_add = []
-                    for non_common in delta:
-                        if not theGraph.are_connected(i, non_common):
-                            to_add.append((i, non_common))
-                        else:
-                            to_add.append((j, non_common))
-                        
-                        required = required - 1
-                        if required == 0:
-                            break
-                    
-                    theGraph.add_edges(to_add)
-            pt.tick()
-        pt.done()
+
                     
         if self._print_clusterings:
             self.__print_clusterings__(theGraph)

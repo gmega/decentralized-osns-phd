@@ -10,6 +10,7 @@ from numpy.ma.core import ceil
 from resources import IGRAPH_ID
 import igraph
 import math
+from graphb.processors import friends_in_common_set
 
 
 # ===============================================================
@@ -59,11 +60,29 @@ class SharedHubs:
     def __centrality__(self, g, idx):
         return g.degree(idx)
 
+class OuterDegree:
+    
+    def __init__(self, input, decoder="graph_codecs.AdjacencyListDecoder", vertex_list=None):
+        self._loader = GraphLoader(input, get_object(decoder))
+        self._vertex_list = vertex_list
+        
+    def execute(self):
+        graph = self._loader.load_graph()
+        
+        if vertex_list is None:
+            vertex_list = range(0, length(graph.vs))
+            
+        for vertex_id in vertex_list:
+            for neighbor in igraph_neighbors(vertex_id, graph):
+                friends_in_common_set
+
+
+
 # ===============================================================
 # Some analysis scripts for Bloom filters.
 # ===============================================================
 
-class Calibrate:
+class FPCurve:
     ''' Prints points from the false positive probability curve for a range of
     bloom filter sizes and expected number of elements.
     

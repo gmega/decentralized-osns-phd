@@ -13,6 +13,10 @@ import util
 from sn.transformers import *
 from graph import Edge
 
+# =========================================================================
+# Watts and Strogatz generator.
+# =========================================================================
+
 def Watts_Strogatz(n, k, p):
     """ Creates a Watts and Strogatz graph according to the
         classical algorithm.
@@ -68,8 +72,22 @@ def Watts_Strogatz(n, k, p):
     
     return graph
 
+# =========================================================================
+# The "irregular clustering" generator.
+# =========================================================================
 
 def IrregularlyClustered(n, cp, neighborhood=False, is_sane = lambda g: g.is_connected()):
+    ''' Generates a graph which is irregularly clustered. Mainly, we remove edges from a 
+    complete graph with different probabilitles for different vertex ranges. 
+    
+    @param cp: the component/probability specification vector. Should contain a list of
+    tuples (size, probability) where <size> is the size of the component, and <probability>
+    is the probability that we remove edges from that component.
+    
+    @param neighborhood: if set to true, causes a vertex which is connected to every 
+    other vertex in the graph to be added at the end. 
+    '''
+    
     complete = Graph.Full(n)
     deleted = 0
     
@@ -90,7 +108,7 @@ def IrregularlyClustered(n, cp, neighborhood=False, is_sane = lambda g: g.is_con
     
     gen = ProgressTracker("vertex removal", len(to_delete));
     gen.start_task()
-    # Now only apply those removals that do not disconnect the graph.
+    # Now only apply those removals that do keep the graph 'sane'.
     for edge in to_delete:
         complete.delete_edges([edge])
         if not is_sane(complete):
@@ -116,6 +134,50 @@ def IrregularlyClustered(n, cp, neighborhood=False, is_sane = lambda g: g.is_con
     
     return complete
 
+# =========================================================================
+
+def IrregularlyClusteredNC(n, cp, epsilon=0, neighborhood=False, is_sane = lambda g: g.is_connected()):
+    ''' Same as IrregularlyClustered, except that it guarantees that nodes have at least
+    some /epsilon/ amount of neighbors in common.'''
+    
+    theGraph = IrregularlyClustered(self._n, self._pairs, self._neighborhood)
+        
+    pt = ProgressTracker("patch graph", len(theGraph.vs))
+    pt.start_task()
+    
+    # Now patches the graph. For each vertex in the graph ...
+    for i in range(0, len(theGraph.vs)):
+        neighbors = igraph_neighbors(i, theGraph)
+        for j in neighbors:
+            fic = friends_in_common(i, j, theGraph)
+            # ... if a pair does not satisfy the friend-in-common constraint ...
+            if fic < self._epsilon:
+                # ... arbitrarily patches the graph by causing the sides of the
+                # pair to befriend each other. 
+                delta = friends_not_in_common_set(i, j, theGraph)
+                delta.remove(i)
+                delta.remove(j)
+                required = self._epsilon - fic
+                if len(delta) < required:
+                    print "Unable to satisfy connectivity constraint."
+                    return
+                    
+                to_add = []
+                for non_common in delta:
+                    if not theGraph.are_connected(i, non_common):
+                        to_add.append((i, non_common))
+                    else:
+                        to_add.append((j, non_common))
+                    required = required - 1
+                    if required == 0:
+                        break
+                    
+                theGraph.add_edges(to_add)
+        pt.tick()
+
+    pt.done()
+
+# =========================================================================
 
 def pick(vertex_id, cp):
     idx = 0
@@ -126,6 +188,8 @@ def pick(vertex_id, cp):
         
     raise Exception("Lookup failed.")
 
-
+# =========================================================================
+# Kleinberg generator.
+# =========================================================================
 def Kleinberg(n, p, q, r):
     pass

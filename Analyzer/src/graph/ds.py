@@ -1,7 +1,5 @@
-'''
-Created on Mar 19, 2010
-
-@author: giuliano
+''' 
+Graph data structures. 
 '''
 class Edge:
     

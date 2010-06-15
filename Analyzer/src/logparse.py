@@ -3,7 +3,7 @@ Module for parsing logs and gathering statistics on node load.
 
 @author: giuliano
 '''
-from util.misc import file_lines, FileProgressTracker
+from util.misc import file_lines, FileProgressTracker, FileWrapper
 import bz2
 import gzip
 import sys
@@ -102,17 +102,30 @@ def open_output(output):
         return open(os.path.realpath(output), "w")
     
 #==========================================================================
+# Log decoders.
+#==========================================================================
 
 class LogDecoder:
-    ''' LogDecoder knows how to decode a text log file. '''
+    ''' LogDecoder knows how to decode a text log file.'''
     
     def __init__(self, verbose, input, filetype=None):
         self._input = input
         self._verbose = verbose
         self._filetype = filetype
         
-        
     def decode(self, visitor):
+        ''' Decodes the log file, calling back a visitor for each relevant
+        piece of content.
+        
+        The visitor should provide three methods:
+        
+        - message(id, seq, send_id, receiver_id, latency, sim_time)
+        - duplicate(id, seq, send_id, receiver_id, sim_time)
+        - round_end(number)
+        
+        called when a message is delivered, when a duplicate is received,
+        and when a round ends, respectively. 
+        '''
         with self.__open_file__(self._input) as file:
             
             progress_tracker = FileProgressTracker("parsing log", file)
@@ -132,12 +145,12 @@ class LogDecoder:
                        
     
     def __process_receive__(self, visitor, line, duplicate):
-        type, id, seq, send_id, receiver_id, latency, sim_time = line.split(" ")
+        id, seq, send_id, receiver_id, latency, sim_time = [int(i) for i in line.split(" ")[1:]]
         if (duplicate):
             visitor.duplicate(id, seq, send_id, receiver_id, sim_time)
         else:
             visitor.message(id, seq, send_id, receiver_id, latency, sim_time)
-
+            
      
     def __process_round_boundary__(self, visitor, line):
         m = re.search('[0-9]+', line)
@@ -171,6 +184,8 @@ class LogDecoder:
         
         return self._filetype
 
+#==========================================================================
+# Information printers.
 #==========================================================================
 
 class SquashStatisticsPrinter:
@@ -216,6 +231,8 @@ class DataPagePrinter:
                 for key in keys:
                     print >> file, key,data_page[key]
 
+#==========================================================================
+# Visitors.
 #==========================================================================
 
 class Statistics:
@@ -294,9 +311,7 @@ class Statistics:
         
         return data
 
-#==========================================================================
 # Constants for NodeData.
-#==========================================================================
 DELIVERED = 0
 DUPLICATES = 1
 LATENCY = 2 
@@ -406,24 +421,6 @@ class NodeData:
         if not self._per_round.has_key(round):
             return 0
         return self._per_round[round][selector]
-      
-#==========================================================================
-
-class FileWrapper:
-    ''' Adapter for allowing bz2 and gzip files to be used within
-    \"with\" constructs. ''' 
-    
-    def __init__(self, delegate):
-        self._delegate = delegate
-        
-    def __enter__(self):
-        return self
-    
-    def __iter__(self):
-        return self._delegate.__iter__()
-    
-    def __exit__(self, type, value, traceback):
-        self._delegate.close()
          
 #==========================================================================
 # Transformers for parsing logs.
