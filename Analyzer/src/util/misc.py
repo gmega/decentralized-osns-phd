@@ -68,6 +68,38 @@ class ProgressTracker(object):
     @classmethod
     def set_detail(cls, mode):
         ProgressTracker.mode = mode
+        
+        
+class FileProgressTracker():
+    
+    def __init__(self, task_title, file):
+        self._task_title = task_title
+        self._file = file
+        self._last_position = None
+        self._tracker = None
+        
+    
+    def start_task(self):
+        self.__get_tracker__().start_task()
+
+    
+    def tick(self):
+        current_position = file.tell()
+        self._tracker.multi_tick(current_position - last_position)
+        self._last_position = current_position
+
+
+    def __get_tracker__(self):
+        if self._tracker is None:
+            stat_info = os.stat(self._file.name)
+            self._tracker = ProgressTracker(self._task_title, stat_info.st_size)
+            self._last_position = self._file.tell()
+        
+        return self._tracker
+        
+    
+    def done(self):
+        self._tracker.done()
 
 
 class BatchedGraphOperator(object):

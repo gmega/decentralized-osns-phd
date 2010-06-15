@@ -9,7 +9,7 @@ import util
 
 from igraph import *
 from logging import *
-from util.misc import ProgressTracker, igraph_neighbors
+from util.misc import ProgressTracker, igraph_neighbors, FileProgressTracker
 from resources import *
 
 # Global module _logger.
@@ -44,13 +44,10 @@ class GraphLoader(object):
         
         with open(self._file_name, "r") as file:
 
-            stat_info = os.stat(self._file_name)
-            progress_tracker = ProgressTracker("reading graph", stat_info.st_size)
+            progress_tracker = FileProgressTracker("reading graph", file)
             progress_tracker.start_task()
-            last_position = 0
             
             decoder = self._decoder(file)
-    
             for source, target, payload in decoder:
                 source = self.__add_vertex__(int(source), id_table)
                 
@@ -62,9 +59,7 @@ class GraphLoader(object):
                 if not payload is None:
                     weight_list.append(int(payload))
                 
-                current_position = file.tell()
-                progress_tracker.multi_tick(current_position - last_position)
-                last_position = current_position
+                progress_tracker.tick()
             
             # Now transfers the data into the iGraph representation.
             graph = self.__igraph_create__(id_table, black_set, edge_list, weight_list)

@@ -3,7 +3,7 @@ Module for parsing logs and gathering statistics on node load.
 
 @author: giuliano
 '''
-from util.misc import file_lines
+from util.misc import file_lines, FileProgressTracker
 import bz2
 import gzip
 import sys
@@ -50,20 +50,15 @@ def _main(args):
             psyco.full()
         except ImportError:
             print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
-            
+    
+    decoder = LogDecoder(options.verbose, args[0])
     printers = configure_printers(options.statistics.split(","))
-    rounds = parse_rounds(options.rounds)
-        
-    statistics = Statistics(rounds)
-    with open_file(args[0], options.filetype) as file:
-        for line in file:
-            # Message lines start with an M.
-            if line[0] == 'M':
-                process_receive(statistics, line, line[1] == 'D')
-            # Round markers start with an R.
-            elif line[0] == 'R':
-                process_round_boundary(options, statistics, line)
-                
+    statistics = Statistics(parse_rounds(options.rounds))
+    
+    # Decodes and collects statistics.
+    decoder.decode(statistics)
+    
+    # Prints the results.
     for printer in printers:
         printer.do_print(statistics)
 
@@ -99,50 +94,84 @@ def configure_printers(specs):
 
 #==========================================================================
 
-def process_receive(statistics, line, duplicate):
-    type, id, seq, send_id, receiver_id, latency = line.split(" ")
-    node = statistics.node_statistics(int(receiver_id))
-    if (duplicate):
-        node.duplicate_receive()
-    else:
-        node.message_receive(int(latency))
-    return node
-
-#==========================================================================
-
-def process_round_boundary(options, statistics, line):
-    m = re.search('[0-9]+', line)
-    number = int(m.group(0))
-    if number > 0:
-        statistics.end_round(number)
-    if (options.verbose):
-        print >> sys.stderr, "[Round", number, "processed]"
-
-
-#==========================================================================
-
-def open_file(file_name, filetype):
-        
-    handle = None
-    if (filetype == "plain"):
-        handle = open(file_name, "r")
-    elif (filetype == "bz2"):
-        handle = FileWrapper(bz2.BZ2File(file_name, "r"))
-    elif (filetype == "gzip"):
-        handle = FileWrapper(gzip.open(file_name, "r"))
-    else:
-        raise Error("Unsupported type " + filetype + ".")
-    
-    return handle
-
-#==========================================================================
-
 def open_output(output):
     
     if output is None:
         return sys.stdout
     else:
         return open(os.path.realpath(output), "w")
+    
+#==========================================================================
+
+class LogDecoder:
+    ''' LogDecoder knows how to decode a text log file. '''
+    
+    def __init__(self, verbose, input, filetype=None):
+        self._input = input
+        self._verbose = verbose
+        self._filetype = filetype
+        
+        
+    def decode(self, visitor):
+        with self.__open_file__(args[0], options.filetype) as file:
+            
+            progress_tracker = FileProgressTracker("parsing log", file)
+            progress_tracker.start_task()
+            
+            for line in file:
+                # Message lines start with an M.
+                if line[0] == 'M':
+                    self.__process_receive__(visitor, line, line[1] == 'D')
+                # Round markers start with an R.
+                elif line[0] == 'R':
+                    self.__process_round_boundary__(visitor, options, line)
+                    
+                progress_tracker.tick()
+            
+            progress_tracker.done()
+                       
+    
+    def __process_receive__(visitor, line, duplicate):
+        type, id, seq, send_id, receiver_id, latency, sim_time = line.split(" ")
+        node = statistics.__descriptor__(int(receiver_id))
+        if (duplicate):
+            visitor.duplicate(id, seq, send_id, receiver_id, sim_time)
+        else:
+            visitor.message(id, seq, send_id, receiver_id, latency, sim_time)
+        return node
+     
+     
+    def __process_round_boundary__(visitor, options, statistics, line):
+        m = re.search('[0-9]+', line)
+        number = int(m.group(0))
+        if number > 0:
+            visitor.round_end(number)
+
+        
+    def __open_file__(file_name):
+        handle = None
+        filetype = self.__get_filetype__()
+        if (filetype == "text" or filetype =="txt"):
+            handle = open(file_name, "r")
+        elif (filetype == "bz2"):
+            handle = FileWrapper(bz2.BZ2File(file_name, "r"))
+        elif (filetype == "gz"):
+            handle = FileWrapper(gzip.open(file_name, "r"))
+        else:
+            raise Exception("Unsupported type " + filetype + ".")
+    
+        return handle
+    
+    
+    def __get_filetype__(self):
+        if self._filetype is None:
+            idx = self._input.find(".")
+            if idx == -1:
+                raise Exception("Cannot guess file type of " + self._input + ".")
+        
+            self._filetype = self._input[idx+1:]
+        
+        return self._filetype
 
 #==========================================================================
 
@@ -192,25 +221,24 @@ class DataPagePrinter:
 #==========================================================================
 
 class Statistics:
+    
         
     def __init__(self, special_rounds=set()):
         self._descriptors = {}
         self._special_rounds = special_rounds
         self._current_round = 1
-        
     
-    def node_statistics(self, id):
-        descriptor = None
-        if id in self._descriptors:
-            descriptor = self._descriptors[id]
-        else:
-            descriptor = NodeData(id, self._special_rounds)
-            self._descriptors[id] = descriptor
-            
-        return descriptor
+    #======================================================================
+    # Log visitor interface.
+    #======================================================================
     
+    def duplicate(self, id, seq, send_id, receiver_id, sim_time):
+        self.__descriptor__(id).duplicate_receive()
     
-    def end_round(self, round):
+    def message(self, id, seq, send_id, receiver_id, latency, sim_time):
+        self.__descriptor__(id).message_receive(latency)
+    
+    def round_end(self, round):
         if round != self._current_round:
             raise Exception("Missing round markers (expected " + str(self._rounds) + ", got " + str(round) + ").")
         
@@ -218,6 +246,10 @@ class Statistics:
             node.advance_round(self._current_round)
         
         self._current_round += 1
+        
+    #======================================================================
+    # Public.
+    #======================================================================
 
     def statistics(self, statistic):
         if len(self._special_rounds) == 0:
@@ -227,9 +259,23 @@ class Statistics:
                 yield ("Round " + str(i) +" [" + statistic + "]", 
                        self.__statistics__(statistic, i))
 
+    #==========================================================================
+    # Internal.
+    #==========================================================================
+    
+    def __descriptor__(self, id):
+        descriptor = None
+        if id in self._descriptors:
+            descriptor = self._descriptors[id]
+        else:
+            descriptor = NodeData(id, self._special_rounds)
+            self._descriptors[id] = descriptor
+            
+        return descriptor
+
     def __statistics__(self, statistic, round=None):
         data = {}
-        for node in self:
+        for node in  self._descriptors.itervalues():
             value = 0
             if statistic == MODE_LATENCY:
                 load = float(node.load(round, type=MSG_DELIVERED))
@@ -249,9 +295,6 @@ class Statistics:
             data[node.id] = value
         
         return data
-
-    def __iter__(self):
-        return self._descriptors.itervalues()
 
 #==========================================================================
 # Constants for NodeData.
@@ -412,6 +455,41 @@ class ConvergenceAnalyzer:
         
         print "No convergence." 
                 
+#==========================================================================
+
+class LoadBySender:
+    
+    def __init__(self, log, receiver):
+        self._log = log
+        self._receiver = receiver
+        self._load_statistics = {}
+    
+    
+    def execute(self):
+        decoder = LogDecoder(self._log)
+        decoder.decode(self)
+        for sender,load in self._load_statistics.iteritems():
+            print sender,load
+    
+    
+    def message(id, seq, send_id, receiver_id, latency, sim_time):
+        self.__process__(send_id, receiver_id)
+    
+    
+    def duplicate(id, seq, send_id, receiver_id, sim_time):
+        self.__process__(send_id, receiver_id)
+
+
+    def __process__(self, send_id, receiver_id):
+        if receiver_id != self._receiver:
+            return
+        counter = self._load_statistics.setdefault(send_id, 0)
+        self._load_statistics[send_id] = counter + 1
+
+
+    def round_end(self, number):
+        pass
+
 #==========================================================================
 
 if __name__ == '__main__':
