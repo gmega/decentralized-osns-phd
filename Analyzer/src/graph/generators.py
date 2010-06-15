@@ -174,7 +174,6 @@ def IrregularlyClusteredNC(n, cp, epsilon=0, neighborhood=False, is_sane = lambd
                     
                 theGraph.add_edges(to_add)
         pt.tick()
-
     pt.done()
 
 # =========================================================================
@@ -187,6 +186,39 @@ def pick(vertex_id, cp):
         idx = idx + size
         
     raise Exception("Lookup failed.")
+
+# =========================================================================
+
+class IrregularlyClusteredCLI:
+    ''' Command-line binding to IrregularlyClusteredNC.'''
+    
+    # =====================================================================
+
+    def __init__(self, n, pairs, epsilon, print_clusterings=False, neighborhood=False):
+        self._pairs = eval(pairs)
+        self._n = int(n)
+        self._epsilon = int(epsilon)
+        self._neighborhood = bool(neighborhood)
+        self._print_clusterings=bool(print_clusterings)
+
+    # =====================================================================
+
+    def execute(self):
+        theGraph = IrregularlyClusteredNC(self._n, self._pairs, self._epsilon, self._neighborhood) 
+        
+        if self._print_clusterings:
+            self.__print_clusterings__(theGraph)
+        encoder = AdjacencyListEncoder(sys.stdout)
+        encoder.encode(theGraph)
+
+    # =====================================================================    
+        
+    def __print_clusterings__(self, graph):
+        index = 0
+        for size, prob in self._pairs:
+            subg = graph.subgraph(range(index, index + size))
+            print >> sys.stderr, "Clustering (", index, (index + size - 1), "):", subg.transitivity_avglocal_undirected()
+            index = index + size
 
 # =========================================================================
 # Kleinberg generator.

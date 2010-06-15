@@ -81,34 +81,7 @@ class SnowballSampleGraph:
         encoder_inst.encode(g)
         
         
-class GenIrregularlyClustered:
-    
-    
-    def __init__(self, n, pairs, epsilon, print_clusterings=False, neighborhood=False):
-        self._pairs = eval(pairs)
-        self._n = int(n)
-        self._epsilon = int(epsilon)
-        self._neighborhood = bool(neighborhood)
-        self._print_clusterings=bool(print_clusterings)
-    
-    
-    def execute(self):
-
-                    
-        if self._print_clusterings:
-            self.__print_clusterings__(theGraph)
-        
-        encoder = AdjacencyListEncoder(sys.stdout)
-        encoder.encode(theGraph)
-        
-        
-    def __print_clusterings__(self, graph):
-        index = 0
-        for size, prob in self._pairs:
-            subg = graph.subgraph(range(index, index + size))
-            print >> sys.stderr, "Clustering (", index, (index + size - 1), "):", subg.transitivity_avglocal_undirected()
-            index = index + size
-        
+       
 class FriendsInCommonCheck:
     
     
@@ -131,18 +104,3 @@ class FriendsInCommonCheck:
         print "Sane."
     
 
-def friends_not_in_common_set(v1, v2, g):
-    v1_set = set(igraph_neighbors(v1, g))
-    v2_set = set(igraph_neighbors(v2, g))
-    v1_set.symmetric_difference_update(v2_set)
-    return v1_set
-
-def friends_in_common_set(v1, v2, g):
-    v1_set = set(igraph_neighbors(v1, g))
-    v2_set = set(igraph_neighbors(v2, g))
-    v1_set.intersection_update(v2_set)
-    return v1_set
-
-def friends_in_common(v1, v2, g):
-    return len(friends_in_common_set(v1, v2, g))
-            

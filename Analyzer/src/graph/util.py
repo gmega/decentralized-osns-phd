@@ -50,6 +50,32 @@ def igraph_init_attributes(graph):
     return graph
 
 # =========================================================================
+# Loose analysis functions.
+# =========================================================================
+
+def neighbors_not_in_common(v1, v2, g):
+    ''' Returns the symmetric difference of the neighbor sets.'''
+    v1_set = set(igraph_neighbors(v1, g))
+    v2_set = set(igraph_neighbors(v2, g))
+    v1_set.symmetric_difference_update(v2_set)
+    return v1_set
+
+# =========================================================================
+
+def neighbors_in_common(v1, v2, g):
+    ''' Returns the intersection of the neighbor sets.'''
+    v1_set = set(igraph_neighbors(v1, g))
+    v2_set = set(igraph_neighbors(v2, g))
+    v1_set.intersection_update(v2_set)
+    return v1_set
+
+# =========================================================================
+
+def count_neighbors_in_common(v1, v2, g):
+    ''' Returns the size of the intersection of the neighbor sets. '''
+    return len(neighbors_in_common(v1, v2, g))
+
+# =========================================================================
 # Misc stuff. 
 # =========================================================================
 
@@ -110,7 +136,7 @@ class BatchedGraphOperator(object):
         if do_add:
             to_add.add(tuple)
         
-        
+    
     def are_connected(self, source, target):
         if self.__in__(source, target, self._add_set):
             return True

@@ -3,17 +3,86 @@ Created on 16/lug/2009
 
 @author: giuliano
 '''
-from util.misc import ProgressTracker, igraph_neighbors
-from util.reflection import get_object
 from graph_codecs import GraphLoader
 import igraph
 import sys
-""" Statistics and metrics functions """
 
 import logging
+from graph.util import igraph_neighbors, neighbors_in_common,\
+    count_neighbors_in_common
 
 logger = logging.getLogger(__name__)
 
+# =========================================================================
+
+class SharedHubs:
+    ''' Counts the shared hubs in a neighborhood. '''   
+ 
+    def __init__(self, input, percentile=0.9, decoder="graph_codecs.AdjacencyListDecoder"):
+        self._input = input
+        self._percentile = percentile
+        self._decoder = get_object(decoder)
+
+        
+    def execute(self):
+        g = GraphLoader(self._input, self._decoder).load_graph()
+        counts = self.__compute_counts__(g)
+        for i in range(0, len(counts)):
+            print i,counts[i]
+
+        
+    def __compute_counts__(self, g):
+        
+        # Counters for hubs.
+        counts = [0]*len(g.vs)
+        
+        tracker = ProgressTracker("computing shared hubs", len(g.vs))
+        tracker.start_task()
+        
+        for vertex in range(0, len(g.vs)):
+            neighbors = igraph_neighbors(vertex, g)
+            subgraph = g.subgraph(neighbors)
+            the_list = [(i, self.__centrality__(subgraph, i)) for i in range(0, len(subgraph.vs))]
+            
+            # Ranks by centrality.
+            the_list.sort(cmp=lambda x,y: y[1] - x[1])
+            # Counts the top percentile.
+            top = int(ceil((1.0 - self._percentile)*len(the_list)))
+            for i in range(0, top):
+                counts[subgraph.vs[the_list[i][0]][IGRAPH_ID]] += 1
+            
+            tracker.tick()
+            
+        tracker.done()
+                
+        return counts
+    
+
+    def __centrality__(self, g, idx):
+        return g.degree(idx)
+
+# =========================================================================
+
+class OuterDegree:
+    
+    def __init__(self, input, decoder="graph_codecs.AdjacencyListDecoder", vertex_list=None):
+        self._loader = GraphLoader(input, get_object(decoder))
+        self._vertex_list = vertex_list
+        
+    def execute(self):
+        graph = self._loader.load_graph()
+        
+        if vertex_list is None:
+            vertex_list = range(0, length(graph.vs))
+            
+        for vertex_id in vertex_list:
+            for neighbor in igraph_neighbors(vertex_id, graph):
+                print vertex_id,neighbor,count_neighbors_in_common(vertex_id, neighbor)
+                
+
+# =========================================================================
+# Measures.
+# =========================================================================
 def avg_measure(id_list, computer):
     
     tracker = ProgressTracker("computing avg. measure [%s]" % computer.__class__.__name__, len(id_list)) 
@@ -35,6 +104,7 @@ def avg_measure(id_list, computer):
     tracker.done()
     return total / float(sample_size)
 
+# =========================================================================
 
 class FriendConnectednessComputer(object):
     
@@ -49,7 +119,8 @@ class FriendConnectednessComputer(object):
             return None
         subgraph = self.graph.subgraph(neighbors)
         return 1.0/len(subgraph.clusters())
-    
+
+# =========================================================================    
     
 class DisconnectivityComputer(object):
 
@@ -89,6 +160,8 @@ class DisconnectivityComputer(object):
         
         return max_idx
 
+# =========================================================================
+
 class IGraphDegreeComputer(object):
 
     def __init__(self, graph):
@@ -104,7 +177,7 @@ class IGraphDegreeComputer(object):
             
         return self.cache[vertex]
 
-
+# =========================================================================
 
 class IGraphTransitivityComputer(object):
 
@@ -121,6 +194,7 @@ class IGraphTransitivityComputer(object):
             
         return self.cache[vertex]
 
+# =========================================================================
 
 class NodeCountingClusteringComputer(object):
 
@@ -155,3 +229,5 @@ class NodeCountingClusteringComputer(object):
                     triangles = triangles + 1
         
         return (2*float(triangles))/float(triplets)
+
+# =========================================================================
