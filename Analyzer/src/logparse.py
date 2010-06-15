@@ -113,7 +113,7 @@ class LogDecoder:
         
         
     def decode(self, visitor):
-        with self.__open_file__(args[0], options.filetype) as file:
+        with self.__open_file__(self._input) as file:
             
             progress_tracker = FileProgressTracker("parsing log", file)
             progress_tracker.start_task()
@@ -124,31 +124,29 @@ class LogDecoder:
                     self.__process_receive__(visitor, line, line[1] == 'D')
                 # Round markers start with an R.
                 elif line[0] == 'R':
-                    self.__process_round_boundary__(visitor, options, line)
+                    self.__process_round_boundary__(visitor, line)
                     
                 progress_tracker.tick()
             
             progress_tracker.done()
                        
     
-    def __process_receive__(visitor, line, duplicate):
+    def __process_receive__(self, visitor, line, duplicate):
         type, id, seq, send_id, receiver_id, latency, sim_time = line.split(" ")
-        node = statistics.__descriptor__(int(receiver_id))
         if (duplicate):
             visitor.duplicate(id, seq, send_id, receiver_id, sim_time)
         else:
             visitor.message(id, seq, send_id, receiver_id, latency, sim_time)
-        return node
+
      
-     
-    def __process_round_boundary__(visitor, options, statistics, line):
+    def __process_round_boundary__(self, visitor, line):
         m = re.search('[0-9]+', line)
         number = int(m.group(0))
         if number > 0:
             visitor.round_end(number)
 
         
-    def __open_file__(file_name):
+    def __open_file__(self, file_name):
         handle = None
         filetype = self.__get_filetype__()
         if (filetype == "text" or filetype =="txt"):
@@ -459,24 +457,24 @@ class ConvergenceAnalyzer:
 
 class LoadBySender:
     
-    def __init__(self, log, receiver):
-        self._log = log
-        self._receiver = receiver
+    def __init__(self, logfile, receiver):
+        self._log = logfile
+        self._receiver = int(receiver)
         self._load_statistics = {}
     
     
     def execute(self):
-        decoder = LogDecoder(self._log)
+        decoder = LogDecoder(True, self._log)
         decoder.decode(self)
         for sender,load in self._load_statistics.iteritems():
             print sender,load
     
     
-    def message(id, seq, send_id, receiver_id, latency, sim_time):
+    def message(self, id, seq, send_id, receiver_id, latency, sim_time):
         self.__process__(send_id, receiver_id)
     
     
-    def duplicate(id, seq, send_id, receiver_id, sim_time):
+    def duplicate(self, id, seq, send_id, receiver_id, sim_time):
         self.__process__(send_id, receiver_id)
 
 

@@ -84,8 +84,8 @@ class FileProgressTracker():
 
     
     def tick(self):
-        current_position = file.tell()
-        self._tracker.multi_tick(current_position - last_position)
+        current_position = self._file.tell()
+        self._tracker.multi_tick(current_position - self._last_position)
         self._last_position = current_position
 
 
