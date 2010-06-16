@@ -117,6 +117,9 @@ class FileWrapper:
     
     def __exit__(self, type, value, traceback):
         self._delegate.close()
+                
+    def __getattr__(self, name):
+        return getattr(self._delegate, name)
 
 
 class NullList:

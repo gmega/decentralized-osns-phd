@@ -50,35 +50,38 @@ def run_pss(options, args):
     # Defines user variables.
     parser = PSSOperationParser() 
     if not options.vars is None:
-        parser.set_vars(parse_vars(options))
+        parser.set_vars(parse_vars_from_options(options))
         
     # Parse and dispatch all operations.
     PSSEngine().run(parser.parse(concat_scripts(args)))
-
     
 def run_python(options, args):
+    instantiate_python(options, args).execute()
+
+def instantiate_python(options, args):
     if len(args) > 1:
         print >> sys.stderr, "Error: only one Python script should be specified."
         return
 
     executable = None
     try:
-        py_argmatcher = PyArgMatcher(parse_vars(options), args[0])
+        py_argmatcher = PyArgMatcher(parse_vars_from_options(options), args[0])
         callable = get_object(args[0])
         argument_dict = match_arguments(callable, py_argmatcher)
         executable = callable(**argument_dict)
     except Exception:
         print >> sys.stderr, "Error while running Python script."
         raise
+    
+    return executable
 
-    executable.execute()
-
-
-def parse_vars(options):
-    if not hasattr(options, "vars"):
+def parse_vars_from_options(options):
+    if not hasattr(options, "vars") or options.vars is None:
         return {}
     
-    var_string = options.vars   
+    return parse_vars(options.vars)
+
+def parse_vars(var_string):
     var_dict = {}
     for var_pair in var_string.split(":"):
         key, val = var_pair.split("=")

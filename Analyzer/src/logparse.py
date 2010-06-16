@@ -3,103 +3,20 @@ Module for parsing logs and gathering statistics on node load.
 
 @author: giuliano
 '''
-from util.misc import file_lines, FileProgressTracker, FileWrapper
 import bz2
 import gzip
 import sys
-from optparse import OptionParser
 import re
 import cProfile
-from io import StringIO
 import os
 import math
+import logparse
 
-#==========================================================================
-# Constants.
-#==========================================================================
-
-MODE_LOAD = "load"
-MODE_DUPS = "duplicates"
-MODE_LATENCY = "latency"
-
-#==========================================================================
-
-def _main(args):
-    
-    parser = OptionParser(usage="%prog [options] logfile")
-    parser.add_option("-f", "--filetype", action="store", type="choice", choices=("plain", "gzip", "bz2"), dest="filetype", default="plain",
-                      help="one of {plain, gzip, bzip2}. Defaults to pss.")
-    parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:squash", 
-                      help="list of statistics to be printed.")
-    parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
-                      help="prints statistics for a number of rounds.")
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
-    parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enables psyco.")
-
-    (options, args) = parser.parse_args()
-    
-    if len(args) == 0:
-        print >> sys.stderr, "Error: missing log file."
-        parser.print_help()
-        sys.exit(1)
-        
-    # Imports psyco.
-    if options.psyco:
-        try: 
-            import psyco 
-            psyco.full()
-        except ImportError:
-            print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
-    
-    decoder = LogDecoder(options.verbose, args[0])
-    printers = configure_printers(options.statistics.split(","))
-    statistics = Statistics(parse_rounds(options.rounds))
-    
-    # Decodes and collects statistics.
-    decoder.decode(statistics)
-    
-    # Prints the results.
-    for printer in printers:
-        printer.do_print(statistics)
-
-#==========================================================================
-                
-def parse_rounds(specs):
-    rounds = set()
-    if not specs is None:
-        for i in specs.split("-"):
-            rounds.add(int(i))
-    
-    return rounds
-
-#==========================================================================
-
-def configure_printers(specs):
-    printers = []
-    for spec in specs:
-        spec_part = spec.split(":")
-        
-        output = None
-        if len(spec_part) == 3:
-            output = spec_part[2]
-        
-        if spec_part[1] == "average":
-            printers.append(SquashStatisticsPrinter(spec_part[0], output, True))
-        elif spec_part[1] == "total":
-            printers.append(SquashStatisticsPrinter(spec_part[0], output, False))
-        elif spec_part[1] == "pernode":
-            printers.append(DataPagePrinter(spec_part[0], output))
-
-    return printers
-
-#==========================================================================
-
-def open_output(output):
-    
-    if output is None:
-        return sys.stdout
-    else:
-        return open(os.path.realpath(output), "w")
+from misc.util import FileProgressTracker, FileWrapper
+from optparse import OptionParser
+from io import StringIO
+from misc.reflection import get_object
+from main import parse_vars, parse_vars_from_options
     
 #==========================================================================
 # Log decoders.
@@ -235,11 +152,11 @@ class DataPagePrinter:
 # Visitors.
 #==========================================================================
 
-class Statistics:
-    
-        
-    def __init__(self, special_rounds=set()):
-        self._descriptors = {}
+class StatisticTracker:
+            
+    def __init__(self, statistics, special_rounds=set()):
+        self._statistics = statistics
+        self._pernode = {}
         self._special_rounds = special_rounds
         self._current_round = 1
     
@@ -248,16 +165,30 @@ class Statistics:
     #======================================================================
     
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
-        self.__descriptor__(id).duplicate_receive()
-    
+        for statistic in self._statistics:
+            try:
+                statistic.duplicate(self.__descriptor__(id), id, seq, send_id, receiver_id, sim_time)
+            except AttributeError:
+                pass
+            
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
-        self.__descriptor__(id).message_receive(latency)
+        for statistic in self._statistics:
+            try:
+                statistic.message(self.__descriptor__(id), id, seq, send_id, receiver_id, latency, sim_time)
+            except AttributeError:
+                pass
     
     def round_end(self, round):
         if round != self._current_round:
             raise Exception("Missing round markers (expected " + str(self._rounds) + ", got " + str(round) + ").")
         
-        for node in self:
+        for statistic in self._statistics:
+            try:
+                statistic.advance_round(self._current_round)
+            except AttributeError:
+                pass
+        
+        for node in self._pernode.values():
             node.advance_round(self._current_round)
         
         self._current_round += 1
@@ -280,53 +211,31 @@ class Statistics:
     
     def __descriptor__(self, id):
         descriptor = None
-        if id in self._descriptors:
-            descriptor = self._descriptors[id]
+        if id in self._pernode:
+            descriptor = self._pernode[id]
         else:
-            descriptor = NodeData(id, self._special_rounds)
-            self._descriptors[id] = descriptor
+            descriptor = NodeStatistics(id, self._special_rounds, self._statistics)
+            self._pernode[id] = descriptor
             
         return descriptor
 
-    def __statistics__(self, statistic, round=None):
-        data = {}
-        for node in  self._descriptors.itervalues():
-            value = 0
-            if statistic == MODE_LATENCY:
-                load = float(node.load(round, type=MSG_DELIVERED))
-                latency = node.latency(round)
-                # Sanity check
-                if load == 0:
-                    if latency != 0:
-                        raise Exception("Assertion failure.")
-                    else:
-                        load = 1.0
-                value = latency/load
-            elif statistic == MODE_DUPS:
-                value = node.load(round, type=MSG_DUPLICATE)
-            else:
-                value = node.load(round)
-            
-            data[node.id] = value
+    def __statistics__(self, statistic_key, round=None):
+        statistic = None
+        for candidate in self._statistics:
+            if candidate.KEY == statistic_key:
+                statistic = candidate
+                break
         
-        return data
+        assert not statistic is None
+        return statistic.populate_sheet({}, self._pernode, round)
 
-# Constants for NodeData.
-DELIVERED = 0
-DUPLICATES = 1
-LATENCY = 2 
-    
-MSG_DELIVERED = 1
-MSG_DUPLICATE = 2
-MSG_ALL = MSG_DELIVERED | MSG_DUPLICATE
-
-class NodeData:
-    ''' NodeData accumulates information for a single node 
+class NodeStatistics:
+    ''' NodeStatistics accumulates information for a single node 
     in the network. It can store both coarse and per-round 
     aggregates. '''
     
-    def __init__(self, id, special_rounds):
-        ''' Creates a new NodeData object. 
+    def __init__(self, id, special_rounds, keys):
+        ''' Creates a new NodeStatistics object. 
         
         @param id: the ID of the network node we're mirroring.
         @param special_rounds: collection with rounds for which
@@ -339,15 +248,8 @@ class NodeData:
         
         self.id = id
         
-        # Load counters.
-        self._round_received = 0
-        self._round_duplicates = 0
-        self._total_received = 0
-        self._total_duplicates = 0
-        
-        # Latency counters.
-        self._round_latency = 0
-        self._total_latency = 0
+        self._round_counter = {}
+        self._global_counter = {}
 
         
     def advance_round(self, number):
@@ -359,69 +261,89 @@ class NodeData:
 
         # If the round is "special", store separate aggregates.
         if number in self._special_rounds:
-            self._per_round[number] = (self._round_received,
-                                       self._round_duplicates,
-                                       self._round_latency)
+            self._per_round[number] = dict(self._round_counter)
 
-        # Adds per-round counters into the total figures.
-        self._total_latency += self._round_latency
-        self._total_duplicates += self._round_duplicates
-        self._total_received += self._round_received
-       
-        # Resets the per-round aggregates.
-        self._round_latency = self._round_received = self._round_duplicates = 0
+        for statistic in self._round_counter:
+            # Adds per-round figures into global figures.
+            self.__inc_counter__(self._global_counter, statistic, self._round_counter[statistic])
+            # Resets per-round figures.
+            self._round_counter[statistic] = 0
+   
+   
+    def sum(self, statistic, value):
+        self.__inc_counter__(self._round_counter, statistic, value)
+
+        
+    def __inc_counter__(self, counters, selector, value):
+        old_value = counters.setdefault(selector, 0)
+        counters[selector] = old_value + value
 
    
-    def message_receive(self, latency):
-        ''' Called when the log reader encounters a <message receive> event.
+    def get(self, statistic, round):
+        counters = self._global_counter 
         
-        @param latency the latency figure for the received message.'''
+        if not round is None:
+            if not self._per_round.has_key(k):
+                counters = self._per_round[round]
+            else: 
+                return 0
         
-        self._round_received += 1
-        self._round_latency += latency
-
-           
-    def duplicate_receive(self):
-        ''' Called when the log reader encounters a <duplicate message> event. '''
-        
-        self._round_duplicates += 1
-    
-    
-    def latency(self, round=None):
-        ''' Returns either whole-simulation, or per-round figures for latencies.
-        
-        @param round: a round in the simulation. If None, returns the whole-simulation figures. 
-        @raise Exception: if the round was not specified for tracking at creation time.
-        @see NodeData.__init__ 
-        '''
-        
-        return self._total_latency if round == None else self.__get__(round, LATENCY)
-    
-    
-    def load(self, round=None, type=MSG_ALL):
-        ''' Returns either whole-simulation, or per-round figures for load. Common parameters 
-        are as in the latency method.
-        
-        @param type: one of MSG_ALL, MSG_DELIVERED, or MSG_DUPLICATES to get figures for all
-        messages, delivered messages, and duplicate messages respectively.
-        
-        @return: how many messages have been received by this node, either during the whole
-        simulation or per-round. '''
-        
-        load = 0
-        if (type & MSG_DELIVERED) != 0:
-            load += self._total_received if round == None else self.__get__(round, DELIVERED)
-            
-        if (type & MSG_DUPLICATE) != 0:
-            load += self._total_duplicates if round == None else self.__get__(round, DUPLICATES)
-        
-        return load
-        
-    def __get__(self, round, selector):
-        if not self._per_round.has_key(round):
+        if not counters.has_key(statistic):
             return 0
-        return self._per_round[round][selector]
-         
+        
+        return counters[statistic]
+
+#==========================================================================
+# Statistics.
+#==========================================================================
+class LoadStatistic:
+    
+    KEY = "load"
+    
+    MSG_DELIVERED = 1
+    MSG_DUPLICATE = 2
+    MSG_ALL = MSG_DELIVERED | MSG_DUPLICATE
+    
+    def __init__(self, mode):
+        self._mode = int(mode)
+    
+    def message(self, node_stat, id, seq, send_id, receiver_id, latency, sim_time):
+        node_stat.sum(self.MSG_DELIVERED, 1)
+        node_stat.sum(self.MSG_ALL, 1)
+    
+    def duplicate(self, node_stat, id, seq, send_id, receiver_id, sim_time):
+        node_stat.sum(self.MSG_DUPLICATE, 1)
+        node_stat.sum(self.MSG_ALL, 1)
+   
+    def populate_sheet(self, sheet, node_stats, round):
+        for node_stat in node_stats:
+            sheet[node_stat.id] = node_stat.get(self._mode, round)
+            
+        return sheet
+            
+class LatencyStatistic:
+    
+    KEY = "latency"
+    
+    def __init__(self):
+        pass
+    
+    def message(self, node_stat, id, seq, send_id, receiver_id, latency, sim_time):
+        node_stat.sum(self.KEY, latency)
+    
+    def populate_sheet(self, sheet, node_stats, round):
+        for node_stat in node_stats.values():
+            delivered = float(node_stat.get(LoadStatistic.MSG_DELIVERED, round))
+            latency = node_stat.get(self.KEY, round)
+            
+            if delivered == 0:
+                assert latency != 0
+                delivered = 1.0
+                
+            sheet[node_stat.id] = latency/delivered
+        
+        return sheet
+
 #==========================================================================
 # Transformers for parsing logs.
 #==========================================================================
@@ -485,6 +407,125 @@ class LoadBySender:
     def round_end(self, number):
         pass
 
+#==========================================================================
+
+CONFIG_MAP = {"load":("load", "mode="+str(LoadStatistic.MSG_ALL)), 
+              "dups":("load", "mode="+str(LoadStatistic.MSG_DUPLICATE))}
+
+REQUIRE_MAP = {"latency":["load"]}
+
+#==========================================================================
+
+def _main(args):
+    
+    parser = OptionParser(usage="%prog [options] logfile")
+    parser.add_option("-f", "--filetype", action="store", type="choice", choices=("plain", "gzip", "bz2"), dest="filetype", default="plain",
+                      help="one of {plain, gzip, bzip2}. Defaults to plain.")
+    parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
+                      help="list of statistics to be printed.")
+    parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
+    parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
+                      help="prints statistics for a number of rounds.")
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
+    parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enables psyco.")
+
+    (options, args) = parser.parse_args()
+    
+    if len(args) == 0:
+        print >> sys.stderr, "Error: missing log file."
+        parser.print_help()
+        sys.exit(1)
+        
+    # Imports psyco.
+    if options.psyco:
+        try: 
+            import psyco 
+            psyco.full()
+        except ImportError:
+            print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
+    
+    statistics = options.statistics.split(",")
+    decoder = LogDecoder(options.verbose, args[0])
+    printers = configure_printers(statistics)
+    statistics = StatisticTracker(parse_statistics(statistics, options), parse_rounds(options.rounds))
+    
+    # Decodes and collects statistics.
+    decoder.decode(statistics)
+    
+    # Prints the results.
+    for printer in printers:
+        printer.do_print(statistics)
+
+#==========================================================================
+                
+def parse_rounds(specs):
+    rounds = set()
+    if not specs is None:
+        for i in specs.split("-"):
+            rounds.add(int(i))
+    
+    return rounds
+
+#==========================================================================
+
+def parse_statistics(specs, options):
+    stats = []
+    for spec in specs:
+        key = spec.split(":")[0]
+        stats.append(instantiate_stat(key, parse_vars_from_options(options)))
+        
+        if REQUIRE_MAP.has_key(key):
+            for requirement in REQUIRE_MAP[key]:
+                stats.append(instantiate_stat(requirement, {}))
+    
+    return stats                
+
+#==========================================================================
+
+def instantiate_stat(key, vars):
+    pars = {}
+    real_key = key
+    
+    if CONFIG_MAP.has_key(key):
+        real_key, pars = CONFIG_MAP[key]
+        pars = parse_vars(pars)
+
+    stat = real_key.title() + "Statistic"
+    stat = getattr(logparse, stat)
+    vars.update(pars)
+    
+    return stat(**vars)
+
+        
+#==========================================================================
+
+def configure_printers(specs):
+    printers = []
+    for spec in specs:
+        spec_part = spec.split(":")
+        
+        output = None
+        if len(spec_part) == 3:
+            output = spec_part[2]
+        
+        if spec_part[1] == "average":
+            printers.append(SquashStatisticsPrinter(spec_part[0], output, True))
+        elif spec_part[1] == "total":
+            printers.append(SquashStatisticsPrinter(spec_part[0], output, False))
+        elif spec_part[1] == "pernode":
+            printers.append(DataPagePrinter(spec_part[0], output))
+
+    return printers
+
+#==========================================================================
+
+def open_output(output):
+    
+    if output is None:
+        return sys.stdout
+    else:
+        return open(os.path.realpath(output), "w")
+    
 #==========================================================================
 
 if __name__ == '__main__':
