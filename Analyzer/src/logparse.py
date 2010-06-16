@@ -17,6 +17,8 @@ from optparse import OptionParser
 from io import StringIO
 from misc.reflection import get_object
 from main import parse_vars, parse_vars_from_options
+from graph.codecs import AdjacencyListDecoder, GraphLoader
+from graph.util import igraph_neighbors
     
 #==========================================================================
 # Log decoders.
@@ -24,6 +26,11 @@ from main import parse_vars, parse_vars_from_options
 
 class LogDecoder:
     ''' LogDecoder knows how to decode a text log file.'''
+    
+    SIG_TWEETED = "tweeted"
+    SIG_MESSAGE = "message"
+    SIG_DUPLICATE = "duplicate"
+    SIG_ROUND_END = "round_end"
     
     def __init__(self, verbose, input, filetype=None):
         self._input = input
@@ -49,17 +56,29 @@ class LogDecoder:
             progress_tracker.start_task()
             
             for line in file:
-                # Message lines start with an M.
-                if line[0] == 'M':
-                    self.__process_receive__(visitor, line, line[1] == 'D')
-                # Round markers start with an R.
-                elif line[0] == 'R':
-                    self.__process_round_boundary__(visitor, line)
+                try:
+                    # Tweets start with T.
+                    if line[0] == 'T':
+                        self.__process_tweet__(visitor, line)
                     
+                    # Message lines start with an M.
+                    elif line[0] == 'M':
+                        self.__process_receive__(visitor, line, line[1] == 'D')
+                        
+                    # Round markers start with an R.
+                    elif line[0] == 'R':
+                        self.__process_round_boundary__(visitor, line)
+                except AttributeError:
+                    raise
+                                        
                 progress_tracker.tick()
-            
             progress_tracker.done()
-                       
+    
+    
+    def __process_tweet__(self, visitor, line):
+        id, seq, time = [int(i) for i in line.split(" ")[1:]]
+        visitor.tweeted(id, seq, time)
+       
     
     def __process_receive__(self, visitor, line, duplicate):
         id, seq, send_id, receiver_id, latency, sim_time = [int(i) for i in line.split(" ")[1:]]
@@ -93,7 +112,7 @@ class LogDecoder:
     
     def __get_filetype__(self):
         if self._filetype is None:
-            idx = self._input.find(".")
+            idx = self._input.rfind(".")
             if idx == -1:
                 raise Exception("Cannot guess file type of " + self._input + ".")
         
@@ -164,34 +183,36 @@ class StatisticTracker:
     # Log visitor interface.
     #======================================================================
     
+    def tweeted(self, id, seq, time):
+        for statistic in self._statistics:
+            if self.__supports__(statistic, LogDecoder.SIG_TWEETED):
+                statistic.tweeted(self, id, seq, time)
+    
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
         for statistic in self._statistics:
-            try:
-                statistic.duplicate(self.__descriptor__(id), id, seq, send_id, receiver_id, sim_time)
-            except AttributeError:
-                pass
+            if self.__supports__(statistic, LogDecoder.SIG_DUPLICATE):
+                statistic.duplicate(self, id, seq, send_id, receiver_id, sim_time)
             
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
         for statistic in self._statistics:
-            try:
-                statistic.message(self.__descriptor__(id), id, seq, send_id, receiver_id, latency, sim_time)
-            except AttributeError:
-                pass
+            if self.__supports__(statistic, LogDecoder.SIG_MESSAGE):
+                statistic.message(self, id, seq, send_id, receiver_id, latency, sim_time)
     
     def round_end(self, round):
         if round != self._current_round:
             raise Exception("Missing round markers (expected " + str(self._rounds) + ", got " + str(round) + ").")
         
         for statistic in self._statistics:
-            try:
-                statistic.advance_round(self._current_round)
-            except AttributeError:
-                pass
+            if self.__supports__(statistic, LogDecoder.SIG_ROUND_END):
+                statistic.advance_round(self, self._current_round)
         
         for node in self._pernode.values():
             node.advance_round(self._current_round)
         
         self._current_round += 1
+        
+    def __supports__(self, visitor, message):
+        return hasattr(visitor, message)
         
     #======================================================================
     # Public.
@@ -209,7 +230,7 @@ class StatisticTracker:
     # Internal.
     #==========================================================================
     
-    def __descriptor__(self, id):
+    def __getitem__(self, id):
         descriptor = None
         if id in self._pernode:
             descriptor = self._pernode[id]
@@ -218,6 +239,9 @@ class StatisticTracker:
             self._pernode[id] = descriptor
             
         return descriptor
+    
+    def __iter__(self):
+        return self._pernode.itervalues()
 
     def __statistics__(self, statistic_key, round=None):
         statistic = None
@@ -227,7 +251,7 @@ class StatisticTracker:
                 break
         
         assert not statistic is None
-        return statistic.populate_sheet({}, self._pernode, round)
+        return statistic.populate_sheet({}, self, round)
 
 class NodeStatistics:
     ''' NodeStatistics accumulates information for a single node 
@@ -307,11 +331,13 @@ class LoadStatistic:
     def __init__(self, mode):
         self._mode = int(mode)
     
-    def message(self, node_stat, id, seq, send_id, receiver_id, latency, sim_time):
+    def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
+        node_stat = stat_tracker[receiver_id]
         node_stat.sum(self.MSG_DELIVERED, 1)
         node_stat.sum(self.MSG_ALL, 1)
     
     def duplicate(self, node_stat, id, seq, send_id, receiver_id, sim_time):
+        node_stat = stat_tracker[receiver_id]
         node_stat.sum(self.MSG_DUPLICATE, 1)
         node_stat.sum(self.MSG_ALL, 1)
    
@@ -320,6 +346,8 @@ class LoadStatistic:
             sheet[node_stat.id] = node_stat.get(self._mode, round)
             
         return sheet
+    
+#==========================================================================
             
 class LatencyStatistic:
     
@@ -328,11 +356,11 @@ class LatencyStatistic:
     def __init__(self):
         pass
     
-    def message(self, node_stat, id, seq, send_id, receiver_id, latency, sim_time):
-        node_stat.sum(self.KEY, latency)
+    def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
+        stat_tracker[receiver_id].sum(self.KEY, latency)
     
     def populate_sheet(self, sheet, node_stats, round):
-        for node_stat in node_stats.values():
+        for node_stat in node_stats:
             delivered = float(node_stat.get(LoadStatistic.MSG_DELIVERED, round))
             latency = node_stat.get(self.KEY, round)
             
@@ -341,6 +369,38 @@ class LatencyStatistic:
                 delivered = 1.0
                 
             sheet[node_stat.id] = latency/delivered
+        
+        return sheet
+
+#==========================================================================
+
+class LoadboundStatistic:
+    
+    KEY="loadbound"
+    
+    def __init__(self, social_network, decoder=str(AdjacencyListDecoder)):
+        self._loader = GraphLoader(social_network, get_object(decoder))
+        self._sn = None
+        
+    
+    def tweeted(self, stat_tracker, id, seq, sim_time):
+        sn = self.__social_network__()
+        neighbors = igraph_neighbors(id, sn)
+        
+        for neighbor in neighbors:
+            node_stat = stat_tracker[neighbor]
+            node_stat.sum(self.KEY, 1)
+            
+            
+    def __social_network__(self):
+        if self._sn is None:
+            self._sn = self._loader.load_graph()
+        
+        return self._sn
+
+    def populate_sheet(self, sheet, stat_tracker, round):
+        for node_stat in stat_tracker:
+            sheet[node_stat.id] = node_stat.get(self.KEY, round)        
         
         return sheet
 
