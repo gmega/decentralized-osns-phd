@@ -6,8 +6,6 @@ import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.PermutingCache;
-import it.unitn.disi.utils.SharedBuffer;
-import it.unitn.disi.utils.SharedBuffer.BufferHandle;
 
 import java.util.Comparator;
 import java.util.HashMap;

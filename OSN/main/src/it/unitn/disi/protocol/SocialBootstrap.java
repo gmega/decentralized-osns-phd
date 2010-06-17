@@ -115,7 +115,7 @@ public class SocialBootstrap implements NodeInitializer, Control {
 		int bSize = fBoostrapSize;
 		int degree = sps.degree();
 
-		NodeRegistry register = NodeRegistry.getInstance();
+		INodeRegistry register = NodeRegistry.getInstance();
 
 		for (int nodeId : sn.getNeighbors()) {
 

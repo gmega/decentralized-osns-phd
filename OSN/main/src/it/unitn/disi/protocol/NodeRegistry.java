@@ -1,45 +1,76 @@
 package it.unitn.disi.protocol;
 
+import it.unitn.disi.utils.MiscUtils;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 
+import peersim.config.Configuration;
 import peersim.core.Node;
 
-/**
- * {@link NodeRegistry} is a hack. It is simply an easily-accessible
- * {@link HashMap} used to reversely map node ids into their {@link Node}
- * objects.
- * 
- * @author giuliano
- */
 public class NodeRegistry {
-	private final HashMap<Object, Node> fId2Node = new HashMap<Object, Node>();
-
-	private static final NodeRegistry fInstance = new NodeRegistry();
-
-	public static NodeRegistry getInstance() {
+	
+	private static final String PAR_NODE_REGISTRY = "it.unitn.disi.registry";
+	
+	private static final INodeRegistry fInstance;
+	
+	static {
+		if(Configuration.getString(PAR_NODE_REGISTRY).equals("contiguous")){
+			fInstance = new ArrayListNodeRegistry();
+		} else {
+			fInstance = new HashMapNodeRegistry();
+		}
+	}
+	
+	public static INodeRegistry getInstance() {
 		return fInstance;
 	}
+	
+	private NodeRegistry(){ }
+}
 
-	private NodeRegistry() {
-	}
-
+abstract class AbstractNodeRegistry implements INodeRegistry {
+	
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.protocol.INodeRegistry#registerNode(peersim.core.Node)
+	 */
 	public void registerNode(Node node) {
 		if (contains(node.getID())) {
 			throw new RuntimeException("Duplicate key detected ("
 					+ node.getID() + ").");
 		}
-		fId2Node.put(node.getID(), node);
+		store(node.getID(), node);
 	}
 
-	public Node getNode(long id) {
-		return fId2Node.get(id);
+	protected abstract void store(long id, Node node);
+}
+
+class HashMapNodeRegistry extends AbstractNodeRegistry {
+	
+	private final HashMap<Object, Node> fId2Node = new HashMap<Object, Node>();
+	HashMapNodeRegistry() { }
+
+	protected void store(long id, Node node) { fId2Node.put(id, node); }
+	public Node getNode(long id) { return fId2Node.get(id); }
+	public Node removeNode(long id){ return fId2Node.remove(id); }
+	public boolean contains(long id) { return fId2Node.containsKey(id); }
+}
+
+
+class ArrayListNodeRegistry extends AbstractNodeRegistry {
+	private final ArrayList<Node> fId2Node = new ArrayList<Node>();
+	ArrayListNodeRegistry() { }
+
+	protected void store(long id, Node node) {
+		int int_id = (int)id;
+		MiscUtils.grow(fId2Node, int_id);
+		fId2Node.set(int_id, node);
 	}
 	
-	public Node removeNode(long id){
-		return fId2Node.remove(id);
-	}
+	public Node getNode(long id) { return fId2Node.get((int)id); }
+	public Node removeNode(long id){ return fId2Node.set((int)id, null); }
+	public boolean contains(long id) { return fId2Node.get((int) id) != null; }
 
-	public boolean contains(long id) {
-		return fId2Node.containsKey(id);
-	}
 }
+
+

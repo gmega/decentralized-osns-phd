@@ -64,7 +64,7 @@ public class FastGraphProtocol implements Protocol, IDynamicLinkable {
 	/** Shared immutable graph. **/
 	private static GraphEntry[] fGraphEntries;
 
-	private static final NodeRegistry fReg = NodeRegistry.getInstance();
+	private static final INodeRegistry fReg = NodeRegistry.getInstance();
 
 	private static boolean fUndir;
 
@@ -237,7 +237,7 @@ public class FastGraphProtocol implements Protocol, IDynamicLinkable {
 		}
 
 		public Object getNode(int i) {
-			NodeRegistry nr = NodeRegistry.getInstance();
+			INodeRegistry nr = NodeRegistry.getInstance();
 			if (nr.contains(i)) {
 				return nr.getNode(i);
 			}
