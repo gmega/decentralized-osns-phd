@@ -1,11 +1,16 @@
 package it.unitn.disi.application.selectors;
 
 import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.application.LinkableSortedFriendCollection;
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.PermutingCache;
+import it.unitn.disi.utils.SharedBuffer;
+import it.unitn.disi.utils.SharedBuffer.BufferHandle;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Random;
 
 import peersim.config.Configuration;
@@ -26,10 +31,18 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// Parameter keys.
 	// ----------------------------------------------------------------------
 	
+	/** Linkable over which selection is to take place. **/
 	private static final String PAR_PROTOCOL = "linkable";
 
-	private static final String PAR_PSI = "psi";
+	/** Selection will consider first the nodes that fall above this 
+	 * percentile.
+	 */
+	private static final String PAR_PERCENTILE = "percentile";
 
+	/**
+	 * If less than psimin nodes fall into the selected percentile, use this
+	 * value instead.
+	 */
 	private static final String PAR_PSI_MINIMUM = "psimin";
 	
 	// ----------------------------------------------------------------------
@@ -41,34 +54,48 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	private double fPsi;
 
 	private int fPsiMinimum;
-	
+
 	// ----------------------------------------------------------------------
 	// Protocol state.
 	// ----------------------------------------------------------------------
-
-	private int fSize = 0;
+	
+	private HashMap<Node, Integer> fCentralityScores = new HashMap<Node, Integer>();
+	
+	private PermutingCache fFriends;
+	
+	// ----------------------------------------------------------------------
+	// Misc.
+	// ----------------------------------------------------------------------
 
 	private Random fRandom;
-
-	private LinkableSortedFriendCollection fFriends;
 	
+	private final Comparator<Node> CENTRALITY_COMPARATOR = new Comparator<Node>() {
+		@Override
+		public int compare(Node o1, Node o2) {
+			return fCentralityScores.get(o1) - fCentralityScores.get(o2);
+		}
+	};
+
 	// ----------------------------------------------------------------------
 
 	public CentralitySelector(String prefix) {
 		this(Configuration.getPid(prefix + "." + PAR_PROTOCOL), Configuration
-				.getDouble(prefix + "." + PAR_PSI), Configuration.getInt(prefix
+				.getDouble(prefix + "." + PAR_PERCENTILE), Configuration.getInt(prefix
 				+ "." + PAR_PSI_MINIMUM), CommonState.r);
 	}
 	
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(int linkableId, double psy, int psyMinimum,
+	public CentralitySelector(int linkableId, double psi, int psiMinimum,
 			Random random) {
 		fLinkable = linkableId;
-		fPsi = psy;
-		fPsiMinimum = psyMinimum;
-		fFriends = new LinkableSortedFriendCollection(fLinkable);
+		fPsi = psi;
+		fPsiMinimum = psiMinimum;
 		fRandom = random;
+		
+		// This is okay as PeerSim calls the constructor only once.
+		fFriends = new PermutingCache(linkableId);
+		fCentralityScores = new HashMap<Node, Integer>();
 	}
 	
 	// ----------------------------------------------------------------------
@@ -88,37 +115,51 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// ----------------------------------------------------------------------
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		// Step 1 - sorts list by friends in common (if the underlying
-		// view has changed.
+		// Step 1 - recompute the centrality scores if the underlying 
+		// linkable has changed.
 		Linkable linkable = (Linkable) source.getProtocol(fLinkable);
 		if (hasChanged(linkable)) {
-			fFriends.sortByFriendsInCommon(source);
+			this.recomputeCentralityScores(source, linkable);
+		}
+		
+		// Step 2 - loads and sorts our neighbors by centrality.
+		fFriends.populate(source);
+		fFriends.orderBy(CENTRALITY_COMPARATOR);
+		
+		// Step 3 - selects the approximate psi-th percentile.
+		int start = (int) Math.floor(fPsi * (double) fFriends.size());
+		// Finds whether nodes of smaller rank have equal centrality, so they can 
+		// enter the sample as well.
+		int cutCentrality = fCentralityScores.get(linkable.getNeighbor(start));
+		do {
+			start--;
+		}while (fCentralityScores.get(linkable.getNeighbor(start)) == cutCentrality);
+		
+		start++;
+		
+		if ((fFriends.size() - start) < fPsiMinimum) {
+			start = Math.max(0, fFriends.size() - fPsiMinimum);
 		}
 
-		// Step 2 - selects a head size which is either composed by
-		// the fPsy percent largest elements, or by fPsyMinimum,
-		// if fPsy percent is smaller than fPsyMinimum.
-		int end;
-		if (fPsi <= 0) {
-			end = fFriends.size() - 1;
-		} else {
-			end = (int) Math.max(0, fPsi * (double) fFriends.size());
-			if (end < fPsiMinimum) {
-				end = Math.min(fFriends.size(), fPsiMinimum);
+		// Step 4 - scrambles the head.
+		OrderingUtils.permute(start, fFriends.size(), fFriends, fRandom);
+		
+		// Step 5 - separately scrambles the rest of the list.
+		OrderingUtils.permute(0, start, fFriends, fRandom);
+
+		// Step 6 - tries to pick someone up.
+		Node selected = null;
+		for (int i = fFriends.size() - 1; i >= 0; i--) {
+			Node candidate = fFriends.get(i);
+			if (filter.canSelect(candidate)) {
+				selected = candidate;
+				break;
 			}
 		}
+		
+		fFriends.invalidate();
 
-		// Step 3 - scrambles the head.
-		OrderingUtils.permute(0, end, fFriends, fRandom);
-
-		// Step 4 - tries to pick someone up.
-		for (int i = 0; i < end; i++) {
-			if (filter.canSelect(fFriends.get(i))) {
-				return filter.selected(fFriends.get(i));
-			}
-		}
-
-		return filter.selected(null);
+		return filter.selected(selected);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -132,7 +173,28 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 		// Needless to say, IDynamicLinkables should be used
 		// for anything but the smallest simulations.
-		return changed || fSize == 0;
+		return changed;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private void recomputeCentralityScores(Node source, Linkable lnk) {
+		fCentralityScores.clear();
+		int degree = lnk.degree();
+		for (int i = 0; i < degree; i++) {
+			Node neighbor = lnk.getNeighbor(i);
+			if (neighbor == null) {
+				throw new IllegalStateException("Cannot deal with null neighbors.");
+			}
+			fCentralityScores.put(neighbor, this.centrality(source, neighbor));
+		}
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private int centrality(Node source, Node neighbor) {
+		// Centrality is degree centrality here.
+		return MiscUtils.countIntersections(source, neighbor, fLinkable);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -143,6 +205,8 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		try {
 			CentralitySelector adapter = (CentralitySelector) super
 					.clone();
+			adapter.fFriends = new PermutingCache(fLinkable);
+			adapter.fCentralityScores = new HashMap<Node, Integer>(fCentralityScores);
 			return adapter;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);

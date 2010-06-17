@@ -3,9 +3,11 @@ package it.unitn.disi;
 
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.application.EventStorageTest;
+import it.unitn.disi.application.TestAntiCentralitySelector;
 import it.unitn.disi.application.TestBiasedSelector;
-import it.unitn.disi.application.TestFriendsInCommonSelector;
+import it.unitn.disi.application.TestCentralitySelector;
 import it.unitn.disi.application.demers.RumorListTest;
+import it.unitn.disi.application.selectors.AntiCentralitySelector;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.network.EvtDecoderTest;
@@ -20,7 +22,7 @@ import org.junit.runners.Suite;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-	TestFriendsInCommonSelector.class,
+	TestCentralitySelector.class,
 	TestGraphWrapper.class,
 	TestPeerSelectors.class,
 	TestView.class,
@@ -32,7 +34,8 @@ import org.junit.runners.Suite;
 	TestEventDecoder.class,
 	TestLatencyComputer.class,
 	TestQueueManager.class,
-	EvtDecoderTest.class
+	EvtDecoderTest.class,
+	TestAntiCentralitySelector.class
 })
 
 public class AllTests {

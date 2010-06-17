@@ -20,13 +20,33 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * {@link LatencyComputer} parses raw message (binary) logs and outputs a text
+ * log containing:<BR>
+ * <ol>
+ * <li>delivered messages with latencies;</li>
+ * <li>duplicates with their simulation times;</li>
+ * <li>undelivered messages at the end of the simulation;</li>
+ * <li>tweets;</li>
+ * <li>round boundaries.</li>
+ * <ol>
+ * 
+ * @author giuliano
+ */
 public class LatencyComputer implements IMultiTransformer {
+	// ----------------------------------------------------------------------
+	// Parameters.
+	// ----------------------------------------------------------------------
 
-	private Map<Long, NodeData> fToReceive = new HashMap<Long, NodeData>();
+	private final boolean fVerbose;
+	
+	// ----------------------------------------------------------------------
+	// State.
+	// ----------------------------------------------------------------------
+
+	private final Map<Long, NodeData> fToReceive = new HashMap<Long, NodeData>();
 
 	private long fCurrentRound = 0;
-
-	private boolean fVerbose;
 
 	public LatencyComputer(boolean verbose) {
 		fVerbose = verbose;
@@ -178,7 +198,7 @@ public class LatencyComputer implements IMultiTransformer {
 			NodeData data = nodeData((long) neighborId);
 			data.addPending(newEvent, time);
 		}
-		
+
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("T ");
 		buffer.append(producerId);
@@ -189,7 +209,7 @@ public class LatencyComputer implements IMultiTransformer {
 		buffer.append("\n");
 
 		writer.write(buffer.toString());
-		
+
 		if (fVerbose) {
 			System.err
 					.println("Event TWEET (" + producerId + "," + newEvent.fSeq
@@ -265,6 +285,8 @@ public class LatencyComputer implements IMultiTransformer {
 		buffer.append(receiverId);
 		buffer.append(" ");
 		buffer.append(latency);
+		buffer.append(" ");
+		buffer.append(time);
 		buffer.append("\n");
 
 		writer.write(buffer.toString());
@@ -333,14 +355,14 @@ class EventId {
 	@Override
 	public int hashCode() {
 		int result = 311;
-		result = (int) (37*result + this.fId);
-		result = 37*result + this.fSeq;
-		
+		result = (int) (37 * result + this.fId);
+		result = 37 * result + this.fSeq;
+
 		return result;
 	}
-	
+
 	@Override
-	public String toString(){
+	public String toString() {
 		return "Tweet by " + fId + " sequence number " + fSeq;
 	}
 }
@@ -398,12 +420,12 @@ class NodeData {
 		fLastSessionEvent = time;
 		return accruedLatency(pending, time);
 	}
-	
+
 	public long deliveryLatency(EventId id, long time) {
 		Long[] pending = fPending.get(id);
 		if (pending == null) {
-			throw new IllegalStateException(
-					"No event with id " + id + " was found.");
+			throw new IllegalStateException("No event with id " + id
+					+ " was found.");
 		}
 
 		return time = pending[TIME_ISSUED];
@@ -427,10 +449,11 @@ class NodeData {
 					"Event received before login segment.");
 		}
 	}
-	
+
 	private void checkMonotonic(long time) {
 		if (time < fLastSessionEvent) {
-			throw new IllegalStateException("Events must be monotonically increasing.");
+			throw new IllegalStateException(
+					"Events must be monotonically increasing.");
 		}
 	}
 

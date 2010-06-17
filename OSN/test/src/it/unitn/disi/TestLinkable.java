@@ -9,10 +9,10 @@ import peersim.core.Protocol;
 
 public class TestLinkable {
 
-	public static TestLinkable testLinkable(int[][] ids) {
+	public static TestLinkable testLinkable(int[][] ids, int protocolID) {
 		TestLinkable lnk = new TestLinkable(ids);
 		for (Node node : lnk.fNodes) {
-			TestUtils.addProtocol(node, 0, lnk.linkableOf(lnk.indexOf(node)));
+			TestUtils.addProtocol(node, protocolID, lnk.linkableOf(lnk.indexOf(node)));
 		}
 		return lnk;
 	}

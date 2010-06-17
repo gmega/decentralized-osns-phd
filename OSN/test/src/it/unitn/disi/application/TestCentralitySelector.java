@@ -10,11 +10,10 @@ import org.junit.Test;
 
 import peersim.core.Node;
 import it.unitn.disi.TestLinkable;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.application.selectors.CentralitySelector;
 
-public class TestFriendsInCommonSelector {
+public class TestCentralitySelector {
 	@Test public void selectPeer() throws Exception{
 		TestLinkable lnk = TestLinkable.testLinkable(
 			new int[][] {
@@ -29,10 +28,10 @@ public class TestFriendsInCommonSelector {
 				{0, 1, 2},							//8
 				{0, 1},								//9
 				{0}									//10
-			});
+			}, 0);
 		
 		Random r = new Random(42);
-		CentralitySelector slktor = new CentralitySelector(0, 0.4, 0, r);
+		CentralitySelector slktor = new CentralitySelector(0, 0.6, 0, r);
 		Node node = lnk.get(0);
 		Set<Integer> selectedSet = new HashSet<Integer>();
 		

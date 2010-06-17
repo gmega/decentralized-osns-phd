@@ -3,6 +3,7 @@ package it.unitn.disi.application.selectors;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 
 import peersim.config.Configuration;
 import peersim.core.CommonState;
@@ -12,9 +13,11 @@ import peersim.core.Protocol;
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.util.RouletteWheel;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.MutableSimplePair;
 import it.unitn.disi.utils.Pair;
+import it.unitn.disi.utils.ProtocolReference;
 
 /**
  * Anti-centrality privileges nodes with low centrality. As it is, the
@@ -27,10 +30,18 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 	
 	private static final String PAR_LINKABLE = "linkable";
 	
-	private int fLinkable;
+	private IReference<Linkable> fLinkable;
+	
+	private final Random fRandom;
 	
 	public AntiCentralitySelector(String prefix) {
-		fLinkable = Configuration.getPid(prefix + "." + PAR_LINKABLE);
+		this(new ProtocolReference<Linkable>(Configuration.getPid(prefix + "."
+				+ PAR_LINKABLE)), CommonState.r);
+	}
+	
+	public AntiCentralitySelector(IReference<Linkable> linkableRef, Random random) {
+		fLinkable = linkableRef;
+		fRandom = random;
 	}
 
 	public Node selectPeer(Node source) {
@@ -38,7 +49,7 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 	}
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		Linkable neighborhood = (Linkable) source.getProtocol(fLinkable);
+		Linkable neighborhood = (Linkable) fLinkable.get(source);
 		
 		Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> result = makeWheel(
 				neighborhood, filter);
@@ -101,12 +112,12 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 		}
 				
 		return new Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>>(
-				new RouletteWheel(probabs, CommonState.r), fof);
+				new RouletteWheel(probabs, fRandom), fof);
 	}
 	
 	private int centrality(Linkable neighborhood, Node neighbor) {
-		return MiscUtils.countIntersections(neighborhood, neighbor,
-				fLinkable) + 1;
+		return MiscUtils.countIntersections(neighborhood, fLinkable
+				.get(neighbor), null, false) + 1;
 	}
 	
 	// ----------------------------------------------------------------------

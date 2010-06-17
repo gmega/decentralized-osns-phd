@@ -99,6 +99,8 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	// Storage for peersim parameters.
 	// ----------------------------------------------------------------------
 	
+	private int fProtocolID;
+	
 	private int fSocialNetworkID;
 
 	private int fTweetUntil;
@@ -124,6 +126,9 @@ public class NewscastApplication implements CDProtocol, IApplication {
 
 	/** Calls received in total. */
 	private int fContacts = 0;
+	
+	/** Messages pending delivery to this app. */
+	private int fPending;
 
 	// ----------------------------------------------------------------------
 	// Internal instances (so that the class doesn't expose these interfaces).
@@ -173,6 +178,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 				FOREVER);
 		fVerbose = Configuration.contains(prefix + "." + PAR_VERBOSE);
 		fDebug = Configuration.contains(prefix + "." + PAR_DEBUG);
+		fProtocolID = this.resolveProtocolId(fPrefix);
 
 		// Configures the peer selection and update exchange strategies.
 		this.configure();
@@ -183,7 +189,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	private void configure() {
 		this.flushState();
 		this.newConfigurator(fPrefix).configure(this,
-				this.resolveProtocolId(fPrefix), fSocialNetworkID);
+				fProtocolID, fSocialNetworkID);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -340,6 +346,12 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		fContacts++;
 		fRoundCalls++;
 	}
+	
+	// ----------------------------------------------------------------------
+
+	private void countPending() {
+		fPending++;
+	}
 
 	// ----------------------------------------------------------------------
 
@@ -442,6 +454,13 @@ public class NewscastApplication implements CDProtocol, IApplication {
 					sequenceNumber, // sequence number
 					CommonState.getTime()); // simulation time
 			
+			// Declares to our neighbors that they have an extra pending message.
+			Linkable sn = socialNetwork(owner);
+			int degree = sn.degree();
+			for (int i = 0; i < degree; i++) {
+				((NewscastApplication) owner.getProtocol(fProtocolID)).countPending();
+			}
+			
 			fChannel.tweeted(owner, fSeqNumber);
 		}
 
@@ -509,9 +528,13 @@ public class NewscastApplication implements CDProtocol, IApplication {
 						CommonState.getTime()); // simulation time
 			}
 
+			// Accounts for the pending messages we just received.
+			int real_start = (start == -1) ? finish : start;
+			fPending -= (finish - real_start + 1);
+			assert fPending > 0;
+			
 			if (fDebug) {
-				int i = start == -1 ? finish : start;
-				for (; i <= finish; i++) {
+				for (int i = real_start; i <= finish; i++) {
 					EventRegistry.getInstance()
 							.received(new Tweet(tweeting, i));
 				}
@@ -573,17 +596,23 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	public int contacts() {
 		return fContacts;
 	}
-
+	
 	// ----------------------------------------------------------------------
 
 	public void resetCounters() {
-		fContacts = 0;
+		fPending = fContacts = 0;
 	}
 
 	// ----------------------------------------------------------------------
 
 	public boolean onDebug() {
 		return fDebug;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	public int fastDrift() {
+		return fPending;
 	}
 
 	// ----------------------------------------------------------------------
