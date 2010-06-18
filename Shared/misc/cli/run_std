@@ -1,0 +1,35 @@
+#!/bin/bash
+
+function print_usage() {
+    echo Missing parameter\(s\).
+    echo Syntax: 
+    echo -e "\trun_std [experiment_template] [start] [end] [cycles] [social_graph]"
+}
+
+if [[ $1 = clean ]]
+then
+    rm -rf *.text
+    rm -rf output
+    rm -rf messages
+    exit 0
+fi
+
+if [ $# -ne 5 ]
+then
+    print_usage
+    exit 1
+fi
+
+mkdir messages
+mkdir output
+
+for i in `seq $2 $3`
+do
+    # Generates experiment spec for peersim.
+    cat $1 | analyzer -V substitute=experiment@$i+pwd@${PWD}+social_graph@${5}+cycles@$4+logfile@${PWD}/messages/messages-${i}.bin -t python misc.cli.Subst > experiment-${i}.text
+
+    # Runs the experiment.
+    peersim experiment-${i}.text > ${PWD}/output/output-${i}.text
+
+    rm experiment-${i}.text
+done;

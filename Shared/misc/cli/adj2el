@@ -1,0 +1,3 @@
+#!/bin/bash
+
+analyzer -t python -V input=$1 util.cli.Adj2EdgeList

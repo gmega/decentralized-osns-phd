@@ -25,6 +25,12 @@ public class MiscUtils {
 		}
 	}
 	
+	public static void grow(ArrayList<?> list, int size) {
+		while (list.size() < size) {
+			list.add(null);
+		}
+	}
+	
 	public static NeighbourListGraph load(NeighbourListGraph graph, GraphDecoder dec) {
 		while (dec.hasNext()) {
 			int source = dec.getSource();
