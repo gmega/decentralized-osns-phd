@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.config.Configuration;
+import peersim.core.Network;
 import peersim.core.Node;
 
 public class NodeRegistry {
@@ -16,7 +17,8 @@ public class NodeRegistry {
 	
 	static {
 		if(Configuration.getString(PAR_NODE_REGISTRY).equals("contiguous")){
-			fInstance = new ArrayListNodeRegistry();
+			System.err.println("Using contiguous node registry.");
+			fInstance = new ArrayListNodeRegistry(Network.size());
 		} else {
 			fInstance = new HashMapNodeRegistry();
 		}
@@ -58,18 +60,40 @@ class HashMapNodeRegistry extends AbstractNodeRegistry {
 
 
 class ArrayListNodeRegistry extends AbstractNodeRegistry {
-	private final ArrayList<Node> fId2Node = new ArrayList<Node>();
-	ArrayListNodeRegistry() { }
+	private final ArrayList<Node> fId2Node;
+	ArrayListNodeRegistry(int size) { 
+		fId2Node = new ArrayList<Node>(size);
+	}
 
 	protected void store(long id, Node node) {
 		int int_id = (int)id;
-		MiscUtils.grow(fId2Node, int_id);
+		MiscUtils.grow(fId2Node, int_id+1);
 		fId2Node.set(int_id, node);
 	}
 	
-	public Node getNode(long id) { return fId2Node.get((int)id); }
-	public Node removeNode(long id){ return fId2Node.set((int)id, null); }
-	public boolean contains(long id) { return fId2Node.get((int) id) != null; }
+	public Node getNode(long id) {
+		if (id >= fId2Node.size()) {
+			return null;
+		}
+		
+		return fId2Node.get((int)id); 
+	}
+	
+	public Node removeNode(long id){
+		if (id >= fId2Node.size()) {
+			return null;
+		}
+		
+		return fId2Node.set((int)id, null); 
+	}
+	
+	public boolean contains(long id) {
+		if (id >= fId2Node.size()) {
+			return false;
+		}
+		
+		return fId2Node.get((int) id) != null; 
+	}
 
 }
 

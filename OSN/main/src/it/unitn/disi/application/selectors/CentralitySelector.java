@@ -57,7 +57,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// Protocol state.
 	// ----------------------------------------------------------------------
 	
-	private HashMap<Node, Integer> fCentralityScores = new HashMap<Node, Integer>();
+	private HashMap<Node, Integer> fCentralityScores;
 	
 	private PermutingCache fFriends;
 	
@@ -67,12 +67,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	private Random fRandom;
 	
-	private final Comparator<Node> CENTRALITY_COMPARATOR = new Comparator<Node>() {
-		@Override
-		public int compare(Node o1, Node o2) {
-			return fCentralityScores.get(o1) - fCentralityScores.get(o2);
-		}
-	};
+	private Comparator<Node> fCentralityComparator;
 
 	// ----------------------------------------------------------------------
 
@@ -94,6 +89,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		// This is okay as PeerSim calls the constructor only once.
 		fFriends = new PermutingCache(linkableId);
 		fCentralityScores = new HashMap<Node, Integer>();
+		fCentralityComparator = new CentralityComparator(fCentralityScores);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -113,6 +109,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// ----------------------------------------------------------------------
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
+		
 		// Step 1 - recompute the centrality scores if the underlying 
 		// linkable has changed.
 		Linkable linkable = (Linkable) source.getProtocol(fLinkable);
@@ -122,7 +119,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		
 		// Step 2 - loads and sorts our neighbors by centrality.
 		fFriends.populate(source);
-		fFriends.orderBy(CENTRALITY_COMPARATOR);
+		fFriends.orderBy(fCentralityComparator);
 		
 		// Step 3 - selects the approximate psi-th percentile.
 		int start = (int) Math.floor(fPsi * (double) fFriends.size());
@@ -131,7 +128,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		int cutCentrality = fCentralityScores.get(linkable.getNeighbor(start));
 		do {
 			start--;
-		}while (fCentralityScores.get(linkable.getNeighbor(start)) == cutCentrality);
+		}while (start >= 0 && fCentralityScores.get(linkable.getNeighbor(start)) == cutCentrality);
 		
 		start++;
 		
@@ -156,7 +153,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		}
 		
 		fFriends.invalidate();
-
 		return filter.selected(selected);
 	}
 	
@@ -169,9 +165,10 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 					.getIntTime());
 		}
 
+
 		// Needless to say, IDynamicLinkables should be used
 		// for anything but the smallest simulations.
-		return changed;
+		return changed || fCentralityScores.size() == 0;
 	}
 	
 	// ----------------------------------------------------------------------
@@ -201,13 +198,32 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	public CentralitySelector clone() {
 		try {
-			CentralitySelector adapter = (CentralitySelector) super
+			CentralitySelector cloned = (CentralitySelector) super
 					.clone();
-			adapter.fFriends = new PermutingCache(fLinkable);
-			adapter.fCentralityScores = new HashMap<Node, Integer>(fCentralityScores);
-			return adapter;
+			cloned.fFriends = new PermutingCache(fLinkable);
+			cloned.fCentralityScores = new HashMap<Node, Integer>(fCentralityScores);
+			cloned.fCentralityComparator = new CentralityComparator(cloned.fCentralityScores);
+			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);
+		}
+	}
+	
+	// ----------------------------------------------------------------------
+	// Helper classes.
+	// ----------------------------------------------------------------------
+	
+	private static class CentralityComparator implements Comparator<Node> {
+		
+		private final HashMap<Node, Integer> fCentralityScores;
+		
+		public CentralityComparator(HashMap<Node, Integer> centralityScores) {
+			fCentralityScores = centralityScores;
+		}
+		
+		@Override
+		public int compare(Node o1, Node o2) {
+			return fCentralityScores.get(o1) - fCentralityScores.get(o2);
 		}
 	}
 	

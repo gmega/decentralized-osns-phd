@@ -19,8 +19,6 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 
 	private static final String PAR_PROBS = "probabs";
 
-	private static final String PAR_FILTER = "filters";
-
 	private static final String PAR_CHOICE = "policy";
 
 	private static final String PAR_NORESET = "statefulcounter";
@@ -30,8 +28,6 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	private static final String VAL_RR = "roundrobin";
 	
 	private RouletteWheel fWheel;
-
-	private int[] fFilterIds;
 
 	private int[] fSelectorIds;
 
@@ -44,25 +40,27 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	public GenericCompositeSelector(String name) {
 		this(Configuration.contains(name + "." + PAR_NORESET), parsePids(
 				Configuration.getString(name + "." + PAR_SELECTOR), name),
-				parsePids(Configuration.getString(name + "." + PAR_FILTER),
-						name), parseDoubles(Configuration.getString(name + "."
-						+ PAR_PROBS), name), Configuration.getString(name + "."
-						+ PAR_CHOICE));
+				parseDoubles(Configuration.getString(name + "." + PAR_PROBS),
+						name), Configuration.getString(name + "." + PAR_CHOICE));
 	}
 
 	public GenericCompositeSelector(boolean noReset, int[] selectorIds,
-			int[] filterIds, double[] probabilities, String policy) {
+			double[] probabilities, String policy) {
 
 		fNoReset = noReset;
-		fFilterIds = filterIds;
 		fSelectorIds = selectorIds;
-
-		checkLenghts(fFilterIds.length, fSelectorIds.length,
-				"Each selector must have a matching filter, even if null.");
-		
 		initChoicePolicy(policy, probabilities);
 	}
 
+
+	public Node selectPeer(Node node) {
+		return this.selectPeer(node, ISelectionFilter.ALWAYS_TRUE_FILTER);
+	}
+
+	public boolean supportsFiltering() {
+		return true;
+	}
+	
 	/**
 	 * Generic implementation for {@link IPeerSelector#selectPeer(Node)}.
 	 * This implementation will either use a random or random + round robin
@@ -89,7 +87,7 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	 * Otherwise, it will restart from scratch.
 	 * 
 	 */
-	public Node selectPeer(Node node) {
+	public Node selectPeer(Node node, ISelectionFilter filter) {
 		Node selected = null;
 		int randomChoice = -1;
 
@@ -98,7 +96,6 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 		}
 
 		for (int i = 0; i < fSelectorIds.length && selected == null; i++) {
-			ISelectionFilter filter = getFilter(node, i);
 
 			// First draw.
 			if (i == 0 && fRandom) {
@@ -107,7 +104,7 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 				continue;
 			}
 
-			selected = doSelect(node, getFilter(node, i),
+			selected = doSelect(node, filter,
 					drawRoundRobin(randomChoice));
 		}
 
@@ -118,7 +115,12 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 		Object object = source.getProtocol(selectorId);
 
 		if (object instanceof IPeerSelector) {
-			return ((IPeerSelector) object).selectPeer(source);
+			IPeerSelector selector = (IPeerSelector) object;
+			if (selector.supportsFiltering()) {
+				return selector.selectPeer(source, filter);
+			} else {
+				return selector.selectPeer(source);
+			}
 		} else if (object instanceof ISelector) {
 			return ((ISelector) object).selectPeer(filter);
 		}
@@ -170,14 +172,6 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 		}
 	}
 
-	private ISelectionFilter getFilter(Node node, int i) {
-		int fId = fFilterIds[i];
-		if (fId == -1) {
-			return null;
-		}
-		return (ISelectionFilter) node.getProtocol(fId);
-	}
-
 	private int drawRoundRobin(int skip) {
 		if (fRRChoice == skip) {
 			fRRChoice++;
@@ -195,13 +189,4 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 			throw new RuntimeException(e);
 		}
 	}
-
-	public Node selectPeer(Node source, ISelectionFilter filter) {
-		throw new UnsupportedOperationException();
-	}
-
-	public boolean supportsFiltering() {
-		return false;
-	}
-
 }

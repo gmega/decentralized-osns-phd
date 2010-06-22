@@ -1,7 +1,8 @@
 package it.unitn.disi.application;
 
 import it.unitn.disi.application.demers.DemersRumorMonger;
-import it.unitn.disi.application.greedydiffusion.GreedyDiffusion;
+import it.unitn.disi.application.forwarding.BloomFilterHistoryFw;
+import it.unitn.disi.application.forwarding.HistoryForwarding;
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.application.probabrm.ProbabilisticRumorMonger;
@@ -48,7 +49,8 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 	 */
 	private static final String PAR_RUMOR_MONGER = "rumor";
 	private static final String VAL_DEMERS = "demers";
-	private static final String VAL_GREEDY = "greedy";
+	private static final String VAL_FORWARDING = "fw";
+	private static final String VAL_FORWARDING_BLOOM = "fwbloom";
 	private static final String VAL_NONE = "none";
 	
 	private final String fPrefix;
@@ -75,17 +77,24 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 		String rmType = Configuration.getString(fPrefix + "." + PAR_RUMOR_MONGER);
 		if(rmType.equals(VAL_DEMERS)) {
 			configureDemers(app, protocolId, socialNetworkId);
-		} else if (rmType.equals(VAL_GREEDY)) {
-			configureGreedyDiffusion(app, protocolId, socialNetworkId);
+		} else if (rmType.startsWith(VAL_FORWARDING)) {
+			configureGreedyDiffusion(app, protocolId, socialNetworkId, rmType.startsWith(VAL_FORWARDING_BLOOM));
 		} else if (!rmType.equals(VAL_NONE)) {
 			throw new IllegalArgumentException();
 		} 
 	}
 
 	private void configureGreedyDiffusion(NewscastApplication app,
-			int protocolId, int socialNetworkId) {
-		GreedyDiffusion gd = new GreedyDiffusion(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
-		app.setAdapter(GreedyDiffusion.class, null, gd);
+			int protocolId, int socialNetworkId, boolean histories) {
+		HistoryForwarding gd;
+		
+		if (histories) {
+			gd = new HistoryForwarding(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+		} else {
+			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+		}
+		
+		app.setAdapter(HistoryForwarding.class, null, gd);
 		app.addStrategy(gd, selector(PAR_RUMOR_MONGER),
 				new FallThroughReference<ISelectionFilter>(gd),
 				probability(PAR_RUMOR_MONGER));
