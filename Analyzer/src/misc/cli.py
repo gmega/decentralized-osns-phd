@@ -11,18 +11,15 @@ values, of course, which are dictated by the module itself.
 
 @author: giuliano
 '''
-from util.misc import NULL_LIST
-from sn.metrics import avg_measure, NodeCountingClusteringComputer
-from util.reflection import get_object
-from graph_codecs import AdjacencyListEncoder, AdjacencyListDecoder,\
-    EdgeListDecoder, GraphLoader
-from sn.transformers import snowball_sample
-from util.pargen import CoupledBlock, IterableBlock, ConstantBlock
 import numpy
 import re
 import logging
 import sys
-from sn.generators import IrregularlyClustered
+from misc.pargen import CoupledBlock, IterableBlock, ConstantBlock
+from graph.codecs import AdjacencyListDecoder, EdgeListDecoder,\
+    AdjacencyListEncoder
+import os
+from misc.util import NULL_LIST
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +57,24 @@ class Subst:
         
         return p.sub(m, val)
 
+
+class CheckVar:
+    """Checks if a set of environment variables is defined."""
+    
+    def __init__(self, to_check):
+        self._to_check=to_check.split(",")
+        
+    
+    def execute(self):
+        for var in self._to_check:
+            defined = not os.environ.get(var) is None
+            if not defined:
+                logger.info("Undefined variable " + var + ".")
+                return 1
+        
+        logger.info("All variables are defined.")
+        return 0
+    
 
 class ParameterGenerator:
     """ """

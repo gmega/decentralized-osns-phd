@@ -226,7 +226,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 
 		IApplication app = (IApplication) getApplication(receiver);
 		Object ourHistory = null;
-		
+
 		/** Hands the message over to the application layer. If the message isn't
 		 * a duplicate, we need to forward it as well. */
 		if (app.receiveTweet(this, sender, receiver, tweet)) {
@@ -234,6 +234,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 		}
 		/** Message is a duplicate. Tries to return something useful. */
 		else {
+			ourHistory = historyGet(tweet);
 			// Incorporates the history we received into ours.
 			if (ourHistory != null) {
 				historyMerge(ourHistory, history);
@@ -245,7 +246,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 				historyClone(tweet, history);
 			}
 		}
-
+		
 		return ourHistory;
 	}
 	
@@ -335,7 +336,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	}
 
 	// ----------------------------------------------------------------------
-	// Methods for manipulating histories.
+	// Methods for manipulating histories. To be overrided by subclasses.
 	// ----------------------------------------------------------------------
 
 	/**

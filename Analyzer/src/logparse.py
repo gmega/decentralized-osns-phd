@@ -1,5 +1,6 @@
 '''
-Module for parsing logs and gathering statistics on node load.
+Module containing API and command-line tools for parsing and analyzing
+simulation log files.
 
 @author: giuliano
 '''

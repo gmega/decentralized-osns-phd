@@ -29,7 +29,7 @@ def _main(args):
     if len(args) == 0:
         print >> sys.stderr, "Error: missing script list."
         parser.print_help()
-        sys.exit()
+        return 3
         
     # Starts Psyco.
     if options.psyco:
@@ -41,9 +41,10 @@ def _main(args):
 
     # Configures progress tracking verbosity.
     ProgressTracker.set_detail(FULL if options.verbose else TASK_BOUNDARY_ONLY)
-    getattr(__import__("main"), "run_" + options.type)(options, args)
+    result = getattr(__import__("main"), "run_" + options.type)(options, args)
     
     print >> sys.stderr, "Done. Quitting."
+    return result
 
 
 def run_pss(options, args):
@@ -56,7 +57,7 @@ def run_pss(options, args):
     PSSEngine().run(parser.parse(concat_scripts(args)))
     
 def run_python(options, args):
-    instantiate_python(options, args).execute()
+    return instantiate_python(options, args).execute()
 
 def instantiate_python(options, args):
     if len(args) > 1:
@@ -133,4 +134,5 @@ class PyArgMatcher:
 
 
 if __name__ == '__main__':
-    _main(sys.argv[1:])
+    result = _main(sys.argv[1:])
+    sys.exit(0 if result is None else result)

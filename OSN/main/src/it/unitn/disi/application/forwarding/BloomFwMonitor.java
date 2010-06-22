@@ -63,8 +63,7 @@ public class BloomFwMonitor implements Control {
 
 	private BloomFilterHistoryFw diffusionObject(Node node) {
 		IAdaptable adaptable = (IAdaptable) node.getProtocol(fAdaptableId);
-		
-		BloomFilterHistoryFw gd = (BloomFilterHistoryFw) adaptable.getAdapter(BloomFilterHistoryFw.class, null);
+		BloomFilterHistoryFw gd = (BloomFilterHistoryFw) adaptable.getAdapter(HistoryForwarding.class, null);
 		return gd;
 	}
 

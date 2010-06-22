@@ -49,8 +49,8 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 	 */
 	private static final String PAR_RUMOR_MONGER = "rumor";
 	private static final String VAL_DEMERS = "demers";
-	private static final String VAL_FORWARDING = "fw";
-	private static final String VAL_FORWARDING_BLOOM = "fwbloom";
+	private static final String VAL_FORWARDING = "forwarding";
+	private static final String VAL_FORWARDING_BLOOM = "use_bloom_filters";
 	private static final String VAL_NONE = "none";
 	
 	private final String fPrefix;
@@ -78,7 +78,9 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 		if(rmType.equals(VAL_DEMERS)) {
 			configureDemers(app, protocolId, socialNetworkId);
 		} else if (rmType.startsWith(VAL_FORWARDING)) {
-			configureGreedyDiffusion(app, protocolId, socialNetworkId, rmType.startsWith(VAL_FORWARDING_BLOOM));
+			configureGreedyDiffusion(app, protocolId, socialNetworkId,
+					Configuration.contains(fPrefix + "." + PAR_RUMOR_MONGER
+							+ "." + VAL_FORWARDING_BLOOM));
 		} else if (!rmType.equals(VAL_NONE)) {
 			throw new IllegalArgumentException();
 		} 

@@ -10,21 +10,38 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 import peersim.config.Configuration;
 
 public class LogManager implements Runnable {
+	
+	// ----------------------------------------------------------------------
+	// Parameter keys.
+	// ----------------------------------------------------------------------
+	
+	private static final String PAR_LOGWRITER = "logwriter";
+	
+	// ----------------------------------------------------------------------
+	// Constants and null objects.
+	// ----------------------------------------------------------------------
+
+	private static final int KB_512 = 524288;
+
+	private static final OutputStream NULL = new NullOutputStream();
+	
+	// ----------------------------------------------------------------------
+	// Singleton machinery.
+	// ----------------------------------------------------------------------
 
 	public static final LogManager fSharedInstance = new LogManager();
 
 	public static LogManager getInstance() {
 		return fSharedInstance;
 	}
-
-	private static final String PAR_LOGWRITER = "logwriter";
-
-	private static final OutputStream NULL = new NullOutputStream();
-
+	
+	// ----------------------------------------------------------------------
+	
 	private final Map<String, OutputStream> fStreams = new HashMap<String, OutputStream>();
 
 	public LogManager() {
@@ -62,6 +79,11 @@ public class LogManager implements Runnable {
 			case FILE:
 				verify(spec, 3, "output filename");
 				fStreams.put(name, fileOutputStream(spec[2]));
+				break;
+				
+			case GZIPFILE:
+				verify(spec, 3, "output filename");
+				fStreams.put(name, gzippedOutputStream(spec[2]));
 				break;
 
 			case NULL:
@@ -101,12 +123,31 @@ public class LogManager implements Runnable {
 	private OutputStream fileOutputStream(String string) throws IOException {
 		OutputStream stream = fStreams.get(string);
 		if (stream == null) {
-			stream = new BufferedOutputStream(new FileOutputStream(new File(
-					string)));
+			stream = new BufferedOutputStream(new FileOutputStream(file(string)));
 			fStreams.put(string, stream);
 		}
 
 		return stream;
+	}
+	
+	private OutputStream gzippedOutputStream(String string) throws IOException {
+		OutputStream stream = fStreams.get(string);
+		if (stream == null) {
+			// Creates a GZIP output stream with a 512 kb buffer. 
+			stream = new GZIPOutputStream(new FileOutputStream(file(string, "gz")));
+			fStreams.put(string, stream);
+		}
+
+		return stream;
+	}
+
+	private File file(String s) {
+		return file(s, null);
+	}
+	
+	private File file(String s, String extension) {
+		String name = (extension == null) ? s : s + "." + extension;
+		return new File(name);
 	}
 
 	private void verify(String[] spec, int i, String string) {
@@ -127,6 +168,7 @@ public class LogManager implements Runnable {
 	public synchronized void run() {
 		for (OutputStream stream : fStreams.values()) {
 			try {
+				System.err.println("Close: " + stream.getClass());
 				stream.flush();
 				stream.close();
 			} catch (IOException ex) {

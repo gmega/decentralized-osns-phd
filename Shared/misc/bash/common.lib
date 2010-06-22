@@ -49,6 +49,22 @@ function file_list {
 
 ############################################################### 
 #
+# Tests if all environment variables scripts require have been
+# set.
+#
+############################################################### 
+function checkenv {
+
+    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB misc.cli.CheckVar
+    
+    if [ ! $? ]
+    then
+	exit 1
+    fi
+}
+
+############################################################### 
+#
 # Silly helper for checking parameters.
 #
 ############################################################### 
