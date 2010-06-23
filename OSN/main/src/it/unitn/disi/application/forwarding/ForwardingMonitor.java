@@ -1,9 +1,5 @@
 package it.unitn.disi.application.forwarding;
 
-import org.easymock.EasyMock;
-
-import it.unitn.disi.IAdaptable;
-import it.unitn.disi.utils.ConfigurationUtils;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
@@ -33,21 +29,25 @@ public class ForwardingMonitor implements Control {
 
 		IncrementalStats fw = new IncrementalStats();
 		BloomFwStats bfw = new BloomFwStats();
+		int totalEntries = 0;
 		
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
 			HistoryForwarding hf = getAdaptable(node, fAdaptableId, HistoryForwarding.class);
 			fw.add(hf.queueSize());
+			totalEntries += hf.queueSize();
 			bfw.add(node);
 		}
 		
 		// Print the statistics
 		System.out.println("FWQUEUELENGTH:" + fw.toString());
-		System.out.println("HITRATE: " + bfw.toString());
+		System.out.println("TOTALBUFFEREDMSG: " + totalEntries);
 		
 		if (bfw.isEmpty()) {
 			return false;
 		}
+		
+		System.out.println("HITRATE: " + bfw.toString());
 		
 		// In the last round, dumps the hit rates for the caches.
 		if (CommonState.getTime() == (CommonState.getEndTime() - 1)) {

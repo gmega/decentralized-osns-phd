@@ -255,13 +255,15 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	/**
 	 * Method called whenever a <b>new</b> message, which needs to be forwarded,
 	 * is received. Parameter names are self-explanatory.  
-	 * 
+	 * <BR>
 	 * When this method is called because the receiver is <i>tweeting</i>, then
 	 * the following must hold:
-	 * 
-	 * 1 - sender == receiver must yield true;
-	 * 2 - history must be <code>null</code>.
-	 * 
+	 * <BR>
+	 * <ol>
+	 * <li> <code>sender == receiver</code> must yield true; </li>
+	 * <li> history must be <code>null</code>. </li>
+	 * </ol>
+	 * <BR>
 	 * This method already puts the local history in the cache.
 	 * 
 	 */
@@ -295,7 +297,12 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 			
 			// Node is tweeting, so we just need to forward it
 			// to everyone. 
-			else if (history == null) {
+			else if ((history == null) && (sender == receiver)) {
+				// Sanity check.
+				if (tweet.fNode != sender) {
+					throw new IllegalArgumentException();
+				}
+				
 				fPending.put(neighbor, tweet);
 			}
 			
