@@ -384,8 +384,8 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	// IApplication interface. 
 	// ----------------------------------------------------------------------
 	
-	public boolean receiveTweet(IEventObserver broadcaster, Node sender,
-			Node ours, Tweet tweet) {
+	public boolean receiveTweet(Node sender, Node ours,
+			Tweet tweet, IEventObserver broadcaster) {
 		
 		// This is kind of an ugly hack...
 		fChannel.beginBroadcast(broadcaster);		
@@ -402,17 +402,29 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		return true;
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	public boolean knows(Tweet tweet) {
 		return knows(tweet.fNode, tweet.fSequence);
 	}
+	
+	// ----------------------------------------------------------------------
 	
 	public boolean knows(Node node, int sequence) {
 		return fStorage.contains(node, sequence);
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	public boolean toggleTweeting() {
 		fSuppressTweeting = !fSuppressTweeting;
 		return !fSuppressTweeting;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	public int pendingReceives() {
+		return fPending;
 	}
 	
 	// ----------------------------------------------------------------------
@@ -610,12 +622,6 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		return fDebug;
 	}
 	
-	// ----------------------------------------------------------------------
-
-	public int fastDrift() {
-		return fPending;
-	}
-
 	// ----------------------------------------------------------------------
 
 	public int realtimeDrift(Node node, int protocolID) {

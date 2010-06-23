@@ -136,7 +136,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 			// We know the node. So it means this rumor has been sent.
 			else {
 				// Delivers message to application.
-				wasNew = application.receiveTweet(this, sender, ours, evt);
+				wasNew = application.receiveTweet(sender, ours, evt, this);
 				// Was it a duplicate?
 				if (wasNew) {
 					// Nope. Make it a hot rumor.

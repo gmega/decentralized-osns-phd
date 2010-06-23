@@ -162,7 +162,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 
 		IApplication peerAdaptable = (IApplication) actualPeer
 				.getProtocol(fParentProtocolId);
-		peerAdaptable.receiveTweet(this, source, actualPeer, pending.getTweet());
+		peerAdaptable.receiveTweet(source, actualPeer, pending.getTweet(), this);
 		return true;
 	}
 	

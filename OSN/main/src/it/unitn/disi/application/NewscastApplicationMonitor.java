@@ -95,7 +95,7 @@ public class NewscastApplicationMonitor implements Control {
 			}
 			
 			NewscastApplication app = (NewscastApplication) node.getProtocol(fAppId);
-			drift += app.fastDrift();
+			drift += app.pendingReceives();
 //			
 //			if (app.realtimeDrift(node, fAppId) != app.fastDrift()) {
 //				throw new IllegalStateException();

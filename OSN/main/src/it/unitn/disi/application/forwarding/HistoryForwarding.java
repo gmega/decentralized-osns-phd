@@ -229,7 +229,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 
 		/** Hands the message over to the application layer. If the message isn't
 		 * a duplicate, we need to forward it as well. */
-		if (app.receiveTweet(this, sender, receiver, tweet)) {
+		if (app.receiveTweet(sender, receiver, tweet, this)) {
 			addPending(sender, receiver, tweet, history);
 		}
 		/** Message is a duplicate. Tries to return something useful. */

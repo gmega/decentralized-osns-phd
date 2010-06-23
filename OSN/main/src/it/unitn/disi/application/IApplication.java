@@ -10,19 +10,9 @@ import it.unitn.disi.application.interfaces.IEventObserver;
  * @author giuliano
  */
 public interface IApplication extends IAdaptable {
-	
+
 	/**
 	 * Attempts to deliver tweet to the application level of the receiver node.
-	 * 
-	 * @param caller
-	 *            Calling of this method will trigger the firing of either
-	 *            {@link IEventObserver#duplicateReceived(Node, Node, Node, int, int)}
-	 *            or of
-	 *            {@link IEventObserver#eventDelivered(Node, Node, Node, int, int)}
-	 *            . Since the caller of might be listening to these events
-	 *            himself, he might want to be excluded from the notification.
-	 *            In this case, the caller should pass a reference to his
-	 *            {@link IEventObserver} in this parameter.
 	 * 
 	 * @param sender
 	 *            the node sending the tweet.
@@ -30,12 +20,20 @@ public interface IApplication extends IAdaptable {
 	 *            the node receiving the tweet.
 	 * @param tweet
 	 *            the tweet.
-	 * 
+	 * @param caller
+	 *            Calling of this method will trigger the firing of either
+	 *            {@link IEventObserver#duplicateReceived(Node, Node, Node, int, int)}
+	 *            or of
+	 *            {@link IEventObserver#eventDelivered(Node, Node, Node, int, int)}
+	 *            . Since the caller of be listening to these events himself, he
+	 *            might want to be excluded from the notification. In this case,
+	 *            the caller should pass a reference to his
+	 *            {@link IEventObserver} in this parameter.
 	 * @return <code>true</code> if this message was not a duplicate, or
 	 *         <code>false</code> otherwise.
 	 */
-	public boolean receiveTweet(IEventObserver caller, Node sender,
-			Node receiver, Tweet tweet);
+	public boolean receiveTweet(Node sender, Node receiver,
+			Tweet tweet, IEventObserver caller);
 
 	/**
 	 * @param tweet
@@ -64,4 +62,11 @@ public interface IApplication extends IAdaptable {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean toggleTweeting();
+	
+	/**
+	 * @return the amount of tweets that the application would still have to
+	 *         receive in order to have complete knowledge about all produced
+	 *         tweets.
+	 */
+	public int pendingReceives();
 }
