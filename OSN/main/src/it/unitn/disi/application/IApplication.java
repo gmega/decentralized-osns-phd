@@ -1,6 +1,7 @@
 package it.unitn.disi.application;
 
 import peersim.core.Node;
+import it.unitn.disi.IAdaptable;
 import it.unitn.disi.application.interfaces.IEventObserver;
 
 /**

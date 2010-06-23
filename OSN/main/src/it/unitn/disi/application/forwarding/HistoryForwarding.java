@@ -8,7 +8,7 @@ import com.google.common.collect.HashMultimap;
 import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.application.IAdaptable;
+import it.unitn.disi.IAdaptable;
 import it.unitn.disi.application.IApplication;
 import it.unitn.disi.application.Tweet;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;

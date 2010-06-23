@@ -9,12 +9,29 @@ import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
 
+/**
+ * {@link NodeRegistry} provides access to an {@link INodeRegistry} singleton
+ * (for lack of a better configuration infrastructure).
+ * 
+ * @author giuliano
+ * @see INodeRegistry
+ */
 public class NodeRegistry {
 	
+	/**
+	 * Node registry type.
+	 */
 	private static final String PAR_NODE_REGISTRY = "it.unitn.disi.registry";
+
+	/**
+	 * Setting {@link #PAR_NODE_REGISTRY} to this value will cause an array to
+	 * be used for mapping. If the ID range for the nodes is contiguous, this 
+	 * will provide significant performance gains.
+	 */
 	
 	private static final INodeRegistry fInstance;
 	
+	/** Configures the {@link NodeRegistry} instance. **/
 	static {
 		if(Configuration.getString(PAR_NODE_REGISTRY).equals("contiguous")){
 			System.err.println("Using contiguous node registry.");
@@ -24,6 +41,9 @@ public class NodeRegistry {
 		}
 	}
 	
+	/**
+	 * @return the singleton instance.
+	 */
 	public static INodeRegistry getInstance() {
 		return fInstance;
 	}
@@ -31,6 +51,11 @@ public class NodeRegistry {
 	private NodeRegistry(){ }
 }
 
+/**
+ * {@link AbstractNodeRegistry} is the base class for a node registry. Node
+ * registries are global maps providing <i>O(1)</i> access to {@link Node}
+ * objects from their IDs.
+ */
 abstract class AbstractNodeRegistry implements INodeRegistry {
 	
 	/* (non-Javadoc)
@@ -47,6 +72,13 @@ abstract class AbstractNodeRegistry implements INodeRegistry {
 	protected abstract void store(long id, Node node);
 }
 
+/**
+ * {@link INodeRegistry} backed by a {@link HashMap}. Efficient if the ID space
+ * is much larger than the number of nodes in the network.
+ * 
+ * @author giuliano
+ * 
+ */
 class HashMapNodeRegistry extends AbstractNodeRegistry {
 	
 	private final HashMap<Object, Node> fId2Node = new HashMap<Object, Node>();
@@ -58,7 +90,15 @@ class HashMapNodeRegistry extends AbstractNodeRegistry {
 	public boolean contains(long id) { return fId2Node.containsKey(id); }
 }
 
-
+/**
+ * {@link INodeRegistry} backed by an array. Efficient if the ID space is
+ * roughly the same size as the number of nodes in the network.
+ * <BR><BR>
+ * Note: if used with large ID spaces, this implementation will quickly 
+ * cause the virtual machine to run out of memory.
+ * 
+ * @author giuliano
+ */
 class ArrayListNodeRegistry extends AbstractNodeRegistry {
 	private final ArrayList<Node> fId2Node;
 	ArrayListNodeRegistry(int size) { 

@@ -215,9 +215,10 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	// Configuration callbacks. 
 	// ----------------------------------------------------------------------
 
-	public Object getAdapter(Class<? extends Object> intf,
+	@SuppressWarnings("unchecked")
+	public <T> T getAdapter(Class<T> intf,
 			Class<? extends Object> key) {
-		return fAdapters.get(new AdapterKey(intf, key));
+		return (T) fAdapters.get(new AdapterKey(intf, key));
 	}
 	
 	// ----------------------------------------------------------------------

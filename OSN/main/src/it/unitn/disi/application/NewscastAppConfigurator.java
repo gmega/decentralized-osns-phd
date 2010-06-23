@@ -77,7 +77,7 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 		String rmType = Configuration.getString(fPrefix + "." + PAR_RUMOR_MONGER);
 		if(rmType.equals(VAL_DEMERS)) {
 			configureDemers(app, protocolId, socialNetworkId);
-		} else if (rmType.startsWith(VAL_FORWARDING)) {
+		} else if (rmType.equals(VAL_FORWARDING)) {
 			configureGreedyDiffusion(app, protocolId, socialNetworkId,
 					Configuration.contains(fPrefix + "." + PAR_RUMOR_MONGER
 							+ "." + VAL_FORWARDING_BLOOM));
@@ -91,9 +91,9 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 		HistoryForwarding gd;
 		
 		if (histories) {
-			gd = new HistoryForwarding(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
-		} else {
 			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+		} else {
+			gd = new HistoryForwarding(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
 		}
 		
 		app.setAdapter(HistoryForwarding.class, null, gd);
