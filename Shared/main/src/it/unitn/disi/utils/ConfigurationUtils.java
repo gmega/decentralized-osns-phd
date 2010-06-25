@@ -1,10 +1,14 @@
 package it.unitn.disi.utils;
 
+import it.unitn.disi.IAdaptable;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import peersim.core.Node;
 
 public class ConfigurationUtils {
 	public static Set<String> collect(Class<? extends Object> cl) {
@@ -53,5 +57,10 @@ public class ConfigurationUtils {
 		}
 
 		return injectables;
+	}
+		
+	public static <T> T getAdaptable(Node node, int id, Class<T> cls) {
+		IAdaptable adaptable = (IAdaptable) node.getProtocol(id);
+		return adaptable.getAdapter(cls, null);
 	}
 }

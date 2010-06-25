@@ -107,7 +107,9 @@ cycles@${CYCLES} \
 -t python misc.cli.Subst > $PREFIX/experiment-${i}.text
 
     # Runs the experiment.
-    peersim $PREFIX/experiment-${i}.text | gzip > ${FULL_OUTPUT}/output-${i}.text.gz
+    peersim $PREFIX/experiment-${i}.text > ${FULL_OUTPUT}/output-${i}.text
+    rm -rf ${FULL_OUTPUT}/output-${i}.text.gz
+    gzip ${FULL_OUTPUT}/output-${i}.text
 
     rm $PREFIX/experiment-${i}.text
 done;

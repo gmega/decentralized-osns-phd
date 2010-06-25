@@ -8,7 +8,6 @@ import bz2
 import gzip
 import sys
 import re
-import cProfile
 import os
 import math
 import logparse
@@ -32,6 +31,9 @@ class LogDecoder:
     SIG_MESSAGE = "message"
     SIG_DUPLICATE = "duplicate"
     SIG_ROUND_END = "round_end"
+    
+    SUPPORTED_BASEFORMATS = set(["text", "txt"])
+    SUPPORTED_COMPRESSION = set(["bz2", "gz"])
     
     def __init__(self, verbose, input, filetype=None):
         self._input = input
@@ -160,7 +162,7 @@ class DataPagePrinter:
         with open_output(self._output) as file:
             for title, data_page in data_source.statistics(self._statistic):
                 if print_separator:
-                    print >> file, "-"
+                    print >> file, "::SEPARATOR::"
                 else:
                     print_separator = True
                 keys = data_page.keys()
@@ -308,7 +310,7 @@ class NodeStatistics:
         counters = self._global_counter 
         
         if not round is None:
-            if not self._per_round.has_key(k):
+            if not self._per_round.has_key(round):
                 counters = self._per_round[round]
             else: 
                 return 0
@@ -337,7 +339,7 @@ class LoadStatistic:
         node_stat.sum(self.MSG_DELIVERED, 1)
         node_stat.sum(self.MSG_ALL, 1)
     
-    def duplicate(self, node_stat, id, seq, send_id, receiver_id, sim_time):
+    def duplicate(self, stat_tracker, id, seq, send_id, receiver_id, sim_time):
         node_stat = stat_tracker[receiver_id]
         node_stat.sum(self.MSG_DUPLICATE, 1)
         node_stat.sum(self.MSG_ALL, 1)
@@ -374,40 +376,28 @@ class LatencyStatistic:
         return sheet
 
 #==========================================================================
-
-class LoadboundStatistic:
-    
-    KEY="loadbound"
-    
-    def __init__(self, social_network, decoder=str(AdjacencyListDecoder)):
-        self._loader = GraphLoader(social_network, get_object(decoder))
-        self._sn = None
-        
-    
-    def tweeted(self, stat_tracker, id, seq, sim_time):
-        sn = self.__social_network__()
-        neighbors = igraph_neighbors(id, sn)
-        
-        for neighbor in neighbors:
-            node_stat = stat_tracker[neighbor]
-            node_stat.sum(self.KEY, 1)
-            
-            
-    def __social_network__(self):
-        if self._sn is None:
-            self._sn = self._loader.load_graph()
-        
-        return self._sn
-
-    def populate_sheet(self, sheet, stat_tracker, round):
-        for node_stat in stat_tracker:
-            sheet[node_stat.id] = node_stat.get(self.KEY, round)        
-        
-        return sheet
-
-#==========================================================================
 # Transformers for parsing logs.
 #==========================================================================
+
+class DuplicatesPerMessage:
+    
+    def __init__(self, log, social_graph, decoder=str(AdjacencyListDecoder)):
+        self._decoder = get_object(decoder)
+        self._input = input
+        self._duplicates = {}
+    
+    def execute(self):
+        decoder = LogDecoder(True, self._input)
+        decoder.decode(self)
+        
+    def duplicate(self, id, seq, send_id, receiver_id, sim_time):
+        tweet = (id, seq)
+        val = self._duplicates.setdefault(tweet, 0)
+        self._duplicates[tweet] = val + 1
+
+        for key,value in self._duplicates.items():
+            print key[0],key[1],value
+
 
 class ConvergenceAnalyzer:
     
@@ -480,8 +470,6 @@ REQUIRE_MAP = {"latency":["load"]}
 def _main(args):
     
     parser = OptionParser(usage="%prog [options] logfile")
-    parser.add_option("-f", "--filetype", action="store", type="choice", choices=("plain", "gzip", "bz2"), dest="filetype", default="plain",
-                      help="one of {plain, gzip, bzip2}. Defaults to plain.")
     parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
                       help="list of statistics to be printed.")
     parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")

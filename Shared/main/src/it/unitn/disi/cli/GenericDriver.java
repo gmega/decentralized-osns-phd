@@ -63,6 +63,8 @@ public class GenericDriver {
 				throw new CmdLineException("No processing class given.");
 			}
 			
+			System.err.println("Starting the Java generic driver.");
+			
 			if (fVerbose) {
 				System.err.println("Loading processor class " + fArguments.get(0) + ".");
 			}
@@ -146,12 +148,24 @@ public class GenericDriver {
 			return new InputStream [] { System.in };
 		}
 		
+		boolean stdinUsed = false;
 		String [] inputs = inputString.split(":");
 		InputStream[] iStreams = new InputStream[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
 			if (fVerbose) {
 				System.err.println("Opening input stream " + inputs[i] + ".");
 			}
+			
+			if (inputs[i].equals("stdin")){
+				if (stdinUsed) {
+					throw new IllegalArgumentException("stdin cannot be assigned twice.");
+				}
+				System.err.println("Input " + i + " is standard input.");
+				iStreams[i] = System.in;
+				stdinUsed = true;
+				continue;
+			}
+			
 			iStreams[i] = new ResettableFileInputStream(new File(inputs[i]));
 		}
 		

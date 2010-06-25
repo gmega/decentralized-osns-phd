@@ -10,22 +10,23 @@
 . ${BASH_LIB}/common.lib
 
 function print_help {
-    echo Syntax: $0 [options] [repetitions] [stem]
-    echo
-    echo Options:
-    echo -e "   -t [tag]"
-    echo -e "   -s [start_delimiter]"
-    echo -e "   -e [end_delimiter] (to be used with -s)"
+    err Syntax: $0 [options] [repetitions] [stem] [extensions]
+    err
+    err Options:
+    err -e "   -t [tag]"
+    err -e "   -p [tag separator] (to be used with -t)"
+    err -e "   -s [start_delimiter]"
+    err -e "   -e [end_delimiter] (to be used with -s)"
     exit 1
 }
 
 function check_set {
     if [ -z $2 ]
     then 
-	echo Mandatory argument $1 is missing. Type $0 -h for help.
+	err Mandatory argument $1 is missing. Type $0 -h for help.
 	exit 1
     else
-	echo Parameter $1 is $2.
+	err Parameter $1 is $2.
     fi
 }
 
@@ -33,20 +34,21 @@ function check_set {
 # Parses options. 
 #=======================================
 
-while getopts "t:s:e:h" o ; do  
+while getopts "t:s:e:p:h" o ; do  
     case $o in  
         t ) TAG=$OPTARG;;
         s ) START_DELIMITER=$OPTARG;;  
         e ) END_DELIMITER=$OPTARG;;
+	p ) TAG_SEPARATOR=$OPTARG;;
 	h ) 
 	    print_help
 	    ;;
 	\?)
-	    echo "Type $0 -h for help." >&2
+	    err "Type $0 -h for help." >&2
 	    exit 1
 	    ;;
 	:)
-	    echo "Option -$OPTARG requires an argument. Type $0 -h for help." >&2
+	    err "Option -$OPTARG requires an argument. Type $0 -h for help." >&2
 	    exit 1
 	    ;;
     esac  
@@ -56,6 +58,7 @@ shift $((OPTIND-1))
 
 check_set "repetitions" $1
 check_set "stem" $2
+check_set "extensions" $3
 
 # Determines the mode to operate on.
 if [ -n "${TAG+x}" ]
@@ -75,11 +78,12 @@ else
     mode="raw"
 fi
 
-echo Mode is $mode.
+err Mode is $mode.
 
 # Easier-on-the-eye aliases.
 repetitions=$1
 stem=$2
+extensions=$3
 
 #=======================================
 # Performs the averaging.
@@ -89,21 +93,24 @@ for i in `seq 1 $repetitions`
 do
     if [[ $mode = "raw" ]]
     then
-	cp $stem-$i.text ${stem}.b
+	ucat $stem-$i.$extensions > ${stem}.b
 
     elif [[ $mode = "tag" ]]
     then
-	echo Run tag_extract.
-	tag_extract $stem-$i.text $TAG > $stem.b
+	err Run tag_extract.
+	tag_extract $stem-$i.$extensions $TAG ${TAG_SEPARATOR:-""} > $stem.b
 
     elif [[ $mode = "delimiter" ]]
     then
-	echo Run extract.
-	extract $stem-$i.text $START_DELIMITER $END_DELIMITER > $stem.b
+	err Run extract.
+	extract $stem-$i.$extensions $START_DELIMITER $END_DELIMITER > $stem.b
     fi
 
+    # Note that step_average can only handle uncompressed files, so it's of
+    # paramount importance that the above steps generate plain text files.
     step_average $stem $i
 done
 
-echo Clean up...
-rm $stem.b
+cat $stem.text
+rm -rf $stem.text 
+rm -rf $stem.b

@@ -36,11 +36,10 @@ plot_simple_histogram <- function(x, file_name=NULL, log="", real_zero=FALSE,...
   rounded_x <- rounded_x + 1
   tabulated <- tabulate(rounded_x)
 
-  print(tabulated[1])
-
   # Creates a corrected index list to account for the sum we
-  # made.
-  indexes <- seq(min(rounded_x) - 1, max(rounded_x) - 1)
+  # made. Note that tabulate always start at one, meaning that
+  # we should always start at zero.
+  indexes <- seq(0, max(rounded_x) - 1)
 
   # Pre-processes the data.
   if (length(log) && log != ""){
@@ -137,7 +136,14 @@ std_stats <- function (vector) {
    std <- sqrt(var(vector))
    pr <- quantile(vector, c(0.9))
 
-   return (data.frame(c(mn, mx, dt, std, pr), row.names=c("minimum", "maximum", "average", "stdandard deviation", "90 percentile")))
+   result <- list()
+   result["minimum"] = mn
+   result["maximum"] = mx
+   result["average"] = dt
+   result["standard deviation"] = std
+   result["90th percentile"] = pr
+
+   return(result)
 }
 
 ##############################################################
@@ -169,5 +175,17 @@ metric_hist <- function(x, measure, algorithm, file_name=NULL, type="h", log="",
   hist_type <- paste(hist_type," ",measure," histogram (",algorithm,")", sep="")
   plot_simple_histogram(x, file_name=file_name, type=type, log=log, real_zero=real_zero, ylab=yaxis, xlab=xaxis, main=hist_type,...)
 }
-                
-                
+
+##############################################################
+#
+# Very simple check for command line arguments.
+#
+##############################################################
+chkmandatory <- function(args, descs) {
+  for(i in 1:length(descs)) {
+    if (is.null(args[[descs[i]]])){
+      message(paste("Mandatory argument <", descs[i],"> has not been set. Use the -h option for help."))
+      q(save="no", -1)
+    }
+  }
+}

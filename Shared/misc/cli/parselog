@@ -4,4 +4,4 @@ export PYTHONPATH=$PYTHONPATH:$WORKSPACE_HOME/GraphAnalyzer2/src:$WORKSPACE_HOME
 
 #python -m cProfile -s cumulative $WORKSPACE_HOME/GraphAnalyzer2/src/logparse.py $@
 
-python -m logparse $@
+python -m experiment.logparse $@

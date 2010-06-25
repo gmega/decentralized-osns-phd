@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ ! ${1} ]
+then 
+    echo Usage: ucat [file]
+    exit 1
+fi
+
+case $1 in 
+    *.gz) zcat $1;;
+    *.bz2) bzcat $1;;
+    *) cat $1;;
+esac
+    

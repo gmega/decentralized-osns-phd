@@ -63,7 +63,6 @@ public class LatencyComputer implements IMultiTransformer {
 		try {
 			while (stream.hasNext()) {
 				Byte type = stream.next().byteValue();
-
 				// Picks the right dispatcher.
 				if (NewscastEvents.set.knows(type)) {
 					process(NewscastEvents.set.event(type), sn, stream, writer);

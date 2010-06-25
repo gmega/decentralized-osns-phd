@@ -15,11 +15,12 @@ import numpy
 import re
 import logging
 import sys
-from misc.pargen import CoupledBlock, IterableBlock, ConstantBlock
 from graph.codecs import AdjacencyListDecoder, EdgeListDecoder,\
     AdjacencyListEncoder
 import os
 from misc.util import NULL_LIST
+from experiment.pargen import CoupledBlock, IterableBlock, ConstantBlock
+from misc.reflection import get_object
 
 logger = logging.getLogger(__name__)
 
@@ -282,6 +283,17 @@ class AverageColumns:
                 i += 1
 
         return data
+    
+    
+class ReadAttribute:
+    """ Simple class which reads and prints the string represenation of an 
+    arbitrary python object.
+    """
+    def __init__(self, attribute):
+        self._attribute = attribute
+        
+    def execute(self):
+        print str(get_object(self._attribute))
     
 
 class Adj2EdgeList:

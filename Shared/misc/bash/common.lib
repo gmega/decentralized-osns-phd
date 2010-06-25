@@ -7,6 +7,20 @@
 
 ############################################################### 
 #
+# Echo replacements.
+#
+############################################################### 
+
+function err {
+    echo $@ >&2
+}
+
+function out {
+    echo $@
+}
+
+############################################################### 
+#
 # Performs an averaging step using the python analyzer. 
 #
 # Parameters:
@@ -17,15 +31,15 @@
 ############################################################### 
 
 function step_average {
-    echo Performing averaging step $2 for element $1.
+    err Performing averaging step $2 for element $1. >&2
     if [ -e $1.text ] 
     then 
-	analyzer -V avg=./$1.text:input=$1.b:step=$2 -t python util.cli.AverageColumns > $1.tmp
+	analyzer -V avg=./$1.text:input=$1.b:step=$2 -t python misc.cli.AverageColumns > $1.tmp
     else
 	mv $1.b $1.tmp
     fi
     
-    rm $1.text $1.b
+    rm -rf $1.text $1.b
     mv $1.tmp $1.text
 }
 
@@ -70,11 +84,11 @@ function checkenv {
 ############################################################### 
 
 function checkpar {
-    if [ $1 -ne $2 ]
+    if [ $2 -lt $1 ]
     then
-	echo Incorrect number of arguments -- expected $1 but got $2.
+	err Incorrect number of arguments -- expected $1 but got $2.
 	exit
     fi
 }
 
-echo "Sourced common.lib." >&2
+err "Sourced common.lib."

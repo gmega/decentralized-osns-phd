@@ -9,7 +9,7 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-def get_object(obj_id):
+def get_object(obj_id, import_error_debug=False):
     """Given a full python name, attempts to resolve it. 
     
     Python names are ambiguous by nature, so this function does its best,
@@ -40,11 +40,12 @@ def get_object(obj_id):
             module = ".".join(parts[:(name_len - i)])
             current = __import__(module)
             break
-        except ImportError:
-            pass
+        except ImportError as err:
+            if (import_error_debug):
+                print err.args
         
     if current is None:
-        raise Exception("Could not find module for name " + obj_id + ".")
+        raise Exception("Could not import" + obj_id + ".")
 
     # Now the attribute. Have to go from the start as __import__
     # gives back a reference to the root module.

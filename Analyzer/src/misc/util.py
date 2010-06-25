@@ -13,6 +13,7 @@ import resources
 
 from numpy import *
 from igraph import *
+import re
 
 # Global module logger.
 logger = logging.getLogger(__name__)
@@ -136,6 +137,12 @@ class NullList:
     def __getitem__(self, idx):
         return 0.0
 
+
+def replace_vars(val, vars):
+    m = lambda v: vars[v.group(1)]
+    p = re.compile("\${(\w+)}")
+    return p.sub(m, val)
+ 
 
 def permute(list, start, end):
     """ Generates a random permutation of a list, from start (inclusive) 

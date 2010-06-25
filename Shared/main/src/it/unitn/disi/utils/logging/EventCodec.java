@@ -226,16 +226,30 @@ public class EventCodec {
 		}
 
 		private byte[] fillBuffer(byte[] buffer, int length) {
-			int read;
-			try {
-				read = fStream.read(buffer, 0, length);
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
+			int read = 0;
+
+			while(true) {
+				try {
+					read += fStream.read(buffer, read, length - read);
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			
+				if (read == length) {
+					break;
+				} else if (read == -1) {
+					fSeenEof = true;
+					break;
+				} else {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				}
 			}
-		
-			if (read == -1) {
-				fSeenEof = true;
-			} else if (read < length) {
+			
+			if (!fSeenEof && read < length) {
 				throw new EOFException("Unexpected end-of-file while decoding.");
 			}
 		

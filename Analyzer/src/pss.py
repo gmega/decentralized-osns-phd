@@ -10,6 +10,7 @@ import types
 
 import logging
 from misc.parsing import Lexer
+from misc.util import replace_vars
 
 logger = logging.getLogger(__name__)
 
@@ -222,18 +223,11 @@ class PSSOperationParser(object):
         if len(val) != 0:
             for pair in val.split(","):
                 key,val = pair.split("=")
-                val = self.__replace_vars__(val)
+                val = replace_vars(val, self.vars)
                 args[key.lstrip().rstrip()] = \
                     self.__fix_type__(val[1:len(val) - 1])
 
         return (operation, args)
-    
-    
-    def __replace_vars__(self, val):
-        m = lambda v: self.vars[v.group(1)]
-        p = re.compile("\$(\w+)")
-        
-        return p.sub(m, val)
     
     
     def __fix_type__(self, val):

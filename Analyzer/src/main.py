@@ -39,6 +39,8 @@ def _main(args):
         except ImportError:
             print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
 
+    print >> sys.stderr, "Starting the Python generic driver."
+
     # Configures progress tracking verbosity.
     ProgressTracker.set_detail(FULL if options.verbose else TASK_BOUNDARY_ONLY)
     result = getattr(__import__("main"), "run_" + options.type)(options, args)
@@ -48,6 +50,8 @@ def _main(args):
 
 
 def run_pss(options, args):
+    print >> sys.stderr, "Now running PSS script(s) " + str(args) + "."
+    
     # Defines user variables.
     parser = PSSOperationParser() 
     if not options.vars is None:
@@ -64,10 +68,12 @@ def instantiate_python(options, args):
         print >> sys.stderr, "Error: only one Python script should be specified."
         return
 
+    print >> sys.stderr, "Now running Python script " + args[0] + "."
+
     executable = None
     try:
         py_argmatcher = PyArgMatcher(parse_vars_from_options(options), args[0])
-        callable = get_object(args[0])
+        callable = get_object(args[0], options.verbose)
         argument_dict = match_arguments(callable, py_argmatcher)
         executable = callable(**argument_dict)
     except Exception:
