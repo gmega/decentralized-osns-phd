@@ -46,4 +46,4 @@ metric_hist(the_data$V2, algorithm=opt$algorithm, measure=opt$metric, file_name=
 # Prints minimum, maximum, avg, std. dev and 90th percentile.
 s <- std_stats(the_data$V2)
 s <- paste(s["minimum"], s["maximum"], s["average"], s["standard deviation"], s["90th percentile"])
-message(s)
+cat(s)

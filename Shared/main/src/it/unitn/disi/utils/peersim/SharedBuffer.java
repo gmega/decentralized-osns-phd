@@ -1,4 +1,6 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.peersim;
+
+import it.unitn.disi.utils.MiscUtils;
 
 public class SharedBuffer<K> {
 

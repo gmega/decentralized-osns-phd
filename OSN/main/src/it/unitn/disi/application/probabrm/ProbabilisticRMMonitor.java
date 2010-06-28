@@ -2,7 +2,7 @@ package it.unitn.disi.application.probabrm;
 
 import it.unitn.disi.IAdaptable;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.PeersimUtils;
+import it.unitn.disi.utils.peersim.PeersimUtils;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;

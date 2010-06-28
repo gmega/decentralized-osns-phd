@@ -10,8 +10,8 @@ import junit.framework.Assert;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.protocol.FastGraphProtocol;
 import it.unitn.disi.protocol.IInputStreamProvider;
-import it.unitn.disi.protocol.NodeRegistry;
 import it.unitn.disi.protocol.SocialBootstrap;
+import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import org.easymock.EasyMock;
 import org.junit.Test;

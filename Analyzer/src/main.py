@@ -10,7 +10,7 @@ from pss import *
 import logging_config
 import sys
 from misc.util import ProgressTracker, TASK_BOUNDARY_ONLY, FULL
-from misc.reflection import get_object, match_arguments
+from misc.reflection import get_object, match_arguments, PyArgMatcher
 
 #===============================================================================
 # Main module
@@ -24,6 +24,7 @@ def _main(args):
                       help="one of {pss, python}. Defaults to pss.")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
     parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enable compiled Python with Psyco")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug", help="enable debug mode for object import")
     (options, args) = parser.parse_args()
     
     if len(args) == 0:
@@ -73,7 +74,7 @@ def instantiate_python(options, args):
     executable = None
     try:
         py_argmatcher = PyArgMatcher(parse_vars_from_options(options), args[0])
-        callable = get_object(args[0], options.verbose)
+        callable = get_object(args[0], options.debug)
         argument_dict = match_arguments(callable, py_argmatcher)
         executable = callable(**argument_dict)
     except Exception:
@@ -115,28 +116,6 @@ def concat_scripts(args):
                 file.close()
     
     return "".join(full_script)
-
-
-class PyArgMatcher:
-    
-    def __init__(self, parameters, name):
-        self._parameters = parameters
-        self._name = name
-        
-        
-    def default_args(self):
-        return self._parameters
-    
-    
-    def lookup(self, parameter):
-        if not self._parameters.has_key(parameter):
-            return None
-        
-        return self._parameters[parameter]
-
-    
-    def name(self):
-        return self._name
 
 
 if __name__ == '__main__':

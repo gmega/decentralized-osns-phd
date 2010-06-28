@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.peersim;
 
 import peersim.config.FastConfig;
 import peersim.core.Network;

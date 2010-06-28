@@ -4,7 +4,9 @@ import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.codecs.AdjListGraphDecoder;
 import it.unitn.disi.codecs.ByteGraphDecoder;
 import it.unitn.disi.codecs.GraphDecoder;
+import it.unitn.disi.utils.INodeRegistry;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import java.io.File;
 import java.io.FileInputStream;

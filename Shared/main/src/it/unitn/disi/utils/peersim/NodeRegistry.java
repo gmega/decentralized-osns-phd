@@ -1,5 +1,7 @@
-package it.unitn.disi.protocol;
+package it.unitn.disi.utils.peersim;
 
+
+import it.unitn.disi.utils.INodeRegistry;
 import it.unitn.disi.utils.MiscUtils;
 
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ public class NodeRegistry {
 	
 	/** Configures the {@link NodeRegistry} instance. **/
 	static {
-		if(Configuration.getString(PAR_NODE_REGISTRY).equals("contiguous")){
+		if(Configuration.getString(PAR_NODE_REGISTRY, "hash").equals("contiguous")){
 			System.err.println("Using contiguous node registry.");
 			fInstance = new ArrayListNodeRegistry(Network.size());
 		} else {

@@ -17,7 +17,7 @@ import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.MutableSimplePair;
 import it.unitn.disi.utils.Pair;
-import it.unitn.disi.utils.ProtocolReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 
 /**
  * Anti-centrality privileges nodes with low centrality. As it is, the

@@ -2,7 +2,7 @@ package it.unitn.disi.application.selectors;
 
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
-import it.unitn.disi.utils.PermutingCache;
+import it.unitn.disi.utils.peersim.PermutingCache;
 import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;

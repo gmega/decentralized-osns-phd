@@ -9,6 +9,7 @@ from igraph import *
 from logging import *
 from resources import *
 from misc.util import FileProgressTracker
+from graph.util import igraph_neighbors
 
 # Global module _logger.
 logger = logging.getLogger(__name__)

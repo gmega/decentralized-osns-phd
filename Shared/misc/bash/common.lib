@@ -61,6 +61,21 @@ function file_list {
     COMMON_RETURN=$LIST
 }
 
+
+############################################################### 
+#
+# Asserts that a file exists. 
+#
+###############################################################
+function assert_exists {
+    if [ ! -e $1 ]
+    then
+	err "File $1 could not be found."
+	exit 1
+    fi
+}
+
+
 ############################################################### 
 #
 # Tests if all environment variables scripts require have been

@@ -11,6 +11,7 @@ import types
 import logging
 from misc.parsing import Lexer
 from misc.util import replace_vars
+from misc.reflection import match_arguments, get_object
 
 logger = logging.getLogger(__name__)
 

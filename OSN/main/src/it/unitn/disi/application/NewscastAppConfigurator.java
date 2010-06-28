@@ -6,11 +6,12 @@ import it.unitn.disi.application.forwarding.HistoryForwarding;
 import it.unitn.disi.application.interfaces.IPeerSelector;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.application.probabrm.ProbabilisticRumorMonger;
-import it.unitn.disi.utils.FallThroughReference;
 import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.ProtocolReference;
+import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
+import peersim.core.Linkable;
 
 class NewscastAppConfigurator implements IApplicationConfigurator{
 	
@@ -106,7 +107,7 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 	private void configureDemers(NewscastApplication app, int protocolId,
 			int socialNetworkId) {
 		DemersRumorMonger demersRm = new DemersRumorMonger(fPrefix + "."
-				+ PAR_RUMOR_MONGER, protocolId, socialNetworkId, CommonState.r);
+				+ PAR_RUMOR_MONGER, protocolId, new ProtocolReference<Linkable>(socialNetworkId), CommonState.r);
 		app.setAdapter(DemersRumorMonger.class, null, demersRm);
 		app.addStrategy(demersRm, selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER),  probability(PAR_RUMOR_MONGER));
 		// Rumor mongering wants to know of new events.

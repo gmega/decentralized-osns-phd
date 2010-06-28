@@ -1,6 +1,8 @@
 package it.unitn.disi.protocol;
 
 import it.unitn.disi.IRebootable;
+import it.unitn.disi.utils.INodeRegistry;
+import it.unitn.disi.utils.peersim.NodeRegistry;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Linkable;

@@ -4,7 +4,7 @@ import it.unitn.disi.TestLinkable;
 import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.application.selectors.AntiCentralitySelector;
 import it.unitn.disi.utils.MultiCounter;
-import it.unitn.disi.utils.ProtocolReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import java.util.Random;
 

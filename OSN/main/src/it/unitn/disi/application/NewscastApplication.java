@@ -422,6 +422,12 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	}
 	
 	// ----------------------------------------------------------------------
+	
+	public boolean isSuppressingTweets() {
+		return fSuppressTweeting;
+	}
+	
+	// ----------------------------------------------------------------------
 
 	public int pendingReceives() {
 		return fPending;

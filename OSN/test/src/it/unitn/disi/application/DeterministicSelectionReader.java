@@ -1,6 +1,6 @@
 package it.unitn.disi.application;
 
-import it.unitn.disi.utils.PeersimUtils;
+import it.unitn.disi.utils.peersim.PeersimUtils;
 
 import java.io.BufferedReader;
 import java.io.File;

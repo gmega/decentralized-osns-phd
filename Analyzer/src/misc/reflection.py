@@ -151,3 +151,24 @@ def match_arguments(callable, arg_lookup):
         
     return actual_parameters
 
+
+class PyArgMatcher:
+    
+    def __init__(self, parameters, name):
+        self._parameters = parameters
+        self._name = name
+        
+        
+    def default_args(self):
+        return self._parameters
+    
+    
+    def lookup(self, parameter):
+        if not self._parameters.has_key(parameter):
+            return None
+        
+        return self._parameters[parameter]
+
+    
+    def name(self):
+        return self._name

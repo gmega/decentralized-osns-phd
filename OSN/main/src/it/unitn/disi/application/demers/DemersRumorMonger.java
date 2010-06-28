@@ -4,6 +4,7 @@ import it.unitn.disi.application.IApplication;
 import it.unitn.disi.application.Tweet;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.application.interfaces.IEventObserver;
+import it.unitn.disi.utils.IReference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,8 +19,9 @@ import peersim.core.Node;
 
 /**
  * Classical rumor mongering algorithm by <a
- * href="http://doi.acm.org/10.1145/41840.41841"> Demers et al. </a>. This is
- * the non-blind version.
+ * href="http://doi.acm.org/10.1145/41840.41841"> Demers et al. </a>, adopted to
+ * constrain information exchange to shared neighbors in a secondary graph. This
+ * is the non-blind version.
  * 
  * @author giuliano
  */
@@ -43,9 +45,9 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	// Parameter storage.
 	// ----------------------------------------------------------------------
 	
-	private int fRumorTransmitSize;
+	private IReference<Linkable> fConstraintLinkable;
 	
-	private final int fSnLinkableId;
+	private int fRumorTransmitSize;
 	
 	private final int fProtocolId;
 	
@@ -59,20 +61,20 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	// ----------------------------------------------------------------------
 	
-	public DemersRumorMonger(String prefix, int protocolId, int snLinkableId, Random rnd) {
+	public DemersRumorMonger(String prefix, int protocolId, IReference<Linkable> constraintLinkable, Random rnd) {
 		this(Configuration.getDouble(prefix + "." + PAR_GIVEUP_PROBABILITY),
 				Configuration.getInt(prefix + "." + PAR_TRANSMIT_SIZE, Integer.MAX_VALUE),
-				protocolId, snLinkableId, rnd); 
+				protocolId, constraintLinkable , rnd); 
 	}
 	
 	// ----------------------------------------------------------------------
 	
 	public DemersRumorMonger(double giveUp, int rumorTransmitSize,
-			int protocolId, int snLinkableId, Random rnd) {
+			int protocolId, IReference<Linkable> constraintLinkable, Random rnd) {
 		fRumorList = new RumorList(Integer.MAX_VALUE, giveUp, rnd);
 		fRumorTransmitSize = rumorTransmitSize;
-		fSnLinkableId = snLinkableId;
 		fProtocolId = protocolId;
+		fConstraintLinkable = constraintLinkable;
 	}
 	
 	// ----------------------------------------------------------------------
@@ -108,7 +110,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 			IApplication application) {
 
 		ListIterator<Tweet> it = outsideRumors.listIterator();
-		Linkable sn = (Linkable) ours.getProtocol(fSnLinkableId);
+		Linkable sn = fConstraintLinkable.get(ours);
 
 		int bufSize = responseBuffer.size();
 		int total = 0;

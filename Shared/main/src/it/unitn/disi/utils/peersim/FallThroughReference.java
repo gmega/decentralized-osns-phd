@@ -1,5 +1,6 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.peersim;
 
+import it.unitn.disi.utils.IReference;
 import peersim.core.Node;
 
 public class FallThroughReference<K> implements IReference<K> {

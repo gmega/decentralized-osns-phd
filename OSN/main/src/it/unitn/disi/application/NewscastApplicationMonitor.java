@@ -1,6 +1,6 @@
 package it.unitn.disi.application;
 
-import static it.unitn.disi.utils.PeersimUtils.print;
+import static it.unitn.disi.utils.peersim.PeersimUtils.print;
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.utils.MultiCounter;
 import it.unitn.disi.utils.logging.EventCodec;

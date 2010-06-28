@@ -112,5 +112,5 @@ do
 done
 
 cat $stem.text
-rm -rf $stem.text 
+#rm -rf $stem.text 
 rm -rf $stem.b

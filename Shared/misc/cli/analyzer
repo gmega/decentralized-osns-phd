@@ -4,4 +4,3 @@ export PYTHONPATH=$PYTHONPATH:$WORKSPACE_HOME/GraphAnalyzer2/src:$WORKSPACE_HOME
 
 python -m main $@
 
-exit $?

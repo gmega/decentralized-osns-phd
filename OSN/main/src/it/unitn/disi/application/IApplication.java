@@ -62,6 +62,12 @@ public interface IApplication extends IAdaptable {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean toggleTweeting();
+
+	/**
+	 * @return <code>true</code> if this node is currently suppressing tweets,
+	 *         or <code>false</code> otherwise.
+	 */ 
+	public boolean isSuppressingTweets();
 	
 	/**
 	 * @return the amount of tweets that the application would still have to

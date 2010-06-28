@@ -57,6 +57,24 @@ class Subst:
         p = re.compile("\${(\w+)}")
         
         return p.sub(m, val)
+    
+    
+class GraphSize:
+    def __init__(self, input, decoder=str(AdjacencyListDecoder)):
+        self._input = input
+        self._decoder = get_object(decoder)
+        
+    def execute(self):
+        seen = set()
+        with open(self._input, "r") as file:
+            decoder = AdjacencyListDecoder(file)
+            for source, target, payload in decoder:
+                seen.add(source)
+                seen.add(target)
+
+        print len(seen)        
+        return len(seen)
+
 
 
 class CheckVar:

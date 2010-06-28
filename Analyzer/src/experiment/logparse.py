@@ -15,7 +15,7 @@ import logparse
 from misc.util import FileProgressTracker, FileWrapper
 from optparse import OptionParser
 from io import StringIO
-from misc.reflection import get_object
+from misc.reflection import get_object, PyArgMatcher, match_arguments
 from main import parse_vars, parse_vars_from_options
 from graph.codecs import AdjacencyListDecoder, GraphLoader
 from graph.util import igraph_neighbors
@@ -72,7 +72,7 @@ class LogDecoder:
                     elif line[0] == 'R':
                         self.__process_round_boundary__(visitor, line)
                 except AttributeError:
-                    raise
+                    pass
                                         
                 progress_tracker.tick()
             progress_tracker.done()
@@ -161,6 +161,7 @@ class DataPagePrinter:
         print_separator = False
         with open_output(self._output) as file:
             for title, data_page in data_source.statistics(self._statistic):
+                print >> sys.stderr, "- Print statistic", title, "to", file.name
                 if print_separator:
                     print >> file, "::SEPARATOR::"
                 else:
@@ -207,7 +208,7 @@ class StatisticTracker:
         
         for statistic in self._statistics:
             if self.__supports__(statistic, LogDecoder.SIG_ROUND_END):
-                statistic.advance_round(self, self._current_round)
+                statistic.round_end(self, self._current_round)
         
         for node in self._pernode.values():
             node.advance_round(self._current_round)
@@ -255,6 +256,12 @@ class StatisticTracker:
         
         assert not statistic is None
         return statistic.populate_sheet({}, self, round)
+    
+    def __contains__(self, id):
+        return id in self._pernode
+
+    def __len__(self):
+        return len(self._pernode)
 
 class NodeStatistics:
     ''' NodeStatistics accumulates information for a single node 
@@ -368,36 +375,98 @@ class LatencyStatistic:
             latency = node_stat.get(self.KEY, round)
             
             if delivered == 0:
-                assert latency != 0
+                assert latency == 0
                 delivered = 1.0
                 
             sheet[node_stat.id] = latency/delivered
         
         return sheet
+    
+#==========================================================================
+    
+class MinloadStatistic:
+    
+    KEY = "minload"
+    
+    def __init__(self, network_size, lower_bound="0"):
+        self._lower_bound = int(lower_bound)
+        self._network_size = int(network_size)
+        self._page = {}
+        
+    def round_end(self, stat_tracker, round):
+        counter = self._network_size
+        for node_stat in stat_tracker:
+            if node_stat.get(LoadStatistic.MSG_ALL, None) > self._lower_bound:
+                counter -= 1
+        
+        self._page[round] = float(counter)/self._network_size
+
+    
+    def populate_sheet(self, sheet, node_stats, round):
+        if round is None:
+            sheet.update(self._page)
+        else:
+            sheet[round] = self._page[round]
+        
+        return sheet
+                
 
 #==========================================================================
 # Transformers for parsing logs.
 #==========================================================================
 
 class DuplicatesPerMessage:
+    """ Computes duplicates per message, and then prints several statistics. 
+    
+    - intended receivers: number of recipients a message should've reached; 
+    - actual receivers: number of recipients a message actually reached;
+    - duplicates: number of duplicates of a message;
+    - actual/intended: if less than 1, means a message did not reach all 
+        of its recipients.
+    - ((actual + duplicates)/(intended)): factor by which the message has 
+        been transmitted over the minimum rate.
+    """
+    
+    RECEIVERS=0
+    RECEIVED=1
+    DUPLICATE=2    
     
     def __init__(self, log, social_graph, decoder=str(AdjacencyListDecoder)):
-        self._decoder = get_object(decoder)
-        self._input = input
-        self._duplicates = {}
+        self._graph = GraphLoader(social_graph, get_object(decoder)).load_graph()
+        self._input = log
+        self._message_data = {}
     
     def execute(self):
         decoder = LogDecoder(True, self._input)
         decoder.decode(self)
         
+        for key,value in self._message_data.items():
+            intended = float(value[DuplicatesPerMessage.RECEIVERS])
+            actual = float(value[DuplicatesPerMessage.RECEIVED])
+            duplicates = float(value[DuplicatesPerMessage.DUPLICATE])
+            
+            print key[0], key[1], intended, actual, duplicates,\
+                (actual / intended), ((actual + duplicates)/(intended)), (duplicates/actual)  
+
+
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
-        tweet = (id, seq)
-        val = self._duplicates.setdefault(tweet, 0)
-        self._duplicates[tweet] = val + 1
-
-        for key,value in self._duplicates.items():
-            print key[0],key[1],value
-
+        self.__inc__((id, seq), DuplicatesPerMessage.DUPLICATE)
+    
+    def message(self, id, seq, send_id, receiver_id, latency, sim_time):
+        self.__inc__((id, seq), DuplicatesPerMessage.RECEIVED)
+        
+    def tweeted(self, id, seq, time):
+        self.__inc__((id, seq), DuplicatesPerMessage.RECEIVERS, self._graph.degree(id))
+            
+    def __inc__(self, tweet, selector, increment=1):    
+        if self._message_data.has_key(tweet):
+            val = self._message_data[tweet]
+        else:
+            val = self._message_data.setdefault(tweet, [0, 0, 0])
+            
+        val[selector] = val[selector] + increment
+    
+#==========================================================================
 
 class ConvergenceAnalyzer:
     
@@ -413,7 +482,6 @@ class ConvergenceAnalyzer:
             for line in file:
                 line_parts = line.split(" ")
                 current = float(line_parts[int(self._column)])
-                
                 if (abs(current - last)) < (self._epsilon*last):
                     print "Convergence at round [ " + str(round) + "] with value " + str(current) + "."
                     return
@@ -463,7 +531,8 @@ class LoadBySender:
 CONFIG_MAP = {"load":("load", "mode="+str(LoadStatistic.MSG_ALL)), 
               "dups":("load", "mode="+str(LoadStatistic.MSG_DUPLICATE))}
 
-REQUIRE_MAP = {"latency":["load"]}
+REQUIRE_MAP = {"latency":["load"], 
+               "minload":["load"]}
 
 #==========================================================================
 
@@ -519,13 +588,16 @@ def parse_rounds(specs):
 
 def parse_statistics(specs, options):
     stats = []
+    configured = set()    
     for spec in specs:
         key = spec.split(":")[0]
         stats.append(instantiate_stat(key, parse_vars_from_options(options)))
+        configured.add(key)
         
         if REQUIRE_MAP.has_key(key):
             for requirement in REQUIRE_MAP[key]:
-                stats.append(instantiate_stat(requirement, {}))
+                if not (requirement in configured):
+                    stats.append(instantiate_stat(requirement, {}))
     
     return stats                
 
@@ -539,11 +611,16 @@ def instantiate_stat(key, vars):
         real_key, pars = CONFIG_MAP[key]
         pars = parse_vars(pars)
 
+    vars.update(pars)
+
     stat = real_key.title() + "Statistic"
     stat = getattr(logparse, stat)
-    vars.update(pars)
+    py_argmatcher = PyArgMatcher(vars, stat)
+    argument_dict = match_arguments(stat, py_argmatcher)
     
-    return stat(**vars)
+    print >> sys.stderr, "- Add statistic:", key
+    
+    return stat(**argument_dict)
 
         
 #==========================================================================
@@ -561,7 +638,7 @@ def configure_printers(specs):
             printers.append(SquashStatisticsPrinter(spec_part[0], output, True))
         elif spec_part[1] == "total":
             printers.append(SquashStatisticsPrinter(spec_part[0], output, False))
-        elif spec_part[1] == "pernode":
+        elif spec_part[1] == "allpoints":
             printers.append(DataPagePrinter(spec_part[0], output))
 
     return printers

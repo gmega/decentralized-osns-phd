@@ -49,11 +49,7 @@ public class FastGraphProtocolInit implements NodeInitializer, Control {
 
 	public void initialize(Node n) {
 		FastGraphProtocol sn = (FastGraphProtocol) n.getProtocol(fPid);
-		INodeRegistry reg = NodeRegistry.getInstance();
-		if (!reg.contains(n.getID())) {
-			sn.bind(n);
-			NodeRegistry.getInstance().registerNode(n);
-		}
+		sn.bind(n);
 	}
 
 	public boolean execute() {

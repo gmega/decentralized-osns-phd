@@ -3,15 +3,18 @@ Created on 10/ago/2009
 
 @author: giuliano
 '''
-from util.misc import ProgressTracker, range_inclusive
-
 import igraph
 import numpy.random
 import math
 import util
 
 from sn.transformers import *
-from graph import Edge
+from graph.util import BatchedGraphOperator, igraph_neighbors
+from graph.transformers import make_simple
+from igraph import Graph
+from misc.util import ProgressTracker, range_inclusive
+from graph.codecs import AdjacencyListEncoder
+import sys
 
 # =========================================================================
 # Watts and Strogatz generator.
@@ -140,7 +143,7 @@ def IrregularlyClusteredNC(n, cp, epsilon=0, neighborhood=False, is_sane = lambd
     ''' Same as IrregularlyClustered, except that it guarantees that nodes have at least
     some /epsilon/ amount of neighbors in common.'''
     
-    theGraph = IrregularlyClustered(self._n, self._pairs, self._neighborhood)
+    theGraph = IrregularlyClustered(n, cp, neighborhood)
         
     pt = ProgressTracker("patch graph", len(theGraph.vs))
     pt.start_task()
@@ -151,13 +154,13 @@ def IrregularlyClusteredNC(n, cp, epsilon=0, neighborhood=False, is_sane = lambd
         for j in neighbors:
             fic = friends_in_common(i, j, theGraph)
             # ... if a pair does not satisfy the friend-in-common constraint ...
-            if fic < self._epsilon:
+            if fic < epsilon:
                 # ... arbitrarily patches the graph by causing the sides of the
                 # pair to befriend each other. 
                 delta = friends_not_in_common_set(i, j, theGraph)
                 delta.remove(i)
                 delta.remove(j)
-                required = self._epsilon - fic
+                required = epsilon - fic
                 if len(delta) < required:
                     print "Unable to satisfy connectivity constraint."
                     return
