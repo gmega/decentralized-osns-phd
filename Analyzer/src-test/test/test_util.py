@@ -3,11 +3,10 @@ Created on 21/ott/2009
 
 @author: giuliano
 '''
-from util.misc import BatchedGraphOperator, igraph_neighbors
 import numpy.random
-from sn.transformers import make_simple
 import igraph
 import unittest
+from graph.util import BatchedGraphOperator, igraph_neighbors
 
 class Test(unittest.TestCase):
 
@@ -21,7 +20,7 @@ class Test(unittest.TestCase):
 
     def testBatchedGraphOperator(self):
         rndGraph = igraph.Graph.Barabasi(100, 4)
-        rndGraph = make_simple(rndGraph)
+        rndGraph = rndGraph.simplify()
         copy = rndGraph.copy()
         rnd = numpy.random.RandomState()
         

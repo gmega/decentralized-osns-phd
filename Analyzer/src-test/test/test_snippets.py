@@ -3,14 +3,10 @@ Created on 29/lug/2009
 
 @author: giuliano
 '''
-from protocol.clustering import RandomWalker
-
 import unittest
 
-from igraph import *
-from sn.transformers import *
-from test import *
-from scripts import *
+from community.rndwalk import RandomWalker
+from igraph import Graph
 
 class Test(unittest.TestCase):
 

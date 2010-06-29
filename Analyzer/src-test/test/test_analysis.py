@@ -3,14 +3,11 @@ Created on 01/giu/2010
 
 @author: giuliano
 '''
-import util.misc
-import analysis
 import unittest
 
-from util.misc import from_adjacency_list
-from analysis import SharedHubs
-from unittest import *
 from resources import ORIGINAL_ID, IGRAPH_ID
+from graph.util import from_adjacency_list
+from graph.metrics import SharedHubs
 
 class Test(unittest.TestCase):
     

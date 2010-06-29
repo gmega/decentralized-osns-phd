@@ -8,9 +8,7 @@ the input graph itself.
 import numpy
 import ds
 
-from igraph import *
 from ds import *
-from util.misc import *
 from numpy import *
 from misc.util import ProgressTracker
 from graph.util import igraph_neighbors, random_color, igraph_edges
@@ -299,19 +297,21 @@ def clear_colors(graph):
 def densify_neighborhoods(graph):
     """ Given an input graph, process all 1-hop neighbors in it and transforms
     them into cliques. This effectively produces an output graph with clustering
-    coefficient 1.
+    coefficient 1. 
     
-    @note: Modifies the input graph.
+    @note: Does not modify the input graph.
     @note: Works with directed graphs.
     """
 
     tracker = ProgressTracker("densify neighborhoods", len(graph.vs))
     tracker.start_task()
     
+    dense = graph.copy()
+    
     # Unfortunately I don't know of any better way to do this in
     # igraph. 
     for root in range(0, len(graph.vs)):
-        neighborhood = igraph_neighbors(root, graph)
+        neighborhood = list(igraph_neighbors(root, graph))
         to_add = []
         for i in range(0, len(neighborhood)):
             u = neighborhood[i]
@@ -319,13 +319,13 @@ def densify_neighborhoods(graph):
             for j in range(left, len(neighborhood)):
                 to_add.append((u, neighborhood[j]))
         
-        graph.add_edges(to_add)
+        dense.add_edges(to_add)
         tracker.tick()
         
-    graph.simplify()
-    
+    dense.simplify()
     tracker.done()
-        
+    
+    return dense
 
 def _inverse_of(tuple):
     return (tuple[1], tuple[0])

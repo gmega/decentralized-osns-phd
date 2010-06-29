@@ -1,7 +1,7 @@
 
 def assertEdgeList(instance, graph, edgeList):
     edgeSet = set()
-    removed = set()
+    
     for edge in edgeList:
         edgeSet.add(edge)
        

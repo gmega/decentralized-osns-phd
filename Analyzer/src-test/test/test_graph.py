@@ -7,8 +7,8 @@ Created on 29/lug/2009
 import unittest
 
 from igraph import *
-from sn.transformers import *
 from test import *
+from graph.transformers import snowball_sample
 
 class Test(unittest.TestCase):
 
@@ -21,7 +21,7 @@ class Test(unittest.TestCase):
     def test_snowball_sampling(self):
         g = Graph(7)
         g.add_edges([(0,1), (0,2), (0,3), (1,4), (2,5), (3,6)])
-        g = snowball_sample(g, 4.0/7.0, 0)
+        g = snowball_sample(g, 4.0/7.0, seed=0)
         assertEdgeList(self, g, [(0,1), (0,2), (0,3)])
         
         
@@ -29,5 +29,5 @@ class Test(unittest.TestCase):
         
         g = Graph(7)
         g.add_edges([(0,0), (1,1), (1,0), (0,1), (1,3), (2,4), (5,6), (6,5), (6,5), (6,5)])
-        g = make_simple(g)
+        g = g.simplify()
         assertEdgeList(self, g, [(1,0), (1,3), (2,4), (5,6)])

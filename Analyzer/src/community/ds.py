@@ -1,4 +1,9 @@
 '''
+Created on Jun 29, 2010
+
+@author: giuliano
+'''
+'''
 Created on 08/set/2009
 
 @author: giuliano
@@ -6,7 +11,6 @@ Created on 08/set/2009
 
 import graph
 
-from util.misc import *
 from graph import *
 from resources import *
 from graph.util import random_color, igraph_neighbors
@@ -21,7 +25,7 @@ class CommunityInitializer():
     def from_vertex_dendrogram(cls, dendrogram, graph):
         initializer = CommunityInitializer(SimpleCommunity, graph)
         for id, community in enumerate(dendrogram):
-            initializer.configure_community(id, community, {"can_merge" : False})
+            initializer.configure_community(id, community, can_merge=False)
         
         return initializer
     

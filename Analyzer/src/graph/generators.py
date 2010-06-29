@@ -8,10 +8,8 @@ import numpy.random
 import math
 import util
 
-from sn.transformers import *
 from graph.util import BatchedGraphOperator, igraph_neighbors,\
     neighbors_in_common, neighbors_not_in_common, count_neighbors_in_common
-from graph.transformers import make_simple
 from igraph import Graph
 from misc.util import ProgressTracker, range_inclusive
 from graph.codecs import AdjacencyListEncoder
@@ -53,7 +51,7 @@ def Watts_Strogatz(n, k, p):
 
     graph = igraph.Graph(n)
     graph.add_edges(e_list)
-    graph = BatchedGraphOperator(make_simple(graph))
+    graph = BatchedGraphOperator(graph.simplify())
                 
     # Now rewires it according to the original Watts and Strogatz
     # algorithm.

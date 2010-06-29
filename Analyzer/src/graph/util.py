@@ -9,6 +9,7 @@ Created on Jun 15, 2010
 from resources import ORIGINAL_ID, VERTEX_ID
 from igraph import Graph
 from numpy.random import random
+import numpy
 
 def igraph_neighbors(vertex_id, graph, pertains=lambda x:True):
     """ Given a vertex id, a graph, and an optional filtering parameter,
@@ -85,7 +86,7 @@ def count_neighbors_in_common(v1, v2, g):
 def random_color():
     """  Returns a random triplet containing numbers in the range from 0 to 254. 
     """
-    return (random.randint(0,254), random.randint(0,254), random.randint(0,254))
+    return (numpy.random.randint(0,254), numpy.random.randint(0,254), numpy.random.randint(0,254))
 
 # =========================================================================
 
@@ -93,15 +94,28 @@ def from_adjacency_list(list, graph=None):
     """ Creates a new graph from a supplied adjacency list.
     """
     
+    e_list = edge_list(list)
+    g = Graph(len(list)) if graph is None else graph
+    g.add_edges(e_list)
+    return g
+
+
+def edge_list(list, simple=False):
     edges = []
+    seen = set()
+    
     for vertex_id, adjacencies in list:
         for adjacency in adjacencies:
+            edge = (vertex_id, adjacency)
+            if simple:
+                inverted = (adjacency, vertex_id)
+                if edge in seen or inverted in seen:
+                    continue;
+                seen.add(edge)
+            
             edges.append((vertex_id, adjacency))
 
-    g = Graph(len(list)) if graph is None else graph
-    g.add_edges(edges)
-    
-    return g
+    return edges
 
 # =========================================================================
 # Batched Operator. 

@@ -5,14 +5,17 @@ Created on 08/set/2009
 '''
 
 from igraph import *
-from sn.community import *
-from protocol.clustering import ProberCommunity, ClusterComputer
-from sn.generators import Watts_Strogatz
 
 import igraph
 import resources
-import sn.community
 import unittest
+from resources import VERTEX_ID
+from graph.util import igraph_init_attributes
+from numpy.random import random
+from graph.generators import Watts_Strogatz
+from community.rndwalk import ClusterComputer, ProberCommunity
+from community.ds import CommunityInitializer, SimpleCommunity
+import numpy
 
 
 class TestCommunity(unittest.TestCase):
@@ -112,11 +115,11 @@ class TestCommunity(unittest.TestCase):
 
     
     def testWeakContains(self):
-        the_graph = Watts_Strogatz(15000, 15, 0.1)
+        the_graph = Watts_Strogatz(15000, 16, 0.1)
         dendrogram = the_graph.community_walktrap()
     
         # Initializes the graph in our framework.
-        util.misc.igraph_init_attributes(the_graph)
+        igraph_init_attributes(the_graph)
         initializer = CommunityInitializer.from_vertex_dendrogram(dendrogram, the_graph)
         communities = initializer.get_communities()
 

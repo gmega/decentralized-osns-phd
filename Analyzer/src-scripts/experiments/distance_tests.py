@@ -3,10 +3,10 @@ Created on 16/set/2009
 
 @author: giuliano
 '''
-from util.misc import from_adjacency_list
-from sn.community import CommunityInitializer
-from graph_codecs import VERTEX_ID
-from protocol.clustering import ProberCommunity, ClusterComputer
+from community.rndwalk import ClusterComputer, ProberCommunity
+from resources import VERTEX_ID
+from community.ds import CommunityInitializer
+from graph.util import from_adjacency_list
 
 VISITED = 0
 

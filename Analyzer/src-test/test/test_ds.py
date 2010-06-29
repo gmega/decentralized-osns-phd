@@ -3,7 +3,6 @@ Created on 16/lug/2009
 
 @author: giuliano
 '''
-from ds import *
 import unittest
 from misc.datastructure import Trie
 from graph.ds import IntersectionTracker
