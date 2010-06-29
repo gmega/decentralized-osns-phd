@@ -4,13 +4,12 @@ Created on 08/set/2009
 @author: giuliano
 '''
 
-import util.misc
 import graph
 
 from util.misc import *
-from util.reflection import abstract_method
 from graph import *
 from resources import *
+from graph.util import random_color, igraph_neighbors
 
 #===============================================================================
 # CommunityInitializer

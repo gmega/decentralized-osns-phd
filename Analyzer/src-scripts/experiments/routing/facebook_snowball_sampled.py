@@ -4,11 +4,11 @@ Created on 26/set/2009
 @author: giuliano
 '''
 import numpy.random
-from sn.transformers import snowball_sample
 from experiments.routing import walk_trap_two_piece_eval
-from graph_codecs import GraphLoader
 import resources
 import logging_config
+from graph.codecs import GraphLoader
+from graph.transformers import snowball_sample
 
 def facebook_experiment(fraction=None):
     black_friends = resources.resource("Black_friends.txt")

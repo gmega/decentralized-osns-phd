@@ -5,6 +5,9 @@ Created on 16/lug/2009
 '''
 from ds import *
 import unittest
+from misc.datastructure import Trie
+from graph.ds import IntersectionTracker
+from resources import WEIGHT
 
 class Test(unittest.TestCase):
 

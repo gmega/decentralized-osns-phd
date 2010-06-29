@@ -3,14 +3,14 @@ Created on 01/giu/2010
 
 @author: giuliano
 '''
-from util.reflection import get_object
-from util.misc import igraph_neighbors, permute, ProgressTracker
-from graph_codecs import GraphLoader
 from numpy.ma.core import ceil
 from resources import IGRAPH_ID
 import igraph
 import math
-from graphb.processors import friends_in_common_set
+from misc.util import ProgressTracker
+from graph.codecs import GraphLoader, AdjacencyListDecoder
+from misc.reflection import get_object
+from graph.util import igraph_neighbors
 
 
 
@@ -49,7 +49,7 @@ class OverheadCount:
     @param p: false positive probability of the bloom filters. 
     '''  
     
-    def __init__(self, input, p, decoder="graph_codecs.AdjacencyListDecoder"):
+    def __init__(self, input, p, decoder=str(AdjacencyListDecoder)):
         self._loader = GraphLoader(input, get_object(decoder))
         self._constant = bloom_size(float(p))
         print self._constant

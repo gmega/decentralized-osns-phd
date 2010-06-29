@@ -312,46 +312,5 @@ class ReadAttribute:
         
     def execute(self):
         print str(get_object(self._attribute))
-    
-
-class Adj2EdgeList:
-    """ Converts a graph from an adjacency list to 
-        an edge list representation.
-    """
-    
-    def __init__(self, input):
-        """ @param input: the file containing the graph to be converted. 
-        """
-        
-        self._input = input
-        
-    
-    def execute(self):
-        
-        with open(self._input, "r") as file:
-            decoder = AdjacencyListDecoder(file)
-            for source, target, payload in decoder:
-                if target is None:
-                    print >> sys.stderr, "Warning, disconnected vertices cannot be represented."
-                
-                print source, target 
-        
-                
-class EdgeList2Adj:
-    """ Converts a graph from an edge list representation to
-        an adjacency list representation.
-    """
-    
-    def __init__ (self, input):
-        """ @param input: the file containing the graph to be converted. 
-        """
-        
-        self._input = input
-
-
-    def execute(self):
-        with open(self._input, "r") as file:
-            encoder = AdjacencyListEncoder(sys.stdout)
-            encoder.recode(EdgeListDecoder(file))
 
 

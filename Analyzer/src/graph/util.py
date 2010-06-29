@@ -6,6 +6,9 @@ Created on Jun 15, 2010
 # =========================================================================
 # igraph-related utility functions. 
 # =========================================================================
+from resources import ORIGINAL_ID, VERTEX_ID
+from igraph import Graph
+from numpy.random import random
 
 def igraph_neighbors(vertex_id, graph, pertains=lambda x:True):
     """ Given a vertex id, a graph, and an optional filtering parameter,

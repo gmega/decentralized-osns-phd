@@ -3,20 +3,19 @@ Created on 26/set/2009
 
 @author: giuliano
 '''
-from sn.community import SimpleCommunity, CommunityInitializer
-from util.misc import igraph_init_attributes, float_range, grid_coordinates_2d
-from protocol.routing import LevelRouting
 from resources import ROUTING_REGION_COLOR, ROUTING_TABLE
-from sn.generators import Watts_Strogatz
 from experiments.routing import walk_trap_two_piece_eval
-from graph_codecs import SVGEncoder
-import util
 import sys
 import resources
 import logging_config
 
 import itertools
 import igraph
+from graph.community import CommunityInitializer, SimpleCommunity
+from graph.util import igraph_init_attributes
+from misc.util import grid_coordinates_2d, float_range
+from graph.codecs import SVGEncoder
+from graph.generators import Watts_Strogatz
 
 def lattice_routing_experiment(dim):
     the_graph = igraph_init_attributes(igraph.Graph.Lattice([dim, dim], circular = False))
@@ -45,7 +44,7 @@ def watts_strogatz_routing(n, k, p, f = sys.stdout):
     dendrogram = the_graph.community_walktrap()
     
     # Initializes graph in our framework.
-    util.misc.igraph_init_attributes(the_graph)
+    igraph_init_attributes(the_graph)
     initializer = CommunityInitializer.from_vertex_dendrogram(dendrogram, the_graph)
     communities = initializer.get_communities()
     
@@ -54,9 +53,9 @@ def watts_strogatz_routing(n, k, p, f = sys.stdout):
     for community in communities:
         print len(community)
     
-    msg_count = LevelRouting.create_routing_structure(the_graph, communities)
+#    msg_count = LevelRouting.create_routing_structure(the_graph, communities)
     
-    print "Exchanged %s messages." % str(msg_count)
+#    print "Exchanged %s messages." % str(msg_count)
 
 
 def watts_strogatz_range(n, k, p_range, p_increment):

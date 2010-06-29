@@ -11,6 +11,9 @@ from graph.util import igraph_neighbors, neighbors_in_common,\
     count_neighbors_in_common
 from misc.reflection import get_object
 from graph.codecs import GraphLoader
+from misc.util import ProgressTracker
+from numpy.ma.core import ceil
+from resources import IGRAPH_ID
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +77,7 @@ class OuterDegree:
         graph = self._loader.load_graph()
         
         if self._vertex_list is None:
-            self._vertex_list = range(0, length(graph.vs))
+            self._vertex_list = range(0, len(graph.vs))
             
         for vertex_id in self._vertex_list:
             for neighbor in igraph_neighbors(vertex_id, graph):

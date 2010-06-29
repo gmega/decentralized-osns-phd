@@ -9,7 +9,8 @@ import math
 import util
 
 from sn.transformers import *
-from graph.util import BatchedGraphOperator, igraph_neighbors
+from graph.util import BatchedGraphOperator, igraph_neighbors,\
+    neighbors_in_common, neighbors_not_in_common, count_neighbors_in_common
 from graph.transformers import make_simple
 from igraph import Graph
 from misc.util import ProgressTracker, range_inclusive
@@ -152,12 +153,12 @@ def IrregularlyClusteredNC(n, cp, epsilon=0, neighborhood=False, is_sane = lambd
     for i in range(0, len(theGraph.vs)):
         neighbors = igraph_neighbors(i, theGraph)
         for j in neighbors:
-            fic = friends_in_common(i, j, theGraph)
+            fic = count_neighbors_in_common(i, j, theGraph)
             # ... if a pair does not satisfy the friend-in-common constraint ...
             if fic < epsilon:
                 # ... arbitrarily patches the graph by causing the sides of the
                 # pair to befriend each other. 
-                delta = friends_not_in_common_set(i, j, theGraph)
+                delta = neighbors_not_in_common(i, j, theGraph)
                 delta.remove(i)
                 delta.remove(j)
                 required = epsilon - fic
@@ -189,39 +190,6 @@ def pick(vertex_id, cp):
         idx = idx + size
         
     raise Exception("Lookup failed.")
-
-# =========================================================================
-
-class IrregularlyClusteredCLI:
-    ''' Command-line binding to IrregularlyClusteredNC.'''
-    
-    # =====================================================================
-
-    def __init__(self, n, pairs, epsilon, print_clusterings=False, neighborhood=False):
-        self._pairs = eval(pairs)
-        self._n = int(n)
-        self._epsilon = int(epsilon)
-        self._neighborhood = bool(neighborhood)
-        self._print_clusterings=bool(print_clusterings)
-
-    # =====================================================================
-
-    def execute(self):
-        theGraph = IrregularlyClusteredNC(self._n, self._pairs, self._epsilon, self._neighborhood) 
-        
-        if self._print_clusterings:
-            self.__print_clusterings__(theGraph)
-        encoder = AdjacencyListEncoder(sys.stdout)
-        encoder.encode(theGraph)
-
-    # =====================================================================    
-        
-    def __print_clusterings__(self, graph):
-        index = 0
-        for size, prob in self._pairs:
-            subg = graph.subgraph(range(index, index + size))
-            print >> sys.stderr, "Clustering (", index, (index + size - 1), "):", subg.transitivity_avglocal_undirected()
-            index = index + size
 
 # =========================================================================
 # Kleinberg generator.
