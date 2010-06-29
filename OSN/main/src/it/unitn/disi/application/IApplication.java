@@ -75,4 +75,13 @@ public interface IApplication extends IAdaptable {
 	 *         tweets.
 	 */
 	public int pendingReceives();
+
+	/**
+	 * Sets the traffic generator's seed to a given value. Useful for generating
+	 * predictable traffic patterns.
+	 * 
+	 * @param seed
+	 *            the seed to be used.
+	 */
+	public void setTrafficGeneratorSeed(long seed);
 }

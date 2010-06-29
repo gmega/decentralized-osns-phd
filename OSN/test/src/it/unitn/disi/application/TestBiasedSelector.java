@@ -8,6 +8,7 @@ import java.util.Random;
 import junit.framework.Assert;
 
 import it.unitn.disi.TestUtils;
+import it.unitn.disi.application.selectors.BiasedComponentSelector;
 import it.unitn.disi.protocol.FastGraphProtocol;
 import it.unitn.disi.protocol.IInputStreamProvider;
 import it.unitn.disi.protocol.SocialBootstrap;

@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.application.selectors;
 
 import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.util.RouletteWheel;

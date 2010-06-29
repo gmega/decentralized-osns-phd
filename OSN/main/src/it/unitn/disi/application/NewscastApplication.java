@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Random;
 
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -43,7 +44,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	 * {@link Linkable} containing the social neighborhood of the node.
 	 */
 	private static final String PAR_SOCIAL_NEIGHBORHOOD = "social_neighborhood";
-	
+		
 	/**
 	 * A node receiving more than {@link #PAR_CONN_LIMIT} connections per round
 	 * will reject them.
@@ -129,6 +130,8 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	
 	/** Messages pending delivery to this app. */
 	private int fPending;
+	
+	private Random fTweetRandom = CommonState.r;
 
 	// ----------------------------------------------------------------------
 	// Internal instances (so that the class doesn't expose these interfaces).
@@ -377,7 +380,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		if (fSuppressTweeting || ((int) CommonState.getTime()) > fTweetUntil) {
 			return false;
 		}
-		return CommonState.r.nextDouble() < fTweetProbability;
+		return fTweetRandom.nextDouble() < fTweetProbability;
 	}
 
 	// ----------------------------------------------------------------------
@@ -428,6 +431,12 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	}
 	
 	// ----------------------------------------------------------------------
+	
+	public void setTrafficGeneratorSeed(long seed) {
+		fTweetRandom = new Random(seed);
+	}
+		
+	// ----------------------------------------------------------------------
 
 	public int pendingReceives() {
 		return fPending;
@@ -444,6 +453,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		try {
 			NewscastApplication cloned = (NewscastApplication) super.clone();
 			cloned.fStorage = (EventStorage) this.fStorage.clone();
+			cloned.fTweetRandom = CommonState.r;
 			cloned.configure();
 			return cloned;
 		} catch (CloneNotSupportedException e) {

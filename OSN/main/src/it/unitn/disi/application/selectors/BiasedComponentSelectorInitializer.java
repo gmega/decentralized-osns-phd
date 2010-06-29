@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.application.selectors;
 
 import peersim.config.Configuration;
 import peersim.core.Control;
