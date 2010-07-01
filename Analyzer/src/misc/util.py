@@ -104,11 +104,12 @@ class FileProgressTracker():
 
 
 class FileWrapper:
-    ''' Adapter for allowing bz2 and gzip files to be used within
-    \"with\" constructs. ''' 
+    ''' Adapter for allowing bz2 and gzip files, as well as StringIO instances 
+    to be used within \"with\" constructs. ''' 
     
-    def __init__(self, delegate):
+    def __init__(self, delegate, no_close=False):
         self._delegate = delegate
+        self._no_close = no_close
         
     def __enter__(self):
         return self
@@ -117,7 +118,10 @@ class FileWrapper:
         return self._delegate.__iter__()
     
     def __exit__(self, type, value, traceback):
-        self._delegate.close()
+        if (not self._no_close):
+            self._delegate.close()
+        else:
+            self._delegate.flush()
                 
     def __getattr__(self, name):
         return getattr(self._delegate, name)

@@ -3,25 +3,11 @@ Created on Dec 17, 2009
 
 @author: giuliano
 '''
-from graph_codecs import GraphLoader, EdgeListDecoder, AdjacencyListDecoder
 import numpy
 import sys
 import resources
-import sn.metrics
-
-class SimpleRepsets:
-    
-    
-    def __init__(self, resource, size):
-        self._resource = resource
-        self._size = size
-        
-
-    def execute(self):
-        reader = GraphLoader(resources.resource(self._resource), EdgeListDecoder)
-        g = reader.load_graph()
-        sn.metrics.simple_replication_sets(g, self._size, sys.stdout)
-    
+from graph.codecs import GraphLoader, EdgeListDecoder, AdjacencyListDecoder
+ 
 
 class CountF2InterF1:
     """ This class computes a rather peculiar metric. For each pair A and B in 

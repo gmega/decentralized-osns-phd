@@ -18,7 +18,8 @@ ALL_MODULES = ["test_analysis",
                #"test_main", 
                "test_snippets", 
                "test_transformers", 
-               "test_util"]
+               "test_util",
+               "test_logparse"]
 
 def main():
     

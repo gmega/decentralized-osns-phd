@@ -3,9 +3,9 @@ Created on 14/ott/2009
 
 @author: giuliano
 '''
-from graph_codecs import GraphLoader
 import resources
 import logging_config
+from graph.codecs import GraphLoader
 
 def two_hop_size():
     r = GraphLoader(resources.resource("Black_friends.txt"), False, False)

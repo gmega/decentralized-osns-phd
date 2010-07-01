@@ -3,12 +3,12 @@ Created on Jan 12, 2010
 
 @author: giuliano
 '''
-from util.misc import igraph_neighbors
 from igraph import Graph
 from numpy.numarray import matrix
-from graph_codecs import AdjacencyListDecoder, GraphLoader
 import sys
 import numpy
+from graph.codecs import GraphLoader, AdjacencyListDecoder
+from graph.util import igraph_neighbors
 
 
 class SelectionTests:

@@ -24,182 +24,7 @@ from misc.reflection import get_object
 
 logger = logging.getLogger(__name__)
 
-class Subst:
-    """ Reads from stdin and replaces occurences of variables,
-        printing results to stdout (similar to sed, but easier 
-        to use in this context).
-        
-        Variables are marked in the input as ${key}, and 
-        substituted by the provided value. 
-    """
-    
-    def __init__ (self, substitute):
-        """ @param substitute: a string of variables. Variables 
-                are of the form key1+value1@key2+value2@...@keyn+valuen.
-        """
-        
-        self._vars = {}
-        
-        for pair in substitute.split("+"):
-            key, val = pair.split("@")
-            self._vars[key] = val 
-        
-    
-    def execute(self):
-        
-        for line in sys.stdin.readlines():
-            print self.__replace_vars__(line),
-
-    
-    def __replace_vars__(self, val):
-        
-        m = lambda v: self._vars[v.group(1)]
-        p = re.compile("\${(\w+)}")
-        
-        return p.sub(m, val)
-    
-    
-class GraphSize:
-    def __init__(self, input, decoder=str(AdjacencyListDecoder)):
-        self._input = input
-        self._decoder = get_object(decoder)
-        
-    def execute(self):
-        seen = set()
-        with open(self._input, "r") as file:
-            decoder = AdjacencyListDecoder(file)
-            for source, target, payload in decoder:
-                seen.add(source)
-                seen.add(target)
-
-        print len(seen)        
-        return len(seen)
-
-
-
-class CheckVar:
-    """Checks if a set of environment variables is defined."""
-    
-    def __init__(self, to_check):
-        self._to_check=to_check.split(",")
-        
-    
-    def execute(self):
-        for var in self._to_check:
-            defined = not os.environ.get(var) is None
-            if not defined:
-                logger.info("Undefined variable " + var + ".")
-                return 1
-        
-        logger.info("All variables are defined.")
-        return 0
-    
-
-class ParameterGenerator:
-    """ """
-    
-    def __init__(self, input, step):
-        self._input = input
-        self._step = int(step)
-        
-        
-    def execute(self):
-        with open(self._input, 'r') as file:
-            block = self.__parse__(file)
-            
-        iterator = block.__iter__()
-        pairs = None
-        for i in range(0, self._step):
-            pairs = iterator.next()
-            
-        self.__print_pairs__(pairs)
-        
-        
-    def __parse__(self, file):
-        # This first version of the parameter generator
-        # can only deal with coupled blocks.
-        block = CoupledBlock()        
-        
-        for line in file:
-            if line.startswith("#"):
-                continue
-            
-            key, value = line.split("=")
-            key = key.rstrip().lstrip()
-            value = value.rstrip().lstrip()
-            
-            if key.startswith("*"):
-                key = key[1:] 
-                value = eval(value)
-                block.add_element(IterableBlock(key, value))
-            else:
-                block.add_element(ConstantBlock(key, value))
-    
-        return block
-    
-    
-    def __print_pairs__(self, pairs):
-        printed_pairs = []
-        for key, value in pairs:
-            printed_pairs.append(key + "@" + str(value))
-             
-        print "+".join(printed_pairs)
-
-
-class CDF:
-    """ Computes the empirical CDF, or just the frequency counts for
-    a set of points. 
-    """
-    
-    def __init__(self, input, type, sep=" ", frequencies_only=True, column=0):
-        """ Builds a new instance of this processing element.
-        
-         @param input: a path to a file.
-         
-         @param type: the _type of point (integer or string). This 
-         dictates how points are to be ordered on when the CDF is output.
-         If string, they are sorted lexicographically.
-         
-         @param sep: the column separation character.
-         
-         @param frequencies_only: causes only the counts for the points
-         to be output, and not the CDF.
-         
-         @param colum: specifies the _column containing the points to be 
-         counted (for multi-_column files). Defaults to 0.
-        """
-        self._input = input
-        self._type = type
-        self._column = int(column)
-        self._frequencies_only = bool(frequencies_only)
-        self._sep = sep
-
-
-    def execute(self):
-        
-        integer = True if self._type == "integer" else False
-        with open(self._input, "r") as f:
-            data = {}
-            for line in f:
-                columns = line.split(" ")
-                if integer:
-                    key = int(columns[self._column])
-                else:
-                    key = columns[self._column]
-                count = data.setdefault(key, 0)
-                data[key] = count + 1
-        
-            sorted_keys = data.keys()
-            sorted_keys.sort()
-    
-            count = 0
-            for key in sorted_keys:
-                if self.count_only:
-                    count += data[key]
-                    print key, count
-                else:
-                    print key, data[key]
-
+#===============================================================================
 
 class AverageColumns:
     """ Incrementally computes an average of the rows of a file. The idea is that
@@ -219,6 +44,7 @@ class AverageColumns:
         @param step: the actual step for computing the average.
         @param sep: the column separation character (defaults to space).   
         """
+        
         if step < 2:
             raise Exception("Step has to be larger than, or equal to 2.")
         
@@ -301,16 +127,197 @@ class AverageColumns:
                 i += 1
 
         return data
+
+#===============================================================================
+
+class RandomDiscard:
+    """ Reads a file and outputs its content to stdout, dropping lines with a 
+    given probability /p/."""
     
+    def __init__(self, input, p):
+        self._input = input
+        self._p = float(p)
+
+        
+    def execute(self):
+        with open(self._input, "r") as file:
+            for line in file:
+                if numpy.random.rand() > self._p:
+                    print line,
+
+#===============================================================================
+
+class Subst:
+    """ Reads from stdin and replaces occurences of variables,
+        printing results to stdout (similar to sed, but easier 
+        to use in this context).
+        
+        Variables are marked in the input as ${key}, and 
+        substituted by the provided value. 
+    """
     
+    def __init__ (self, substitute):
+        """ @param substitute: a string of variables. Variables 
+                are of the form key1+value1@key2+value2@...@keyn+valuen.
+        """
+        
+        self._vars = {}
+        
+        for pair in substitute.split("+"):
+            key, val = pair.split("@")
+            self._vars[key] = val 
+        
+    
+    def execute(self):
+        for line in sys.stdin.readlines():
+            print self.__replace_vars__(line),
+
+    
+    def __replace_vars__(self, val):
+        m = lambda v: self._vars[v.group(1)]
+        p = re.compile("\${(\w+)}")
+        
+        return p.sub(m, val)
+
+#===============================================================================
+   
 class ReadAttribute:
     """ Simple class which reads and prints the string represenation of an 
     arbitrary python object.
     """
+    
     def __init__(self, attribute):
         self._attribute = attribute
         
     def execute(self):
         print str(get_object(self._attribute))
 
+#===============================================================================
+
+class CheckVar:
+    """Checks if a set of environment variables is defined."""
+    
+    def __init__(self, to_check):
+        self._to_check=to_check.split(",")
+        
+    
+    def execute(self):
+        for var in self._to_check:
+            defined = not os.environ.get(var) is None
+            if not defined:
+                logger.info("Undefined variable " + var + ".")
+                return 1
+        
+        logger.info("All variables are defined.")
+        return 0
+   
+#===============================================================================
+
+class ParameterGenerator:
+    """ """
+    
+    def __init__(self, input, step):
+        self._input = input
+        self._step = int(step)
+        
+        
+    def execute(self):
+        with open(self._input, 'r') as file:
+            block = self.__parse__(file)
+            
+        iterator = block.__iter__()
+        pairs = None
+        for i in range(0, self._step):
+            pairs = iterator.next()
+            
+        self.__print_pairs__(pairs)
+        
+        
+    def __parse__(self, file):
+        # This first version of the parameter generator
+        # can only deal with coupled blocks.
+        block = CoupledBlock()        
+        
+        for line in file:
+            if line.startswith("#"):
+                continue
+            
+            key, value = line.split("=")
+            key = key.rstrip().lstrip()
+            value = value.rstrip().lstrip()
+            
+            if key.startswith("*"):
+                key = key[1:] 
+                value = eval(value)
+                block.add_element(IterableBlock(key, value))
+            else:
+                block.add_element(ConstantBlock(key, value))
+    
+        return block
+    
+    
+    def __print_pairs__(self, pairs):
+        printed_pairs = []
+        for key, value in pairs:
+            printed_pairs.append(key + "@" + str(value))
+             
+        print "+".join(printed_pairs)
+
+#===============================================================================
+
+class CDF:
+    """ Computes the empirical CDF, or just the frequency counts for
+    a set of points. 
+    """
+    
+    def __init__(self, input, type, sep=" ", frequencies_only=True, column=0):
+        """ Builds a new instance of this processing element.
+        
+         @param input: a path to a file.
+         
+         @param type: the _type of point (integer or string). This 
+         dictates how points are to be ordered on when the CDF is output.
+         If string, they are sorted lexicographically.
+         
+         @param sep: the column separation character.
+         
+         @param frequencies_only: causes only the counts for the points
+         to be output, and not the CDF.
+         
+         @param colum: specifies the _column containing the points to be 
+         counted (for multi-_column files). Defaults to 0.
+        """
+        self._input = input
+        self._type = type
+        self._column = int(column)
+        self._frequencies_only = bool(frequencies_only)
+        self._sep = sep
+
+
+    def execute(self):
+        
+        integer = True if self._type == "integer" else False
+        with open(self._input, "r") as f:
+            data = {}
+            for line in f:
+                columns = line.split(" ")
+                if integer:
+                    key = int(columns[self._column])
+                else:
+                    key = columns[self._column]
+                count = data.setdefault(key, 0)
+                data[key] = count + 1
+        
+            sorted_keys = data.keys()
+            sorted_keys.sort()
+    
+            count = 0
+            for key in sorted_keys:
+                if self.count_only:
+                    count += data[key]
+                    print key, count
+                else:
+                    print key, data[key]
+
+#===============================================================================
 

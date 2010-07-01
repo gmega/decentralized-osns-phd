@@ -11,6 +11,7 @@ import logging_config
 import sys
 from misc.util import ProgressTracker, TASK_BOUNDARY_ONLY, FULL
 from misc.reflection import get_object, match_arguments, PyArgMatcher
+import cProfile
 
 #===============================================================================
 # Main module
@@ -23,6 +24,7 @@ def _main(args):
     parser.add_option("-t", "--type", action="store", type="choice", choices=("pss", "python"), dest="type", default="pss",
                       help="one of {pss, python}. Defaults to pss.")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
+    parser.add_option("-r", "--profile", action="store_true", dest="profile", help="enable profiling")
     parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enable compiled Python with Psyco")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", help="enable debug mode for object import")
     (options, args) = parser.parse_args()
@@ -62,7 +64,13 @@ def run_pss(options, args):
     PSSEngine().run(parser.parse(concat_scripts(args)))
     
 def run_python(options, args):
-    return instantiate_python(options, args).execute()
+    cli_module = instantiate_python(options, args)
+    
+    if options.profile:
+        print >> sys.stderr, "Profiling enabled."
+        return cProfile.runctx("cli_module.execute()", globals(), locals())
+    else:
+        return cli_module.execute()
 
 def instantiate_python(options, args):
     if len(args) > 1:

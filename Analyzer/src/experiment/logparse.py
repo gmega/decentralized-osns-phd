@@ -19,6 +19,7 @@ from misc.reflection import get_object, PyArgMatcher, match_arguments
 from main import parse_vars, parse_vars_from_options
 from graph.codecs import AdjacencyListDecoder, GraphLoader
 from graph.util import igraph_neighbors
+import numpy
     
 #==========================================================================
 # Log decoders.
@@ -30,6 +31,7 @@ class LogDecoder:
     SIG_TWEETED = "tweeted"
     SIG_MESSAGE = "message"
     SIG_DUPLICATE = "duplicate"
+    SIG_UNDELIVERED = "undelivered"
     SIG_ROUND_END = "round_end"
     
     SUPPORTED_BASEFORMATS = set(["text", "txt"])
@@ -48,6 +50,7 @@ class LogDecoder:
         
         - message(id, seq, send_id, receiver_id, latency, sim_time)
         - duplicate(id, seq, send_id, receiver_id, sim_time)
+        - undelivered(id, seq, intended_receiver, sim_time)
         - round_end(number)
         
         called when a message is delivered, when a duplicate is received,
@@ -67,15 +70,26 @@ class LogDecoder:
                     # Message lines start with an M.
                     elif line[0] == 'M':
                         self.__process_receive__(visitor, line, line[1] == 'D')
-                        
+
                     # Round markers start with an R.
                     elif line[0] == 'R':
                         self.__process_round_boundary__(visitor, line)
+                    
+                    # Undelivered lines start with an U.    
+                    elif line[0] == 'U':
+                        self.__process_undelivered__(visitor, line)
+                        
                 except AttributeError:
                     pass
-                                        
+                     
                 progress_tracker.tick()
             progress_tracker.done()
+            
+            # Sends the last message to the visitor.
+            try:
+                visitor.log_end()
+            except AttributeError:
+                pass
     
     
     def __process_tweet__(self, visitor, line):
@@ -96,6 +110,11 @@ class LogDecoder:
         number = int(m.group(0))
         if number > 0:
             visitor.round_end(number)
+
+
+    def __process_undelivered__(self, visitor, line):
+        id, seq, intended_receiver, sim_time = [int(i) for i in line.split(" ")[1:]]
+        visitor.undelivered(id, seq, intended_receiver, sim_time)
 
         
     def __open_file__(self, file_name):
@@ -135,7 +154,7 @@ class SquashStatisticsPrinter:
         self._average = average
         
     def do_print(self, data_source):
-        with open_output(self._output) as file:
+        with self._output.open() as file:
             for title, data_page in data_source.statistics(self._statistic):
                 print >> file, title + ":",self.__squash__(data_page)
     
@@ -159,7 +178,7 @@ class DataPagePrinter:
         
     def do_print(self, data_source):
         print_separator = False
-        with open_output(self._output) as file:
+        with self._output.open() as file:
             for title, data_page in data_source.statistics(self._statistic):
                 print >> sys.stderr, "- Print statistic", title, "to", file.name
                 if print_separator:
@@ -182,31 +201,37 @@ class StatisticTracker:
         self._pernode = {}
         self._special_rounds = special_rounds
         self._current_round = 1
+        self._dirty = False
     
     #======================================================================
     # Log visitor interface.
     #======================================================================
     
     def tweeted(self, id, seq, time):
-        for statistic in self._statistics:
-            if self.__supports__(statistic, LogDecoder.SIG_TWEETED):
-                statistic.tweeted(self, id, seq, time)
+        self.__redispatch__(LogDecoder.SIG_TWEETED, id=id, seq=seq, time=time)
     
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
-        for statistic in self._statistics:
-            if self.__supports__(statistic, LogDecoder.SIG_DUPLICATE):
-                statistic.duplicate(self, id, seq, send_id, receiver_id, sim_time)
+        self.__redispatch__(LogDecoder.SIG_DUPLICATE, id=id, seq=seq, send_id=send_id, receiver_id=receiver_id, sim_time=sim_time)
             
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
-        for statistic in self._statistics:
-            if self.__supports__(statistic, LogDecoder.SIG_MESSAGE):
-                statistic.message(self, id, seq, send_id, receiver_id, latency, sim_time)
+        self.__redispatch__(LogDecoder.SIG_MESSAGE, id=id, seq=seq, send_id=send_id, receiver_id=receiver_id, latency=latency, sim_time=sim_time)
+    
+    def undelivered(self, id, seq, intended_receiver, sim_time):
+        self.__redispatch__(LogDecoder.SIG_UNDELIVERED, id=id, seq=seq, intended_receiver=intended_receiver, sim_time=sim_time)
+                
+    def __redispatch__(self, message, **args):
+        self._dirty = True
+        for statistic in self._statistics.values():
+            args["stat_tracker"] = self
+            if self.__supports__(statistic, message):
+                selector = getattr(statistic, message)
+                selector(**args)
     
     def round_end(self, round):
         if round != self._current_round:
             raise Exception("Missing round markers (expected " + str(self._rounds) + ", got " + str(round) + ").")
         
-        for statistic in self._statistics:
+        for statistic in self._statistics.values():
             if self.__supports__(statistic, LogDecoder.SIG_ROUND_END):
                 statistic.round_end(self, self._current_round)
         
@@ -214,6 +239,11 @@ class StatisticTracker:
             node.advance_round(self._current_round)
         
         self._current_round += 1
+        self._dirty = False
+        
+    def log_end(self):
+        if self._dirty:
+            self.round_end(self._current_round)
         
     def __supports__(self, visitor, message):
         return hasattr(visitor, message)
@@ -239,7 +269,7 @@ class StatisticTracker:
         if id in self._pernode:
             descriptor = self._pernode[id]
         else:
-            descriptor = NodeStatistics(id, self._special_rounds, self._statistics)
+            descriptor = NodeStatistics(id, self._special_rounds)
             self._pernode[id] = descriptor
             
         return descriptor
@@ -248,12 +278,7 @@ class StatisticTracker:
         return self._pernode.itervalues()
 
     def __statistics__(self, statistic_key, round=None):
-        statistic = None
-        for candidate in self._statistics:
-            if candidate.KEY == statistic_key:
-                statistic = candidate
-                break
-        
+        statistic = self._statistics[statistic_key]
         assert not statistic is None
         return statistic.populate_sheet({}, self, round)
     
@@ -268,7 +293,7 @@ class NodeStatistics:
     in the network. It can store both coarse and per-round 
     aggregates. '''
     
-    def __init__(self, id, special_rounds, keys):
+    def __init__(self, id, special_rounds):
         ''' Creates a new NodeStatistics object. 
         
         @param id: the ID of the network node we're mirroring.
@@ -330,30 +355,48 @@ class NodeStatistics:
 #==========================================================================
 # Statistics.
 #==========================================================================
-class LoadStatistic:
+class MessageStatistic:
     
-    KEY = "load"
+    # Delivered and duplicates.
+    MODE_DELIVERED = 1
+    MODE_DUPLICATE = 2
+    MODE_ALL_RECEIVED = MODE_DELIVERED | MODE_DUPLICATE
     
-    MSG_DELIVERED = 1
-    MSG_DUPLICATE = 2
-    MSG_ALL = MSG_DELIVERED | MSG_DUPLICATE
+    # Undelivered.
+    MODE_UNDELIVERED = 4
     
     def __init__(self, mode):
         self._mode = int(mode)
+
+        self.MSG_DELIVERED = new_key()
+        self.MSG_DUPLICATE = new_key()
+        self.MSG_UNDELIVERED = new_key()
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
-        node_stat = stat_tracker[receiver_id]
-        node_stat.sum(self.MSG_DELIVERED, 1)
-        node_stat.sum(self.MSG_ALL, 1)
+        if (self._mode & self.MODE_DELIVERED) != 0:
+            node_stat = stat_tracker[receiver_id]
+            node_stat.sum(self.MSG_DELIVERED, 1)
     
     def duplicate(self, stat_tracker, id, seq, send_id, receiver_id, sim_time):
-        node_stat = stat_tracker[receiver_id]
-        node_stat.sum(self.MSG_DUPLICATE, 1)
-        node_stat.sum(self.MSG_ALL, 1)
+        if (self._mode & self.MODE_DUPLICATE) != 0:
+            node_stat = stat_tracker[receiver_id]
+            node_stat.sum(self.MSG_DUPLICATE, 1)
+        
+    def undelivered(self, stat_tracker, id, seq, intended_receiver, sim_time):
+        if (self._mode & self.MODE_UNDELIVERED) != 0:
+            node_stat = stat_tracker[intended_receiver]
+            node_stat.sum(self.MSG_UNDELIVERED, 1)
    
     def populate_sheet(self, sheet, node_stats, round):
         for node_stat in node_stats:
-            sheet[node_stat.id] = node_stat.get(self._mode, round)
+            val = 0
+            if (self._mode & self.MODE_DELIVERED) != 0:
+                val += node_stat.get(self.MSG_DELIVERED, round)
+            if (self._mode & self.MODE_DUPLICATE) != 0:
+                val += node_stat.get(self.MSG_DUPLICATE, round)
+            if (self._mode & self.MODE_UNDELIVERED) != 0:
+                val += node_stat.get(self.MSG_UNDELIVERED, round)
+            sheet[node_stat.id] = val
             
         return sheet
     
@@ -361,18 +404,17 @@ class LoadStatistic:
             
 class LatencyStatistic:
     
-    KEY = "latency"
-    
-    def __init__(self):
-        pass
+    def __init__(self, deps):
+        self._key = new_key()
+        self._load = deps["load"]
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
-        stat_tracker[receiver_id].sum(self.KEY, latency)
+        stat_tracker[receiver_id].sum(self._key, latency)
     
     def populate_sheet(self, sheet, node_stats, round):
         for node_stat in node_stats:
-            delivered = float(node_stat.get(LoadStatistic.MSG_DELIVERED, round))
-            latency = node_stat.get(self.KEY, round)
+            delivered = float(node_stat.get(self._load.MSG_DELIVERED, round))
+            latency = node_stat.get(self._key, round)
             
             if delivered == 0:
                 assert latency == 0
@@ -386,17 +428,17 @@ class LatencyStatistic:
     
 class MinloadStatistic:
     
-    KEY = "minload"
-    
-    def __init__(self, network_size, lower_bound="0"):
+    def __init__(self, deps, network_size, lower_bound="0"):
         self._lower_bound = int(lower_bound)
         self._network_size = int(network_size)
         self._page = {}
+        self._load = deps["load"]
         
+                
     def round_end(self, stat_tracker, round):
         counter = self._network_size
         for node_stat in stat_tracker:
-            if node_stat.get(LoadStatistic.MSG_ALL, None) > self._lower_bound:
+            if node_stat.get(self._load.MSG_ALL_RECEIVED, None) > self._lower_bound:
                 counter -= 1
         
         self._page[round] = float(counter)/self._network_size
@@ -527,44 +569,63 @@ class LoadBySender:
         pass
 
 #==========================================================================
+# Support classes.
+#==========================================================================
 
-CONFIG_MAP = {"load":("load", "mode="+str(LoadStatistic.MSG_ALL)), 
-              "dups":("load", "mode="+str(LoadStatistic.MSG_DUPLICATE))}
+class OutputProvider:
+    """ OutputProvider helps decouple the mechanism for opening an output
+    stream from the actual concrete type of such stream, while allowing us
+    to preserve lazy opening. 
+    """ 
+    
+    def __init__(self, reference, should_open, should_wrap, mode="w"):
+        """ Constructs a new OutputProvider.
+        
+        @param should_open: whether the reference needs to be opened or not.
+        @param should_wrap: whether the output object (opened or not) needs 
+        to be wrapped to comply with the interface demanded by the "with" 
+        keyword.
+        @param reference: the reference to the output stream.
+        """
 
+        self._should_open = should_open
+        self._should_wrap = should_wrap
+        self._open_mode = mode
+        self._reference = reference
+
+    
+    def open(self):
+        """ Opens the output and returns a reference. Outputs should 
+        implement the standard file interface. 
+        """
+        
+        output = self._reference
+        if self._should_open:
+            output = open(self._reference, self._open_mode)
+        if self._should_wrap:
+            output = FileWrapper(output, not self._should_open)    
+
+        return output
+
+#==========================================================================
+
+# Statistic aliases.
+CONFIG_MAP = {"load":("message", "mode="+str(MessageStatistic.MODE_ALL_RECEIVED)),
+              "delivered":("message", "mode="+str(MessageStatistic.MODE_DELIVERED)), 
+              "duplicates":("message", "mode="+str(MessageStatistic.MODE_DUPLICATE)),
+              "undelivered":("message", "mode="+str(MessageStatistic.MODE_UNDELIVERED))}
+
+# Dependencies.
 REQUIRE_MAP = {"latency":["load"], 
                "minload":["load"]}
 
 #==========================================================================
 
-def _main(args):
-    
-    parser = OptionParser(usage="%prog [options] logfile")
-    parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
-                      help="list of statistics to be printed.")
-    parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
-    parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
-                      help="prints statistics for a number of rounds.")
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
-    parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enables psyco.")
-
-    (options, args) = parser.parse_args()
-    
-    if len(args) == 0:
-        print >> sys.stderr, "Error: missing log file."
-        parser.print_help()
-        sys.exit(1)
-        
-    # Imports psyco.
-    if options.psyco:
-        try: 
-            import psyco 
-            psyco.full()
-        except ImportError:
-            print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
+def _run_parser(options, input_file, outputs):
     
     statistics = options.statistics.split(",")
-    decoder = LogDecoder(options.verbose, args[0])
-    printers = configure_printers(statistics)
+    decoder = LogDecoder(options.verbose, input_file)
+    printers = configure_printers(statistics, outputs)
     statistics = StatisticTracker(parse_statistics(statistics, options), parse_rounds(options.rounds))
     
     # Decodes and collects statistics.
@@ -587,23 +648,26 @@ def parse_rounds(specs):
 #==========================================================================
 
 def parse_statistics(specs, options):
-    stats = []
-    configured = set()    
+    stats = {}
     for spec in specs:
-        key = spec.split(":")[0]
-        stats.append(instantiate_stat(key, parse_vars_from_options(options)))
-        configured.add(key)
-        
-        if REQUIRE_MAP.has_key(key):
-            for requirement in REQUIRE_MAP[key]:
-                if not (requirement in configured):
-                    stats.append(instantiate_stat(requirement, {}))
+        instantiate_stat(spec.split(":")[0], stats, options)
     
-    return stats                
+    return stats
 
 #==========================================================================
 
-def instantiate_stat(key, vars):
+def instantiate_stat(key, stats, options):
+    deps = {}
+    if REQUIRE_MAP.has_key(key):
+        for requirement in REQUIRE_MAP[key]:
+            if not (requirement in stats):
+                deps[requirement] = instantiate_stat(requirement, stats, options)
+    
+    stats[key] = instantiate_concrete(key, deps, parse_vars_from_options(options))     
+    
+#==========================================================================
+
+def instantiate_concrete(key, deps, vars):
     pars = {}
     real_key = key
     
@@ -612,6 +676,9 @@ def instantiate_stat(key, vars):
         pars = parse_vars(pars)
 
     vars.update(pars)
+    
+    if len(deps) != 0:
+        vars["deps"] = deps
 
     stat = real_key.title() + "Statistic"
     stat = getattr(logparse, stat)
@@ -622,36 +689,75 @@ def instantiate_stat(key, vars):
     
     return stat(**argument_dict)
 
+#==========================================================================
+
+def new_key():
+    return numpy.random.random();
         
 #==========================================================================
 
-def configure_printers(specs):
+def output_files(specs):
+    outputs = {}
+    for spec in specs:
+        spec_part = spec.split(":")
+        key = spec_part[0] + ":" + spec_part[1]
+        
+        output = {2 : lambda : OutputProvider(sys.stdout, False, True),
+                  3 : lambda : OutputProvider(os.path.realpath(spec_part[2]), True, True),
+                  4 : lambda : OutputProvider(os.path.realpath(spec_part[3]), True, True, 
+                                              "a" if spec_part[2] == "append" else "w") }[len(spec_part)]
+           
+        outputs[key] = output()
+    
+    return outputs    
+
+#==========================================================================
+
+def configure_printers(specs, outputs):
     printers = []
     for spec in specs:
         spec_part = spec.split(":")
-        
-        output = None
-        if len(spec_part) == 3:
-            output = spec_part[2]
-        
+        key = spec_part[0] + ":" + spec_part[1]
         if spec_part[1] == "average":
-            printers.append(SquashStatisticsPrinter(spec_part[0], output, True))
+            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], True))
         elif spec_part[1] == "total":
-            printers.append(SquashStatisticsPrinter(spec_part[0], output, False))
+            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], False))
         elif spec_part[1] == "allpoints":
-            printers.append(DataPagePrinter(spec_part[0], output))
+            printers.append(DataPagePrinter(spec_part[0], outputs[key]))
 
     return printers
-
+    
 #==========================================================================
 
-def open_output(output):
+def _main(args):
     
-    if output is None:
-        return sys.stdout
-    else:
-        return open(os.path.realpath(output), "w")
+    parser = OptionParser(usage="%prog [options] logfile")
+    parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
+                      help="list of statistics to be printed.")
+    parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
+    parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
+                      help="prints statistics for a number of rounds.")
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
+    parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enables psyco.")
+
+    (options, args) = parser.parse_args()
     
+    if len(args) == 0:
+        print >> sys.stderr, "Error: missing log file."
+        parser.print_help()
+        sys.exit(1)
+    
+    # Imports psyco.
+    if options.psyco:
+        try: 
+            import psyco 
+            psyco.full()
+        except ImportError:
+            print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
+    
+    # Runs the parser.        
+    _run_parser(options, args[0], output_files(options.statistics.split(",")))   
+
 #==========================================================================
 
 if __name__ == '__main__':

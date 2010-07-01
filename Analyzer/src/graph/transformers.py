@@ -15,6 +15,7 @@ from graph.util import igraph_neighbors, random_color, igraph_edges
 from resources import VERTEX_COLOR
 import logging
 from graph.ds import IntersectionTracker
+import sys
 
 #===============================================================================
 # Constants.
@@ -310,8 +311,10 @@ def densify_neighborhoods(graph):
     
     # Unfortunately I don't know of any better way to do this in
     # igraph. 
-    for root in range(0, len(graph.vs)):
+    length = len(graph.vs)
+    for root in range(0, length):
         neighborhood = list(igraph_neighbors(root, graph))
+        print >> sys.stderr, "Neighborhood %s of %s." % (str(root), str(length))
         to_add = []
         for i in range(0, len(neighborhood)):
             u = neighborhood[i]

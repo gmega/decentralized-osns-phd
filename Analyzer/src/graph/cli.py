@@ -55,6 +55,31 @@ class EdgeList2Adj:
             encoder = AdjacencyListEncoder(sys.stdout)
             encoder.recode(EdgeListDecoder(file))
 
+#===============================================================================        
+    
+class GraphSize:
+    """ Parses a graph G = (V, E) and prints |V| to the standard output. 
+    """
+    
+    def __init__(self, input, decoder=str(AdjacencyListDecoder)):
+        """
+        @param input: the input graph.
+        @param decoder: the decoder to use when reading the graph.
+        """
+        
+        self._input = input
+        self._decoder = get_object(decoder)
+        
+    def execute(self):
+        seen = set()
+        with open(self._input, "r") as file:
+            decoder = AdjacencyListDecoder(file)
+            for source, target, payload in decoder:
+                seen.add(source)
+                seen.add(target)
+
+        print len(seen)
+
 #===============================================================================
 
 class AvgClustering:
@@ -64,7 +89,7 @@ class AvgClustering:
     
     def __init__(self, input, decoder=str(AdjacencyListDecoder), directed=False):
         """ @param input: the file containing the graph.
-            @param decoder: the decoder to use for reading the graph.
+            @param decoder: the decoder to use when reading the graph.
             @param directed: whether the graph is directed or not.
         """
 
@@ -149,11 +174,12 @@ class DensifyNeighborhoods:
     
     def __init__(self, input, decoder=str(AdjacencyListDecoder), encoder=str(AdjacencyListEncoder)):
         self._loader = GraphLoader(input, get_object(decoder))
-        
+        self._encoder = get_object(encoder)
     
     def execute(self):
         g = self._loader.load_graph()
-        densify_neighborhoods(g)
+        densified = densify_neighborhoods(g)
+        self._encoder(sys.stdout).encode(densified)
 
 #===============================================================================
 

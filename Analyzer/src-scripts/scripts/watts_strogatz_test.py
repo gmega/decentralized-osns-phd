@@ -3,9 +3,8 @@ Created on 21/ott/2009
 
 @author: giuliano
 '''
-from sn.generators import Watts_Strogatz
-from sn.metrics import avg_measure,\
-    NodeCountingClusteringComputer
+from graph.generators import Watts_Strogatz
+from graph.metrics import avg_measure, NodeCountingClusteringComputer
 
 def test_wt():
     

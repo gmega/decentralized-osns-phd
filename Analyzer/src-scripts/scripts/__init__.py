@@ -1,13 +1,16 @@
-from protocol.clustering import RandomWalker
 import logging
 import os
 import numpy
 import resources
-import protocol
 
 from sn.transformers import *
 from sn.metrics import *
 from numpy import *
+from graph.transformers import clear_colors, extract_communities,\
+    cluster_by_marker, COMMUNITY_ID
+from graph.codecs import SVGEncoder
+from community.rndwalk import RandomWalker
+from graph.metrics import NodeCountingClusteringComputer, avg_measure
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +27,9 @@ def compare_community_data(graph, write_path = None, layout_algorithm="circle"):
         comms = extract_communities(graph, algorithm, PARS[algorithm])
         
         if not write_path is None:
-            path = os.join(write_path, "compare_community_data")
+            path = os.path.join(write_path, "compare_community_data")
             #GraphWriter(graph).write_SVG(os.join(path, "graph_%s" % algorithm), layout_algorithm)
-            SVGEncoder(os.join(path, "graph_%s" % algorithm), layout_algorithm)
+            SVGEncoder(os.path.join(path, "graph_%s" % algorithm), layout_algorithm)
         
         avg = max = 0
         min = len(graph.vs)
@@ -47,7 +50,6 @@ def compare_community_data(graph, write_path = None, layout_algorithm="circle"):
 def reduce_till_collapse(graph, max_iters=50, write_path=None):
     
     for i in range(0, max_iters):
-        print_statistics(graph)
         clear_colors(graph)
         extract_communities(graph, "fastgreedy")
         graph = cluster_by_marker(graph, COMMUNITY_ID)
@@ -55,11 +57,8 @@ def reduce_till_collapse(graph, max_iters=50, write_path=None):
         if not write_path is None:
             # TODO check if this is right
             #writer.write_SVG(os.join(write_path, "a_%s.svg" % str(i)), "circle")
-            SVGEncoder(os.join(write_path, "a_%s.svg" % str(i)), "circle").encode(graph)
+            SVGEncoder(os.path.join(write_path, "a_%s.svg" % str(i)), "circle").encode(graph)
         
-        if len(graph.vs) <= 1:
-            print_statistics(graph)
-            break   
         
     if iter == (max_iters - 1):
         print "Could not collapse graph in %s iters." % max_iters

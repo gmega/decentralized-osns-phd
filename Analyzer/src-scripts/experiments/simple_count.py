@@ -3,10 +3,7 @@ Created on 10/set/2009
 
 @author: giuliano
 '''
-from protocol.clustering import RandomWalker
-
 import igraph
-import util
 import scripts
 import sys
 import numpy
@@ -15,6 +12,7 @@ from igraph import *
 from util.misc import *
 from scripts import *
 from numpy import *
+from graph.util import igraph_neighbors, from_adjacency_list
 
 VISITED = 0
 

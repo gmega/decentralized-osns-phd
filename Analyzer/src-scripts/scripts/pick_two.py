@@ -3,9 +3,9 @@ Created on 13/ott/2009
 
 @author: giuliano
 '''
-from util.misc import igraph_neighbors
-from graph_codecs import GraphLoader
 import resources
+from graph.codecs import GraphLoader
+from graph.util import igraph_neighbors
 
 def pick_two():
     r = GraphLoader(resources.resource("Black_friends.txt"), False, False)
