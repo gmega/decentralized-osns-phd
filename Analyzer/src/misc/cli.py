@@ -180,6 +180,24 @@ class Subst:
         return p.sub(m, val)
 
 #===============================================================================
+
+class NumbersOnly:
+    """ Reads from standard input and outputs only numbers to stdout. 
+    """
+    
+    NUMBER="[0-9]+(?:\.[0-9]+)?"
+    
+    def __init__(self):
+        pass
+    
+    def execute(self):
+        for line in sys.stdin:
+            nums = re.findall(self.NUMBER, line);
+            for num in nums:
+                print num,
+            print 
+
+#===============================================================================
    
 class ReadAttribute:
     """ Simple class which reads and prints the string represenation of an 

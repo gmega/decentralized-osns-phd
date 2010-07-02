@@ -81,7 +81,9 @@ class FileProgressTracker():
         
     
     def start_task(self):
-        self.__get_tracker__().start_task()
+        tracker = self.__get_tracker__()
+        if not tracker is None:
+            tracker.start_task()
 
     
     def tick(self):
@@ -91,10 +93,16 @@ class FileProgressTracker():
 
 
     def __get_tracker__(self):
-        if self._tracker is None:
-            stat_info = os.stat(self._file.name)
-            self._tracker = ProgressTracker(self._task_title, stat_info.st_size)
-            self._last_position = self._file.tell()
+        try:
+            if self._tracker is None:
+                stat_info = os.stat(self._file.name)
+                self._tracker = ProgressTracker(self._task_title, stat_info.st_size)
+                self._last_position = self._file.tell()
+        except OSError:
+            print >> sys.stderr, "Cannnot stat <<" + str(self._file.name) + ">>. Progress tracking disabled."
+            self.tick = null_op
+            self.done = null_op
+            return None
         
         return self._tracker
         
@@ -103,13 +111,14 @@ class FileProgressTracker():
         self._tracker.done()
 
 
-class FileWrapper:
+class FileWrapper(object):
     ''' Adapter for allowing bz2 and gzip files, as well as StringIO instances 
     to be used within \"with\" constructs. ''' 
     
-    def __init__(self, delegate, no_close=False):
+    def __init__(self, delegate, no_close=False, synthetic_name=None):
         self._delegate = delegate
         self._no_close = no_close
+        self.name = synthetic_name
         
     def __enter__(self):
         return self
@@ -122,9 +131,12 @@ class FileWrapper:
             self._delegate.close()
         else:
             self._delegate.flush()
-                
+    
     def __getattr__(self, name):
-        return getattr(self._delegate, name)
+        try:
+            return FileWrapper.__getattribute__(self, name)
+        except AttributeError:
+            return getattr(self._delegate, name)
 
 
 class NullList:
@@ -140,6 +152,10 @@ class NullList:
     
     def __getitem__(self, idx):
         return 0.0
+
+
+def null_op():
+    pass
 
 
 def replace_vars(val, vars):

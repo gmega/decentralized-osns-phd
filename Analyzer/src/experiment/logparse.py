@@ -10,16 +10,15 @@ import sys
 import re
 import os
 import math
-import logparse
 
 from misc.util import FileProgressTracker, FileWrapper
 from optparse import OptionParser
-from io import StringIO
 from misc.reflection import get_object, PyArgMatcher, match_arguments
 from main import parse_vars, parse_vars_from_options
 from graph.codecs import AdjacencyListDecoder, GraphLoader
 from graph.util import igraph_neighbors
 import numpy
+import StringIO
     
 #==========================================================================
 # Log decoders.
@@ -34,13 +33,11 @@ class LogDecoder:
     SIG_UNDELIVERED = "undelivered"
     SIG_ROUND_END = "round_end"
     
-    SUPPORTED_BASEFORMATS = set(["text", "txt"])
-    SUPPORTED_COMPRESSION = set(["bz2", "gz"])
-    
-    def __init__(self, verbose, input, filetype=None):
+    def __init__(self, verbose, basedecoder, complete_visitor=False):
         self._input = input
         self._verbose = verbose
-        self._filetype = filetype
+        self._basedecoder = basedecoder
+        self._complete_visitor = complete_visitor
         
     def decode(self, visitor):
         ''' Decodes the log file, calling back a visitor for each relevant
@@ -56,7 +53,7 @@ class LogDecoder:
         called when a message is delivered, when a duplicate is received,
         and when a round ends, respectively. 
         '''
-        with self.__open_file__(self._input) as file:
+        with self._basedecoder.open() as file:
             
             progress_tracker = FileProgressTracker("parsing log", file)
             progress_tracker.start_task()
@@ -80,7 +77,8 @@ class LogDecoder:
                         self.__process_undelivered__(visitor, line)
                         
                 except AttributeError:
-                    pass
+                    if self._complete_visitor:
+                        raise
                      
                 progress_tracker.tick()
             progress_tracker.done()
@@ -107,40 +105,62 @@ class LogDecoder:
      
     def __process_round_boundary__(self, visitor, line):
         m = re.search('[0-9]+', line)
-        number = int(m.group(0))
-        if number > 0:
-            visitor.round_end(number)
+        visitor.round_end(int(m.group(0)))
 
 
     def __process_undelivered__(self, visitor, line):
         id, seq, intended_receiver, sim_time = [int(i) for i in line.split(" ")[1:]]
         visitor.undelivered(id, seq, intended_receiver, sim_time)
 
+
+#==========================================================================
+
+class BaseFormatDecoder:
+    
+    PLAIN = "text"
+    SPECIAL = "special"
+    SUPPORTED_BASEFORMATS = set([SPECIAL, PLAIN, "txt"])
+    SUPPORTED_COMPRESSION = set(["bz2", "gz"])
+    
+    def __init__(self, file_reference, filetype=None, open_mode="r"):
+        self._file_reference = file_reference
+        self._filetype = filetype
+        self._open_mode = open_mode
+    
         
-    def __open_file__(self, file_name):
+    def open(self):
         handle = None
-        filetype = self.__get_filetype__()
+        filetype = self.__guess_filetype__()
         if (filetype == "text" or filetype =="txt"):
-            handle = open(file_name, "r")
+            handle = open(self._file_reference, self._open_mode)
         elif (filetype == "bz2"):
-            handle = FileWrapper(bz2.BZ2File(file_name, "r"))
+            handle = FileWrapper(bz2.BZ2File(self._file_reference, self._open_mode))
         elif (filetype == "gz"):
-            handle = FileWrapper(gzip.open(file_name, "r"))
+            handle = FileWrapper(gzip.open(self._file_reference, self._open_mode))
+        elif (filetype == self.SPECIAL):
+            handle = FileWrapper(self._file_reference, True, synthetic_name=self.SPECIAL)
         else:
             raise Exception("Unsupported type " + filetype + ".")
     
         return handle
     
     
-    def __get_filetype__(self):
+    def __guess_filetype__(self):
         if self._filetype is None:
-            idx = self._input.rfind(".")
+            # Assumes it's a string. If it's not, fails.
+            idx = -1
+            try:
+                idx = self._file_reference.rfind(".")
+            except AttributeError:
+                pass
+               
             if idx == -1:
                 raise Exception("Cannot guess file type of " + self._input + ".")
         
-            self._filetype = self._input[idx+1:]
+            self._filetype = self._file_reference[idx+1:]
         
         return self._filetype
+
 
 #==========================================================================
 # Information printers.
@@ -148,15 +168,18 @@ class LogDecoder:
 
 class SquashStatisticsPrinter:
     
-    def __init__(self, statistic, output, average):
+    def __init__(self, statistic, output, average, no_labels=False):
         self._statistic = statistic
         self._output = output
         self._average = average
+        self._no_labels = no_labels
         
     def do_print(self, data_source):
         with self._output.open() as file:
             for title, data_page in data_source.statistics(self._statistic):
-                print >> file, title + ":",self.__squash__(data_page)
+                if not self._no_labels:
+                    print >> file, title + ":",
+                print >> file, self.__squash__(data_page)
     
     def __squash__(self, data):
         total = 0
@@ -200,7 +223,7 @@ class StatisticTracker:
         self._statistics = statistics
         self._pernode = {}
         self._special_rounds = special_rounds
-        self._current_round = 1
+        self._current_round = 0
         self._dirty = False
     
     #======================================================================
@@ -229,7 +252,7 @@ class StatisticTracker:
     
     def round_end(self, round):
         if round != self._current_round:
-            raise Exception("Missing round markers (expected " + str(self._rounds) + ", got " + str(round) + ").")
+            raise Exception("Missing round markers (expected " + str(self._current_round) + ", got " + str(round) + ").")
         
         for statistic in self._statistics.values():
             if self.__supports__(statistic, LogDecoder.SIG_ROUND_END):
@@ -323,14 +346,13 @@ class NodeStatistics:
             self._per_round[number] = dict(self._round_counter)
 
         for statistic in self._round_counter:
-            # Adds per-round figures into global figures.
-            self.__inc_counter__(self._global_counter, statistic, self._round_counter[statistic])
             # Resets per-round figures.
             self._round_counter[statistic] = 0
    
    
     def sum(self, statistic, value):
         self.__inc_counter__(self._round_counter, statistic, value)
+        self.__inc_counter__(self._global_counter, statistic, value)
 
         
     def __inc_counter__(self, counters, selector, value):
@@ -365,27 +387,31 @@ class MessageStatistic:
     # Undelivered.
     MODE_UNDELIVERED = 4
     
+    
     def __init__(self, mode):
         self._mode = int(mode)
-
         self.MSG_DELIVERED = new_key()
         self.MSG_DUPLICATE = new_key()
         self.MSG_UNDELIVERED = new_key()
+    
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
         if (self._mode & self.MODE_DELIVERED) != 0:
             node_stat = stat_tracker[receiver_id]
             node_stat.sum(self.MSG_DELIVERED, 1)
     
+    
     def duplicate(self, stat_tracker, id, seq, send_id, receiver_id, sim_time):
         if (self._mode & self.MODE_DUPLICATE) != 0:
             node_stat = stat_tracker[receiver_id]
             node_stat.sum(self.MSG_DUPLICATE, 1)
         
+   
     def undelivered(self, stat_tracker, id, seq, intended_receiver, sim_time):
         if (self._mode & self.MODE_UNDELIVERED) != 0:
             node_stat = stat_tracker[intended_receiver]
             node_stat.sum(self.MSG_UNDELIVERED, 1)
+   
    
     def populate_sheet(self, sheet, node_stats, round):
         for node_stat in node_stats:
@@ -408,8 +434,10 @@ class LatencyStatistic:
         self._key = new_key()
         self._load = deps["load"]
     
+    
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
         stat_tracker[receiver_id].sum(self._key, latency)
+    
     
     def populate_sheet(self, sheet, node_stats, round):
         for node_stat in node_stats:
@@ -438,11 +466,15 @@ class MinloadStatistic:
     def round_end(self, stat_tracker, round):
         counter = self._network_size
         for node_stat in stat_tracker:
-            if node_stat.get(self._load.MSG_ALL_RECEIVED, None) > self._lower_bound:
+            if self.__node_load__(node_stat) > self._lower_bound:
                 counter -= 1
         
         self._page[round] = float(counter)/self._network_size
 
+    
+    def __node_load__(self, node_stat):
+        return node_stat.get(self._load.MSG_DELIVERED, None) + node_stat.get(self._load.MSG_DUPLICATE, None)
+    
     
     def populate_sheet(self, sheet, node_stats, round):
         if round is None:
@@ -478,6 +510,7 @@ class DuplicatesPerMessage:
         self._input = log
         self._message_data = {}
     
+    
     def execute(self):
         decoder = LogDecoder(True, self._input)
         decoder.decode(self)
@@ -494,11 +527,14 @@ class DuplicatesPerMessage:
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
         self.__inc__((id, seq), DuplicatesPerMessage.DUPLICATE)
     
+    
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
         self.__inc__((id, seq), DuplicatesPerMessage.RECEIVED)
+    
         
     def tweeted(self, id, seq, time):
         self.__inc__((id, seq), DuplicatesPerMessage.RECEIVERS, self._graph.degree(id))
+    
             
     def __inc__(self, tweet, selector, increment=1):    
         if self._message_data.has_key(tweet):
@@ -569,45 +605,6 @@ class LoadBySender:
         pass
 
 #==========================================================================
-# Support classes.
-#==========================================================================
-
-class OutputProvider:
-    """ OutputProvider helps decouple the mechanism for opening an output
-    stream from the actual concrete type of such stream, while allowing us
-    to preserve lazy opening. 
-    """ 
-    
-    def __init__(self, reference, should_open, should_wrap, mode="w"):
-        """ Constructs a new OutputProvider.
-        
-        @param should_open: whether the reference needs to be opened or not.
-        @param should_wrap: whether the output object (opened or not) needs 
-        to be wrapped to comply with the interface demanded by the "with" 
-        keyword.
-        @param reference: the reference to the output stream.
-        """
-
-        self._should_open = should_open
-        self._should_wrap = should_wrap
-        self._open_mode = mode
-        self._reference = reference
-
-    
-    def open(self):
-        """ Opens the output and returns a reference. Outputs should 
-        implement the standard file interface. 
-        """
-        
-        output = self._reference
-        if self._should_open:
-            output = open(self._reference, self._open_mode)
-        if self._should_wrap:
-            output = FileWrapper(output, not self._should_open)    
-
-        return output
-
-#==========================================================================
 
 # Statistic aliases.
 CONFIG_MAP = {"load":("message", "mode="+str(MessageStatistic.MODE_ALL_RECEIVED)),
@@ -622,18 +619,23 @@ REQUIRE_MAP = {"latency":["load"],
 #==========================================================================
 
 def _run_parser(options, input_file, outputs):
-    
-    statistics = options.statistics.split(",")
-    decoder = LogDecoder(options.verbose, input_file)
-    printers = configure_printers(statistics, outputs)
-    statistics = StatisticTracker(parse_statistics(statistics, options), parse_rounds(options.rounds))
-    
-    # Decodes and collects statistics.
-    decoder.decode(statistics)
+    specs = options.statistics.split(",")
+    printers = configure_printers(specs, outputs, options.nolabels)
+    log_statistics = _collect_statistics(specs, options, input_file)
     
     # Prints the results.
     for printer in printers:
-        printer.do_print(statistics)
+        printer.do_print(log_statistics)
+
+#==========================================================================
+
+def _collect_statistics(specs, options, basedecoder):
+    decoder = LogDecoder(options.verbose, basedecoder, True)
+    statistics = StatisticTracker(parse_statistics(specs, options), parse_rounds(options.rounds))
+    # Decodes and collects statistics.
+    decoder.decode(statistics)
+    
+    return statistics
 
 #==========================================================================
                 
@@ -650,7 +652,9 @@ def parse_rounds(specs):
 def parse_statistics(specs, options):
     stats = {}
     for spec in specs:
-        instantiate_stat(spec.split(":")[0], stats, options)
+        key = spec.split(":")[0]
+        if not (key in stats):
+            instantiate_stat(key, stats, options)
     
     return stats
 
@@ -662,8 +666,10 @@ def instantiate_stat(key, stats, options):
         for requirement in REQUIRE_MAP[key]:
             if not (requirement in stats):
                 deps[requirement] = instantiate_stat(requirement, stats, options)
+            else:
+                deps[requirement] = stats[requirement]
     
-    stats[key] = instantiate_concrete(key, deps, parse_vars_from_options(options))     
+    stats[key] = instantiate_concrete(key, deps, parse_vars_from_options(options))
     
 #==========================================================================
 
@@ -681,8 +687,8 @@ def instantiate_concrete(key, deps, vars):
         vars["deps"] = deps
 
     stat = real_key.title() + "Statistic"
-    stat = getattr(logparse, stat)
-    py_argmatcher = PyArgMatcher(vars, stat)
+    stat = getattr(sys.modules[__name__], stat)
+    py_argmatcher = PyArgMatcher(vars, stat.__name__)
     argument_dict = match_arguments(stat, py_argmatcher)
     
     print >> sys.stderr, "- Add statistic:", key
@@ -702,10 +708,10 @@ def output_files(specs):
         spec_part = spec.split(":")
         key = spec_part[0] + ":" + spec_part[1]
         
-        output = {2 : lambda : OutputProvider(sys.stdout, False, True),
-                  3 : lambda : OutputProvider(os.path.realpath(spec_part[2]), True, True),
-                  4 : lambda : OutputProvider(os.path.realpath(spec_part[3]), True, True, 
-                                              "a" if spec_part[2] == "append" else "w") }[len(spec_part)]
+        output = {2 : lambda : BaseFormatDecoder(sys.stdout, BaseFormatDecoder.SPECIAL, open_mode = "w"),
+                  3 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[2]), open_mode = "w"),
+                  4 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[3]), 
+                                                 open_mode="a" if spec_part[2] == "append" else "w") }[len(spec_part)]
            
         outputs[key] = output()
     
@@ -713,15 +719,15 @@ def output_files(specs):
 
 #==========================================================================
 
-def configure_printers(specs, outputs):
+def configure_printers(specs, outputs, nolabels):
     printers = []
     for spec in specs:
         spec_part = spec.split(":")
         key = spec_part[0] + ":" + spec_part[1]
         if spec_part[1] == "average":
-            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], True))
+            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], True, nolabels))
         elif spec_part[1] == "total":
-            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], False))
+            printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], False, nolabels))
         elif spec_part[1] == "allpoints":
             printers.append(DataPagePrinter(spec_part[0], outputs[key]))
 
@@ -737,6 +743,7 @@ def _main(args):
     parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
     parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
                       help="prints statistics for a number of rounds.")
+    parser.add_option("-n", "--nolabels", action="store_true", dest="nolabels", help="when printing aggregated statistics, suppresses labels.")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
     parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enables psyco.")
 

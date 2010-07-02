@@ -119,6 +119,7 @@ def match_arguments(callable, arg_lookup):
     actual_names, varargs, varkw, default_values = spec
     
     if not (varargs is None and varkw is None):
+        # FIXME varargs in python cannot be positional, so we can deal with them.
         raise Exception("Cannot deal with varargs. Aborting.")        
     
     default_pool = {}
