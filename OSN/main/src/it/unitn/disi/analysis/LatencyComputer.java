@@ -31,9 +31,27 @@ import java.util.Map;
  * <li>round boundaries.</li>
  * <ol>
  * 
+ * Note to self: the current implementation is very efficient and lightweight,
+ * so exercise care when making changes.
+ * 
  * @author giuliano
  */
 public class LatencyComputer implements IMultiTransformer {
+	
+	// ----------------------------------------------------------------------
+	// Text prefixes for the messages.
+	// ----------------------------------------------------------------------
+	
+	private static final String DELIVERED = "M";
+	
+	private static final String DUPLICATE = "MD";
+	
+	private static final String UNDELIVERED = "U";
+	
+	private static final String TWEET = "T";
+	
+	private static final String XCGH_DIGESTS = "D";
+	
 	// ----------------------------------------------------------------------
 	// Parameters.
 	// ----------------------------------------------------------------------
@@ -44,8 +62,16 @@ public class LatencyComputer implements IMultiTransformer {
 	// State.
 	// ----------------------------------------------------------------------
 
+	/**
+	 * This map keeps track of all messages that are still pending receive in 
+	 * in the simulation, as of the point of the log being parsed.
+	 */
 	private final Map<Long, NodeData> fToReceive = new HashMap<Long, NodeData>();
 
+	/**
+	 * Counter representing the current round in the simulation, as of the point
+	 * of the log being parsed.
+	 */
 	private long fCurrentRound = 0;
 
 	public LatencyComputer(boolean verbose) {
@@ -59,6 +85,8 @@ public class LatencyComputer implements IMultiTransformer {
 		OutputStreamWriter writer = new OutputStreamWriter(oup[0]);
 		EventCodec decoder = createDecoder();
 		DecodingStream stream = decoder.decodingStream(is[1]);
+		
+		System.err.println("Now parsing binary log.");
 
 		try {
 			while (stream.hasNext()) {
@@ -169,18 +197,19 @@ public class LatencyComputer implements IMultiTransformer {
 
 	private void parseExchangeDigests(DecodingStream stream,
 			OutputStreamWriter writer) throws IOException {
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("D ");
-		buffer.append(stream.next());
-		buffer.append(" ");
-		buffer.append(stream.next());
-		buffer.append(" ");
-		buffer.append(stream.next());
-		buffer.append(" ");
-		buffer.append(stream.next());
-		buffer.append("\n");
-
-		writer.write(buffer.toString());
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append(XCGH_DIGESTS);
+		sb.append(" ");
+		sb.append(stream.next());
+		sb.append(" ");		
+		sb.append(stream.next());
+		sb.append(" ");
+		sb.append(stream.next());
+		sb.append(" ");
+		sb.append(stream.next());
+		sb.append("\n");
+		writer.write(sb.toString());
 	}
 
 	private void parseTweet(Iterator<Number> stream,
@@ -197,22 +226,23 @@ public class LatencyComputer implements IMultiTransformer {
 			NodeData data = nodeData((long) neighborId);
 			data.addPending(newEvent, time);
 		}
-
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("T ");
-		buffer.append(producerId);
-		buffer.append(" ");
-		buffer.append(newEvent.fSeq);
-		buffer.append(" ");
-		buffer.append(time);
-		buffer.append("\n");
-
-		writer.write(buffer.toString());
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append(TWEET);
+		sb.append(" ");
+		sb.append(producerId);
+		sb.append(" ");
+		sb.append(newEvent.fSeq);
+		sb.append(" ");
+		sb.append(time);
+		sb.append("\n");
+		writer.write(sb.toString());
 
 		if (fVerbose) {
 			System.err
-					.println("Event TWEET (" + producerId + "," + newEvent.fSeq
-							+ ") from " + producerId + " at " + time
+					.println(String.format(NewscastEvents.TWEETED
+							.formattingString(), producerId, newEvent.fSeq,
+							time)
 							+ ". To be received by "
 							+ Arrays.toString(neighbors) + ".");
 		}
@@ -266,29 +296,24 @@ public class LatencyComputer implements IMultiTransformer {
 			latency = data.eventReceived(id, time);
 		}
 
-		// Writes in table format:
-		// [id of tweeting node] [event sequence number] [id of receiving node]
-		// [latency]
-		StringBuffer buffer = new StringBuffer();
-		if (duplicate) {
-			buffer.append("MD ");
-		} else {
-			buffer.append("M ");
-		}
-		buffer.append(id.fId);
-		buffer.append(" ");
-		buffer.append(id.fSeq);
-		buffer.append(" ");
-		buffer.append(senderId);
-		buffer.append(" ");
-		buffer.append(receiverId);
-		buffer.append(" ");
-		buffer.append(latency);
-		buffer.append(" ");
-		buffer.append(time);
-		buffer.append("\n");
-
-		writer.write(buffer.toString());
+		StringBuffer sb = new StringBuffer();
+		
+		sb.append(duplicate ? DUPLICATE : DELIVERED);
+		sb.append(" ");
+		sb.append(id.fId);
+		sb.append(" ");
+		sb.append(id.fSeq);
+		sb.append(" ");
+		sb.append(senderId);
+		sb.append(" ");
+		sb.append(receiverId);
+		sb.append(" ");
+		sb.append(latency);
+		sb.append(" ");
+		sb.append(time);
+		sb.append("\n");
+		
+		writer.write(sb.toString());
 	}
 
 	// ------------------------------------------------------------------
@@ -302,15 +327,20 @@ public class LatencyComputer implements IMultiTransformer {
 			Iterator<EventId> pendingEvts = data.pendingEventKeys();
 			while (pendingEvts.hasNext()) {
 				EventId id = pendingEvts.next();
-
-				StringBuffer buffer = new StringBuffer();
-				buffer.append("U ");
-				buffer.append(id.fId);
-				buffer.append(" ");
-				buffer.append(id.fSeq);
-				buffer.append("\n");
-
-				writer.write(buffer.toString());
+				
+				StringBuffer sb = new StringBuffer();
+				sb.append(UNDELIVERED);
+				sb.append(" ");
+				sb.append(id.fId);
+				sb.append(" ");
+				sb.append(id.fSeq);
+				sb.append(" ");
+				sb.append(key);
+				sb.append(" ");
+				sb.append(fCurrentRound);
+				sb.append("\n");
+				
+				writer.write(sb.toString());
 			}
 		}
 	}

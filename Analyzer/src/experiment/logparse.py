@@ -116,6 +116,11 @@ class LogDecoder:
 #==========================================================================
 
 class BaseFormatDecoder:
+    """ BaseFormatDecoder knows how to construct an file-interface-compliant 
+    object from a variety of data sources. It can also arrange for 
+    decompression to be performed on-the-fly by the available Python 
+    libraries.
+    """
     
     PLAIN = "text"
     SPECIAL = "special"
@@ -165,7 +170,6 @@ class BaseFormatDecoder:
             self._filetype = self._file_reference[idx+1:]
         
         return self._filetype
-
 
 #==========================================================================
 # Information printers.
@@ -315,6 +319,8 @@ class StatisticTracker:
 
     def __len__(self):
         return len(self._pernode)
+
+#==========================================================================
 
 class NodeStatistics:
     ''' NodeStatistics accumulates information for a single node 
@@ -517,7 +523,7 @@ class DuplicatesPerMessage:
     
     
     def execute(self):
-        decoder = LogDecoder(True, self._input)
+        decoder = LogDecoder(True, BaseFormatDecoder(self._input))
         decoder.decode(self)
         
         for key,value in self._message_data.items():
@@ -585,7 +591,7 @@ class LoadBySender:
     
     
     def execute(self):
-        decoder = LogDecoder(True, self._log)
+        decoder = LogDecoder(True, BaseFormatDecoder(self._log))
         decoder.decode(self)
         for sender,load in self._load_statistics.iteritems():
             print sender,load
@@ -744,7 +750,7 @@ def _main(args):
     
     parser = OptionParser(usage="%prog [options]")
     parser.add_option("-f", "--file", action="store", type="string", dest="file", help="reads from file of the standard input.")
-    parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
+    parser.add_option("-s", "--statistics", action="store", type="string", dest="statistics", default="latency:average", 
                       help="list of statistics to be printed.")
     parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
     parser.add_option("-r", "--rounds", action="store", type="string", dest="rounds", default=None, 
@@ -763,9 +769,13 @@ def _main(args):
         except ImportError:
             print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
 
+    print >> sys.stderr, "-- Reading log from",
+
     if not (options.file is None):
+        print >> sys.stderr, options.file + "."
         base_decoder = BaseFormatDecoder(options.file) 
     else: 
+        print >> sys.stderr, "standard input" + "."
         base_decoder = BaseFormatDecoder(sys.stdin, BaseFormatDecoder.SPECIAL)
         
     # Runs the parser.        

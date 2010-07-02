@@ -1,0 +1,6 @@
+# ------------------------------------------------------------------
+# Random selector over linkable.
+# ------------------------------------------------------------------
+
+protocol.selector RandomSelectorOverLinkable
+protocol.selector.linkable sn

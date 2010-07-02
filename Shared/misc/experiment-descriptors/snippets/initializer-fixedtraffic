@@ -1,0 +1,3 @@
+init.fixedtraffic.PredictableTrafficInit
+init.fixedtraffic.application application
+init.fixedtraffic.seed 42

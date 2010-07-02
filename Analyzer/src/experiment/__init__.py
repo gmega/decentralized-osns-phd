@@ -1,5 +1,7 @@
 ''' Module with functionality related to managing and processing 
 the results of experiments. '''
+from os import getenv
+import os
 
 #==========================================================================
 # General rules.
@@ -27,5 +29,19 @@ MESSAGE_LOG_FOLDER="messages"
 TEXT_OUTPUT_LOG="output-${REPETITION}${BASEFORMAT}${COMPRESSEDFORMAT}"
 BIN_MESSAGE_LOG="log-${REPETITION}${BASEFORMAT}${COMPRESSEDFORMAT}"
 
+#==========================================================================
+# Environment variables.
+#==========================================================================
+DESCRIPTORS_ROOT = os.getenv("DESCRIPTORS_ROOT")
+if (DESCRIPTORS_ROOT is None):
+    DESCRIPTORS_ROOT = os.getenv("HOME")
 
+SNIPPETS_ROOT = os.path.join(DESCRIPTORS_ROOT, "snippets")
+TEMPLATES_ROOT = os.path.join(DESCRIPTORS_ROOT, "templates")
+
+#==========================================================================
+# Other constants.
+#==========================================================================
+EXPERIMENT_TEMPLATE="experiment.template"
+TPLPART_SEPARATOR = "-"
 

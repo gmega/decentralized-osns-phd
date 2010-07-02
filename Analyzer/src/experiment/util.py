@@ -7,12 +7,16 @@ Created on Jun 24, 2010
 import experiment
 import sys
 import re
-from misc.util import replace_vars
-from experiment import REPETITION, TEXT_OUTPUT_LOG, NAME_CONSTITUENTS, BIN_MESSAGE_LOG
+from misc.util import replace_vars, replace_vars_using, FileWrapper
+from experiment import REPETITION, TEXT_OUTPUT_LOG, NAME_CONSTITUENTS, BIN_MESSAGE_LOG,\
+    DESCRIPTORS_ROOT, TEMPLATES_ROOT, SNIPPETS_ROOT, TPLPART_SEPARATOR,\
+    EXPERIMENT_TEMPLATE
 import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+#==========================================================================
 
 class ChkStructure:
     ''' Verifies that the structure of the experiment complies to what it is 
@@ -64,8 +68,95 @@ class ChkStructure:
                     logger.info("element " + str(i) + " is missing.")
                     return -1
         return i
-            
+
+#==========================================================================
+
+class ExpandTemplate(object):
+    def __init__(self, template,  output=FileWrapper(sys.stdout, True), 
+                 snippets_root=SNIPPETS_ROOT):
+        self._snippets_root = snippets_root
+        self._template = template
+        self._output = output
         
+    def execute(self):
+        with open(self._template, "r") as file:
+            for line in file:
+                if line.startswith("#include"):
+                    print >> self._output, self.__expand_tpl__(line.split(" ")[1])
+                else:
+                    print >> self._output, line
+    
+    def __expand_tpl__(self, file_name):
+        leaf = os.path.realpath(os.path.join(self._snippets_root, file_name.rstrip()))
+        with open (leaf, "r") as file:
+            return file.read()
+
+
+class MkExperiment(object):
+    
+    def __init__(self, template, templates_root=TEMPLATES_ROOT, snippets_root=SNIPPETS_ROOT, 
+                 experiment_template=EXPERIMENT_TEMPLATE):
+        self._templates_root = templates_root
+        self._snippets_root = snippets_root
+        self._template = template
+        self._experiment_template = experiment_template
+        
+    def execute(self):
+        tplpath = os.path.join(self._templates_root, self._template)
+        
+        if not os.path.isfile(tplpath):
+            print >> sys.stderr, "Invalid experiment template ", tplpath + "."
+            return 1
+        
+        path_parts = self._template.split(TPLPART_SEPARATOR)
+        experiment_path = os.getcwd()
+        
+        for part in path_parts:
+            experiment_path = os.path.join(experiment_path,part) 
+            os.mkdir(experiment_path)
+
+        experiment_template = os.path.join(experiment_path, self._experiment_template)
+        
+        with open(experiment_template, "w") as file:            
+            expand_tpl = ExpandTemplate(tplpath, file, self._snippets_root)
+            expand_tpl.execute()
+            
+        print >> sys.stderr, "Experiment ", self._template, "created successfully."
+
+class InferExperimentTemplate(object):
+    
+    def __init__(self, templates_root=TEMPLATES_ROOT):
+        self._templates_root = templates_root
+        
+    def execute(self):
+        files = os.listdir(self._templates_root)
+        cwd = os.getcwd()
+        
+        for file in files:
+            if self.__matches__(cwd.split(os.sep), file.split("-")):
+                print file
+
+        return -1
+    
+    
+    def __matches__(self, larger, smaller):
+        if (len(larger) < len(smaller)):
+            return False
+
+        larger.reverse()
+        smaller.reverse()
+        
+        for i in range(0, len(smaller)):
+            if smaller[i] != larger[i]:
+                return False
+        
+        return True
+        
+        
+        
+
+#==========================================================================
+
 class FilenameHandler:
     
     def __init__(self, constituents, template):
@@ -82,4 +173,4 @@ class FilenameHandler:
         
         return info
         
-            
+#==========================================================================    

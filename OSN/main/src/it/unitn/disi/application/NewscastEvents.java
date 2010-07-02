@@ -17,7 +17,7 @@ public enum NewscastEvents implements IBinaryEvent{
 	 * <li>Long: simulation time of the event.</li>
 	 * </ol>
 	 */
-	TWEETED((byte)3, "%1$s: (%3$d) by %2$d @ %4$ds", 
+	TWEETED((byte)3, "%1$s: (%3$d) by %2$d @ %4$ds",
 			Long.class, Integer.class, Long.class),
 	
 	/**

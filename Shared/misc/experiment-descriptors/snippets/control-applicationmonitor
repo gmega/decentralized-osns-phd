@@ -1,0 +1,3 @@
+control.application_observer NewscastApplicationMonitor
+control.application_observer.application application
+control.application_observer.logwriter tweets file ${binlog}

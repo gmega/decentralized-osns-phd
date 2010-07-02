@@ -159,9 +159,12 @@ def null_op():
 
 
 def replace_vars(val, vars):
-    m = lambda v: vars[v.group(1)]
+    return replace_vars_using(val, lambda v: vars[v.group(1)])
+
+
+def replace_vars_using(val, callback):
     p = re.compile("\${(\w+)}")
-    return p.sub(m, val)
+    return p.sub(callback, val)
  
 
 def permute(list, start, end):

@@ -1,0 +1,20 @@
+# ------------------------------------------------------------------
+# Random selector over linkable.
+# ------------------------------------------------------------------
+
+protocol.random			RandomSelectorOverLinkable
+protocol.random.linkable	sn
+
+protocol.centrality		CentralitySelector 
+{
+      percentile	0.85
+      psimin		5
+      linkable		sn
+}
+
+protocol.selector		GenericCompositeSelector
+{
+      members	centrality random
+      probabs 	0.3 0.7
+      policy	random
+}

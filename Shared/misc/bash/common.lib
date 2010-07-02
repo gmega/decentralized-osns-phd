@@ -84,10 +84,11 @@ function assert_exists {
 ############################################################### 
 function checkenv {
 
-    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB misc.cli.CheckVar
+    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB,DESCRIPTORS_ROOT misc.cli.CheckVar > /dev/null
     
-    if [ ! $? ]
+    if [ $? == "1" ]
     then
+	err "FAILED."
 	exit 1
     fi
 }

@@ -193,6 +193,8 @@ class NumbersOnly:
     def execute(self):
         for line in sys.stdin:
             nums = re.findall(self.NUMBER, line);
+            if (len(nums) == 0):
+                continue
             for num in nums:
                 print num,
             print 

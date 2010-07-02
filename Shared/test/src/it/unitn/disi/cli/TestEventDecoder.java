@@ -2,14 +2,11 @@ package it.unitn.disi.cli;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
 
 import junit.framework.Assert;
-import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventSet;

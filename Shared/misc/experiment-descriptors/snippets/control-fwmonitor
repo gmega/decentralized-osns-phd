@@ -1,0 +1,3 @@
+control.forwarding_debugger ForwardingMonitor
+control.forwarding_debugger.adaptable application
+control.forwarding_debugger.social_network sn
