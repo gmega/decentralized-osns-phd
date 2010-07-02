@@ -99,7 +99,7 @@ class FileProgressTracker():
                 self._tracker = ProgressTracker(self._task_title, stat_info.st_size)
                 self._last_position = self._file.tell()
         except OSError:
-            print >> sys.stderr, "Cannnot stat <<" + str(self._file.name) + ">>. Progress tracking disabled."
+            print >> sys.stderr, "Unable to obtain the size of <" + str(self._file.name) + "> upfront. Progress tracking disabled."
             self.tick = null_op
             self.done = null_op
             return None

@@ -138,7 +138,12 @@ class BaseFormatDecoder:
         elif (filetype == "gz"):
             handle = FileWrapper(gzip.open(self._file_reference, self._open_mode))
         elif (filetype == self.SPECIAL):
-            handle = FileWrapper(self._file_reference, True, synthetic_name=self.SPECIAL)
+            try:
+                name = self._file_reference.name
+            except AttributeError:
+                name = "unnamed special file"
+                
+            handle = FileWrapper(self._file_reference, True, synthetic_name=name)
         else:
             raise Exception("Unsupported type " + filetype + ".")
     
@@ -155,7 +160,7 @@ class BaseFormatDecoder:
                 pass
                
             if idx == -1:
-                raise Exception("Cannot guess file type of " + self._input + ".")
+                raise Exception("Cannot guess file type of <" + str(self._file_reference) + ">.")
         
             self._filetype = self._file_reference[idx+1:]
         
@@ -618,10 +623,10 @@ REQUIRE_MAP = {"latency":["load"],
 
 #==========================================================================
 
-def _run_parser(options, input_file, outputs):
+def _run_parser(options, base_decoder, outputs):
     specs = options.statistics.split(",")
     printers = configure_printers(specs, outputs, options.nolabels)
-    log_statistics = _collect_statistics(specs, options, input_file)
+    log_statistics = _collect_statistics(specs, options, base_decoder)
     
     # Prints the results.
     for printer in printers:
@@ -708,7 +713,7 @@ def output_files(specs):
         spec_part = spec.split(":")
         key = spec_part[0] + ":" + spec_part[1]
         
-        output = {2 : lambda : BaseFormatDecoder(sys.stdout, BaseFormatDecoder.SPECIAL, open_mode = "w"),
+        output = {2 : lambda : BaseFormatDecoder(sys.stdout, BaseFormatDecoder.SPECIAL),
                   3 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[2]), open_mode = "w"),
                   4 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[3]), 
                                                  open_mode="a" if spec_part[2] == "append" else "w") }[len(spec_part)]
@@ -737,7 +742,8 @@ def configure_printers(specs, outputs, nolabels):
 
 def _main(args):
     
-    parser = OptionParser(usage="%prog [options] logfile")
+    parser = OptionParser(usage="%prog [options]")
+    parser.add_option("-f", "--file", action="store", type="string", dest="file", help="reads from file of the standard input.")
     parser.add_option("-s", "--statistic", action="store", type="string", dest="statistics", default="latency:average", 
                       help="list of statistics to be printed.")
     parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for statistics")
@@ -749,11 +755,6 @@ def _main(args):
 
     (options, args) = parser.parse_args()
     
-    if len(args) == 0:
-        print >> sys.stderr, "Error: missing log file."
-        parser.print_help()
-        sys.exit(1)
-    
     # Imports psyco.
     if options.psyco:
         try: 
@@ -761,9 +762,14 @@ def _main(args):
             psyco.full()
         except ImportError:
             print >> sys.stderr, "Could not import psyco -- maybe it is not installed?"
-    
+
+    if not (options.file is None):
+        base_decoder = BaseFormatDecoder(options.file) 
+    else: 
+        base_decoder = BaseFormatDecoder(sys.stdin, BaseFormatDecoder.SPECIAL)
+        
     # Runs the parser.        
-    _run_parser(options, args[0], output_files(options.statistics.split(",")))   
+    _run_parser(options, base_decoder, output_files(options.statistics.split(",")))   
 
 #==========================================================================
 
