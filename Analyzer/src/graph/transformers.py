@@ -295,10 +295,14 @@ def clear_colors(graph):
         vertex[VERTEX_COLOR] = "white"
 
 
-def densify_neighborhoods(graph):
+def densify_neighborhoods(graph, lightweight=False, file=sys.stdout):
     """ Given an input graph, process all 1-hop neighbors in it and transforms
     them into cliques. This effectively produces an output graph with clustering
     coefficient 1. 
+    
+    @param lightweight: if set to a file descriptor, does not build the graph 
+    in-memory. Instead, prints an edge list to stdout. This edge list might not
+    represent a simple graph, which means results need to be post-processed.
     
     @note: Does not modify the input graph.
     @note: Works with directed graphs.
@@ -307,7 +311,7 @@ def densify_neighborhoods(graph):
     tracker = ProgressTracker("densify neighborhoods", len(graph.vs))
     tracker.start_task()
     
-    dense = graph.copy()
+    dense = None if lightweight else graph.copy()
     
     # Unfortunately I don't know of any better way to do this in
     # igraph. 
@@ -318,14 +322,26 @@ def densify_neighborhoods(graph):
         to_add = []
         for i in range(0, len(neighborhood)):
             u = neighborhood[i]
+            # Lightweight: need to print existing edges as well.
+            if lightweight:
+                print >>file, root,u
             left = 0 if graph.is_directed() else i + 1
             for j in range(left, len(neighborhood)):
-                to_add.append((u, neighborhood[j]))
-        
-        dense.add_edges(to_add)
+                # Either registers edge into list...
+                if not lightweight:
+                    to_add.append((u, neighborhood[j]))
+                # ... or prints it, discarding the information.
+                else:
+                    print >>file, u,neighborhood[j] 
+
+        if not lightweight:        
+            dense.add_edges(to_add)
+            
         tracker.tick()
+
+    if not lightweight:
+        dense.simplify()
         
-    dense.simplify()
     tracker.done()
     
     return dense

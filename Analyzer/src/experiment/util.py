@@ -112,8 +112,13 @@ class MkExperiment(object):
         experiment_path = os.getcwd()
         
         for part in path_parts:
-            experiment_path = os.path.join(experiment_path,part) 
-            os.mkdir(experiment_path)
+            experiment_path = os.path.join(experiment_path,part)
+            if os.path.exists(experiment_path):
+                if os.path.isfile(experiment_path):
+                    print >> sys.stderr, "A file with name",experiment_path,"already exists."
+                    return -1 
+            else:
+                os.mkdir(experiment_path)
 
         experiment_template = os.path.join(experiment_path, self._experiment_template)
         

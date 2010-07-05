@@ -21,10 +21,13 @@ logger = logging.getLogger(__name__)
 class GraphLoader(object):
     """ GraphLoader can take a graph decoder and build an igraph.Graph object
         from it.
+        
+        Careful as IDs /will be/ remapped, even if they appear in a contiguous
+        range. To get the original IDs back, use the option /retain_id_map/. 
     """
 
-    def __init__(self, file_name, decoder, directed=False, retain_id_map=False):
-        self._file_name = file_name
+    def __init__(self, file_reference, decoder, directed=False, retain_id_map=False):
+        self._file_reference = file_reference        
         self._directed = directed
         self._retain_data = retain_id_map
         self._logger = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
@@ -41,7 +44,7 @@ class GraphLoader(object):
         edge_list = []       # List of edges
         weight_list = []     # List of edge weights
         
-        with open(self._file_name, "r") as file:
+        with self.__open__() as file:
 
             progress_tracker = FileProgressTracker("reading graph", file)
             progress_tracker.start_task()
@@ -102,6 +105,13 @@ class GraphLoader(object):
             return idTable[vertex]
         vId = idTable[vertex] = len(idTable)
         return vId
+
+
+    def __open__(self):
+        try:
+            return self._file_reference.open()
+        except AttributeError:
+            return open(self._file_reference, "r")
 
 #===============================================================================
 # Graph codecs. General rules:

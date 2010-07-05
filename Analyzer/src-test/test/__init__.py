@@ -1,17 +1,20 @@
+from resources import ORIGINAL_ID
 
-def assertEdgeList(instance, graph, edgeList):
+def assertEdgeList(instance, graph, edgeList, map=False):
     edgeSet = set()
     
     for edge in edgeList:
         edgeSet.add(edge)
        
     for edge in graph.es:
-        tuple = (edge.source, edge.target)
-        tuple_i = (edge.target, edge.source)          
+        source = graph.vs[edge.source][ORIGINAL_ID] if map else edge.source
+        target = graph.vs[edge.target][ORIGINAL_ID] if map else edge.target
+        tuple = (source, target)
+        tuple_i = (target, source)          
                                                             
-        if edgeSet.__contains__(tuple):
+        if tuple in edgeSet:
             edgeSet.remove(tuple)
-        elif edgeSet.__contains__(tuple_i):
+        elif tuple_i in edgeSet:
             edgeSet.remove(tuple_i)
         else:
             instance.fail("Found spurious edge: " + str(tuple))
