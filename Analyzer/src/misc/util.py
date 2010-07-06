@@ -118,7 +118,8 @@ class FileWrapper(object):
     def __init__(self, delegate, no_close=False, synthetic_name=None):
         self._delegate = delegate
         self._no_close = no_close
-        self.name = synthetic_name
+        if not (synthetic_name is None):
+            self.name = synthetic_name
         
     def __enter__(self):
         return self

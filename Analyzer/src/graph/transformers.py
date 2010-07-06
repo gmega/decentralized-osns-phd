@@ -324,7 +324,7 @@ def densify_neighborhoods(graph, lightweight=False, file=sys.stdout):
             u = neighborhood[i]
             # Lightweight: need to print existing edges as well.
             if lightweight:
-                print >>file, root,u
+                print >> file, root,u
             left = 0 if graph.is_directed() else i + 1
             for j in range(left, len(neighborhood)):
                 # Either registers edge into list...
@@ -332,7 +332,7 @@ def densify_neighborhoods(graph, lightweight=False, file=sys.stdout):
                     to_add.append((u, neighborhood[j]))
                 # ... or prints it, discarding the information.
                 else:
-                    print >>file, u,neighborhood[j] 
+                    print >> file, u, neighborhood[j] 
 
         if not lightweight:        
             dense.add_edges(to_add)
@@ -341,9 +341,8 @@ def densify_neighborhoods(graph, lightweight=False, file=sys.stdout):
 
     if not lightweight:
         dense.simplify()
-        
-    tracker.done()
     
+    tracker.done()
     return dense
 
 def _inverse_of(tuple):

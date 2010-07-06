@@ -101,7 +101,12 @@ class LogDecoder:
         for type, parts in self._decoding_stream.decode():
             if not (dispatch.has_key(type)):
                 continue;
-            dispatch[type](parts)
+            
+            try:
+                dispatch[type](parts)
+            except AttributeError:
+                if self._complete_visitor:
+                    raise
         
         # Sends the last message to the visitor.
         try:
@@ -541,7 +546,7 @@ class DuplicatesPerMessage:
     
     
     def execute(self):
-        decoder = LogDecoder(True, BaseFormatDecoder(self._input))
+        decoder = LogDecoder(LogDecodingStream(True, BaseFormatDecoder(self._input)))
         decoder.decode(self)
         
         for key,value in self._message_data.items():
@@ -576,6 +581,11 @@ class DuplicatesPerMessage:
 #==========================================================================
 
 class ConvergenceAnalyzer:
+    """ Parses a simulation log to determine the convergence point for 
+    the dissemination algorithm. The convergence criterion used here is not
+    very robust -- we simply look at the point in which the number of delivered
+    messages varies by less than a given epsilon (given in percentage). 
+    """
     
     def __init__(self, input, column=0, epsilon=0.01):
         self._input = input
@@ -601,6 +611,9 @@ class ConvergenceAnalyzer:
 #==========================================================================
 
 class LoadBySender:
+    """ Given a simulation log and a node ID, computes the load contributions
+    on the node with the provided ID for each one of its neighbors.
+    """
     
     def __init__(self, logfile, receiver):
         self._log = logfile
@@ -609,7 +622,7 @@ class LoadBySender:
     
     
     def execute(self):
-        decoder = LogDecoder(True, BaseFormatDecoder(self._log))
+        decoder = LogDecoder(LogDecodingStream(True, BaseFormatDecoder(self._log)))
         decoder.decode(self)
         for sender,load in self._load_statistics.iteritems():
             print sender,load
@@ -635,15 +648,94 @@ class LoadBySender:
 
 #==========================================================================
 
-def FixedTrafficCheck(object):
-    """ Checks if the message generation patterns of two distinct logs 
-    coincides up until the point where they end. """
+class FixedTrafficCheck(object):
+    """ Checks if the message generation patterns of distinct logs 
+    coincides up until the point where they end. 
+    """
     
     def __init__(self, log_list):
         self._log_list = log_list.split(",") 
 
 
+    def execute(self):
+        streams = self.__open_all__()
+        record = 0
+        
+        while True:
+            tweet = None
+            deads = []
+            for i in range(0, len(streams)):
+                try:
+                    if tweet is None:
+                        tweet = self.__next_tweet__(streams[i])
+                    else:
+                        other_tweet = self.__next_tweet__(streams[i])
+                        if tweet != other_tweet:
+                            print >> sys.stderr, "Tweet streams differ at record "\
+                                    + str(record) + ": " + str(tweet) + " != "\
+                                    + str(other_tweet) + "."
+                            return 1
+                except StopIteration:
+                    deads.append(streams[i])
+                
+            for dead in deads:
+                del streams[streams.index(dead)]
+                
+        print >> sys.stderr, "Logs have identical tweet streams."
+            
 
+    def __next_tweet__(self, dec_stream):
+        while True:
+            type, parts = dec_stream.next()
+            if type == LogDecodingStream.TWEETED:
+                return (type, parts)
+
+
+    def __open_all__(self):
+        streams = []
+        for logfile in self._log_list:
+            print >> sys.stderr, "Adding file",logfile,"to log list."
+            streams.append(LogDecodingStream(False, BaseFormatDecoder(logfile)).decode())
+        
+        return streams
+
+
+#==========================================================================
+
+class LowerBound(object):
+    """ Given two logs for simulations with identical traffic profiles, computes
+    a lower bound on latency for delivered messages. This implementation is very simple,
+    and requires one of the logs to be loaded into memory. The practical implication is 
+    that scalability might be an issue for larger simulations. 
+    """
+        
+    def __init__(self, log_1, log_2):
+        self._log_1 = log_1
+        self._log_2 = log_2
+        self._messages = {}
+        self._compare = False;
+    
+        
+    def execute(self):
+        dec = LogDecoder(LogDecodingStream(False, BaseFormatDecoder(self._log_1)), False)
+        dec.decode(self)
+        
+        self._compare = True
+        
+        dec = LogDecoder(LogDecodingStream(False, BaseFormatDecoder(self._log_2)), False)
+        dec.decode(self)
+        
+        for msg_key, latency in self._messages.items():
+            id, seq, receiver_id = msg_key
+            print id, seq, receiver_id, latency
+    
+        
+    def message(self, id, seq, send_id, receiver_id, latency, sim_time):
+        key = (id, seq, receiver_id)
+        if self._compare and self._messages.has_key(key):
+            self._messages[key] = min(self._messages[key], latency)
+        else:
+            self._messages[key] = latency
 
 #==========================================================================
 
