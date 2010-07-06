@@ -24,8 +24,47 @@ import StringIO
 # Log decoders.
 #==========================================================================
 
+class LogDecodingStream:
+    ''' LogDecodingStream knows how to decode a log file. It provides rather
+    raw functionality by simply breaking up messages and doing the proper type
+    conversions. '''
+    
+    TWEETED="T"
+    DELIVERED="M"
+    DUPLICATE="MD"
+    UNDELIVERED="U"
+    ROUND_END="R"
+
+
+    def __init__(self, verbose, basedecoder):
+        self._basedecoder = basedecoder
+        self._verbose = verbose
+        
+        
+    def decode(self):
+        ''' Decodes the log file, yielding the message contents for each
+        parsed record. '''
+        with self._basedecoder.open() as file:
+            progress_tracker = FileProgressTracker("parsing log", file)
+            progress_tracker.start_task()
+            for line in file:
+                type, parts = self.__process_record__(line)
+                progress_tracker.tick()
+                yield (type, parts)
+            progress_tracker.done()
+    
+    
+    def __process_record__(self, record):
+        if (record.startswith("ROUNDEND")):
+            m = re.search('[0-9]+', record)
+            return (self.ROUND_END, int(m.group(0)))
+        else:
+            record_parts = record.split(" ")
+            return (record_parts[0], [int(i) for i in record_parts[1:]])
+
+
 class LogDecoder:
-    ''' LogDecoder knows how to decode a text log file.'''
+    ''' LogDecoder provides a bit more semantic to clients than LogDecodingStream.'''
     
     SIG_TWEETED = "tweeted"
     SIG_MESSAGE = "message"
@@ -33,10 +72,8 @@ class LogDecoder:
     SIG_UNDELIVERED = "undelivered"
     SIG_ROUND_END = "round_end"
     
-    def __init__(self, verbose, basedecoder, complete_visitor=False):
-        self._input = input
-        self._verbose = verbose
-        self._basedecoder = basedecoder
+    def __init__(self, decoding_stream, complete_visitor=False):
+        self._decoding_stream = decoding_stream
         self._complete_visitor = complete_visitor
         
     def decode(self, visitor):
@@ -53,65 +90,47 @@ class LogDecoder:
         called when a message is delivered, when a duplicate is received,
         and when a round ends, respectively. 
         '''
-        with self._basedecoder.open() as file:
-            
-            progress_tracker = FileProgressTracker("parsing log", file)
-            progress_tracker.start_task()
-            
-            for line in file:
-                try:
-                    # Tweets start with T.
-                    if line[0] == 'T':
-                        self.__process_tweet__(visitor, line)
-                    
-                    # Message lines start with an M.
-                    elif line[0] == 'M':
-                        self.__process_receive__(visitor, line, line[1] == 'D')
-
-                    # Round markers start with an R.
-                    elif line[0] == 'R':
-                        self.__process_round_boundary__(visitor, line)
-                    
-                    # Undelivered lines start with an U.    
-                    elif line[0] == 'U':
-                        self.__process_undelivered__(visitor, line)
-                        
-                except AttributeError:
-                    if self._complete_visitor:
-                        raise
-                     
-                progress_tracker.tick()
-            progress_tracker.done()
-            
-            # Sends the last message to the visitor.
-            try:
-                visitor.log_end()
-            except AttributeError:
-                pass
+        
+        # Dispatch dictionary.
+        dispatch = {LogDecodingStream.TWEETED : lambda parts : self.__process_tweet__(visitor, parts), 
+                    LogDecodingStream.DELIVERED : lambda parts : self.__process_receive__(visitor, parts, False),
+                    LogDecodingStream.DUPLICATE : lambda parts : self.__process_receive__(visitor, parts, True),
+                    LogDecodingStream.ROUND_END : lambda parts : self.__process_round_boundary__(visitor, parts),
+                    LogDecodingStream.UNDELIVERED : lambda parts : self.__process_undelivered__(visitor, parts) }
+        
+        for type, parts in self._decoding_stream.decode():
+            if not (dispatch.has_key(type)):
+                continue;
+            dispatch[type](parts)
+        
+        # Sends the last message to the visitor.
+        try:
+            visitor.log_end()
+        except AttributeError:
+            pass
     
     
     def __process_tweet__(self, visitor, line):
-        id, seq, time = [int(i) for i in line.split(" ")[1:]]
+        id, seq, time = line
         visitor.tweeted(id, seq, time)
        
     
     def __process_receive__(self, visitor, line, duplicate):
-        id, seq, send_id, receiver_id, latency, sim_time = [int(i) for i in line.split(" ")[1:]]
+        id, seq, send_id, receiver_id, latency, sim_time = line
         if (duplicate):
             visitor.duplicate(id, seq, send_id, receiver_id, sim_time)
         else:
             visitor.message(id, seq, send_id, receiver_id, latency, sim_time)
-            
+
      
     def __process_round_boundary__(self, visitor, line):
-        m = re.search('[0-9]+', line)
-        visitor.round_end(int(m.group(0)))
+        number = line
+        visitor.round_end(number)
 
 
     def __process_undelivered__(self, visitor, line):
-        id, seq, intended_receiver, sim_time = [int(i) for i in line.split(" ")[1:]]
+        id, seq, intended_receiver, sim_time = line
         visitor.undelivered(id, seq, intended_receiver, sim_time)
-
 
 #==========================================================================
 
@@ -495,7 +514,6 @@ class MinloadStatistic:
         
         return sheet
                 
-
 #==========================================================================
 # Transformers for parsing logs.
 #==========================================================================
@@ -617,6 +635,18 @@ class LoadBySender:
 
 #==========================================================================
 
+def FixedTrafficCheck(object):
+    """ Checks if the message generation patterns of two distinct logs 
+    coincides up until the point where they end. """
+    
+    def __init__(self, log_list):
+        self._log_list = log_list.split(",") 
+
+
+
+
+#==========================================================================
+
 # Statistic aliases.
 CONFIG_MAP = {"load":("message", "mode="+str(MessageStatistic.MODE_ALL_RECEIVED)),
               "delivered":("message", "mode="+str(MessageStatistic.MODE_DELIVERED)), 
@@ -641,7 +671,7 @@ def _run_parser(options, base_decoder, outputs):
 #==========================================================================
 
 def _collect_statistics(specs, options, basedecoder):
-    decoder = LogDecoder(options.verbose, basedecoder, True)
+    decoder = LogDecoder(LogDecodingStream(options.verbose, basedecoder), True)
     statistics = StatisticTracker(parse_statistics(specs, options), parse_rounds(options.rounds))
     # Decodes and collects statistics.
     decoder.decode(statistics)

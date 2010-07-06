@@ -12,6 +12,9 @@ from graph.metrics import avg_measure, NodeCountingClusteringComputer
 from graph.util import count_neighbors_in_common
 from graph.transformers import snowball_sample, densify_neighborhoods
 from graph.generators import IrregularlyClusteredNC
+import logging
+
+logger = logging.getLogger(__name__)
 
 #===============================================================================
 
@@ -172,14 +175,21 @@ class DensifyNeighborhoods:
     """ Command-line binding to densify_neighborhoods.
     """
     
-    def __init__(self, input, decoder=str(AdjacencyListDecoder), encoder=str(AdjacencyListEncoder)):
+    def __init__(self, input, lightweight=False, decoder=str(AdjacencyListDecoder), encoder=str(AdjacencyListEncoder)):
         self._loader = GraphLoader(input, get_object(decoder))
         self._encoder = get_object(encoder)
+        self._lightweight = bool(lightweight)
     
     def execute(self):
         g = self._loader.load_graph()
-        densified = densify_neighborhoods(g)
-        self._encoder(sys.stdout).encode(densified)
+        if self._lightweight:
+            logger.info("Lightweight mode.")
+        else:
+            logger.info("Heavyweight mode.")
+        densified = densify_neighborhoods(g, self._lightweight)
+        
+        if not (densified is None): 
+            self._encoder(sys.stdout).encode(densified)
 
 #===============================================================================
 
