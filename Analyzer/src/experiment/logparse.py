@@ -19,6 +19,9 @@ from graph.codecs import AdjacencyListDecoder, GraphLoader
 from graph.util import igraph_neighbors
 import numpy
 import StringIO
+import logging
+
+logger = logging.getLogger(__name__)
     
 #==========================================================================
 # Log decoders.
@@ -26,13 +29,19 @@ import StringIO
 
 class LogDecodingStream:
     ''' LogDecodingStream knows how to decode a log file. It provides rather
-    raw functionality by simply breaking up messages and doing the proper type
-    conversions. '''
+    raw functionality by simply breaking up messages into its constituents and
+    assigning the whole thing a type. Types are given by the constants declared
+    in this class.'''
     
+    # Node has tweeted.
     TWEETED="T"
+    # A message has been delivered to the application layer.
     DELIVERED="M"
+    # A duplicate message has been received.
     DUPLICATE="MD"
+    # A message could not be delivered.
     UNDELIVERED="U"
+    # A round has ended.
     ROUND_END="R"
 
 
@@ -55,16 +64,19 @@ class LogDecodingStream:
     
     
     def __process_record__(self, record):
-        if (record.startswith("ROUNDEND")):
+        if (record.startswith(self.ROUND_END)):
             m = re.search('[0-9]+', record)
             return (self.ROUND_END, int(m.group(0)))
         else:
             record_parts = record.split(" ")
             return (record_parts[0], [int(i) for i in record_parts[1:]])
 
+#==========================================================================
 
 class LogDecoder:
-    ''' LogDecoder provides a bit more semantic to clients than LogDecodingStream.'''
+    ''' LogDecoder provides a bit more semantic to clients than LogDecodingStream.
+    It performs proper checking of constituent types, making it overall a safer
+    choice.'''
     
     SIG_TWEETED = "tweeted"
     SIG_MESSAGE = "message"
@@ -72,9 +84,11 @@ class LogDecoder:
     SIG_UNDELIVERED = "undelivered"
     SIG_ROUND_END = "round_end"
     
+    
     def __init__(self, decoding_stream, complete_visitor=False):
         self._decoding_stream = decoding_stream
         self._complete_visitor = complete_visitor
+        
         
     def decode(self, visitor):
         ''' Decodes the log file, calling back a visitor for each relevant
@@ -88,7 +102,8 @@ class LogDecoder:
         - round_end(number)
         
         called when a message is delivered, when a duplicate is received,
-        and when a round ends, respectively. 
+        when an undelivered message is found, and when a round ends, 
+        respectively. 
         '''
         
         # Dispatch dictionary.
@@ -140,7 +155,7 @@ class LogDecoder:
 #==========================================================================
 
 class BaseFormatDecoder:
-    """ BaseFormatDecoder knows how to construct an file-interface-compliant 
+    """ BaseFormatDecoder knows how to construct a file-interface-compliant 
     object from a variety of data sources. It can also arrange for 
     decompression to be performed on-the-fly by the available Python 
     libraries.
@@ -150,6 +165,7 @@ class BaseFormatDecoder:
     SPECIAL = "special"
     SUPPORTED_BASEFORMATS = set([SPECIAL, PLAIN, "txt"])
     SUPPORTED_COMPRESSION = set(["bz2", "gz"])
+    
     
     def __init__(self, file_reference, filetype=None, open_mode="r"):
         self._file_reference = file_reference
@@ -201,11 +217,13 @@ class BaseFormatDecoder:
 
 class SquashStatisticsPrinter:
     
+    
     def __init__(self, statistic, output, average, no_labels=False):
         self._statistic = statistic
         self._output = output
         self._average = average
         self._no_labels = no_labels
+        
         
     def do_print(self, data_source):
         with self._output.open() as file:
@@ -213,6 +231,7 @@ class SquashStatisticsPrinter:
                 if not self._no_labels:
                     print >> file, title + ":",
                 print >> file, self.__squash__(data_page)
+    
     
     def __squash__(self, data):
         total = 0
@@ -228,9 +247,11 @@ class SquashStatisticsPrinter:
 
 class DataPagePrinter:
     
+    
     def __init__(self, statistic, output):
         self._statistic = statistic
         self._output = output
+    
         
     def do_print(self, data_source):
         print_separator = False
@@ -251,6 +272,7 @@ class DataPagePrinter:
 #==========================================================================
 
 class StatisticTracker:
+    
             
     def __init__(self, statistics, special_rounds=set()):
         self._statistics = statistics
@@ -266,14 +288,18 @@ class StatisticTracker:
     def tweeted(self, id, seq, time):
         self.__redispatch__(LogDecoder.SIG_TWEETED, id=id, seq=seq, time=time)
     
+    
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
         self.__redispatch__(LogDecoder.SIG_DUPLICATE, id=id, seq=seq, send_id=send_id, receiver_id=receiver_id, sim_time=sim_time)
+    
             
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
         self.__redispatch__(LogDecoder.SIG_MESSAGE, id=id, seq=seq, send_id=send_id, receiver_id=receiver_id, latency=latency, sim_time=sim_time)
     
+    
     def undelivered(self, id, seq, intended_receiver, sim_time):
         self.__redispatch__(LogDecoder.SIG_UNDELIVERED, id=id, seq=seq, intended_receiver=intended_receiver, sim_time=sim_time)
+    
                 
     def __redispatch__(self, message, **args):
         self._dirty = True
@@ -282,6 +308,7 @@ class StatisticTracker:
             if self.__supports__(statistic, message):
                 selector = getattr(statistic, message)
                 selector(**args)
+    
     
     def round_end(self, round):
         if round != self._current_round:
@@ -296,10 +323,12 @@ class StatisticTracker:
         
         self._current_round += 1
         self._dirty = False
+    
         
     def log_end(self):
         if self._dirty:
             self.round_end(self._current_round)
+     
         
     def __supports__(self, visitor, message):
         return hasattr(visitor, message)
@@ -333,13 +362,16 @@ class StatisticTracker:
     def __iter__(self):
         return self._pernode.itervalues()
 
+
     def __statistics__(self, statistic_key, round=None):
         statistic = self._statistics[statistic_key]
         assert not statistic is None
         return statistic.populate_sheet({}, self, round)
     
+    
     def __contains__(self, id):
         return id in self._pernode
+
 
     def __len__(self):
         return len(self._pernode)
@@ -425,9 +457,9 @@ class MessageStatistic:
     
     def __init__(self, mode):
         self._mode = int(mode)
-        self.MSG_DELIVERED = new_key()
-        self.MSG_DUPLICATE = new_key()
-        self.MSG_UNDELIVERED = new_key()
+        self.MSG_DELIVERED = _new_key()
+        self.MSG_DUPLICATE = _new_key()
+        self.MSG_UNDELIVERED = _new_key()
     
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
@@ -466,7 +498,7 @@ class MessageStatistic:
 class LatencyStatistic:
     
     def __init__(self, deps):
-        self._key = new_key()
+        self._key = _new_key()
         self._load = deps["load"]
     
     
@@ -539,34 +571,58 @@ class DuplicatesPerMessage:
     RECEIVED=1
     DUPLICATE=2    
     
-    def __init__(self, log, social_graph, decoder=str(AdjacencyListDecoder)):
-        self._graph = GraphLoader(social_graph, get_object(decoder)).load_graph()
+    def __init__(self, log, social_graph, debug=False, decoder=str(AdjacencyListDecoder)):
         self._input = log
         self._message_data = {}
-    
-    
+        self._debug = bool(debug)
+        self._loader = GraphLoader(social_graph, get_object(decoder), retain_id_map=True)
+        self._graph = self._loader.load_graph()
+        
+        
     def execute(self):
         decoder = LogDecoder(LogDecodingStream(True, BaseFormatDecoder(self._input)))
         decoder.decode(self)
-        
+
         for key,value in self._message_data.items():
             intended = float(value[DuplicatesPerMessage.RECEIVERS])
             actual = float(value[DuplicatesPerMessage.RECEIVED])
             duplicates = float(value[DuplicatesPerMessage.DUPLICATE])
             
+            coverage = self.__divide__(actual, intended, "coverage")
+            sends_per_intended = self.__divide__(actual + duplicates, intended, "sends per message")
+            dups_per_deliver = self.__divide__(duplicates, actual, "duplicates per message")
+            
             print key[0], key[1], intended, actual, duplicates,\
-                (actual / intended), ((actual + duplicates)/(intended)), (duplicates/actual)  
+                coverage, sends_per_intended, dups_per_deliver  
+
+
+    def __divide__(self, numerator, denominator, quantity):
+        division = 1.0
+        if denominator == 0:
+            if numerator != 0:
+                logger.warning("Attempted to divide %d by %d when computing %s." % (numerator, denominator, quantity))
+        else:
+            division = numerator/denominator
+        return division
 
 
     def duplicate(self, id, seq, send_id, receiver_id, sim_time):
+        id = self.__map__(id)
         self.__inc__((id, seq), DuplicatesPerMessage.DUPLICATE)
     
     
     def message(self, id, seq, send_id, receiver_id, latency, sim_time):
-        self.__inc__((id, seq), DuplicatesPerMessage.RECEIVED)
-    
+        id = self.__map__(id)
+        val = self.__inc__((id, seq), DuplicatesPerMessage.RECEIVED)
+        if self._debug:
+            intended = self._message_data[(id, seq)][DuplicatesPerMessage.RECEIVERS]
+            if val > intended:
+                raise Exception("Message " + str((id, seq)) + " has " + str(intended) +\
+                                 " intended receivers but " + str(val) + " actual receivers.")
+   
         
     def tweeted(self, id, seq, time):
+        id = self.__map__(id)
         self.__inc__((id, seq), DuplicatesPerMessage.RECEIVERS, self._graph.degree(id))
     
             
@@ -577,7 +633,12 @@ class DuplicatesPerMessage:
             val = self._message_data.setdefault(tweet, [0, 0, 0])
             
         val[selector] = val[selector] + increment
+        return val[selector]
     
+    
+    def __map__(self, original_id):
+        return self._loader.id_of(original_id)
+
 #==========================================================================
 
 class ConvergenceAnalyzer:
@@ -591,6 +652,7 @@ class ConvergenceAnalyzer:
         self._input = input
         self._column = column
         self._epsilon = float(epsilon)
+    
     
     def execute(self):
         last = sys.maxint
@@ -753,7 +815,7 @@ REQUIRE_MAP = {"latency":["load"],
 
 def _run_parser(options, base_decoder, outputs):
     specs = options.statistics.split(",")
-    printers = configure_printers(specs, outputs, options.nolabels)
+    printers = _configure_printers(specs, outputs, options.nolabels)
     log_statistics = _collect_statistics(specs, options, base_decoder)
     
     # Prints the results.
@@ -764,7 +826,7 @@ def _run_parser(options, base_decoder, outputs):
 
 def _collect_statistics(specs, options, basedecoder):
     decoder = LogDecoder(LogDecodingStream(options.verbose, basedecoder), True)
-    statistics = StatisticTracker(parse_statistics(specs, options), parse_rounds(options.rounds))
+    statistics = StatisticTracker(_parse_statistics(specs, options), _parse_rounds(options.rounds))
     # Decodes and collects statistics.
     decoder.decode(statistics)
     
@@ -772,7 +834,7 @@ def _collect_statistics(specs, options, basedecoder):
 
 #==========================================================================
                 
-def parse_rounds(specs):
+def _parse_rounds(specs):
     rounds = set()
     if not specs is None:
         for i in specs.split("-"):
@@ -782,31 +844,32 @@ def parse_rounds(specs):
 
 #==========================================================================
 
-def parse_statistics(specs, options):
+def _parse_statistics(specs, options):
     stats = {}
     for spec in specs:
         key = spec.split(":")[0]
         if not (key in stats):
-            instantiate_stat(key, stats, options)
+            _instantiate_stat(key, stats, options)
     
     return stats
 
 #==========================================================================
 
-def instantiate_stat(key, stats, options):
+def _instantiate_stat(key, stats, options):
     deps = {}
     if REQUIRE_MAP.has_key(key):
         for requirement in REQUIRE_MAP[key]:
             if not (requirement in stats):
-                deps[requirement] = instantiate_stat(requirement, stats, options)
+                deps[requirement] = _instantiate_stat(requirement, stats, options)
             else:
                 deps[requirement] = stats[requirement]
     
-    stats[key] = instantiate_concrete(key, deps, parse_vars_from_options(options))
+    stats[key] = _instantiate_concrete(key, deps, parse_vars_from_options(options))
+    return stats[key]
     
 #==========================================================================
 
-def instantiate_concrete(key, deps, vars):
+def _instantiate_concrete(key, deps, vars):
     pars = {}
     real_key = key
     
@@ -830,12 +893,12 @@ def instantiate_concrete(key, deps, vars):
 
 #==========================================================================
 
-def new_key():
+def _new_key():
     return numpy.random.random();
         
 #==========================================================================
 
-def output_files(specs):
+def _output_files(specs):
     outputs = {}
     for spec in specs:
         spec_part = spec.split(":")
@@ -852,7 +915,7 @@ def output_files(specs):
 
 #==========================================================================
 
-def configure_printers(specs, outputs, nolabels):
+def _configure_printers(specs, outputs, nolabels):
     printers = []
     for spec in specs:
         spec_part = spec.split(":")
@@ -901,7 +964,7 @@ def _main(args):
         base_decoder = BaseFormatDecoder(sys.stdin, BaseFormatDecoder.SPECIAL)
         
     # Runs the parser.        
-    _run_parser(options, base_decoder, output_files(options.statistics.split(",")))   
+    _run_parser(options, base_decoder, _output_files(options.statistics.split(",")))   
 
 #==========================================================================
 

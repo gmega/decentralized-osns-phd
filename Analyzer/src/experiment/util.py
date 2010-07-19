@@ -91,6 +91,7 @@ class ExpandTemplate(object):
         with open (leaf, "r") as file:
             return file.read()
 
+#==========================================================================
 
 class MkExperiment(object):
     
@@ -128,6 +129,8 @@ class MkExperiment(object):
             
         print >> sys.stderr, "Experiment ", self._template, "created successfully."
 
+#==========================================================================
+
 class InferExperimentTemplate(object):
     
     def __init__(self, templates_root=TEMPLATES_ROOT):
@@ -156,9 +159,6 @@ class InferExperimentTemplate(object):
                 return False
         
         return True
-        
-        
-        
 
 #==========================================================================
 

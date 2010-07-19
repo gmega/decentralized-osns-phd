@@ -87,7 +87,8 @@ class OuterDegree:
 # =========================================================================
 # Measures.
 # =========================================================================
-def avg_measure(id_list, computer):
+
+def avg_measure(id_list, computer, print_data_points=False):
     
     tracker = ProgressTracker("computing avg. measure [%s]" % computer.__class__.__name__, len(id_list)) 
     
@@ -102,6 +103,10 @@ def avg_measure(id_list, computer):
             continue
         if val != val:
             val = 0.0
+            
+        if print_data_points:
+            print vertex,val
+            
         sample_size += 1
         total += val
         
@@ -186,16 +191,11 @@ class IGraphDegreeComputer(object):
 class IGraphTransitivityComputer(object):
 
     def __init__(self, graph):
-        self.graph = graph
-        self.cache = None
+        # Get it computed with a single C call (more efficient).
+        self.cache = self.graph.transitivity_local_undirected()
     
         
     def compute_clustering(self, vertex):
-        # Cache to minimize the number of calls (igraph seems much more efficient
-        # if we batch stuff).
-        if self.cache is None:
-            self.cache = self.graph.transitivity_local_undirected()
-            
         return self.cache[vertex]
 
 # =========================================================================

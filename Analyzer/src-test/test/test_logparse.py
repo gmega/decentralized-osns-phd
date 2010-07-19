@@ -15,7 +15,7 @@ from twisted.test.test_twistd import cProfile
 import sys
 from graph.util import from_adjacency_list, edge_list
 from experiment.logparse import BaseFormatDecoder, _collect_statistics,\
-    parse_statistics
+    _parse_statistics
 
 class Test(unittest.TestCase):
 
@@ -53,7 +53,7 @@ class Test(unittest.TestCase):
         self.options._update_careful({"statistics" : ",".join(spec)})
         self.options._update_careful({"vars" : "network_size=72303"})
         
-        stats = parse_statistics(spec, self.options)
+        stats = _parse_statistics(spec, self.options)
         
         self.assertEqual(5, len(stats))
         

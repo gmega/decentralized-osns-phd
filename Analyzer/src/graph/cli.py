@@ -8,11 +8,13 @@ from graph.codecs import GraphLoader, AdjacencyListDecoder, AdjacencyListEncoder
     EdgeListDecoder
 import sys
 import numpy
-from graph.metrics import avg_measure, NodeCountingClusteringComputer
+from graph.metrics import avg_measure, NodeCountingClusteringComputer,\
+    IGraphTransitivityComputer
 from graph.util import count_neighbors_in_common
 from graph.transformers import snowball_sample, densify_neighborhoods
 from graph.generators import IrregularlyClusteredNC
 import logging
+from misc.util import FileProgressTracker
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +87,13 @@ class GraphSize:
 
 #===============================================================================
 
-class AvgClustering:
-    """ Prints the average clustering coefficient of a graph with 
-    NodeCountingClusteringComputer.
+class GraphClustering:
+    """ Provides a cli frontend for doing clustering coefficient and transitivity
+    calculations.
     """
     
-    def __init__(self, input, decoder=str(AdjacencyListDecoder), directed=False):
+    def __init__(self, input, decoder=str(AdjacencyListDecoder), directed=False,
+                 transitivity=False, average=False):
         """ @param input: the file containing the graph.
             @param decoder: the decoder to use when reading the graph.
             @param directed: whether the graph is directed or not.
@@ -98,13 +101,42 @@ class AvgClustering:
 
         self._input = input
         self._directed = bool(directed)
-        self._decoder = decoder
+        self._decoder = get_object(decoder)
+        self._transitivity = bool(transitivity)
+        self._average = bool(average)
     
     
     def execute(self):
         loader = GraphLoader(self._input, self._decoder, self._directed)
         g = loader.load_graph()
-        print avg_measure(range(0, len(g.vs)), NodeCountingClusteringComputer(g))
+        
+        computer = IGraphTransitivityComputer(g) if self._transitivity else NodeCountingClusteringComputer(g)
+        measure_average = avg_measure(range(0, len(g.vs)), computer, not self._average)
+        if self._average:
+            print measure_average
+
+#===============================================================================
+
+class CountUniqueIDs:
+    
+    def __init__(self, input, decoder=str(AdjacencyListDecoder)):
+        self._input = input
+        self._decoder = get_object(decoder)
+        
+        
+    def execute(self):
+        with open(self._input, "r") as file:
+            progress_tracker = FileProgressTracker("reading graph", file)
+            progress_tracker.start_task()
+            decoder = self._decoder(file)
+            id_set = set()
+            
+            for source, target, payload in decoder:
+                id_set.add(source)
+                id_set.add(target)
+                progress_tracker.tick()
+                
+        print "Graph has <<",len(id_set),">> unique IDs."
 
 #===============================================================================
        

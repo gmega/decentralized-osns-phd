@@ -22,8 +22,10 @@ class GraphLoader(object):
     """ GraphLoader can take a graph decoder and build an igraph.Graph object
         from it.
         
-        Careful as IDs /will be/ remapped, even if they appear in a contiguous
-        range. To get the original IDs back, use the option /retain_id_map/. 
+        Be careful, as IDs /will be/ remapped, even if they appear in a contiguous
+        range. To find which new id corresponds to a given id in the original graph,
+        use option /retain_id_map/. Vertices will also contain their original id under
+        the attribute ORIGINAL_ID. 
     """
 
     def __init__(self, file_reference, decoder, directed=False, retain_id_map=False):

@@ -63,6 +63,7 @@ def run_pss(options, args):
     # Parse and dispatch all operations.
     PSSEngine().run(parser.parse(concat_scripts(args)))
     
+
 def run_python(options, args):
     cli_module = instantiate_python(options, args)
     
@@ -71,6 +72,7 @@ def run_python(options, args):
         return cProfile.runctx("cli_module.execute()", globals(), locals())
     else:
         return cli_module.execute()
+
 
 def instantiate_python(options, args):
     if len(args) > 1:
@@ -91,11 +93,13 @@ def instantiate_python(options, args):
     
     return executable
 
+
 def parse_vars_from_options(options):
     if not hasattr(options, "vars") or options.vars is None:
         return {}
     
     return parse_vars(options.vars)
+
 
 def parse_vars(var_string):
     var_dict = {}

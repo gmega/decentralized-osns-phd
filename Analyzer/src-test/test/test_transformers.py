@@ -15,6 +15,7 @@ from igraph import Graph
 from graph.util import from_adjacency_list, edge_list
 import StringIO
 from experiment.logparse import BaseFormatDecoder
+from graph.metrics import NodeCountingClusteringComputer, avg_measure
 
 class Test(unittest.TestCase):
 
@@ -138,5 +139,7 @@ class Test(unittest.TestCase):
         decoder = GraphLoader(BaseFormatDecoder(result, filetype=BaseFormatDecoder.SPECIAL), EdgeListDecoder, retain_id_map = True)
         densified = decoder.load_graph()
         densified.simplify()
+        
+        avg_measure(range(0, len(densified.vs)), NodeCountingClusteringComputer(densified), True)
 
         assertEdgeList(self, densified, dense, True)
