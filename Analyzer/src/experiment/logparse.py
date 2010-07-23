@@ -234,14 +234,17 @@ class SquashStatisticsPrinter:
     
     
     def __squash__(self, data):
-        total = 0
-        for value in data.values():
-            total += value
+        total_value = 0
+        total_weight = 0
+        
+        for value, weight in data.values():
+            total_value += value
+            total_weight += weight
     
         if self._average:
-            total = float(total)/len(data)
+            total_value = float(total_value)/float(total_weight)
     
-        return total
+        return total_value
     
 #==========================================================================
 
@@ -265,7 +268,8 @@ class DataPagePrinter:
                 keys = data_page.keys()
                 keys.sort()
                 for key in keys:
-                    print >> file, key,data_page[key]
+                    value, weight = data_page[key]
+                    print >> file, key, (float(value)/float(weight))
 
 #==========================================================================
 # Visitors.
@@ -489,7 +493,7 @@ class MessageStatistic:
                 val += node_stat.get(self.MSG_DUPLICATE, round)
             if (self._mode & self.MODE_UNDELIVERED) != 0:
                 val += node_stat.get(self.MSG_UNDELIVERED, round)
-            sheet[node_stat.id] = val
+            sheet[node_stat.id] = (val, 1)
             
         return sheet
     
@@ -515,7 +519,7 @@ class LatencyStatistic:
                 assert latency == 0
                 delivered = 1.0
                 
-            sheet[node_stat.id] = latency/delivered
+            sheet[node_stat.id] = (latency, delivered)
         
         return sheet
     
@@ -536,7 +540,7 @@ class MinloadStatistic:
             if self.__node_load__(node_stat) > self._lower_bound:
                 counter -= 1
         
-        self._page[round] = float(counter)/self._network_size
+        self._page[round] = (float(counter)/self._network_size, 1)
 
     
     def __node_load__(self, node_stat):

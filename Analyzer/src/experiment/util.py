@@ -175,7 +175,7 @@ class FilenameHandler:
         info = {}
         for constituent in self._constituent_keys:
             info[constituent] = m.group(self._match_template.groupindex[constituent])
-        
+            
         return info
         
 #==========================================================================    
