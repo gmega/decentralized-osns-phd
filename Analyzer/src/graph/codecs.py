@@ -28,12 +28,13 @@ class GraphLoader(object):
         the attribute ORIGINAL_ID. 
     """
 
-    def __init__(self, file_reference, decoder, directed=False, retain_id_map=False):
+    def __init__(self, file_reference, decoder, directed=False, retain_id_map=False, simplify=True):
         self._file_reference = file_reference        
         self._directed = directed
         self._retain_data = retain_id_map
         self._logger = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
         self._decoder = decoder
+        self._simplify = True
         self._id_map = None
     
     
@@ -67,6 +68,9 @@ class GraphLoader(object):
             
             # Now transfers the data into the iGraph representation.
             graph = self.__igraph_create__(id_table, black_set, edge_list, weight_list)
+            # Simplifies the graph, unless requested otherwise.
+            if self._simplify:
+                graph.simplify()
             
             if self._retain_data:
                 self._id_map = id_table
