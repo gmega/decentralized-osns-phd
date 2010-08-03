@@ -25,6 +25,10 @@ def guess_types(root_folder):
 class AnalysisPipeline:
     def __init__(self):
         pass
+    
+    
+    def run(self, experiment_selection):
+        pass
         
 
 class ExperimentSet:

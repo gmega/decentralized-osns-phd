@@ -20,6 +20,7 @@ from graph.util import igraph_neighbors
 import numpy
 import StringIO
 import logging
+from analyzer.exception import ParseException
 
 logger = logging.getLogger(__name__)
     
@@ -74,9 +75,7 @@ class LogDecodingStream:
 #==========================================================================
 
 class LogDecoder:
-    ''' LogDecoder provides a bit more semantic to clients than LogDecodingStream.
-    It performs proper checking of constituent types, making it overall a safer
-    choice.'''
+    ''' '''
     
     SIG_TWEETED = "tweeted"
     SIG_MESSAGE = "message"
@@ -85,10 +84,17 @@ class LogDecoder:
     SIG_ROUND_END = "round_end"
     
     
-    def __init__(self, decoding_stream, complete_visitor=False):
-        self._decoding_stream = decoding_stream
-        self._complete_visitor = complete_visitor
+    def __init__(self, decoding_streams, complete_visitor=False):
         
+        self._decoding_streams = decoding_streams
+        self._complete_visitor = complete_visitor
+        # Dispatch dictionary.
+        self._dispatch = {LogDecodingStream.TWEETED : lambda visitor, parts : self.__process_tweet__(visitor, parts), 
+                          LogDecodingStream.DELIVERED : lambda visitor, parts : self.__process_receive__(visitor, parts, False),
+                          LogDecodingStream.DUPLICATE : lambda visitor, parts : self.__process_receive__(visitor, parts, True),
+                          LogDecodingStream.ROUND_END : lambda visitor, parts : self.__process_round_boundary__(visitor, parts),
+                          LogDecodingStream.UNDELIVERED : lambda visitor, parts : self.__process_undelivered__(visitor, parts) }
+
         
     def decode(self, visitor):
         ''' Decodes the log file, calling back a visitor for each relevant
@@ -106,22 +112,30 @@ class LogDecoder:
         respectively. 
         '''
         
-        # Dispatch dictionary.
-        dispatch = {LogDecodingStream.TWEETED : lambda parts : self.__process_tweet__(visitor, parts), 
-                    LogDecodingStream.DELIVERED : lambda parts : self.__process_receive__(visitor, parts, False),
-                    LogDecodingStream.DUPLICATE : lambda parts : self.__process_receive__(visitor, parts, True),
-                    LogDecodingStream.ROUND_END : lambda parts : self.__process_round_boundary__(visitor, parts),
-                    LogDecodingStream.UNDELIVERED : lambda parts : self.__process_undelivered__(visitor, parts) }
-        
-        for type, parts in self._decoding_stream.decode():
-            if not (dispatch.has_key(type)):
-                continue;
+        sync_point = 0
+        working_set = []
+        for decoding_stream in self._decoding_streams:
+            working_set.append(self.__block_decoder__(decoding_stream, visitor))
             
-            try:
-                dispatch[type](parts)
-            except AttributeError:
-                if self._complete_visitor:
-                    raise
+        while len(working_set) != 0:
+            to_del = []
+            for i in range(0, len(working_set)):
+                try:
+                    point = working_set[i].next()
+                except StopIteration:
+                    to_del.append(working_set[i])
+                    continue
+                
+                if point != sync_point:
+                    raise ParseException("Log is missing round " 
+                                         + str(sync_point) + ".")
+            
+            for element in to_del:
+                working_set.remove(element)
+            
+            # Sends a single round end notification.
+            self.__dispatch__(visitor, LogDecodingStream.ROUND_END, sync_point)
+            sync_point += 1                
         
         # Sends the last message to the visitor.
         try:
@@ -129,6 +143,28 @@ class LogDecoder:
         except AttributeError:
             pass
     
+    
+    def __block_decoder__(self, decoding_stream, visitor):
+                            
+        for type, parts in decoding_stream.decode():
+            # If was round end, yields.
+            if type == LogDecodingStream.ROUND_END:
+                yield parts
+                continue
+    
+            self.__dispatch__(visitor, type, parts)
+    
+    
+    def __dispatch__(self, visitor, type, parts):
+            if not (self._dispatch.has_key(type)):
+                return
+ 
+            try:
+                self._dispatch[type](visitor, parts)
+            except AttributeError:
+                if self._complete_visitor:
+                    raise
+
     
     def __process_tweet__(self, visitor, line):
         id, seq, time = line
@@ -243,7 +279,7 @@ class SquashStatisticsPrinter:
     
         if self._average:
             total_value = float(total_value)/float(total_weight)
-    
+
         return total_value
     
 #==========================================================================
@@ -435,7 +471,9 @@ class NodeStatistics:
         counters = self._global_counter 
         
         if not round is None:
-            if not self._per_round.has_key(round):
+            if round == -1:
+                counters = self._round_counter
+            elif not self._per_round.has_key(round):
                 counters = self._per_round[round]
             else: 
                 return 0
@@ -458,7 +496,6 @@ class MessageStatistic:
     # Undelivered.
     MODE_UNDELIVERED = 4
     
-    
     def __init__(self, mode):
         self._mode = int(mode)
         self.MSG_DELIVERED = _new_key()
@@ -468,20 +505,17 @@ class MessageStatistic:
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
         if (self._mode & self.MODE_DELIVERED) != 0:
-            node_stat = stat_tracker[receiver_id]
-            node_stat.sum(self.MSG_DELIVERED, 1)
+            stat_tracker[receiver_id].sum(self.MSG_DELIVERED, 1)
     
     
     def duplicate(self, stat_tracker, id, seq, send_id, receiver_id, sim_time):
         if (self._mode & self.MODE_DUPLICATE) != 0:
-            node_stat = stat_tracker[receiver_id]
-            node_stat.sum(self.MSG_DUPLICATE, 1)
+            stat_tracker[receiver_id].sum(self.MSG_DUPLICATE, 1)
         
    
     def undelivered(self, stat_tracker, id, seq, intended_receiver, sim_time):
         if (self._mode & self.MODE_UNDELIVERED) != 0:
-            node_stat = stat_tracker[intended_receiver]
-            node_stat.sum(self.MSG_UNDELIVERED, 1)
+            stat_tracker[intended_receiver].sum(self.MSG_UNDELIVERED, 1)
    
    
     def populate_sheet(self, sheet, node_stats, round):
@@ -554,7 +588,28 @@ class MinloadStatistic:
             sheet[round] = self._page[round]
         
         return sheet
-                
+    
+#==========================================================================
+    
+class DiffusionStatistic:
+    
+    def __init__(self, deps):
+        self._key = _new_key()
+        self._load = deps["load"]
+    
+    def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
+        if id == send_id:
+            stat_tracker[receiver_id].sum(self._key, 1)
+            
+    def populate_sheet(self, sheet, node_stats, round):
+        for node_stat in node_stats:
+            direct_deliveries = node_stat.get(self._key, round)
+            total_deliveries = node_stat.get(self._load.MSG_DELIVERED, round)
+            diffusion_deliveries = total_deliveries - direct_deliveries
+            sheet[node_stat.id] = (diffusion_deliveries, total_deliveries)
+
+        return sheet
+        
 #==========================================================================
 # Transformers for parsing logs.
 #==========================================================================
@@ -813,14 +868,15 @@ CONFIG_MAP = {"load":("message", "mode="+str(MessageStatistic.MODE_ALL_RECEIVED)
 
 # Dependencies.
 REQUIRE_MAP = {"latency":["load"], 
-               "minload":["load"]}
+               "minload":["load"],
+               "diffusion":["load"]}
 
 #==========================================================================
 
-def _run_parser(options, base_decoder, outputs):
+def _run_parser(options, base_decoder_list, outputs):
     specs = options.statistics.split(",")
     printers = _configure_printers(specs, outputs, options.nolabels)
-    log_statistics = _collect_statistics(specs, options, base_decoder)
+    log_statistics = _collect_statistics(specs, options, base_decoder_list)
     
     # Prints the results.
     for printer in printers:
@@ -828,8 +884,8 @@ def _run_parser(options, base_decoder, outputs):
 
 #==========================================================================
 
-def _collect_statistics(specs, options, basedecoder):
-    decoder = LogDecoder(LogDecodingStream(options.verbose, basedecoder), True)
+def _collect_statistics(specs, options, base_decoder_list):
+    decoder = LogDecoder([LogDecodingStream(options.verbose, i) for i in base_decoder_list], True)
     statistics = StatisticTracker(_parse_statistics(specs, options), _parse_rounds(options.rounds))
     # Decodes and collects statistics.
     decoder.decode(statistics)
@@ -930,6 +986,8 @@ def _configure_printers(specs, outputs, nolabels):
             printers.append(SquashStatisticsPrinter(spec_part[0], outputs[key], False, nolabels))
         elif spec_part[1] == "allpoints":
             printers.append(DataPagePrinter(spec_part[0], outputs[key]))
+        else:
+            print >> sys.stderr, "Invalid print format", spec_part[1] + "."
 
     return printers
     
@@ -961,8 +1019,9 @@ def _main(args):
     print >> sys.stderr, "-- Reading log from",
 
     if not (options.file is None):
-        print >> sys.stderr, options.file + "."
-        base_decoder = BaseFormatDecoder(options.file) 
+        file_list = options.file.split(",")
+        print >> sys.stderr, str(file_list) + "."
+        base_decoder = [BaseFormatDecoder(i) for i in file_list] 
     else: 
         print >> sys.stderr, "standard input" + "."
         base_decoder = BaseFormatDecoder(sys.stdin, BaseFormatDecoder.SPECIAL)

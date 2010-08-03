@@ -95,7 +95,7 @@ class Test(unittest.TestCase):
                  "minload"
                  ]
         
-        stats = _collect_statistics(specs, self.options, BaseFormatDecoder(StringIO.StringIO(file), BaseFormatDecoder.SPECIAL))
+        stats = _collect_statistics(specs, self.options, [BaseFormatDecoder(StringIO.StringIO(file), BaseFormatDecoder.SPECIAL)])
         stats = self.__all_sheets__(stats, specs)
         
         # Expected per-node load.
@@ -132,13 +132,26 @@ class Test(unittest.TestCase):
     def __all_sheets__(self, log_statistics, stat_list):
         sheets = {}
         for stat in stat_list:
-            sheets[stat] = log_statistics.statistics(stat).next()[1]
+            sheet = log_statistics.statistics(stat).next()[1]
+            for key, tuple in sheet.items():
+                sheet[key] = tuple[0]/tuple[1]
+            sheets[stat] = sheet
         
         return Values(sheets)
              
 
     def testSimpleStatsLargeFile(self):
-        file_name = resources.resource("log-sample.text")
+        file_name = resources.resource("log-sample-1.text")
+        self.simpleStatsLargeFile([BaseFormatDecoder(file_name)], 18936, 56317, 7)
+
+    
+    def testSimpleStatsMultiFiles(self):
+        files = ["log-sample-1.text", "log-sample-2.text", "log-sample-3.text"]
+        files = [BaseFormatDecoder(resources.resource(i)) for i in files]
+        self.simpleStatsLargeFile(files, 56642, 168276, 25)
+
+
+    def simpleStatsLargeFile(self, decoders, delivered_ref, duplicates_ref, undelivered_ref):
         self.options._update_careful({"statistics" : "load:total,delivered:total,duplicates:total,undelivered:total,load:allpoints,minload:allpoints"})
         
         delivered = StringIO.StringIO()
@@ -155,17 +168,14 @@ class Test(unittest.TestCase):
                         "duplicates:total" : BaseFormatDecoder(duplicates, BaseFormatDecoder.SPECIAL),
                         "undelivered:total" : BaseFormatDecoder(undelivered, BaseFormatDecoder.SPECIAL) }
         
-        logparse._run_parser(self.options, BaseFormatDecoder(file_name), output_files)
+        logparse._run_parser(self.options, decoders, output_files)
         
         delivered = int(delivered.getvalue())
         duplicates = int(duplicates.getvalue())
         total = int(total.getvalue())
         undelivered = int(undelivered.getvalue())
         
-        self.assertEqual(delivered, 9253)
-        self.assertEqual(duplicates, 148132)
-        self.assertEqual(total, delivered + duplicates)
-        self.assertEqual(undelivered, 6)
-
-    
-    
+        self.assertEqual(delivered, delivered_ref)
+        self.assertEqual(duplicates, duplicates_ref)
+        self.assertEqual(total, delivered_ref + duplicates_ref)
+        self.assertEqual(undelivered, undelivered_ref)

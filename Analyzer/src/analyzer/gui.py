@@ -54,11 +54,14 @@ class AnalyzerGUI(wx.Frame):
         
         filelist = wx.ListCtrl(self, -1, DefaultPosition, wx.Size(200,150),
                                   wx.NO_BORDER, DefaultValidator)
-                
+                        
+        console = wx.TextCtrl(self, -1, '', DefaultPosition, wx.Size(200, 150), wx.NO_BORDER, DefaultValidator)         
+        
         # add the panes to the manager
         self._mgr.AddPane(experiments, wx.LEFT, 'Experiment Sets')
-        self._mgr.AddPane(pipelines, wx.BOTTOM, 'Console')
-        self._mgr.AddPane(filelist, wx.CENTER, 'Files')
+        self._mgr.AddPane(console, wx.BOTTOM, 'Console')
+        self._mgr.AddPane(filelist, wx.RIGHT, 'Analysis Modules')
+        self._mgr.AddPane(pipelines, wx.RIGHT, 'Analysis Pipelines')
 
         # tell the manager to 'commit' all the changes just made
         self._mgr.Update()
