@@ -6,7 +6,9 @@ import it.unitn.disi.utils.graph.GraphWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.StringWriter;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,6 +21,10 @@ import peersim.graph.Graph;
 
 public class TestUtils {
 	private static Set<Node> allNodes = new HashSet<Node>();
+	
+	public static URL locate(String name) {
+		return TestUtils.class.getClassLoader().getResource("creator_test_config.properties");
+	}
 	
 	public static void reset() {
 		allNodes.clear();

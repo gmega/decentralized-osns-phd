@@ -19,6 +19,8 @@ import it.unitn.disi.utils.TestMiscUtils;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+
+import peersim.config.ObjectCreatorTest;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -35,7 +37,8 @@ import org.junit.runners.Suite;
 	TestLatencyComputer.class,
 	TestQueueManager.class,
 	EvtDecoderTest.class,
-	TestAntiCentralitySelector.class
+	TestAntiCentralitySelector.class,
+	ObjectCreatorTest.class
 })
 
 public class AllTests {
