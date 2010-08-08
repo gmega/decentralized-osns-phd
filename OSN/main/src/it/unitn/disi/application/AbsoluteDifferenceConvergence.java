@@ -1,38 +1,38 @@
 package it.unitn.disi.application;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
 
 /**
- * {@link AbsoluteDifferenceConvergence} understands that the behavior has
- * stabilized once the difference in delivered messags between one round and the
- * other falls below a certain value.
+ * {@link AbsoluteDifferenceConvergence} understands that the behavior of an
+ * {@link IApplication} to be stable once the difference in delivered messages
+ * between one round and the other falls below a certain value, for more than 
+ * a certain number of rounds.
  * 
  * @author giuliano
  */
+@AutoConfig
 public class AbsoluteDifferenceConvergence implements peersim.core.Control{
-	
-	// ----------------------------------------------------------------------
-	// Configuration parameters keys.
-	// ----------------------------------------------------------------------
-	
-	private static final String PAR_AFTER_ROUND = "after_round";
-	
-	private static final String PAR_DELTA = "delta";
-	
-	private static final String PAR_APP = "application";
-	
+
 	// ----------------------------------------------------------------------
 	// Configuration parameter storage.
 	// ----------------------------------------------------------------------
+
+	@Attribute("after")
+	private int fAfter;
+
+	@Attribute(value = "delta", defaultValue = "0")
+	private int fDelta;
 	
-	private final int fAfter;
+	@Attribute(value = "atleastfor", defaultValue = "1")
+	private int fAtLeast;
 	
-	private final int fDelta;
-	
-	private final int fAppId;
+	@Attribute("application")
+	private int fAppId;
 	
 	// ----------------------------------------------------------------------
 	// State.
@@ -40,11 +40,9 @@ public class AbsoluteDifferenceConvergence implements peersim.core.Control{
 	
 	private int fLastValue = Integer.MAX_VALUE;
 	
-	public AbsoluteDifferenceConvergence(String prefix) {
-		fAppId = Configuration.getPid(prefix + "." + PAR_APP);
-		fAfter = Configuration.getInt(prefix + "." + PAR_AFTER_ROUND, -1);
-		fDelta = Configuration.getInt(prefix + "." + PAR_DELTA, 0);
-	}
+	private int fRemainingRounds = 0;
+	
+	public AbsoluteDifferenceConvergence() { }
 
 	@Override
 	public boolean execute() {
@@ -61,6 +59,12 @@ public class AbsoluteDifferenceConvergence implements peersim.core.Control{
 		}
 		
 		if (Math.abs(fLastValue - totalValue) <= fDelta) {
+			fRemainingRounds++;
+		} else {
+			fRemainingRounds = 0;
+		}
+		
+		if (fRemainingRounds >= fAtLeast) {
 			System.out.print("STABLE:" + CommonState.getTime());
 			return true;
 		}

@@ -25,13 +25,13 @@ import peersim.dynamics.NodeInitializer;
  * nodes are simply created and assigned a trace id as required. This means
  * that, currently, the only way to control the mapping is by pre-instantiating
  * the network and performing the assignments before the simulation actually
- * starts. <BR>
+ * starts (see {@link RandomInitializer}). <BR>
  * <BR>
  * <b> Note 2:</b> it is okay to assign a single trace id to more than one
  * PeerSim node. In this case, the UP/DOWN behavior of all PeerSim nodes
  * sharing that trace id will also be shared.
  * 
- * @author giuliano
+ * @see RandomInitializer
  */
 public class TraceBasedNetwork implements Control {
 
@@ -154,16 +154,17 @@ public class TraceBasedNetwork implements Control {
 		Set<String> mapped = new HashSet<String>();
 
 		// Goes through the whole network, changing the up/down state for
-		// the nodes with the ids specified in the trace.
+		// the nodes with corresponding trace IDs.
 		for (int i = 0; i < size; i++) {
 			Node node = Network.get(i);
 			GenericValueHolder holder = (GenericValueHolder) node
 					.getProtocol(fIdProtocol);
 			String id = (String) holder.getValue();
 
-			// Node goes up.
+			// Node has been marked to go up.
 			if (up.contains(id)) {
-				// Network contains a node with this trace id.
+				// Signals that network contains at least one node 
+				// with this trace id.
 				mapped.add(id);
 				if (!node.isUp()) {
 					fActiveNodes++;
@@ -172,7 +173,7 @@ public class TraceBasedNetwork implements Control {
 					added.add(node);
 				}
 			}
-			// Node goes down.
+			// Node has been marked to go down.
 			else if (down.contains(id)) {
 				if (node.isUp()) {
 					fActiveNodes--;

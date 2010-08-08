@@ -6,6 +6,7 @@ import static it.unitn.disi.application.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.application.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.application.NewscastEvents.TWEETED;
 import it.unitn.disi.application.EventRegistry.Info;
+import it.unitn.disi.application.interfaces.BinaryCompositeFilter;
 import it.unitn.disi.application.interfaces.IContentExchangeStrategy;
 import it.unitn.disi.application.interfaces.IEventObserver;
 import it.unitn.disi.application.interfaces.IPeerSelector;
@@ -13,6 +14,7 @@ import it.unitn.disi.application.interfaces.ISelectionFilter;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
+import it.unitn.disi.utils.peersim.FallThroughReference;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -242,8 +244,9 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	protected void addStrategy(IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
 			IReference<ISelectionFilter> filter, double probability) {
-		fStrategies.add(new StrategyEntry(strategy, selector, filter,
-				probability));
+		fStrategies.add(new StrategyEntry(strategy, selector, new BinaryCompositeFilter(
+				new FallThroughReference<ISelectionFilter>(
+						ISelectionFilter.UP_FILTER), filter), probability));
 	}
 
 	// ----------------------------------------------------------------------
@@ -297,8 +300,9 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			StrategyEntry entry = fStrategies.get(i);
 			IContentExchangeStrategy strategy = entry.strategy;
 			IPeerSelector selector = entry.selector.get(ourNode);
-			ISelectionFilter filter = entry.filter.get(ourNode);
-
+			BinaryCompositeFilter filter = entry.filter;
+			
+			filter.bind(ourNode);
 			// Selects a peer using the preconfigured filter.
 			Node peer;
 			if (selector.supportsFiltering()) {
@@ -306,6 +310,7 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			} else {
 				peer = selector.selectPeer(ourNode);
 			}
+			filter.clear();
 
 			// No peer from this selector -- this strategy skips the round.
 			if (peer == null) {
@@ -695,56 +700,6 @@ public class NewscastApplication implements CDProtocol, IApplication {
 		return drift;
 	}
 
-	// ----------------------------------------------------------------------
-
-	public static final int LATENCY = 0;
-
-	public static final int NEIGHBOR = 1;
-
-	public void maxDelay(Node node, int protocolID, long[] response) {
-
-		if (response.length < 2) {
-			throw new IllegalArgumentException();
-		}
-
-		response[LATENCY] = response[NEIGHBOR] = -1;
-
-		Linkable socialNet = socialNetwork(node);
-		int maxDelay = 0;
-		for (int i = 0; i < socialNet.degree(); i++) {
-			Node neighbor = socialNet.getNeighbor(i);
-			NewscastApplication neighborApp = (NewscastApplication) neighbor
-					.getProtocol(protocolID);
-
-			// Computes the maximum delay.
-			List<Integer> ourList = getStorage().getList(neighbor);
-			Integer lastKnown = 0;
-
-			if (ourList != null) {
-				if (ourList.size() != 2) {
-					throw new AssertionError();
-				}
-				lastKnown = ourList.get(ourList.size() - 1);
-			}
-
-			if (lastKnown > neighborApp.fSeqNumber) {
-				throw new AssertionError();
-			}
-
-			for (int j = lastKnown + 1; j <= neighborApp.fSeqNumber; j++) {
-				Tweet evt = new Tweet(neighbor, j);
-				int delay = (int) CommonState.getTime()
-						- EventRegistry.getInstance().getTime(evt);
-				if (delay > maxDelay) {
-					maxDelay = delay;
-					response[NEIGHBOR] = neighbor.getID();
-				}
-			}
-		}
-
-		response[LATENCY] = maxDelay;
-	}
-
 }
 
 // ----------------------------------------------------------------------
@@ -851,14 +806,14 @@ class AdapterKey {
 class StrategyEntry {
 
 	public final IContentExchangeStrategy strategy;
-	public final IReference<ISelectionFilter> filter;
+	public final BinaryCompositeFilter filter;
 	public final IReference<IPeerSelector> selector;
 
 	public final double probability;
 
 	public StrategyEntry(IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
-			IReference<ISelectionFilter> filter, double probability) {
+			BinaryCompositeFilter filter, double probability) {
 		this.strategy = strategy;
 		this.selector = selector;
 		this.filter = filter;

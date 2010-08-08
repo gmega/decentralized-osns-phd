@@ -98,7 +98,7 @@ public class ObjectCreatorTest {
 
 @AutoConfig
 class FieldInjectable {
-	@Attribute(Attribute.AUTO)
+	@Attribute
 	protected String some_string;
 	
 	@Attribute("doubleTrouble")
@@ -110,10 +110,10 @@ class FieldInjectable {
 	@Attribute("very_integer")
 	protected int fIntField;
 	
-	@Attribute(Attribute.AUTO)
+	@Attribute
 	protected int linkable;
 	
-	@Attribute(Attribute.AUTO)
+	@Attribute
 	protected boolean isAwesome;
 	
 	public FieldInjectable() {
@@ -123,7 +123,7 @@ class FieldInjectable {
 
 @AutoConfig
 class FieldInjectableSubclass extends FieldInjectable {
-	@Attribute(Attribute.AUTO)
+	@Attribute
 	private Double double_trouble_2;
 	
 	@Attribute("other_string")
