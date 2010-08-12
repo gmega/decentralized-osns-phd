@@ -1,0 +1,16 @@
+#include boilerplate
+
+#include fastgraphprotocol-sn
+#include fastgraphprotocol-dissemination
+#include selector-random-dissemination
+
+#include demers/application-demers
+#include initializer-noderegistry
+
+#include initializer-fastgraphprotocol-sn
+#include initializer-fastgraphprotocol-dissemination
+
+include.init noderegistry fastgraphprotocol_sn fastgraphprotocol_dissemination
+
+#include control-applicationmonitor
+#include control-convergence

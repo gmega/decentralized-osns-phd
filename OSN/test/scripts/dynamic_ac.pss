@@ -63,6 +63,7 @@ init.randominitializer.traceid_holder tnid
 init.randominitializer.tracefile /home/giuliano/Work/UniTN/Traces/availability-0.2/traces/skype.evt
 
 init.alldown AllDown
+init.alldown.logwriter tweets gzipfile /home/giuliano/Tmp/log.bin.gz
 
 include.init noderegistry fastgraphprotocol_sn randominitializer alldown
 
@@ -77,10 +78,14 @@ protocol.tnid GenericValueHolder
 protocol.lastlogin GenericValueHolder
 
 control.dynamic TraceBasedNetwork
-control.dynamic.tracefile /home/giuliano/Work/UniTN/Traces/availability-0.2/traces/skype.evt
-control.dynamic.id tnid
-control.dynamic.lastlogin lastlogin
-control.dynamic.roundduration 600
+{
+	tracefile /home/giuliano/Work/UniTN/Traces/availability-0.2/traces/skype.evt
+	logwriter tweets gzipfile /home/giuliano/Tmp/log.bin.gz
+	
+	id tnid
+	lastlogin lastlogin
+	roundduration 600
+}
 
 control.application_observer NewscastApplicationMonitor
 control.application_observer.application application

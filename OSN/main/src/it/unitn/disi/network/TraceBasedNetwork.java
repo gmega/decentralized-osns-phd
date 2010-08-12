@@ -1,5 +1,11 @@
 package it.unitn.disi.network;
 
+import it.unitn.disi.SimulationEvents;
+import it.unitn.disi.application.NewscastEvents;
+import it.unitn.disi.utils.PeekIterator;
+import it.unitn.disi.utils.logging.EventCodec;
+import it.unitn.disi.utils.logging.LogManager;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,6 +14,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
@@ -33,17 +41,12 @@ import peersim.dynamics.NodeInitializer;
  * 
  * @see RandomInitializer
  */
+@AutoConfig
 public class TraceBasedNetwork implements Control {
 
 	// ------------------------------------------------------------------
 	// Protocol parameters.
 	// ------------------------------------------------------------------
-
-	/**
-	 * Gossip round duration. The round duration is used to determine, at each
-	 * round, which simulation events must be executed.
-	 */
-	private static final String PAR_RND_DURATION = "roundduration";
 
 	/** Prefix for node initializers. */
 	private static final String PAR_INIT = "init";
@@ -51,45 +54,62 @@ public class TraceBasedNetwork implements Control {
 	/** Trace file containing the simulation input. */
 	private static final String PAR_TRACEFILE = "tracefile";
 
-	/** Value holder protocol storing the node id. */
-	private static final String PAR_ID = "id";
+	// ------------------------------------------------------------------
+	// Event encoding/decoding.
+	// ------------------------------------------------------------------
+	
+	private static final EventCodec fCodec = new EventCodec(Byte.class,
+			SimulationEvents.values());
 
-	/** Value holder protocol storing the last "log-in" for the user. */
-	private static final String PAR_LAST_LOGIN = "lastlogin";
+	protected static final byte[] fBuffer = new byte[SimulationEvents.set
+			.sizeof(SimulationEvents.set.getLargest())];
+
 
 	// ------------------------------------------------------------------
 	// Field parameters.
 	// ------------------------------------------------------------------
-
+	
+	/** Value holder protocol storing the node id. */
+	@Attribute("id")
 	private int fIdProtocol;
 
+	/** Value holder protocol storing the last "log-in" for the user. */
+	@Attribute("lastlogin")
 	private int fLastLoginProtocol;
-
+	
+	/**
+	 * Gossip round duration. The round duration is used to determine, at each
+	 * round, which simulation events must be executed.
+	 */
+	@Attribute("roundduration")
 	private double fRoundDuration;
-
+	
+	/**
+	 * Log ID for storing the login/logout {@link SimulationEvents}.
+	 */
+	private String fLogId;
+	
 	// ------------------------------------------------------------------
 	// State variables.
 	// ------------------------------------------------------------------
 
 	private NodeInitializer[] fNodeInits;
 
-	private TraceEvent fNext;
-
-	private Iterator<TraceEvent> fStream;
-
+	private PeekIterator<TraceEvent> fStream;
+	
 	private Set<String> fAdds = new HashSet<String>();
+	
 	private Set<String> fRemoves = new HashSet<String>();
 
 	private int fActiveNodes = 0;
+	
+	private LogManager fLogManager;
 
 	// ------------------------------------------------------------------
 
-	public TraceBasedNetwork(String prefix) throws IOException {
-		fIdProtocol = Configuration.getPid(prefix + "." + PAR_ID);
-		fLastLoginProtocol = Configuration
-				.getPid(prefix + "." + PAR_LAST_LOGIN);
-		fRoundDuration = Configuration.getInt(prefix + "." + PAR_RND_DURATION);
-
+	public TraceBasedNetwork(@Attribute(Attribute.PREFIX) 
+			String prefix) throws IOException {
+		
 		Object[] tmp = Configuration.getInstanceArray(prefix + "." + PAR_INIT);
 		fNodeInits = new NodeInitializer[tmp.length];
 		for (int i = 0; i < tmp.length; ++i) {
@@ -98,7 +118,11 @@ public class TraceBasedNetwork implements Control {
 
 		File tracefile = new File(Configuration.getString(prefix + "."
 				+ PAR_TRACEFILE));
-		fStream = new EvtDecoder(new FileReader(tracefile));
+		fStream = new PeekIterator<TraceEvent>(new EvtDecoder(new FileReader(
+				tracefile)));
+		
+		fLogManager = LogManager.getInstance();
+		fLogId = fLogManager.addUnique(prefix);
 	}
 
 	// ------------------------------------------------------------------
@@ -115,46 +139,53 @@ public class TraceBasedNetwork implements Control {
 	// ------------------------------------------------------------------
 
 	private boolean executeEvents(double time) {
-
 		// Advances the trace file until the current time.
-		while (fNext == null || fNext.time <= time) {
-			if (!fStream.hasNext()) {
-				System.err.println("Trace-based replay: trace ended.");
-				return true;
-			}
-
-			fNext = fStream.next();
-
-			switch (fNext.type) {
+		TraceEvent evt = null;
+		
+		while (fStream.hasNext() && (evt = fStream.peek()).time <= time) {
+			switch (evt.type) {
 			case UP:
-				fAdds.add(fNext.nodeId);
+				add(evt);
 				break;
 			case DOWN:
-				fRemoves.add(fNext.nodeId);
+				remove(evt);
 				break;
 			}
+			fStream.next();
 		}
+		
+		// Applies the changes to the network.
+		commit();
+		
+		return !fStream.hasNext();
+	}
+	
+	// ------------------------------------------------------------------
+	
+	private void add(TraceEvent evt) {
+		fAdds.add(evt.nodeId);
+	}
 
-		// Executes events, if any.
-		if (!fAdds.isEmpty() || !fRemoves.isEmpty()) {
-			addRemove(fAdds, fRemoves);
-			fAdds.clear();
-			fRemoves.clear();
-		}
-
-		return false;
+	// ------------------------------------------------------------------
+	
+	private void remove(TraceEvent evt) {
+		fRemoves.add(evt.nodeId);
 	}
 
 	// ------------------------------------------------------------------
 
-	private void addRemove(Set<String> up, Set<String> down) {
+	private void commit() {
 		int size = Network.size();
 
+		// Lists of added/removed nodes. Those still need to be resolved.
 		ArrayList<Node> added = new ArrayList<Node>();
+		ArrayList<Node> removed = new ArrayList<Node>();
+		
+		// List of IDs that have been spotted at least once in the network.
 		Set<String> mapped = new HashSet<String>();
 
 		// Goes through the whole network, changing the up/down state for
-		// the nodes with corresponding trace IDs.
+		// nodes previously marked.
 		for (int i = 0; i < size; i++) {
 			Node node = Network.get(i);
 			GenericValueHolder holder = (GenericValueHolder) node
@@ -162,7 +193,7 @@ public class TraceBasedNetwork implements Control {
 			String id = (String) holder.getValue();
 
 			// Node has been marked to go up.
-			if (up.contains(id)) {
+			if (fAdds.contains(id)) {
 				// Signals that network contains at least one node 
 				// with this trace id.
 				mapped.add(id);
@@ -174,29 +205,41 @@ public class TraceBasedNetwork implements Control {
 				}
 			}
 			// Node has been marked to go down.
-			else if (down.contains(id)) {
+			else if (fRemoves.contains(id)) {
 				if (node.isUp()) {
 					fActiveNodes--;
 				}
 				node.setFailState(Node.DOWN);
+				// Stores so we can log it.
+				removed.add(node);
 			}
 		}
 
 		// All trace ids that have been spotted at least once 
 		// are discarded. 
-		up.removeAll(mapped);
+		fAdds.removeAll(mapped);
 		
 		// Remaining ids don't have a correspondent in the network,
 		// so must be created.
-		for (String id : up) {
+		for (String id : fAdds) {
 			fActiveNodes++;
 			added.add(create(id));
 		}
 
-		// Run initializers for nodes added and re-added.
-		for (Node newNode : added) {
-			runInitializers(newNode);
+		// Run initializers for nodes added and re-added, and logs
+		// the node entrance into the network.
+		for (Node joining : added) {
+			log(SimulationEvents.NODE_LOGIN, joining.getID());
+			runInitializers(joining);
 		}
+		
+		// Logs node departure.
+		for (Node departing : removed) {
+			log(SimulationEvents.NODE_DEPART, departing.getID());
+		}
+		
+		fAdds.clear();
+		fRemoves.clear();
 	}
 
 	// ------------------------------------------------------------------
@@ -211,6 +254,17 @@ public class TraceBasedNetwork implements Control {
 		// Adds to network.
 		Network.add(newnode);
 		return newnode;
+	}
+	
+	// ------------------------------------------------------------------
+	
+	private void log(SimulationEvents eventType, long nodeId) {
+		try {
+			fCodec.encodeEvent(fBuffer, 0, eventType.magicNumber(), nodeId, CommonState.getTime());
+			fLogManager.get(fLogId).write(fBuffer);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	// ------------------------------------------------------------------

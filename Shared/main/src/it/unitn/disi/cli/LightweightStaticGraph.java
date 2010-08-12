@@ -80,7 +80,7 @@ public class LightweightStaticGraph implements Graph {
 					+ ") nodes without neighbors (ID holes?).");
 		}
 
-		// Frees up some memory..
+		// Frees up some memory...
 		sizes = null;
 
 		// Phase 2 - loads the graph.

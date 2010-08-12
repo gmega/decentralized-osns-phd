@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Random;
 
 import peersim.cdsim.CDProtocol;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
@@ -36,52 +38,15 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class NewscastApplication implements CDProtocol, IApplication {
 
 	// ----------------------------------------------------------------------
-	// Configuration parameters keys.
-	// ----------------------------------------------------------------------
-	
-	/**
-	 * {@link Linkable} containing the social neighborhood of the node.
-	 */
-	private static final String PAR_SOCIAL_NEIGHBORHOOD = "social_neighborhood";
-		
-	/**
-	 * A node receiving more than {@link #PAR_CONN_LIMIT} connections per round
-	 * will reject them.
-	 */
-	private static final String PAR_CONN_LIMIT = "connection_limit";
-
-	/**
-	 * Parameter indicating the per-round probability for a node to decide to
-	 * tweet.
-	 */
-	private static final String PAR_TWEET_PROBABILITY = "tweet_probability";
-
-	/**
-	 * Paramater which tunes at which round the application should stop
-	 * tweeting.
-	 */
-	private static final String PAR_TWEET_UNTIL = "tweet_until";
-	
-	/**
-	 * Causes logging messages to be printed as text as well.
-	 */
-	private static final String PAR_VERBOSE = "verbose";
-	
-	/**
-	 * Enables a variety of internal consistency checks, at the expense of
-	 * runtime performance.
-	 */
-	private static final String PAR_DEBUG = "debug";
-
-	// ----------------------------------------------------------------------
-	// Other constants.
+	// Constants.
 	// ----------------------------------------------------------------------
 
 	/** Constant representing plus infinite. */
-	private static final int FOREVER = Integer.MAX_VALUE;
+	private static final String INFTY = "2147483647";
 
 	// ----------------------------------------------------------------------
 	// Logging constants and shared structures.
@@ -99,20 +64,28 @@ public class NewscastApplication implements CDProtocol, IApplication {
 			.sizeof(NewscastEvents.set.getLargest())];
 
 	// ----------------------------------------------------------------------
-	// Storage for peersim parameters.
+	// Parameters.
 	// ----------------------------------------------------------------------
-	
-	private int fProtocolID;
-	
-	private int fSocialNetworkID;
 
+	@Attribute(value = "conn_limit", defaultValue = INFTY)
+	private int fMaxRoundCalls;
+
+	@Attribute(value = "tweet_until", defaultValue = INFTY)
 	private int fTweetUntil;
 
-	private int fMaxRoundCalls;
+	@Attribute("social_neighborhood")
+	private int fSocialNetworkID;
 	
+	@Attribute("tweet_probability")
 	private double fTweetProbability;
 	
+	@Attribute("debug")
 	private boolean fDebug;
+	
+	@Attribute("verbose")
+	private boolean fVerbose;
+		
+	private int fProtocolID;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -159,30 +132,18 @@ public class NewscastApplication implements CDProtocol, IApplication {
 	
 	private boolean fSuppressTweeting;
 	
-	private boolean fVerbose;
-
 	private LogManager fManager;
 
 	private String fPrefix;
 	
 	// ----------------------------------------------------------------------
 
-	public NewscastApplication(String prefix) throws IOException {
+	public NewscastApplication(@Attribute(Attribute.PREFIX) String prefix)
+			throws IOException {
 		// Inits the log manager.
 		fPrefix = prefix;
 		fManager = LogManager.getInstance();
 		fManager.add(prefix);
-
-		// Local parameters.
-		fSocialNetworkID = Configuration.getPid(prefix + "." + PAR_SOCIAL_NEIGHBORHOOD);
-		fMaxRoundCalls = Configuration.getInt(prefix + "." + PAR_CONN_LIMIT,
-				Integer.MAX_VALUE);
-		fTweetProbability = Configuration.getDouble(prefix + "."
-				+ PAR_TWEET_PROBABILITY);
-		fTweetUntil = Configuration.getInt(prefix + "." + PAR_TWEET_UNTIL,
-				FOREVER);
-		fVerbose = Configuration.contains(prefix + "." + PAR_VERBOSE);
-		fDebug = Configuration.contains(prefix + "." + PAR_DEBUG);
 		fProtocolID = this.resolveProtocolId(fPrefix);
 
 		// Configures the peer selection and update exchange strategies.

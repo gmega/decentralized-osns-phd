@@ -11,6 +11,7 @@ from misc.util import ProgressTracker
 from graph.codecs import GraphLoader, AdjacencyListDecoder
 from misc.reflection import get_object
 from graph.util import igraph_neighbors
+import sys
 
 
 
@@ -84,3 +85,55 @@ def bloom_false_positive(m, n):
     return math.pow((1.0 - math.exp(-k * n/m)), k)
 
 # ===============================================================
+
+class IncrementalStatistics:
+    
+    
+    def __init__(self):
+        self.countmin = 0
+        self.countmax = 0
+        self.min = float("inf")
+        self.max = -float("inf")
+        self.sum = 0.0
+        self.sqrsum = 0.0
+        self.n = 0
+
+
+    def add (self, item, k = 1):
+        
+        if item < self.min:
+            self.min = item;
+            self.countmin = 0;
+        
+        if item == self.min:
+            self.countmin += k;
+            
+        if item > self.max:
+            self.max = item
+            self.countmax = 0
+            
+        if item == self.max: 
+            self.countmax += k
+            
+        self.n += k;
+        
+        if k == 1:
+            self.sum += item;
+            self.sqrsum += item*item;
+        else:
+            self.sum += item*k;
+            self.sqrsum += item*item*k;
+
+
+    def average(self):
+        return self.sum/self.n
+
+    
+    def var(self):
+        var = ((float(self.n)) / (self.n - 1))\
+                * (self.sqrsum/self.n\
+                - self.average() * self.average())
+                    
+        return var if var >= 0.0 else 0.0
+        
+    

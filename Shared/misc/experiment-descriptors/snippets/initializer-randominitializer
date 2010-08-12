@@ -1,0 +1,7 @@
+# ------------------------------------------------------------------------------
+# Trace Network to Real Network ID mapper.
+# ------------------------------------------------------------------------------
+
+init.randominitializer RandomInitializer
+init.randominitializer.traceid_holder tnid
+init.randominitializer.tracefile ${tracefile}

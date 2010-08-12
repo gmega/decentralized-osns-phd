@@ -47,6 +47,17 @@ public class LogManager implements Runnable {
 	public LogManager() {
 		Runtime.getRuntime().addShutdownHook(new Thread(this));
 	}
+	
+	public synchronized String addUnique(String s) throws IOException {
+		ArrayList<String> allLogs = add(s);
+		if (allLogs.size() != 1) {
+			throw new IllegalArgumentException(
+					"Cannot disambiguate: expected 1 registered stream, got "
+							+ allLogs.size() + ".");
+		}
+		
+		return allLogs.get(0);
+	}
 
 	public synchronized ArrayList<String> add(String s) throws IOException {
 		String[] data = Configuration.getNames(s);

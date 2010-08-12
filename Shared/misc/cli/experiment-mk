@@ -1,0 +1,12 @@
+#!/bin/bash
+
+. $BASH_LIB/common.lib
+checkenv
+
+if [ ! $1 ]
+then
+    echo "Missing experiment template."
+    exit 1
+fi
+
+analyzer -t python -V template=$1 experiment.util.MkExperiment 

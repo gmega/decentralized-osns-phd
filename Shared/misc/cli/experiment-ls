@@ -1,0 +1,19 @@
+#!/bin/bash
+
+. $BASH_LIB/common.lib
+checkenv
+
+TPL_HOME=`analyzer -t python -V attribute=experiment.TEMPLATES_ROOT misc.cli.ReadAttribute 2> /dev/null`
+
+echo ""
+echo "Available templates are:"
+
+counter=0
+for i in `ls -R $TPL_HOME`;
+do 
+    if [ -f $TPL_HOME/$i ]
+    then
+	let counter=counter+1  
+	echo ${counter}: $i 
+    fi
+done

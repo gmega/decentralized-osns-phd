@@ -591,22 +591,27 @@ class MinloadStatistic:
     
 #==========================================================================
     
-class DiffusionStatistic:
+class IndirectsStatistic:
+    ''' Counts the percentage of indirect receives happening at each given
+        neighborhood. An indirect receive happens whenever a message from a 
+        neighbor is received by means of a shared neighbor, and not from the 
+        neighbor itself.'''
     
-    def __init__(self, deps):
-        self._key = _new_key()
-        self._load = deps["load"]
+    def __init__(self):
+        self._DIRECT_RECEIVE = _new_key();
+        self._INDIRECT_RECEIVE = _new_key();
     
     def message(self, stat_tracker, id, seq, send_id, receiver_id, latency, sim_time):
         if id == send_id:
-            stat_tracker[receiver_id].sum(self._key, 1)
+            stat_tracker[id].sum(self._DIRECT_RECEIVE, 1)
+        else:
+            stat_tracker[id].sum(self._INDIRECT_RECEIVE, 1)
             
     def populate_sheet(self, sheet, node_stats, round):
         for node_stat in node_stats:
-            direct_deliveries = node_stat.get(self._key, round)
-            total_deliveries = node_stat.get(self._load.MSG_DELIVERED, round)
-            diffusion_deliveries = total_deliveries - direct_deliveries
-            sheet[node_stat.id] = (diffusion_deliveries, total_deliveries)
+            direct_sends = node_stat.get(self._DIRECT_RECEIVE, round)
+            indirect_sends = node_stat.get(self._INDIRECT_RECEIVE, round)
+            sheet[node_stat.id] = (indirect_sends, direct_sends + indirect_sends)
 
         return sheet
         
@@ -639,7 +644,7 @@ class DuplicatesPerMessage:
         
         
     def execute(self):
-        decoder = LogDecoder(LogDecodingStream(True, BaseFormatDecoder(self._input)))
+        decoder = LogDecoder([LogDecodingStream(True, BaseFormatDecoder(self._input))])
         decoder.decode(self)
 
         for key,value in self._message_data.items():
@@ -838,12 +843,12 @@ class LowerBound(object):
     
         
     def execute(self):
-        dec = LogDecoder(LogDecodingStream(False, BaseFormatDecoder(self._log_1)), False)
+        dec = LogDecoder([LogDecodingStream(False, BaseFormatDecoder(self._log_1))], False)
         dec.decode(self)
         
         self._compare = True
         
-        dec = LogDecoder(LogDecodingStream(False, BaseFormatDecoder(self._log_2)), False)
+        dec = LogDecoder([LogDecodingStream(False, BaseFormatDecoder(self._log_2))], False)
         dec.decode(self)
         
         for msg_key, latency in self._messages.items():

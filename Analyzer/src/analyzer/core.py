@@ -5,6 +5,9 @@ Created on Jul 23, 2010
 '''
 from analyzer.config import EXPERIMENT_TYPES, LOADER_CLASS
 from analyzer.exception import StructuralException
+import cPickle
+import resources
+import os
 
 def guess_types(root_folder):
     
@@ -54,4 +57,69 @@ class GenericExperiment:
         loglist = self._logfiles.setdefault(type, [])
         loglist.append(logfile)
 
+# -----------------------------------------------------------------------------
+# Store manager.
+# -----------------------------------------------------------------------------
+
+DATASTORES="storage"
+
+stores = {}
+
+def store(key):
+    
+    if stores.has_key(key):
+        return stores[key]
+    
+    else:
+        resources.storage_area(key + ".store", create=True);
         
+
+class _Store:
+    """ Exceedingly simple key-value store for storing application 
+        data. 
+    """
+        
+    def __init__(self, file, create=False):
+        """ Creates a new in-memory representation for a key-value store.
+        
+        @param file: the underlying file backing this key-value store. If
+        the file doesn't exist, it is assumed that the key-value store is 
+        new. Otherwise the file is loaded.
+        """
+        self._file = file
+        self._store = self.__load__()
+        
+        
+    def __getitem__(self, key):
+        return self._store[key]
+    
+    
+    def __setitem__(self, key, value):
+        self._dirty = True
+        self._store[key] = value
+    
+    
+    def __delitem__(self, key):
+        del self._store[key]
+        self._dirty = True
+        
+    
+    def commit(self):
+        if not self._dirty:
+            return
+        
+        with open(self._file, "w") as file:
+            cPickle.dump(self._store, file, protocol=0)
+            
+        self._dirty = False
+     
+    
+    def __load__(self):
+        
+        if not os.path.exists(self._file):
+            return {}
+        
+        with open(self._file, "r") as file:
+            u = cPickle.Unpickler(file)
+            return u.load()
+    

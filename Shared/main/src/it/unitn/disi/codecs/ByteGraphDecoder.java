@@ -15,47 +15,21 @@ import java.util.NoSuchElementException;
  * 
  * @author giuliano
  */
-public class ByteGraphDecoder implements ResettableGraphDecoder {
-
-	private InputStream fIs;
-
-	private boolean fSeenEof;
-
-	private int fSource;
+public class ByteGraphDecoder extends AbstractEdgeListDecoder {
 
 	private byte[] fBuf = new byte[4];
 
 	public ByteGraphDecoder(InputStream is) throws IOException {
-		fIs = is;
-		fSource = readInt(true);
+		super(is);
+		init();
 	}
 
-	public boolean hasNext() {
-		return !fSeenEof;
-	}
+	@Override
+	protected int readInt(boolean eofAllowed) throws IOException {
 
-	public Integer next() {
-		if (!hasNext()) {
-			throw new NoSuchElementException();
-		}
-		return advance();
-	}
-
-	private int advance() {
-		try {
-			int toReturn = readInt(false);
-			fSource = readInt(true);
-			return toReturn;
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	private int readInt(boolean eofAllowed) throws IOException {
-
-		int read = fIs.read(fBuf);
+		int read = inputStream().read(fBuf);
 		if (read == -1) {
-			fSeenEof = true;
+			eofSeen();
 			if (!eofAllowed) {
 				unexpectedEOF("odd number of integers (encoding error)");
 			}
@@ -65,23 +39,5 @@ public class ByteGraphDecoder implements ResettableGraphDecoder {
 		}
 
 		return CodecUtils.decodeInt(fBuf);
-	}
-
-	public int getSource() {
-		return fSource;
-	}
-
-	public void reset() throws IOException {
-		fIs.reset();
-		fSeenEof = false;
-		fSource = readInt(true);
-	}
-
-	public void unexpectedEOF(String msg) throws IOException {
-		throw new IOException("Unexpected end-of-file (" + msg + ").");
-	}
-
-	public void remove() {
-		throw new UnsupportedOperationException();
 	}
 }

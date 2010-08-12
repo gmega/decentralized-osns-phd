@@ -1,0 +1,6 @@
+# ------------------------------------------------------------------
+# Anti-centrality selector.
+# ------------------------------------------------------------------
+
+protocol.selector AntiCentralitySelector
+protocol.selector.linkable sn

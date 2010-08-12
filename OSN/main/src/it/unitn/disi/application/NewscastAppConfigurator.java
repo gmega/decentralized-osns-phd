@@ -90,7 +90,6 @@ class NewscastAppConfigurator implements IApplicationConfigurator{
 	private void configureGreedyDiffusion(NewscastApplication app,
 			int protocolId, int socialNetworkId, boolean histories) {
 		HistoryForwarding gd;
-		
 		if (histories) {
 			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
 		} else {

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+analyzer-j -i $1 -o $2 it.unitn.disi.cli.ElText2Byte

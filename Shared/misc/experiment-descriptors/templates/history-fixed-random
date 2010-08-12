@@ -1,11 +1,12 @@
-#include header-facebook
+#include boilerplate
+#include fastgraphprotocol-sn
 #include selector-random
 #include forwarding/application-history
 #include initializer-noderegistry
 #include initializer-fixedtraffic
-#include initializer-fastgraphprotocol
+#include initializer-fastgraphprotocol-sn
 
-include.init noderegistry fixedtraffic fastgraphprotocol
+include.init noderegistry fixedtraffic fastgraphprotocol-sn
 
 #include control-applicationmonitor
 #include control-fwmonitor

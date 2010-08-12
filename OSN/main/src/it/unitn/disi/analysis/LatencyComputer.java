@@ -325,6 +325,7 @@ public class LatencyComputer implements IMultiTransformer {
 		for (Long key : fToReceive.keySet()) {
 			NodeData data = fToReceive.get(key);
 			Iterator<EventId> pendingEvts = data.pendingEventKeys();
+			
 			while (pendingEvts.hasNext()) {
 				EventId id = pendingEvts.next();
 				
@@ -336,6 +337,8 @@ public class LatencyComputer implements IMultiTransformer {
 				sb.append(id.fSeq);
 				sb.append(" ");
 				sb.append(key);
+				sb.append(" ");
+				sb.append(data.eventReceived(id, fCurrentRound));
 				sb.append(" ");
 				sb.append(fCurrentRound);
 				sb.append("\n");
@@ -396,18 +399,40 @@ class EventId {
 	}
 }
 
+/**
+ * {@link NodeData} keeps track of pending deliveries and accrued message
+ * latencies on a per-node basis.
+ * 
+ * @author giuliano
+ */
 class NodeData {
+	/**
+	 * Time at which a given pending message has been published.
+	 */
 	private static final int TIME_ISSUED = 0;
 
+	/**
+	 * Accrued latency for a pending message.
+	 */
 	private static final int ACCRUED_LATENCY = 1;
 
+	/**
+	 * Pending messages for the current node.
+	 */
 	private Map<EventId, Long[]> fPending = new HashMap<EventId, Long[]>();
 
+	/**
+	 * Last login time for the current node.
+	 */
 	private long fLogin;
 
+	/**
+	 * Time register for the last event reported for this node.
+	 */
 	private long fLastSessionEvent = -1;
 
 	public void addPending(EventId id, long time) {
+		checkMonotonic(time);
 		if (fPending.containsKey(id)) {
 			throw new IllegalStateException(id.toString());
 		}
@@ -448,16 +473,6 @@ class NodeData {
 
 		fLastSessionEvent = time;
 		return accruedLatency(pending, time);
-	}
-
-	public long deliveryLatency(EventId id, long time) {
-		Long[] pending = fPending.get(id);
-		if (pending == null) {
-			throw new IllegalStateException("No event with id " + id
-					+ " was found.");
-		}
-
-		return time = pending[TIME_ISSUED];
 	}
 
 	public boolean isLoggedIn() {

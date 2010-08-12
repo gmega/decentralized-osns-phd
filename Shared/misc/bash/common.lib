@@ -52,13 +52,23 @@ function step_average {
 
 function file_list {
     LIST=""
-    for i in `ls $1`;
-    do 
-	LIST=$LIST:$i
+    SEP=${2:-","}
+    for i in `ls $1`
+    do
+	if [ ${LIST} ]
+	then
+	    LIST=${LIST}${SEP}${i}
+	else
+	    LIST=$i
+	fi
     done
-    LIST=${LIST:1:`expr length $LIST`}
 
     COMMON_RETURN=$LIST
+}
+
+function classpath {
+    file_list "$1/*.jar" ":"
+    CP=$COMMON_RETURN
 }
 
 
@@ -84,7 +94,7 @@ function assert_exists {
 ############################################################### 
 function checkenv {
 
-    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB,DESCRIPTORS_ROOT misc.cli.CheckVar > /dev/null
+    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB,DESCRIPTORS_ROOT,RLIB_HOME misc.cli.CheckVar > /dev/null
     
     if [ $? == "1" ]
     then
@@ -108,3 +118,24 @@ function checkpar {
 }
 
 err "Sourced common.lib."
+
+############################################################### 
+#
+# Given two folders, creates a shadow copy (linked) from the
+# first to the second.
+#
+############################################################### 
+function linktree {
+    OS=`uname`
+
+    if [ $OS == "Linux" ]
+    then
+	cp -lR $1 $2
+    elif [ $OS == "Darwin" ]
+    then
+	gcp -lR $1 $2
+    else
+	err "Unknown OS $OS."
+	exit 1
+    fi
+}

@@ -1,0 +1,15 @@
+# ------------------------------------------------------------------------------
+# Trace-based dynamic network
+# ------------------------------------------------------------------------------
+
+# Trace ID holder.
+protocol.tnid GenericValueHolder
+
+# Holder that tracks the last login.
+protocol.lastlogin GenericValueHolder
+
+control.dynamic TraceBasedNetwork
+control.dynamic.tracefile ${tracefile}
+control.dynamic.id tnid
+control.dynamic.lastlogin lastlogin
+control.dynamic.roundduration ${roundduration}

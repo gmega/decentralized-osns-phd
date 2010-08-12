@@ -1,5 +1,6 @@
 package it.unitn.disi.cli;
 
+import it.unitn.disi.CommandAlias;
 import it.unitn.disi.codecs.AdjListGraphDecoder;
 import it.unitn.disi.utils.logging.CodecUtils;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+@CommandAlias("adj2byte")
 public class Adj2ByteGraph implements ITransformer {
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {

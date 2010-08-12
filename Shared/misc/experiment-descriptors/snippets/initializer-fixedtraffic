@@ -1,3 +1,4 @@
-init.fixedtraffic.PredictableTrafficInit
+# ------------------------------------
+init.fixedtraffic PredictableTrafficInitializer
 init.fixedtraffic.application application
 init.fixedtraffic.seed 42

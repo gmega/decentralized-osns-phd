@@ -40,10 +40,11 @@ if (is.null(opt$verbose)) { opt$verbose = FALSE }
 # Reads the file.
 the_data <- read.table(file=opt$input, header=FALSE, sep=" ")
 
-# Plots the data.
-metric_hist(the_data$V2, algorithm=opt$algorithm, measure=opt$metric, file_name=opt$output, log=opt$logplot, real_zero=TRUE)
+# Plots the data. Assumes the stuff we want is in the last column.
+the_data = the_data[[dim(the_data)[2]]]
+metric_hist(the_data, algorithm=opt$algorithm, measure=opt$metric, file_name=opt$output, log=opt$logplot, real_zero=TRUE)
 
 # Prints minimum, maximum, avg, std. dev and 90th percentile.
-s <- std_stats(the_data$V2)
+s <- std_stats(the_data)
 s <- paste(s["minimum"], s["maximum"], s["average"], s["standard deviation"], s["90th percentile"])
 cat(s)

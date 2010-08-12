@@ -1,0 +1,11 @@
+#include header-facebook
+#include selector-anticentrality
+#include forwarding/application-history
+#include initializer-noderegistry
+#include initializer-fastgraphprotocol
+
+include.init noderegistry fastgraphprotocol
+
+#include control-applicationmonitor
+#include control-fwmonitor
+#include control-convergence

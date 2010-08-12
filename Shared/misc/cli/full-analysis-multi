@@ -1,0 +1,22 @@
+#!/bin/bash
+
+checkenv
+
+if [ ! $1 ]
+then
+    echo "Missing descriptor file."
+    exit
+fi
+
+if [ ! $2 ] 
+then
+    echo "Missing social graph stem."
+    exit
+fi
+
+cat $1 | while read line; do
+    DIR=`echo $line | awk 'BEGIN {FS=";"} {print $1}'`
+    DESC=`echo $line | awk 'BEGIN {FS=";"} {print $2}'`
+
+    full-analysis ./$DIR $2 "$DESC" ./results
+done

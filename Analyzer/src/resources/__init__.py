@@ -37,6 +37,8 @@ _RESOURCES = "resources"
 _OUTPUTS = "outputs"
 _BASE_DEPTH = 2
 
+_METADATA = ".analyzer"
+
 #===============================================================================
 # Resource accessors
 #===============================================================================
@@ -60,11 +62,9 @@ def home():
     return base_path
 
 
-def path(elements):
+def path(elements, base_path=home()):
     
     file_name = elements.pop()
-    
-    base_path = home()
     
     for element in elements:
         base_path = os.path.join(base_path, element)
@@ -76,5 +76,9 @@ def path(elements):
     return base_path
 
 
+def storage_area(filename):
+    return path([filename, _METADATA], os.getenv("HOME"))
+
+
 RESOURCE_HOME = path([_RESOURCES])
-OUTPUT_HOME = path([_OUTPUTS])
+OUTPUT_HOME = path([_OUTPUTS]) 

@@ -47,14 +47,14 @@ function summary() {
 function plot() {
     err "Plotting metric $2."
 
-    std_stats.R\
+    experiment-stats.R\
  --input ${4}/${1}\
  --metric $2\
  --algorithm "$5"\
  --output ${4}/${2}-${3}-linlin.eps |\
  analyzer --psyco --verbose -t python misc.cli.NumbersOnly > ${4}/${2}-stats-${3}.text
     
-    std_stats.R\
+    experiment-stats.R\
  --input ${4}/${1}\
  --metric $2\
  --algorithm "$5"\
@@ -108,7 +108,7 @@ GRAPH_SIZE=`analyzer -t python --psyco -V input=$GRAPHS_HOME/$SOCIAL_GRAPH.al gr
 
 # Makes a shadow copy of the root folder.
 NEWROOT="${ROOT_FOLDER}-${RANDOM}"
-cp -Rl $ROOT_FOLDER $NEWROOT
+linktree $ROOT_FOLDER $NEWROOT
 ROOT_FOLDER=$NEWROOT
 
 # Message folder.
@@ -136,16 +136,17 @@ do
 
     # Extracts the standard set of metrics. These are:
     summary "load" "text" $i 
+    summary "pnlatency" "text" "$i"
     summary "latency" "text" $i 
     summary "minload" "text" $i
-    summary "dups" "text" $i
     summary "total" "text" $i
+    summary "dups" "text"
     
     # 1 - load (per-node);
     # 2 - load (total);
     # 3 - delivered messages (total);
     # 4 - undelivered messages (total);
-    # 5 - latency distribution;
+    # 5 - latency distribution (per-node);
     # 6 - zero-load versus time.
     parselog --file $M/$MESSAGES_EXPERIMENT --psyco -V network_size=$GRAPH_SIZE --nolabels --statistics\
  load:allpoints:$M/$LOAD_EXPERIMENT\
@@ -153,11 +154,14 @@ do
 ,delivered:total:append:$M/$TOTAL_EXPERIMENT\
 ,duplicates:total:append:$M/$TOTAL_EXPERIMENT\
 ,undelivered:total:append:$M/$TOTAL_EXPERIMENT\
-,latency:allpoints:$M/$LATENCY_EXPERIMENT\
+,latency:allpoints:$M/$PNLATENCY_EXPERIMENT\
 ,minload:allpoints:$M/$MINLOAD_EXPERIMENT
-    
+
+    # 7 - Appends the latency points as well (this sucks, have to move this inside of the logparsing framework).
+    ucat $M/$MESSAGES_EXPERIMENT | grep '^M ' | cut -d" " -f6 >> $M/$LATENCY_SUMMARY
+
     # 8 - Duplicates-per-message (per-message).
-    analyzer --verbose -t python -V log=$M/$MESSAGES_EXPERIMENT:social_graph=$GRAPHS_HOME/$SOCIAL_GRAPH".al" experiment.logparse.DuplicatesPerMessage > $M/$DUPS_EXPERIMENT
+    analyzer --verbose -t python -V log=$M/$MESSAGES_EXPERIMENT:social_graph=$GRAPHS_HOME/$SOCIAL_GRAPH".al" experiment.logparse.DuplicatesPerMessage >> $A/$DUPS_SUMMARY
 done
 
 # Averages everything.
@@ -165,18 +169,19 @@ summary "load" "text"
 summary "latency" "text"
 summary "total" "text"
 
-extract_average $REPETITIONS $M/$LOAD_STEM "text" > $A/$LOAD_SUMMARY        # Per-node load.
-extract_average $REPETITIONS $M/$LATENCY_STEM "text" > $A/$LATENCY_SUMMARY  # Per-node latencies.
-extract_average $REPETITIONS $M/$MINLOAD_STEM "text" > $A/$MINLOAD_SUMMARY  # Zero-load versus time.
-extract_average $REPETITIONS $M/$TOTAL_STEM "text" > $A/$TOTAL_SUMMARY      # Total load, delivered, undelivered.
+extract-average $REPETITIONS $M/$LOAD_STEM "text" > $A/$LOAD_SUMMARY        # Per-node load.
+extract-average $REPETITIONS $M/$MINLOAD_STEM "text" > $A/$MINLOAD_SUMMARY  # Zero-load versus time.
+extract-average $REPETITIONS $M/$TOTAL_STEM "text" > $A/$TOTAL_SUMMARY      # Total load, delivered, undelivered.
+
+mv $M/$LATENCY_SUMMARY $A/$LATENCY_SUMMARY
 
 # Now drift, and convergence figures.
 summary "drift" "text"
 summary "convergence" "text"
 summary "output"
 
-extract_average -t 'drift' $REPETITIONS "$O/$OUTPUT_STEM" "text.gz" > $A/$DRIFT_SUMMARY
-extract_average -t 'STABLE' -p ':' $REPETITIONS "$O/$OUTPUT_STEM" "text.gz" > $A/$CONVERGENCE_SUMMARY
+extract-average -t 'drift' $REPETITIONS "$O/$OUTPUT_STEM" "text.gz" > $A/$DRIFT_SUMMARY
+extract-average -t 'STABLE' -p ':' $REPETITIONS "$O/$OUTPUT_STEM" "text.gz" > $A/$CONVERGENCE_SUMMARY
 
 # ==============================
 # Plots graphs and statistics.
@@ -193,5 +198,4 @@ fi
 
 cd $A
 minloadplot.g
-mv minload.eps $A
 

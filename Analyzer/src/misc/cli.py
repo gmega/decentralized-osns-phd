@@ -156,11 +156,12 @@ class Subst:
         substituted by the provided value. 
     """
     
-    def __init__ (self, substitute):
+    def __init__ (self, substitute, allow_missing="False"):
         """ @param substitute: a string of variables. Variables 
                 are of the form key1+value1@key2+value2@...@keyn+valuen.
         """
         
+        self._allow_missing=bool(allow_missing)
         self._vars = {}
         
         for pair in substitute.split("+"):
@@ -174,10 +175,18 @@ class Subst:
 
     
     def __replace_vars__(self, val):
-        m = lambda v: self._vars[v.group(1)]
         p = re.compile("\${(\w+)}")
+        return p.sub(self.__lookup__, val)
+    
+    
+    def __lookup__(self, match):
+        key = match.group(1)
+
+        if self._allow_missing and not (key in self._vars):
+            return "${" + key + "}"
         
-        return p.sub(m, val)
+        return self._vars[key]
+        
 
 #===============================================================================
 

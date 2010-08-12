@@ -2,3 +2,4 @@ control.convergence AbsoluteDifferenceConvergence
 control.convergence.application application
 control.convergence.after 1
 control.convergence.delta 1
+control.convergence.atleastfor 20

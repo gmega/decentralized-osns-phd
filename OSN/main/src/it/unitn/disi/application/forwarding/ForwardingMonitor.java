@@ -55,7 +55,7 @@ public class ForwardingMonitor implements Control {
 			
 			for (int i = 0; i < Network.size(); i++) {
 				Node node = Network.get(i);
-				BloomFilterHistoryFw gd = getAdaptable(node, fAdaptableId, BloomFilterHistoryFw.class);
+				BloomFilterHistoryFw gd = (BloomFilterHistoryFw) getAdaptable(node, fAdaptableId, HistoryForwarding.class);
 				System.out.println(node.getID() + " " + gd.cacheHitRate());
 			}
 			

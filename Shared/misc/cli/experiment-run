@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# Imports common functions.
+. $BASH_LIB/common.lib
+
+#==============================================================================
+# Option defaults.
+#==============================================================================
+
+PREFIX=$PWD
+BIN_LOGS="logs"
+OUTPUT="output"
+TEMPLATE="experiment.template"
+SEQ_START=0
+SEQ_END=0
+CYCLES=1
+
+#==============================================================================
+# Functions.
+#==============================================================================
+
+function print_usage() {
+    echo "Syntax: $0 [options] [clean | social graph]"
+    echo
+    echo Options:
+    echo -e "   -p [prefix (defaults to current folder)]"
+    echo -e "   -b [binary logs subfolder (defaults to $BIN_LOGS)]"
+    echo -e "   -o [outputs subfolder (defaults to $OUTPUT)]"
+    echo -e "   -t [experiment template (defaults to $TEMPLATE)]"
+    echo -e "   -s [experiment start (defaults to $SEQ_START)] "
+    echo -e "   -e [experiment end (defaults to $SEQ_END)]"
+    echo -e "   -c [experiment cycles (defaults to $CYCLES)]"
+    exit 1
+}
+
+function check_set {
+    if [ -z $2 ]
+    then 
+	echo Mandatory argument $1 is missing. Type $0 -h for help.
+	exit 1
+    else
+	echo Parameter $1 is \[$2\].
+    fi
+}
+
+#==============================================================================
+# Option parsing.
+#==============================================================================
+
+while getopts "p:b:o:t:s:e:c:h" o; do
+    case $o in 
+	p ) PREFIX=$OPTARG;;
+	b ) BIN_LOGS=$OPTARG;;
+	o ) OUTPUT=$OPTARG;;
+	t ) TEMPLATE=$OPTARG;;
+	s ) SEQ_START=$OPTARG;;
+	e ) SEQ_END=$OPTARG;;
+	c ) CYCLES=$OPTARG;;
+	h )
+	    print_usage
+	    exit 1
+	    ;;
+	\?)
+	    echo "Type $0 -h for help." >&2
+	    exit 1
+	    ;;
+	:)
+	    echo "Option -$OPTARG requires an argument. Type $0 -h for help."
+	    exit 1
+    esac
+done
+
+shift $((OPTIND-1))
+
+FULL_BIN=$PREFIX/$BIN_LOGS
+FULL_OUTPUT=$PREFIX/$OUTPUT
+
+check_set "[clean | social graph] " $1
+if [[ $1 = clean ]]
+then
+    rm -rf $PREFIX/*.text
+    rm -rf $FULL_BIN
+    rm -rf $FULL_OUTPUT
+    exit 0
+fi
+
+SOCIAL_GRAPH=$GRAPHS_HOME/$1
+
+checkenv
+
+#==============================================================================
+# Runs the experiment.
+#==============================================================================
+
+# Detects the graph size.
+NETWORK_SIZE=`analyzer -t python --psyco -V input=$SOCIAL_GRAPH graph.cli.GraphSize`
+
+mkdir -p $FULL_BIN
+mkdir -p $FULL_OUTPUT
+
+for i in `seq $SEQ_START $SEQ_END`
+do
+    # Generates experiment spec for peersim.
+    cat $PREFIX/$TEMPLATE | analyzer -V substitute=\
+experiment@$i+\
+pwd@${PREFIX}+\
+binlog@${FULL_BIN}/log-${i}.bin+\
+social_graph@${SOCIAL_GRAPH}+\
+graph_size@${NETWORK_SIZE}+\
+cycles@${CYCLES} \
+-t python misc.cli.Subst > $PREFIX/experiment-${i}.text
+
+    # Runs the experiment.
+    peersim $PREFIX/experiment-${i}.text > ${FULL_OUTPUT}/output-${i}.text
+    rm -rf ${FULL_OUTPUT}/output-${i}.text.gz
+    gzip ${FULL_OUTPUT}/output-${i}.text
+
+    rm $PREFIX/experiment-${i}.text
+done;

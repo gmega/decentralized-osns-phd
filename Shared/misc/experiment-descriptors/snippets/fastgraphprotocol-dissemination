@@ -1,0 +1,8 @@
+# ------------------------------------------------------------------
+# Dissemination graph for ideal Demers.
+# ------------------------------------------------------------------
+
+protocol.dissemination FastGraphProtocol
+protocol.dissemination.file Facebook_dense_simple.adj
+protocol.dissemination.undir 
+protocol.dissemination.encoding adjacency

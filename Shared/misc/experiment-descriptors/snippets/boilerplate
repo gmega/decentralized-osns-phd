@@ -1,0 +1,4 @@
+simulation.cycles ${cycles}
+it.unitn.disi.registry contiguous
+
+network.size ${graph_size}

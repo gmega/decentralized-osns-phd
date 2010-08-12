@@ -1,0 +1,16 @@
+#include boilerplate
+#include fastgraphprotocol-sn
+#include selector-anticentrality
+#include forwarding/application-history
+
+#include initializer-noderegistry
+#include initializer-fastgraphprotocol-sn
+#include initializer-randominitializer
+#include initializer-alldown
+
+include.init noderegistry fastgraphprotocol randominitializer alldown
+
+#include control-tracereplay
+#include control-applicationmonitor
+#include control-fwmonitor
+#include control-convergence

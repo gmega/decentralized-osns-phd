@@ -43,7 +43,9 @@ public class NodeRegistry {
 		
 		if("contiguous".equals(mode)){
 			System.err.println("Using contiguous node registry.");
+			System.err.print("Allocating... ");
 			fInstance = new ArrayListNodeRegistry(Network.size());
+			System.err.println("done.");
 		} else {
 			fInstance = new HashMapNodeRegistry();
 		}

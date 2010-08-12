@@ -1,0 +1,28 @@
+# ------------------------------------------------------
+# -- Newscast Application With Demers Rumor Mongering --
+# ------------------------------------------------------
+
+protocol.application		NewscastApplication 
+{	 
+
+	# Base configuration.
+	social_neighborhood	sn
+	tweet_probability 	0.01
+	tweet_until 		30
+
+	# Logging.
+	logwriter tweets gzipfile ${binlog}
+	
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	# Anti-entropy configuration.
+	ae.selector		selector
+	ae.percentage 		0.0
+	
+	# Demers rumor mongering (feedback + probabilistic).
+	rumor demers
+	rumor.selector selector
+	rumor.chunk_size 5
+	rumor.giveup_probability 0.3
+}

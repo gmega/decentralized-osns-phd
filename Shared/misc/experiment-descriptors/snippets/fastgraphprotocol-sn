@@ -1,0 +1,8 @@
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file ${social_graph}
+protocol.sn.undir 
+protocol.sn.encoding adjacency

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-analyzer -t python -V input=$1 misc.cli.EdgeList2Adj
+analyzer -t python -V input=$1 graph.cli.EdgeList2Adj
