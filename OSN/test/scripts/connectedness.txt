@@ -1,0 +1,17 @@
+# Adapted from PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 1
+
+network.size 10
+
+protocol.gr IdleProtocol
+
+init.0 WireFromFile
+init.0.file /Users/giuliano/Work/Doutorado/Workspace/Social Peer Sampling/test/resources/simple.txt
+
+include.init 0
+
+control.conn it.unitn.disi.control.ConnectednessObserver
+control.conn.mode "pessimistic"
+control.conn.protocol gr

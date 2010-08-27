@@ -1,0 +1,69 @@
+random.seed 1234567890
+simulation.cycles 300
+
+network.size 72303
+
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/Graphs/Facebook.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# ------------------------------------------------------------------
+# Random selector over linkable.
+# ------------------------------------------------------------------
+
+protocol.selector AntiCentralitySelector
+protocol.selector.linkable sn
+
+# ------------------------------------------------------------------
+# The newscasting application.
+# ------------------------------------------------------------------
+
+protocol.application		NewscastApplication 
+{	 
+
+	# Base configuration.
+	social_neighborhood	sn
+	tweet_probability 	0.01
+	tweet_until 		30
+
+	# Logging.
+	logwriter tweets null
+	
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	# Anti-entropy configuration.
+	ae.selector		selector
+	ae.percentage 		0.0
+	
+	# Greedy diffusion rumor mongering.
+	rumor greedy
+	rumor.selector selector
+	rumor.chunk_size 5
+	rumor.window_size 50
+	rumor.bloom_false_positive 0.01
+}
+
+# ------------------------------------------------------------------
+# Initializers.
+# ------------------------------------------------------------------
+init.0 FastGraphProtocolInit
+init.0.protocol sn
+
+include.init 0
+
+# ------------------------------------------------------------------
+# Controls.
+# ------------------------------------------------------------------
+control.application_observer NewscastApplicationMonitor
+control.application_observer.application application
+control.application_observer.logwriter tweets null
+
+control.greedy_observer GreedyDiffusionMonitor
+control.greedy_observer.adaptable application
+control.greedy_observer.social_network sn

@@ -1,0 +1,68 @@
+# Adapted from PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 4000
+
+control.shf Shuffle
+
+network.size 408
+
+# The overlay provider. 
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/Work/peersim-jobs/playground/prob/prob_rm/sample_reduced.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# Component computation service.
+protocol.ccs ComponentComputationService
+protocol.ccs.fastGraphProtocol sn
+
+# The sampling service for anti entropy.
+protocol.rnd RandomSelectorOverLinkable
+protocol.rnd.linkable sn
+
+# The network sampler.
+protocol.sl ShufflingLinkable
+protocol.sl.linkable sn
+
+# ------------------------------------------------------------------
+# The newscasting application.
+# ------------------------------------------------------------------
+
+protocol.news NewscastApplication
+protocol.news.componentComputer ccs
+protocol.news.linkable sl sn 
+protocol.news.tweetProbability 0.01
+protocol.news.logwriter tweets FILE /home/giuliano/Work/peersim-jobs/playground/prob/prob_rm/output/latency.bin
+protocol.news.tweetUntil 1000
+
+# Parameters for the anti-entropy protocol.
+protocol.news.ae.percentage 0.0
+protocol.news.ae.pss rnd
+
+# Parameters for the rumor mongering protocol.
+protocol.news.rumor probabilistic
+protocol.news.rumor.assumestatic
+
+# ------------------------------------------------------------------
+
+####################################################################
+
+# Initializer for the FastGraphProtocol class.
+init.fgpboot FastGraphProtocolInit
+init.fgpboot.protocol sn
+
+# Initializer for the probabilistic rumor monger.
+init.prm ParameterReader
+init.prm.adaptable news
+init.prm.file /home/giuliano/Work/peersim-jobs/playground/prob/prob_rm/probabilities.text
+
+include.init fgpboot prm
+
+# Observes some running parameters.
+control.debug1 NewscastApplicationMonitor
+control.debug1.newscastapp news
+control.debug1.logwriter tweets FILE /home/giuliano/Work/peersim-jobs/playground/prob/prob_rm/output/latency.bin
+
+control.debug2 ProbabilisticRMMonitor
+control.debug2.adaptable news

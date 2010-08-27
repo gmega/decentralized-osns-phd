@@ -1,0 +1,74 @@
+# Adapted from PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 8
+
+network.size 5
+
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/workspace/Social_Peer_Sampling/test/resources/small_for_greedy.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# ------------------------------------------------------------------
+# Deterministic selector.
+# ------------------------------------------------------------------
+
+protocol.selector DeterministicSelector
+
+# ------------------------------------------------------------------
+# Component computation service.
+# ------------------------------------------------------------------
+
+protocol.ccs ComponentComputationService
+protocol.ccs.fast_graph_protocol sn
+
+# ------------------------------------------------------------------
+# The newscasting application.
+# ------------------------------------------------------------------
+
+protocol.app			NewscastApplication 
+{	 
+
+	# Base configuration.
+	social_neighborhood sn
+	tweet_probability 	1
+	tweet_until 		0
+	verbose
+
+	# Logging.
+	logwriter tweets null	
+	
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	component_computer 	ccs
+	
+	# Anti-entropy configuration.
+	ae.selector			selector
+	ae.percentage 		0.0
+	
+	# Greedy diffusion rumor mongering.
+	rumor greedy
+	rumor.selector selector
+	rumor.chunk_size 1
+	rumor.window_size 10
+	rumor.bloom_false_positive 0.01
+}
+
+# ------------------------------------------------------------------
+# Initializers.
+# ------------------------------------------------------------------
+init.0 DeterministicSelectionReader
+init.0.application app
+init.0.deterministic_selector selector
+init.0.file /home/giuliano/workspace/Social_Peer_Sampling/test/resources/greedy_test.choices
+
+init.1 FastGraphProtocolInit
+init.1.protocol sn
+
+include.init 0 1

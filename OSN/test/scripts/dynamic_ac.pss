@@ -1,0 +1,102 @@
+simulation.cycles 3000
+it.unitn.disi.registry contiguous
+
+network.size 72303
+
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/Graphs/Facebook.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# ------------------------------------------------------------------
+# Anti-centrality selector.
+# ------------------------------------------------------------------
+
+protocol.selector AntiCentralitySelector
+protocol.selector.linkable sn
+
+# ------------------------------------------------------------------
+# Newscasting Application w/ Forwarding and Rumor Mongering
+# ------------------------------------------------------------------
+
+protocol.application		NewscastApplication 
+{
+	# Base configuration.
+	social_neighborhood	sn
+	tweet_probability 	0.01
+	tweet_until			30
+
+	# Logging.
+	logwriter tweets gzipfile /home/giuliano/Tmp/log.bin.gz
+				 
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	# Anti-entropy configuration.
+	ae.selector		selector
+	ae.percentage		0.0
+				 
+	# Greedy diffusion rumor mongering.
+	rumor forwarding
+	rumor.selector selector
+	rumor.chunk_size 5
+	rumor.use_bloom_filters
+	rumor.bloom_false_positive 0.01
+	rumor.window_size 50
+}
+
+init.noderegistry NodeRegistryInit
+
+init.fastgraphprotocol_sn FastGraphProtocolInit
+init.fastgraphprotocol_sn.protocol sn
+
+# ------------------------------------------------------------------------------
+# Trace Network to Real Network ID mapper.
+# ------------------------------------------------------------------------------
+
+init.randominitializer RandomInitializer
+init.randominitializer.traceid_holder tnid
+init.randominitializer.tracefile /home/giuliano/Work/UniTN/Traces/availability-0.2/traces/skype.evt
+
+init.alldown AllDown
+init.alldown.logwriter tweets gzipfile /home/giuliano/Tmp/log.bin.gz
+
+include.init noderegistry fastgraphprotocol_sn randominitializer alldown
+
+# ------------------------------------------------------------------------------
+# Trace-based dynamic network
+# ------------------------------------------------------------------------------
+
+# Trace ID holder.
+protocol.tnid GenericValueHolder
+
+# Holder that tracks the last login.
+protocol.lastlogin GenericValueHolder
+
+control.dynamic TraceBasedNetwork
+{
+	tracefile /home/giuliano/Work/UniTN/Traces/availability-0.2/traces/skype.evt
+	logwriter tweets gzipfile /home/giuliano/Tmp/log.bin.gz
+	
+	id tnid
+	lastlogin lastlogin
+	roundduration 600
+}
+
+control.application_observer NewscastApplicationMonitor
+control.application_observer.application application
+control.application_observer.logwriter tweets file /home/giuliano/Tmp/log.bin.gz
+
+control.forwarding_debugger ForwardingMonitor
+control.forwarding_debugger.adaptable application
+control.forwarding_debugger.social_network sn
+
+control.convergence AbsoluteDifferenceConvergence
+control.convergence.application application
+control.convergence.after 1
+control.convergence.delta 0
+control.convergence.atleastfor 20

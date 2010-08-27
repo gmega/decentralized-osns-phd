@@ -1,0 +1,59 @@
+# Adapted from PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 100
+
+control.shf Shuffle
+
+network.size 72303
+
+# ------------------------------------------------------------------
+# Social network.
+# ------------------------------------------------------------------
+
+protocol.sn FastGraphProtocol
+protocol.sn.file /home/giuliano/Work/Graphs/Facebook.al
+protocol.sn.undir 
+protocol.sn.encoding adjacency
+
+# ------------------------------------------------------------------
+# Random selector over the social network.
+# ------------------------------------------------------------------
+
+protocol.random_over_social_network RandomSelectorOverLinkable
+protocol.linkable sn
+
+# ------------------------------------------------------------------
+# Component computation service.
+# ------------------------------------------------------------------
+
+protocol.ccs ComponentComputationService
+protocol.ccs.fast_graph_protocol sn
+
+# ------------------------------------------------------------------
+# The newscasting application.
+# ------------------------------------------------------------------
+
+protocol.app			NewscastApplication 
+{	 
+
+	# Base configuration.
+	social_neighborhood sn
+	tweet_probability 	0.01
+	tweet_until 		50
+	
+	# -----------------------------------
+	# -- Strategies and peer selectors --
+	# -----------------------------------
+	component_computer 	ccs
+	
+	# Anti-entropy configuration.
+	ae.selector			random_over_socialnetwork
+	ae.percentage 		0.0
+	
+	# Greedy diffusion rumor mongering.
+	rumor greedy
+	rumor.selector random_over_social_network
+	rumor.chunk_size 5
+	rumor.bloom_false_positive 0.01
+}
