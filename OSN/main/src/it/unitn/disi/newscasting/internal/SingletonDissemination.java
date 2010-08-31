@@ -124,7 +124,7 @@ public class SingletonDissemination implements Control {
 	
 	private boolean isQuiescent(Node node) {
 		ICoreInterface intf = (ICoreInterface) node.getProtocol(application);
-		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf.getAdapter(HistoryForwarding.class, null);
+		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf.getStrategy(HistoryForwarding.class);
 		if (strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT) {
 			return false;
 		}

@@ -9,15 +9,13 @@ import peersim.core.Network;
 import peersim.core.Node;
 
 /**
- * {@link AbsoluteDifferenceConvergence} understands that the behavior of an
- * {@link IApplicationInterface} to be stable once the difference in delivered messages
- * between one round and the other falls below a certain value, for more than 
- * a certain number of rounds.
+ * {@link QuiescenceTermination} understands that the behavior of the 
+ * social newscasting service 
  * 
  * @author giuliano
  */
 @AutoConfig
-public class AbsoluteDifferenceConvergence implements peersim.core.Control{
+public class QuiescenceTermination implements peersim.core.Control{
 
 	// ----------------------------------------------------------------------
 	// Configuration parameter storage.
@@ -43,7 +41,7 @@ public class AbsoluteDifferenceConvergence implements peersim.core.Control{
 	
 	private int fRemainingRounds = 0;
 	
-	public AbsoluteDifferenceConvergence() { }
+	public QuiescenceTermination() { }
 
 	@Override
 	public boolean execute() {

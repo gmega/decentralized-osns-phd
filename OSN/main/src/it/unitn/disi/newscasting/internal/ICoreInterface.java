@@ -1,7 +1,8 @@
 package it.unitn.disi.newscasting.internal;
 
+import java.util.Collection;
+
 import peersim.core.Node;
-import it.unitn.disi.IAdaptable;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
@@ -13,7 +14,7 @@ import it.unitn.disi.newscasting.Tweet;
  * 
  * @author giuliano
  */
-public interface ICoreInterface extends IApplicationInterface, IAdaptable {
+public interface ICoreInterface extends IApplicationInterface {
 
 	/**
 	 * Notifies the social newscasting service that a message has been received.
@@ -55,12 +56,6 @@ public interface ICoreInterface extends IApplicationInterface, IAdaptable {
 	public void addSubscriber(IEventObserver observer);
 
 	/**
-	 * @return the number of contacts performed to this node from the last call
-	 *         to {@link #resetCounters()}.
-	 */
-	public int contacts();
-
-	/**
 	 * @return the number of messages pending receive from the last call to
 	 *         {@link #resetCounters()}.
 	 */
@@ -71,4 +66,15 @@ public interface ICoreInterface extends IApplicationInterface, IAdaptable {
 	 */
 	public void resetCounters();
 
+	/**
+	 * @return a set with the concrete types of all of the configured
+	 *         {@link IContentExchangeStrategy}s.
+	 */
+	public Collection<Class<? extends IContentExchangeStrategy>> strategies();
+
+	/**
+	 * @return the actual instance of the {@link IContentExchangeStrategy} being
+	 *         ran in the social newscasting service.
+	 */
+	public <T extends IContentExchangeStrategy> T getStrategy(Class<T> strategy);
 }

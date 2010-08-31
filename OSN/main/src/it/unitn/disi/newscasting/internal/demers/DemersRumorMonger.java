@@ -3,6 +3,7 @@ package it.unitn.disi.newscasting.internal.demers;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
 
@@ -89,8 +90,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 			return false;
 		}
 
-		IApplicationInterface application = (IApplicationInterface) receiver.getProtocol(fProtocolId);
-		DemersRumorMonger rApp = (DemersRumorMonger) application.getAdapter(DemersRumorMonger.class, null);
+		ICoreInterface application = (ICoreInterface) receiver.getProtocol(fProtocolId);
+		DemersRumorMonger rApp = (DemersRumorMonger) application.getStrategy(DemersRumorMonger.class);
 
 		// Rumor mongering entails picking a certain number of the
 		// "hottest" known rumors and passing them forward.
@@ -107,7 +108,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	private int receiveRumor(Node ours, Node sender, List<Tweet> outsideRumors,
 			ArrayList<Boolean> responseBuffer, int protocolID,
-			IApplicationInterface application) {
+			ICoreInterface application) {
 
 		ListIterator<Tweet> it = outsideRumors.listIterator();
 		Linkable sn = fConstraintLinkable.get(ours);
@@ -121,11 +122,12 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 		 * receive a rumor until we know that it might be useful. 
 		 */
 		for (i = 0; it.hasNext() && total < fRumorTransmitSize; i++) {
-			Tweet evt = it.next();
+			Tweet tweet = it.next();
 			Boolean wasNew;
 
-			// We don't know the node, so we don't care about this rumor.
-			if (!sn.contains(evt.poster)) {
+			// If the rumor doesn't belong to the profile of a node we know, 
+			// then we don't care about it.
+			if (!sn.contains(tweet.profile())) {
 				// Since the hypothesis is that the sender knows which friends
 				// we share, we have to make it as if the sender had never
 				// sent this rumor.
@@ -135,14 +137,14 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 				wasNew = true;
 			}
 
-			// We know the node. So it means this rumor has been sent.
 			else {
+				// We know the node. 
 				// Delivers message to application.
-				wasNew = application.receiveTweet(sender, ours, evt, this);
+				wasNew = application.receiveTweet(sender, ours, tweet, this);
 				// Was it a duplicate?
 				if (wasNew) {
 					// Nope. Make it a hot rumor.
-					fRumorList.add(evt);
+					fRumorList.add(tweet);
 				}
 				total++;
 			}
@@ -159,8 +161,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 
 	// ----------------------------------------------------------------------
 	
-	private void addTweet(Node owner, int sequenceNumber) {
-		fRumorList.add(new Tweet(owner, sequenceNumber));
+	private void addTweet(Tweet tweet) {
+		fRumorList.add(tweet);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -170,27 +172,30 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	}
 	
 	// ----------------------------------------------------------------------
-	// IEventObserver interface.
-	// ----------------------------------------------------------------------
 	
-	public void tweeted(Node owner, int sequenceNumber) {
-		addTweet(owner, sequenceNumber);
+	public ActivityStatus status() {
+		return (fRumorList.size() == 0) ? ActivityStatus.QUIESCENT : ActivityStatus.ACTIVE;
 	}
 	
 	// ----------------------------------------------------------------------
-
-	public void eventDelivered(Node sender, Node receiver, Node owner,
-			int start, int end) {
-		for (int i = (start == -1 ? end : start); i <= end; i++) {
-			addTweet(owner, i);
+	// IEventObserver interface.
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+			boolean duplicate) {
+		if (!duplicate) {
+			addTweet(tweet);
 		}
 	}
 	
 	// ----------------------------------------------------------------------
-		
-	public void duplicateReceived(Node sender, Node receiver, Node owner,
-			int start, int end) { }
-	
+
+	@Override
+	public void tweeted(Tweet tweet) {
+		addTweet(tweet);
+	}
+
 	// ----------------------------------------------------------------------
 
 }

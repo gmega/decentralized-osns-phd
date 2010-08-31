@@ -28,8 +28,8 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 		Linkable peerSn = (Linkable) source.getProtocol(fSnLinkableId);
 
 		// Anti-entropy means merging the event histories.
-		IMergeObserver observer = (IMergeObserver) application.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
-		IMergeObserver peerObserver = (IMergeObserver) peerApplication.getAdapter(IMergeObserver.class, DemersAntiEntropy.class);
+		IMergeObserver observer = application.internalObserver();
+		IMergeObserver peerObserver = peerApplication.internalObserver();
 		
 		CompactEventStorage storage = (CompactEventStorage) application.storage();
 		CompactEventStorage peerStorage = (CompactEventStorage) peerApplication.storage();
@@ -43,5 +43,10 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 
 	public int throttling(Node source) {
 		return 1;
+	}
+
+	@Override
+	public ActivityStatus status() {
+		return ActivityStatus.PERPETUAL;
 	}
 }

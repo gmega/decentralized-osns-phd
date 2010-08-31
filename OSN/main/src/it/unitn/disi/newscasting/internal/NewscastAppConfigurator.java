@@ -77,44 +77,47 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		} 
 	}
 
+	@SuppressWarnings("unchecked")
 	private void configureAntiEntropy(SocialNewscastingService app,
 			int protocolId, int socialNetworkId) {
 		// Configures the anti-entropy strategy.
 		// XXX Anti-entropy is too coupled to the newscast application. This is so by historical reasons (they
 		// were the same thing at the beginning) but that should change with time.
 		DemersAntiEntropy dae = new DemersAntiEntropy(protocolId, socialNetworkId);
-		app.addStrategy(dae, selector(PAR_ANTI_ENTROPY), filter(PAR_ANTI_ENTROPY), probability(PAR_ANTI_ENTROPY));
-		// Creates the event channel for anti entropy.
-		BroadcastBus ae = new BroadcastBus();
-		app.setAdapter(IMergeObserver.class, DemersAntiEntropy.class, ae);
-		// XXX Anti-entropy is the ONLY strategy that gets plugged directly into the 
-		// application internal observer. 
-		// TODO fix the design so this is no longer the case.
-		ae.addSubscriber(app.internalObserver());
+		app.addStrategy(new Class [] { DemersAntiEntropy.class },
+				dae, selector(PAR_ANTI_ENTROPY), filter(PAR_ANTI_ENTROPY),
+				probability(PAR_ANTI_ENTROPY));
 	}
 
+	@SuppressWarnings("unchecked")
 	private void configureGreedyDiffusion(SocialNewscastingService app,
 			int protocolId, int socialNetworkId, boolean histories) {
 		HistoryForwarding gd;
+		Class [] keys;
 		if (histories) {
 			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+			keys = new Class[] { HistoryForwarding.class, BloomFilterHistoryFw.class };
 		} else {
 			gd = new HistoryForwarding(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+			keys = new Class[] { HistoryForwarding.class };
 		}
 		
-		app.setAdapter(HistoryForwarding.class, null, gd);
-		app.addStrategy(gd, selector(PAR_RUMOR_MONGER),
+		app.addStrategy(keys, gd,
+				selector(PAR_RUMOR_MONGER),
 				new FallThroughReference<ISelectionFilter>(gd),
 				probability(PAR_RUMOR_MONGER));
 		app.addSubscriber(gd);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void configureDemers(SocialNewscastingService app, int protocolId,
 			int socialNetworkId) {
 		DemersRumorMonger demersRm = new DemersRumorMonger(fPrefix + "."
 				+ PAR_RUMOR_MONGER, protocolId, new ProtocolReference<Linkable>(socialNetworkId), CommonState.r);
-		app.setAdapter(DemersRumorMonger.class, null, demersRm);
-		app.addStrategy(demersRm, selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER),  probability(PAR_RUMOR_MONGER));
+		app.addStrategy(new Class[] { DemersRumorMonger.class }, demersRm,
+				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER),
+				probability(PAR_RUMOR_MONGER));
+
 		// Rumor mongering wants to know of new events.
 		app.addSubscriber(demersRm);
 	}

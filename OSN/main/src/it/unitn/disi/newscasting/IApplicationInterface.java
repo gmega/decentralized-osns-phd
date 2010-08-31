@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting;
 
 import peersim.core.CommonState;
-import it.unitn.disi.IAdaptable;
 
 /**
  * {@link IApplicationInterface} defines the interface between application and
@@ -9,7 +8,7 @@ import it.unitn.disi.IAdaptable;
  * 
  * @author giuliano
  */
-public interface IApplicationInterface extends IAdaptable {
+public interface IApplicationInterface {
 
 	// ----------------------------------------------------------------------
 	// Communication primitives.

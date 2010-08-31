@@ -54,13 +54,15 @@ public interface IContentExchangeStrategy {
 		ACTIVE,
 
 		/**
-		 * Means that, in the protocol has no other content to exchange.
+		 * Means that no matter which peer is selected,
+		 * {@link IContentExchangeStrategy#doExchange(Node, Node)} won't result
+		 * in any messages being exchanged.
 		 */
 		QUIESCENT,
 		
 		/**
-		 * Means that the protocol cannot establish its status.
+		 * Means that the protocol is non-terminating.
 		 */
-		UNKNOWN
+		PERPETUAL
 	}
 }

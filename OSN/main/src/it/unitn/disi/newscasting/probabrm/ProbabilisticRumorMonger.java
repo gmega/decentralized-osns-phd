@@ -300,7 +300,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 
 	@Override
 	public ActivityStatus status() {
-		return ActivityStatus.UNKNOWN;
+		return ActivityStatus.PERPETUAL;
 	}
 
 	@Override

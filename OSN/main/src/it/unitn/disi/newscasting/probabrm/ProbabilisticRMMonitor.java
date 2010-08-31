@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.probabrm;
 
-import it.unitn.disi.IAdaptable;
+import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
@@ -29,9 +29,9 @@ public class ProbabilisticRMMonitor implements Control {
 		int total = 0;
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
-			IAdaptable adaptable = (IAdaptable) node.getProtocol(fAdaptableId);
+			ICoreInterface adaptable = (ICoreInterface) node.getProtocol(fAdaptableId);
 			ProbabilisticRumorMonger prm = (ProbabilisticRumorMonger) adaptable
-					.getAdapter(ProbabilisticRumorMonger.class, null);
+					.getStrategy(ProbabilisticRumorMonger.class);
 			
 			if (CommonState.getTime() == 1000) {
 				System.out.println(node.getID() + " " + prm.pendingRounds());

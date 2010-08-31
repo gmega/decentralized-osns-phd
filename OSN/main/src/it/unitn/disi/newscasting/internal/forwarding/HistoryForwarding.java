@@ -8,10 +8,8 @@ import com.google.common.collect.HashMultimap;
 import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.IAdaptable;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.ISelectionFilter;
-import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
@@ -105,6 +103,8 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 		return true;
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	public int throttling(Node target) {
 		Set<Tweet> pendings = fPending.get(target);
 		if (pendings == null) {
@@ -114,12 +114,11 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 		return Math.min(fChunkSize, pendings.size());
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	public ActivityStatus status() {
-		if (fPending.size() > 0) {
-			return ActivityStatus.ACTIVE;
-		}
-		
-		return ActivityStatus.QUIESCENT;
+		return fPending.size() > 0 ? ActivityStatus.ACTIVE
+				: ActivityStatus.QUIESCENT;
 	}
 	
 	// ----------------------------------------------------------------------
@@ -307,15 +306,14 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	// Fancy accessors.
 	// ----------------------------------------------------------------------
 	
-	private IApplicationInterface getApplication(Node peer) {
-		return (IApplicationInterface) peer.getProtocol(fAdaptableId);
+	private ICoreInterface getApplication(Node peer) {
+		return (ICoreInterface) peer.getProtocol(fAdaptableId);
 	}
 	
 	// ----------------------------------------------------------------------
 
 	private HistoryForwarding diffusionObject(Node peer) {
-		return (HistoryForwarding) getApplication(peer).getAdapter(
-				HistoryForwarding.class, null);
+		return getApplication(peer).getStrategy(HistoryForwarding.class);
 	}
 
 	// ----------------------------------------------------------------------

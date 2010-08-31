@@ -2,7 +2,6 @@ package it.unitn.disi.newscasting.internal;
 
 import static it.unitn.disi.utils.peersim.PeersimUtils.print;
 import it.unitn.disi.SimulationEvents;
-import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
 
@@ -83,18 +82,6 @@ public class NewscastApplicationMonitor implements Control {
 				SimulationEvents.ROUND_ENDED.magicNumber(),
 				CommonState.getTime());
 		fManager.logWrite(fLogName, fBuffer, len);
-		
-		if(CommonState.getTime() == (CommonState.getEndTime() - 1)) {
-			System.out.println("DUMPCONTACTS:");
-			
-			for (int i = 0; i < Network.size(); i++) {
-				Node node = Network.get(i);
-				SocialNewscastingService app = (SocialNewscastingService) node.getProtocol(fAppId);
-				System.out.println(node.getID() + " " + app.contacts());
-			}
-		
-			System.out.println("ENDDUMPCONTACTS:");
-		}
 		
 		return false;
 	}
