@@ -2,19 +2,18 @@ package it.unitn.disi;
 
 
 import it.unitn.disi.analysis.TestLatencyComputer;
-import it.unitn.disi.application.EventStorageTest;
-import it.unitn.disi.application.TestAntiCentralitySelector;
-import it.unitn.disi.application.TestBiasedSelector;
-import it.unitn.disi.application.TestCentralitySelector;
-import it.unitn.disi.application.demers.RumorListTest;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.network.EvtDecoderTest;
-import it.unitn.disi.newscasting.internal.selectors.AntiCentralitySelector;
-import it.unitn.disi.protocol.TestGraphWrapper;
-import it.unitn.disi.protocol.TestPeerSelectors;
-import it.unitn.disi.protocol.TestQueueManager;
-import it.unitn.disi.protocol.TestView;
+import it.unitn.disi.newscasting.EventStorageTest;
+import it.unitn.disi.newscasting.TestAntiCentralitySelector;
+import it.unitn.disi.newscasting.TestBiasedSelector;
+import it.unitn.disi.newscasting.TestCentralitySelector;
+import it.unitn.disi.newscasting.internal.demers.RumorListTest;
+import it.unitn.disi.sps.TestGraphWrapper;
+import it.unitn.disi.sps.TestPeerSelectors;
+import it.unitn.disi.sps.TestQueueManager;
+import it.unitn.disi.sps.TestView;
 import it.unitn.disi.utils.TestMiscUtils;
 
 import org.junit.runner.RunWith;

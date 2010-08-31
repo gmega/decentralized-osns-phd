@@ -1,6 +1,6 @@
-package it.unitn.disi.application;
+package it.unitn.disi.newscasting;
 
-import it.unitn.disi.newscasting.internal.SocialNewscastingService;
+import it.unitn.disi.application.SimpleApplication;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 
 import java.io.BufferedReader;
@@ -45,7 +45,7 @@ public class DeterministicSelectionReader implements Control {
 		
 		// Disables tweeting for everyone.
 		for (int i = 0; i < Network.size(); i++) {
-			((SocialNewscastingService) Network.get(i).getProtocol(fAppId)).toggleTweeting();
+			((SimpleApplication) Network.get(i).getProtocol(fAppId)).suppressTweeting(true);
 		}
 		
 		String line = reader.readLine();
@@ -54,9 +54,9 @@ public class DeterministicSelectionReader implements Control {
 		// First line specifies who tweets.
 		for (int i = 0; i < spec.length; i++) {
 			long nodeId = Long.parseLong(spec[i]);
-			SocialNewscastingService app = (SocialNewscastingService) PeersimUtils
+			SimpleApplication app = (SimpleApplication) PeersimUtils
 				.lookupNode(nodeId).getProtocol(fAppId);
-			app.toggleTweeting();					
+			app.suppressTweeting(false);			
 		}	
 
 		// Other lines specify the choices. 

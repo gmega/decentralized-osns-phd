@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.newscasting;
 
 import static org.junit.Assert.*;
 

@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.newscasting;
 
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
@@ -97,24 +97,17 @@ public class EventStorageTest {
 			final AtomicInteger o2 = new AtomicInteger();
 
 			s1.merge(null, null, s2, new IMergeObserver() {
-				public void eventDelivered(Node sender, Node receiver, Node id, int start, int end) {
-					for (int i = start; i <= end; i++) {
-						c1.incrementAndGet();
-						s1Clone.add(id, i);
-					}
-
-					o1.addAndGet(end - start + 1);
+				public void eventDelivered(Node sender, Node receiver,
+						Tweet tweet, boolean duplicate) {
+					c1.incrementAndGet();
+					s1Clone.add(tweet.poster, tweet.sequenceNumber);
+					o1.addAndGet(1);
 				}
 
 				public void sendDigest(Node sender, Node receiver, Node owner,
 						List<Integer> holes) { }
 
-				public void duplicateReceived(Node sender, Node receiver,
-						Node owner, int start, int end) { }
-
-				public void tweeted(Node owner, int sequenceNumber) {
-					
-				}
+				public void tweeted(Tweet t) { }
 			}, TestUtils.allSocialNetwork());
 
 			for (Node node : array) {
@@ -122,22 +115,18 @@ public class EventStorageTest {
 			}
 
 			s2.merge(null, null, s1, new IMergeObserver() {
-				public void eventDelivered(Node sender, Node receiver, Node id, int start, int end) {
-					for (int i = start; i <= end; i++) {
-						c2.incrementAndGet();
-						s2Clone.add(id, i);
-					}
+				public void eventDelivered(Node sender, Node receiver,
+						Tweet tweet, boolean duplicate) {
+					c2.incrementAndGet();
+					s2Clone.add(tweet.poster, tweet.sequenceNumber);
 
-					o2.addAndGet(end - start + 1);
+					o2.addAndGet(1);
 				}
 				
 				public void sendDigest(Node sender, Node receiver, Node owner,
 						List<Integer> holes) { }
 
-				public void duplicateReceived(Node sender, Node receiver,
-						Node owner, int start, int end) { }
-				
-				public void tweeted(Node owner, int sequenceNumber) {
+				public void tweeted(Tweet t) {
 					
 				}
 

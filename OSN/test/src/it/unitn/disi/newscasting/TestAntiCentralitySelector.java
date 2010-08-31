@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.newscasting;
 
 import it.unitn.disi.TestLinkable;
 import it.unitn.disi.newscasting.ISelectionFilter;

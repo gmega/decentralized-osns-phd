@@ -1,4 +1,4 @@
-package it.unitn.disi.protocol;
+package it.unitn.disi.sps;
 
 import static org.junit.Assert.*;
 import it.unitn.disi.TestUtils;

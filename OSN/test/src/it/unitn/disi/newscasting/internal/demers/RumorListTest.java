@@ -1,4 +1,4 @@
-package it.unitn.disi.application.demers;
+package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.Tweet;

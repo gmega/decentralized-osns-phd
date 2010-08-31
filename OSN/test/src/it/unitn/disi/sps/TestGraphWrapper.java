@@ -1,4 +1,4 @@
-package it.unitn.disi.protocol;
+package it.unitn.disi.sps;
 
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 

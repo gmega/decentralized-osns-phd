@@ -1,4 +1,4 @@
-package it.unitn.disi.protocol;
+package it.unitn.disi.sps;
 
 import java.util.HashSet;
 import java.util.Random;

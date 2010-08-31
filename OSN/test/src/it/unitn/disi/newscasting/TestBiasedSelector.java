@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.newscasting;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
