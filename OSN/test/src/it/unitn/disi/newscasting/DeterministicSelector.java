@@ -9,9 +9,9 @@ import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
-import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.ISelectionFilter;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 /**
  * {@link DeterministicSelector} allows a selection schedule to be assign

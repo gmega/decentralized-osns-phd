@@ -7,12 +7,11 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.internal.selectors.BiasedComponentSelector;
 import it.unitn.disi.sps.FastGraphProtocol;
 import it.unitn.disi.sps.IInputStreamProvider;
 import it.unitn.disi.sps.SocialBootstrap;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import org.easymock.EasyMock;

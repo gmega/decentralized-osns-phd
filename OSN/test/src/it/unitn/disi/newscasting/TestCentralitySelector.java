@@ -9,10 +9,9 @@ import java.util.Set;
 import org.junit.Test;
 
 import peersim.core.Node;
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 public class TestCentralitySelector {
 	@Test public void selectPeer() throws Exception{

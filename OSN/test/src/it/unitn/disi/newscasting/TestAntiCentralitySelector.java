@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.AntiCentralitySelector;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.MultiCounter;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 

@@ -1,11 +1,11 @@
 package peersim.config;
 
+import it.unitn.disi.test.framework.TestUtils;
+
 import java.io.File;
 import java.net.URL;
 
 import junit.framework.Assert;
-
-import it.unitn.disi.TestUtils;
 
 import org.junit.BeforeClass;
 import org.junit.Test;

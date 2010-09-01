@@ -1,4 +1,4 @@
-package it.unitn.disi;
+package it.unitn.disi.test.framework;
 
 import peersim.config.Configuration;
 import peersim.core.Linkable;

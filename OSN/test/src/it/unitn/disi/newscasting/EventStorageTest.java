@@ -1,9 +1,8 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.OrderingUtils;
 

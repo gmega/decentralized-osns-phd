@@ -1,4 +1,4 @@
-package it.unitn.disi;
+package it.unitn.disi.test.framework;
 
 import java.util.Collection;
 import java.util.Properties;

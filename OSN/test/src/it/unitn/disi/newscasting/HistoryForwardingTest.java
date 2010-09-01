@@ -1,11 +1,11 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.FakeCycleEngine;
-import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
+import it.unitn.disi.test.framework.FakeCycleEngine;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;

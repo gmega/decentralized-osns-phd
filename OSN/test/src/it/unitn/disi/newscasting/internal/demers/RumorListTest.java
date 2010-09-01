@@ -1,9 +1,8 @@
 package it.unitn.disi.newscasting.internal.demers;
 
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.demers.RumorList;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import java.util.ArrayList;
 import java.util.List;

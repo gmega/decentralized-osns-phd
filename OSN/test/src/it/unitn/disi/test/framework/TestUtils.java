@@ -1,4 +1,4 @@
-package it.unitn.disi;
+package it.unitn.disi.test.framework;
 
 import it.unitn.disi.cli.Adj2ByteGraph;
 import it.unitn.disi.utils.graph.GraphWriter;

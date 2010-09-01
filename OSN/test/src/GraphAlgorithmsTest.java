@@ -8,10 +8,10 @@ import peersim.graph.NeighbourListGraph;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.analysis.PercolationThresholdEstimator;
 import it.unitn.disi.cli.LightweightStaticGraph;
 import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.graph.GraphAlgorithms;
 
 

@@ -1,12 +1,11 @@
 package it.unitn.disi.sps;
 
 import static org.junit.Assert.*;
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.IView;
 import it.unitn.disi.sps.View;
 import it.unitn.disi.sps.selectors.RandomSelector;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import java.util.HashSet;
 import java.util.Random;

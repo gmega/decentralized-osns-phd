@@ -1,10 +1,10 @@
 package it.unitn.disi.sps;
 
 import static org.junit.Assert.*;
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.SocialPeerSampling;
 import it.unitn.disi.sps.View;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
+import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.OrderingUtils;
 

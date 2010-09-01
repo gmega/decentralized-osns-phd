@@ -6,10 +6,9 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.QueueManager;
 import it.unitn.disi.sps.View;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Before;
 import org.junit.Test;

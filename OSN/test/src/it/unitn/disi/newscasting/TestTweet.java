@@ -1,8 +1,7 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.TestNetworkBuilder;
-import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Assert;
 import org.junit.Test;
