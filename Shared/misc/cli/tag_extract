@@ -1,5 +1,0 @@
-#!/bin/bash
-
-SEP=${3:-" "}
-
-ucat $1 | awk "BEGIN {FS=\"${SEP}\"} /^$2/ {sub(/^[ \t]+|[ \t]+\$/, \"\", \$2); print \$2 }"

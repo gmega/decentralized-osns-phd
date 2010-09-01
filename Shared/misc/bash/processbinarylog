@@ -1,7 +1,0 @@
-#!/bin/bash
-
-. ${BASH_LIB}/common.lib
-
-checkpar $# 2
-
-analyzer-j -i ${GRAPHS_HOME}/$1:$2 it.unitn.disi.analysis.LatencyComputer

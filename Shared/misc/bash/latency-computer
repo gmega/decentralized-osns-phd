@@ -1,3 +1,0 @@
-#!/bin/bash
-
-analyzer-j -i $1:$2 it.unitn.disi.analysis.LatencyComputer

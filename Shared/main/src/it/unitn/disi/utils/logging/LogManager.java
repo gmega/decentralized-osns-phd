@@ -26,8 +26,6 @@ public class LogManager implements Runnable {
 	// Constants and null objects.
 	// ----------------------------------------------------------------------
 
-	private static final int KB_512 = 524288;
-
 	private static final OutputStream NULL = new NullOutputStream();
 	
 	// ----------------------------------------------------------------------

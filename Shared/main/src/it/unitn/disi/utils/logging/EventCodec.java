@@ -66,7 +66,7 @@ public class EventCodec {
 		return offset;
 	}
 
-	private IBinaryEvent typeCheck(Number... event) {
+	public IBinaryEvent typeCheck(Number... event) {
 		IBinaryEvent type = fTypes.get(event[0]);
 		if (type == null) {
 			throw new IllegalArgumentException("Unknown event type " + event[0]
