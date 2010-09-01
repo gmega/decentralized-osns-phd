@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
@@ -11,16 +12,27 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import peersim.core.Linkable;
 import peersim.core.Node;
 
 public class EventStorageTest {
+	
+	TestNetworkBuilder builder;
+	
+	@Before
+	public void initialize () {
+		builder = new TestNetworkBuilder();
+	}
+	
 	@Test
 	public void add() {
 		final int[] a = new int[1000];
-
-		Node node = TestUtils.makeNode();
+		
+		Node node = builder.baseNode();
+		builder.replayAll();
 
 		for (int i = 0; i < 1000; i++) {
 			a[i] = i;
@@ -47,7 +59,7 @@ public class EventStorageTest {
 
 	@Test
 	public void sameSizeLists() {
-		Node node = TestUtils.makeNode();
+		Node node = builder.baseNode();
 		CompactEventStorage s1 = new CompactEventStorage();
 		CompactEventStorage s2 = new CompactEventStorage();
 
@@ -57,18 +69,25 @@ public class EventStorageTest {
 		addInterval(s1, node, 11, 20); // [11, 20]
 		addInterval(s2, node, 15, 25); // [15, 25]
 		addInterval(s1, node, 28, 30); // [28, 30]
+		
+		int pid = builder.assignCompleteLinkable();
+		builder.replayAll();
+		Linkable sn = (Linkable) node.getProtocol(pid);
 
-		s1.merge(null, null, s2, IMergeObserver.NULL, TestUtils
-				.allSocialNetwork());
+		s1.merge(null, null, s2, IMergeObserver.NULL, sn);
 
 		this.assertIntervals(s1, node, 0, 9, 11, 25, 28, 30);
 	}
 
 	@Test
 	public void testObserver() {
-		Node[] array = TestUtils.mkNodeArray(10);
+		Node[] array = builder.mkNodeArray(10);
 		final CompactEventStorage s1 = new CompactEventStorage();
 		final CompactEventStorage s2 = new CompactEventStorage();
+		
+		int pid = builder.assignCompleteLinkable();
+		builder.replayAll();
+		Linkable sn = (Linkable) array[0].getProtocol(pid);
 
 		Random rnd = new Random(1);
 
@@ -95,7 +114,7 @@ public class EventStorageTest {
 
 			final AtomicInteger o1 = new AtomicInteger();
 			final AtomicInteger o2 = new AtomicInteger();
-
+			
 			s1.merge(null, null, s2, new IMergeObserver() {
 				public void eventDelivered(Node sender, Node receiver,
 						Tweet tweet, boolean duplicate) {
@@ -108,7 +127,7 @@ public class EventStorageTest {
 						List<Integer> holes) { }
 
 				public void tweeted(Tweet t) { }
-			}, TestUtils.allSocialNetwork());
+			}, sn);
 
 			for (Node node : array) {
 				Assert.assertEquals(s1Clone.eventsFor(node), s1.eventsFor(node));
@@ -130,7 +149,7 @@ public class EventStorageTest {
 					
 				}
 
-			}, TestUtils.allSocialNetwork());
+			}, sn);
 
 			for (Node node : array) {
 				Assert.assertEquals(s2Clone.eventsFor(node), s2.eventsFor(node));

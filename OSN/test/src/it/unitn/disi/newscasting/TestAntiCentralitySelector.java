@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.TestLinkable;
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.AntiCentralitySelector;
 import it.unitn.disi.utils.MultiCounter;
@@ -16,8 +16,11 @@ import peersim.core.Node;
 
 public class TestAntiCentralitySelector {
 	@Test public void selectPeer() throws Exception{
-		TestLinkable lnk = TestLinkable.testLinkable(
-			new int[][] {
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+		builder.mkNodeArray(11);
+		
+		int pid = builder.assignLinkable(
+			new long[][] {
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},	//0
 				{0, 2, 3, 4, 5, 6, 7, 8, 9, 10},	//1
 				{0, 1, 3, 4, 5, 6, 7, 8, 9},		//2		
@@ -29,13 +32,15 @@ public class TestAntiCentralitySelector {
 				{0, 1, 2},							//8
 				{0, 1},								//9
 				{0}									//10
-			}, 0);
+			});
 		
 		Random r = new Random(42);
-		AntiCentralitySelector slktor = new AntiCentralitySelector(new ProtocolReference<Linkable>(0), r);
-		Node node = lnk.get(0);
-				
-		lnk.replayAll();
+		AntiCentralitySelector slktor = new AntiCentralitySelector(new ProtocolReference<Linkable>(pid), r);
+		
+		Node node = builder.getNodes().get(0);
+		builder.replayAll();
+		
+		Linkable lnk = (Linkable) node.getProtocol(pid);
 		
 		MultiCounter<Node> counter = new MultiCounter<Node>();
 		
@@ -45,8 +50,10 @@ public class TestAntiCentralitySelector {
 		}
 
 		int last = Integer.MIN_VALUE;
-		for (int i = 1; i < 11; i++) {
-			int selections = counter.hist(lnk.get(i));
+		for (int i = 0; i < 10; i++) {
+			Node neighbor = lnk.getNeighbor(i);
+			Assert.assertEquals(i + 1, neighbor.getID());
+			int selections = counter.hist(neighbor);
 			Assert.assertTrue(selections > last);
 			last = selections;
 			System.out.print(last + " ");

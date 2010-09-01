@@ -7,6 +7,7 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.internal.selectors.BiasedComponentSelector;
 import it.unitn.disi.sps.FastGraphProtocol;
@@ -67,12 +68,17 @@ public class TestBiasedSelector {
 					
 				}, true, FastGraphProtocol.ADJACENCY);
 		
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+				
 		for (int i = 0; i <= 55; i++) {
-			Node node = TestUtils.baseNode();
-			TestUtils.addProtocol(node, 0, fgp);
-			EasyMock.expect(node.getID()).andReturn((long)i).anyTimes();
-			EasyMock.replay(node);
-			NodeRegistry.getInstance().registerNode(node);
+			Node node = builder.baseNode();
+			builder.addProtocol(node, fgp);
+		}
+		
+		builder.replayAll();
+		
+		for (int i = 0; i <= 55; i++) {
+			NodeRegistry.getInstance().registerNode(builder.getNodes().get(i));
 		}
 
 		Random r = new Random(42);

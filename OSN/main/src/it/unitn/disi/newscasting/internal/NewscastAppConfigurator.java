@@ -52,6 +52,15 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	private static final String VAL_DEMERS = "demers";
 	private static final String VAL_FORWARDING = "forwarding";
 	private static final String VAL_FORWARDING_BLOOM = "use_bloom_filters";
+	
+	/**
+	 * Defines the backing storage implementation.
+	 */
+	private static final String PAR_STORAGE = "storage";
+	
+	private static final String VAL_SIMPLE = "simple";
+	private static final String VAL_COMPACT = "compact";
+	
 	private static final String VAL_NONE = "none";
 	
 	private final String fPrefix;
@@ -61,9 +70,13 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	}
 	
 	public void configure(SocialNewscastingService app, int protocolId, int socialNetworkId) {
-		
-//		configureAntiEntropy(app, protocolId, socialNetworkId);
-						
+		configureStorage(app);
+		configureAntiEntropy(app, protocolId, socialNetworkId);
+		configureRumorMongering(app, protocolId, socialNetworkId); 
+	}
+
+	private void configureRumorMongering(SocialNewscastingService app,
+			int protocolId, int socialNetworkId) {
 		// Configures the rumor mongering strategy.
 		String rmType = Configuration.getString(fPrefix + "." + PAR_RUMOR_MONGER);
 		if(rmType.equals(VAL_DEMERS)) {
@@ -74,12 +87,18 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 							+ "." + VAL_FORWARDING_BLOOM));
 		} else if (!rmType.equals(VAL_NONE)) {
 			throw new IllegalArgumentException();
-		} 
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	private void configureAntiEntropy(SocialNewscastingService app,
 			int protocolId, int socialNetworkId) {
+		
+		if (Configuration.contains(fPrefix + "." + PAR_ANTI_ENTROPY + "."
+				+ VAL_NONE)) {
+			return;
+		}
+		
 		// Configures the anti-entropy strategy.
 		// XXX Anti-entropy is too coupled to the newscast application. This is so by historical reasons (they
 		// were the same thing at the beginning) but that should change with time.
@@ -120,6 +139,21 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 
 		// Rumor mongering wants to know of new events.
 		app.addSubscriber(demersRm);
+	}
+	
+	private void configureStorage(SocialNewscastingService service) {
+		String type = Configuration.getString(fPrefix + "." + PAR_STORAGE, VAL_SIMPLE);
+		
+		IWritableEventStorage storage;
+		if (type.equals(VAL_COMPACT)) {
+			storage = new CompactEventStorage();
+		} else if (type.equals(VAL_SIMPLE)) {
+			storage = new SimpleEventStorage();
+		} else {
+			throw new IllegalArgumentException();
+		}
+		
+		service.setStorage(storage);
 	}
 	
 	private IReference<IPeerSelector> selector(String prefix) {

@@ -9,6 +9,7 @@ import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.TestAntiCentralitySelector;
 import it.unitn.disi.newscasting.TestBiasedSelector;
 import it.unitn.disi.newscasting.TestCentralitySelector;
+import it.unitn.disi.newscasting.internal.DisseminationGovernorTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.TestPeerSelectors;
@@ -37,7 +38,8 @@ import peersim.config.ObjectCreatorTest;
 	TestQueueManager.class,
 	EvtDecoderTest.class,
 	TestAntiCentralitySelector.class,
-	ObjectCreatorTest.class
+	ObjectCreatorTest.class,
+	DisseminationGovernorTest.class
 })
 
 public class AllTests {

@@ -47,7 +47,7 @@ public class SimpleApplication implements CDProtocol, INewsConsumer {
 	public SimpleApplication(
 			@Attribute("reply_probability") double replyProbability,
 			@Attribute("tweet_probability") double tweetProbability,
-			@Attribute("social_network") int linkable) {
+			@Attribute("social_neighborhood") int linkable) {
 
 		this(replyProbability, tweetProbability, linkable, CommonState.r);
 	}

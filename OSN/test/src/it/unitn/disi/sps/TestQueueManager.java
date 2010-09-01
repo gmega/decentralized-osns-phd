@@ -6,10 +6,12 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.QueueManager;
 import it.unitn.disi.sps.View;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import peersim.core.Node;
@@ -18,10 +20,17 @@ public class TestQueueManager {
 	
 	private Random r = new Random(42);
 	
+	private TestNetworkBuilder builder;
+	
+	@Before
+	public void initialize() {
+		builder = new TestNetworkBuilder();
+	}
+	
 	@Test
 	public void testManager() {
 		View view = new View(25, r);
-		Node [] array = TestUtils.mkNodeArray(20);
+		Node [] array = builder.mkNodeArray(20);
 		
 		for (int i = 0; i < 10; i++) {
 			view.append(array[i], r.nextInt());
@@ -63,7 +72,7 @@ public class TestQueueManager {
 			mgr.update();
 		}
 		
-		Node special = TestUtils.makeNode();
+		Node special = builder.baseNode();
 		view.append(special, 42);
 		mgr.update();
 		Assert.assertEquals(special, mgr.popFirst());
@@ -73,7 +82,7 @@ public class TestQueueManager {
 	@Test
 	public void testShuffling() {
 		View view = new View(26, r);
-		Node [] array = TestUtils.mkNodeArray(25);
+		Node [] array = builder.mkNodeArray(25);
 		
 		Set<Node> expected = new HashSet<Node>();
 		for (int i = 0; i < 20; i++) {
@@ -119,7 +128,7 @@ public class TestQueueManager {
 		Assert.assertNull(mgr.popFirst());
 		Assert.assertTrue(expected.isEmpty());
 		
-		Node special = TestUtils.makeNode();
+		Node special = builder.baseNode();
 		view.append(special, 42);
 		mgr.update();
 		mgr.permute(r);

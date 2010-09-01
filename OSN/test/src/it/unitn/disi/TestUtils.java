@@ -1,65 +1,23 @@
 package it.unitn.disi;
 
 import it.unitn.disi.cli.Adj2ByteGraph;
-import it.unitn.disi.codecs.AdjListGraphDecoder;
 import it.unitn.disi.utils.graph.GraphWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.easymock.EasyMock;
 
 import peersim.core.Linkable;
 import peersim.core.Node;
-import peersim.core.Protocol;
 import peersim.graph.Graph;
 
 public class TestUtils {
-	private static Set<Node> allNodes = new HashSet<Node>();
 	
 	public static URL locate(String name) {
 		return TestUtils.class.getClassLoader().getResource("creator_test_config.properties");
-	}
-	
-	public static void reset() {
-		allNodes.clear();
-	}
-	
-	public static void replayAll() {
-		EasyMock.replay(allNodes.toArray());
-	}
-	
-	public static Node makeNode(){ 
-		Node node = baseNode();
-		EasyMock.replay(node);
-		return node;
-	}
-
-	public static Node baseNode() {
-		Node node = EasyMock.createMock(Node.class);
-		EasyMock.expect(node.isUp()).andReturn(true).anyTimes();
-		allNodes.add(node);
-		return node;
-	}
-	
-	public static Node addProtocol(Node node, int i, Protocol protocol) {
-		EasyMock.expect(node.getProtocol(i)).andReturn(protocol).anyTimes();
-		
-		return node;
-	}
-	
-	public static Node[] mkNodeArray(int size) {
-		Node [] nodes = new Node[size];
-		for (int i = 0; i < size; i++) {
-			nodes[i] = makeNode();
-		}
-		
-		return nodes;
 	}
 	
 	public static Linkable completeSocialNetwork() {
@@ -85,36 +43,5 @@ public class TestUtils {
 			throw new RuntimeException(ex);
 		}
 	}
-	
-	public static Linkable allSocialNetwork() {
-		return socialNetwork(allNodes);
-	}
-	
-	public static Linkable socialNetwork(final Set<Node> pertains) {
-		return new Linkable() {
 
-			public boolean contains(Node neighbor) {
-				return pertains.contains(neighbor);
-			}
-
-			public int degree() {
-				throw new UnsupportedOperationException();
-			}
-
-			public Node getNeighbor(int i) {
-				throw new UnsupportedOperationException();
-			}
-			
-			public boolean addNeighbor(Node neighbour) {
-				throw new UnsupportedOperationException();
-			}
-
-			public void pack() {
-			}
-
-			public void onKill() {
-			}
-			
-		};
-	}
 }

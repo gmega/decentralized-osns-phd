@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.Tweet;
 
@@ -10,8 +11,12 @@ import peersim.core.Node;
 
 public class TestTweet {
 	@Test public void testReplyEquality() {
-		Node A = TestUtils.makeNode();
-		Node B = TestUtils.makeNode();
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+		
+		Node A = builder.baseNode();
+		Node B = builder.baseNode();
+		
+		builder.replayAll();
 		
 		Tweet root = new Tweet(A, 1);
 		// Note that this is actually illegal as two different events

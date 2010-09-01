@@ -41,16 +41,26 @@ public class Tweet {
 	/**
 	 * Convenience constructor. Equivalent to:
 	 * 
-	 * <code> Tweet(originator, sequenceNumber, new DefaultVisibility(sequenceNumber));
+	 * <code> Tweet(originator, sequenceNumber, new DefaultVisibility(sequenceNumber), null);  </code>
 	 */
 	public Tweet(Node poster, int sequenceNumber) {
-		this(poster, sequenceNumber, new DefaultVisibility(sequenceNumber));
+		this(poster, sequenceNumber, (Tweet) null);
 	}
 
 	/**
 	 * Convenience constructor. Equivalent to:
 	 * 
-	 * <code> Tweet(originator, sequenceNumber, visibility, null);
+	 * <code> Tweet(originator, sequenceNumber, new DefaultVisibility(sequenceNumber), original);  </code>
+	 */
+	public Tweet(Node poster, int sequenceNumber, Tweet original) {
+		this(poster, sequenceNumber, new DefaultVisibility(sequenceNumber),
+				original);
+	}
+
+	/**
+	 * Convenience constructor. Equivalent to:
+	 * 
+	 * <code> Tweet(originator, sequenceNumber, visibility, null); </code>
 	 */
 	public Tweet(Node poster, int sequenceNumber, IMessageVisibility visibility) {
 		this(poster, sequenceNumber, visibility, null);

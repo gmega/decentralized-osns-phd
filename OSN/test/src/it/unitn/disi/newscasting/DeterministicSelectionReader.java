@@ -66,7 +66,7 @@ public class DeterministicSelectionReader implements Control {
 			DeterministicSelector selector = (DeterministicSelector) PeersimUtils
 			.lookupNode(nodeId).getProtocol(fSelectorId);
 			for (int i = 1; i < spec.length; i++) {
-				selector.addChoice(spec[i]);
+				selector.addChoice(spec[i].equals("n") ? null : Long.parseLong(spec[i]));
 			}
 		}
 		

@@ -1,5 +1,10 @@
 package it.unitn.disi.newscasting.internal;
 
+import java.util.ArrayList;
+import java.util.NoSuchElementException;
+
+import com.google.common.collect.PeekingIterator;
+
 import it.unitn.disi.application.SimpleApplication;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
@@ -13,14 +18,14 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**
- * {@link SingletonDissemination} will schedule one node after the other for
+ * {@link DisseminationExperimentGovernor} will schedule one node after the other for
  * dissemination on the network.
  * 
  * 
  * @author giuliano
  */
 @AutoConfig
-public class SingletonDissemination implements Control {
+public class DisseminationExperimentGovernor implements Control {
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -42,35 +47,33 @@ public class SingletonDissemination implements Control {
 	/**
 	 * List of ID intervals for scheduling.
 	 */
-	private final long [] fIdList;
+	private Scheduler fScheduler;
 	
-	// ----------------------------------------------------------------------
-	// State.
-	// ----------------------------------------------------------------------
+	private PeekingIterator<Integer> fSchedule;
 
-	private int fIndex;
-	
-	private Long fCurrent;
-	
 	// ----------------------------------------------------------------------
 	
-	public SingletonDissemination(
+	public DisseminationExperimentGovernor(
 			@Attribute("ids") String idList) {
-		
+		fScheduler = createScheduler(idList);
+		fSchedule = fScheduler.iterator();
+	}
+	
+	static Scheduler createScheduler(String idList) {
 		String [] intervals = idList.split(" ");
-		fIdList = new long[intervals.length * 2];
-		for (int i = 0; i < fIdList.length; i++){
+		Scheduler scheduler = new Scheduler();
+		
+		for (int i = 0; i < intervals.length; i++){
 			String [] interval = intervals[i].split(",");
 			
 			if (interval.length != 2) {
 				throw new RuntimeException("Malformed interval " + intervals[i] + ".");
 			}
 			
-			fIdList[2*i] = Long.parseLong(interval[0]);
-			fIdList[2*i + 1] = Long.parseLong(interval[1]);
+			scheduler.addInterval(Integer.parseInt(interval[0]), Integer.parseInt(interval[1]));
 		}
 		
-		fCurrent = fIdList[0];
+		return scheduler;
 	}
 
 	@Override
@@ -100,19 +103,10 @@ public class SingletonDissemination implements Control {
 	}
 	
 	private boolean scheduleNext() {
-		fCurrent++;
-		
-		// Did we just fall off the current interval? 
-		if (fCurrent > fIdList[2*fIndex + 1]) {
-			fIndex++;
-			// No more intervals to schedule: simulation is over.
-			if (fIndex >= fIdList.length) {
-				return true;
-			}
-			
-			fCurrent = fIdList[2*fIndex];
+		if (!fSchedule.hasNext()) {
+			return false;
 		}
-		
+
 		if (!currentApp().isSuppressingTweets()) {
 			throw new IllegalStateException("Only one node should tweet at a time.");
 		}
@@ -138,7 +132,83 @@ public class SingletonDissemination implements Control {
 
 	private Node currentNode() {
 		INodeRegistry reg = NodeRegistry.getInstance();
-		Node node = reg.getNode(fCurrent.longValue());
+		Node node = reg.getNode(fSchedule.peek().longValue());
 		return node;
 	}
+}
+
+class Scheduler {
+	
+	private final ArrayList<Integer> fIntervals = new ArrayList<Integer>();
+	
+	public void addInterval(int start, int end) {
+		int last = Integer.MIN_VALUE;
+		
+		if (!fIntervals.isEmpty()) {
+			last = fIntervals.get(fIntervals.size() - 1);
+		}
+		
+		if (start < last) {
+			throw new IllegalArgumentException("Intervals must be sorted.");
+		}
+		
+		fIntervals.add(start);
+		fIntervals.add(end);
+		
+	}
+	
+	public PeekingIterator<Integer> iterator() {
+		
+		return new PeekingIterator<Integer>() {
+			
+			private int fCurrent = fIntervals.get(0);
+
+			private int fIndex;
+			
+			@Override
+			public boolean hasNext() {
+				return lower() < fIntervals.size();
+			}
+
+			@Override
+			public Integer next() {
+				if(!hasNext()) {
+					throw new NoSuchElementException();
+				}
+				
+				int next = fCurrent;
+				
+				fCurrent++;
+				// If we reached the upper bound, switch to the 
+				// next interval.
+				if (fCurrent > fIntervals.get(upper())) {
+					fIndex++;
+					if (hasNext()) {
+						fCurrent = fIntervals.get(lower());
+					}
+				}
+				
+				return next;
+			}
+			
+			@Override
+			public Integer peek() {
+				return fCurrent;
+			}
+			
+			private int lower() {
+				return 2*fIndex;
+			}
+			
+			private int upper() {
+				return 2*fIndex + 1;
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+	
 }

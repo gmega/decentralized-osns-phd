@@ -1,6 +1,7 @@
 package it.unitn.disi.sps;
 
 import static org.junit.Assert.*;
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.IView;
 import it.unitn.disi.sps.View;
@@ -27,9 +28,13 @@ public class TestPeerSelectors{
 		
 		Set<Node> taboo = new HashSet<Node>();
 		
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+		
 		for (int i = 0; i < SIZE; i++) {
-			view.append(TestUtils.makeNode(), r.nextInt(1000));
+			view.append(builder.baseNode(), r.nextInt(1000));
 		}
+		
+		builder.replayAll();
 		
 		RandomSelector tabooed = new RandomSelector(view, r);
 		TabooSelectionFilter filter = new TabooSelectionFilter(25);

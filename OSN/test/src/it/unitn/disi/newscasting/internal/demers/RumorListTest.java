@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal.demers;
 
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.demers.RumorList;
@@ -10,17 +11,26 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import peersim.core.Node;
 
 public class RumorListTest {
+
+	TestNetworkBuilder builder;
+	
+	@Before
+	public void initialize() {
+		builder = new TestNetworkBuilder();
+	}
 	
 	@Test
 	public void testNonFullList() {
 		RumorList rList = new RumorList(10, 0.0, new Random());
 		
-		Node node = TestUtils.makeNode();
+		Node node = builder.baseNode();
+		builder.replayAll();
 		
 		for (int i = 0; i < 8; i++) {
 			rList.add(new Tweet(node, i));
@@ -66,7 +76,8 @@ public class RumorListTest {
 			}
 		});
 		
-		Node node = TestUtils.makeNode();
+		Node node = builder.baseNode();
+		builder.replayAll();
 		
 		for (int i = 0; i < 19; i++) {
 			rList.add(new Tweet(node, i));

@@ -1,6 +1,7 @@
 package it.unitn.disi.sps;
 
 import static org.junit.Assert.*;
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.TestUtils;
 import it.unitn.disi.sps.SocialPeerSampling;
 import it.unitn.disi.sps.View;
@@ -26,15 +27,22 @@ public class TestView {
 
 	int[] tStamps1;
 	int[] tStamps2;
+	
+	TestNetworkBuilder builder;
 
 	Linkable sn = TestUtils.completeSocialNetwork();
+	
+	@Before
+	public void preInit(){
+		builder = new TestNetworkBuilder();
+	}
 
 	public void init() {
 		p1 = new SocialPeerSampling(10, 2, 2, r, false, false);
 		p2 = new SocialPeerSampling(10, 2, 2, r, false, false);
 
-		Node[] nd1 = TestUtils.mkNodeArray(10);
-		Node[] nd2 = TestUtils.mkNodeArray(10);
+		Node[] nd1 = builder.mkNodeArray(10);
+		Node[] nd2 = builder.mkNodeArray(10);
 
 		for (int i = 0; i < 10; i++) {
 			p1.view().append(nd1[i], tStamps1[i]);
@@ -48,7 +56,7 @@ public class TestView {
 		View v = new View(10, r);
 		ArrayList<Node> nodes = new ArrayList<Node>();
 		for (int i = 0; i < 10; i++) {
-			Node node = TestUtils.makeNode();
+			Node node = builder.baseNode();
 			nodes.add(node);
 			v.set(i, node, i);
 		}
@@ -76,8 +84,8 @@ public class TestView {
 				30, 12, 1 // ts2
 		};
 
-		Node[] nd1 = TestUtils.mkNodeArray(15);
-		Node[] nd2 = { TestUtils.makeNode(), // Should be added to the buffer.
+		Node[] nd1 = builder.mkNodeArray(15);
+		Node[] nd2 = { builder.baseNode(), // Should be added to the buffer.
 				nd1[1], // Should not be added to the buffer.
 				nd1[8], // Should not be added to the buffer.
 				nd1[12], // Should replace nd1[12] in the buffer.
@@ -146,7 +154,7 @@ public class TestView {
 
 	@Test
 	public void removeOldest() {
-		Node rec = TestUtils.makeNode();
+		Node rec = builder.baseNode();
 
 		tStamps1 = new int[] { 5, 23, 12, 2, 4, 9, 10, 3, 1, 2 };
 		tStamps2 = new int[] { 13, 4, 2, 7, 9, 1, 7, 1, 1, 4 };
@@ -189,15 +197,15 @@ public class TestView {
 		int[] tStamps1 = { 5, 7, 1, 2, 4, 9, 10, 3, 1, 2 };
 		int[] tStamps2 = { 13, 4, 2, 7, 9, 1, 23, 12, 1, 4 };
 
-		Node[] nd1 = TestUtils.mkNodeArray(10);
-		Node[] nd2 = TestUtils.mkNodeArray(10);
+		Node[] nd1 = builder.mkNodeArray(10);
+		Node[] nd2 = builder.mkNodeArray(10);
 
 		for (int i = 0; i < 10; i++) {
 			p1.view().append(nd1[i], tStamps1[i]);
 			p2.view().append(nd2[i], tStamps2[i]);
 		}
 
-		p1.doCycle(p2, sn, sn, TestUtils.makeNode(), TestUtils.makeNode());
+		p1.doCycle(p2, sn, sn, builder.baseNode(), builder.baseNode());
 	}
 
 	private View viewFrom(int[] ts, Node[] nd, int capacity) {

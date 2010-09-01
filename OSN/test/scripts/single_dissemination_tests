@@ -1,0 +1,89 @@
+#================================================
+# Base PeerSim parameters.
+#================================================
+
+random.seed 1234567890
+simulation.cycles 300
+network.size 72303
+
+# Array-based node registry.
+it.unitn.disi.registry contiguous
+
+#================================================
+# Social Network
+#================================================
+
+protocol.social_network FastGraphProtocol 
+{
+	file /home/giuliano/Graphs/Facebook.al
+	undir 
+	encoding adjacency
+}
+
+#================================================
+# Random Selector
+#================================================
+
+protocol.selector RandomSelectorOverLinkable 
+{
+	linkable social_network
+}
+
+#================================================
+# The Social Newscasting Service
+#================================================
+
+protocol.sns SocialNewscastingService 
+{
+	social_neighborhood social_network
+	storage simple
+	
+	# No anti-entropy.
+	ae.none
+	
+	# Forwarding rumor monger.
+	rumor forwarding
+	rumor.selector selector
+	rumor.percentage 1.0
+	
+	rumor.chunk_size 1
+	
+	rumor.use_bloom_filters
+	rumor.window_size 50
+	rumor.bloom_false_positive 0.01
+	
+	# No logging.
+	logwriter tweets null
+}
+
+#================================================
+# The On-line Social Network "Application"
+#================================================
+
+protocol.application SimpleApplication 
+{
+	social_neighborhood social_network
+	social_newscasting_service sns
+	
+	tweet_probability 0.0
+	reply_probability 0.0
+}
+
+#================================================
+# Initializers
+#================================================
+
+init.0 FastGraphProtocolInit 
+{
+	protocol sn
+}
+
+#================================================
+# Controls
+#================================================
+control.governor DisseminationExperimentGovernor 
+{
+	application application
+	ids 0,30
+	repetitions 32
+} 

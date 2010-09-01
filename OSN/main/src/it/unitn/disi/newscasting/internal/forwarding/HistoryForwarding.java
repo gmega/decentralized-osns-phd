@@ -203,8 +203,8 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 			if (neighbor == null) {
 				continue;
 			}
-			// Checks if the neighbor is shared with the originator, AND
-			// it is in the history.
+			// Checks if the neighbor is a destination for the message, AND
+			// it is contained in the history.
 			else if (tweet.isDestination(neighbor)
 					&& historyContains(ourHistory, neighbor)) {
 				// Cancels the scheduling. Note that this might not result 

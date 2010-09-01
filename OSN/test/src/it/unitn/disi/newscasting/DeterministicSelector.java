@@ -1,26 +1,56 @@
 package it.unitn.disi.newscasting;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import javax.management.RuntimeErrorException;
-
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
+import it.unitn.disi.TestNetworkBuilder;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.ISelectionFilter;
 
+/**
+ * {@link DeterministicSelector} allows a selection schedule to be assign
+ * manually to each node in the network.
+ * 
+ * @author giuliano
+ */
+@AutoConfig
 public class DeterministicSelector implements IPeerSelector, Protocol {
+
+	/**
+	 * Causes the selector to print each selection to the std. error output.
+	 */
+	private boolean fVerbose;
 	
-	private ArrayList<String> fChoices = new ArrayList<String>();
+	/**
+	 * Linkable from which to select nodes, or <code>null</code> if nodes are to
+	 * be selected from the {@link Network} singleton.
+	 */
+	private int fLinkable;
 	
+	/**
+	 * The selection schedule.
+	 */
+	private ArrayList<Long> fChoices = new ArrayList<Long>();
+	
+	/**
+	 * The current selection index.
+	 */
 	private int fCurrent = 0;
 	
-	public DeterministicSelector(String prefix) {
-		
+	public DeterministicSelector(
+			@Attribute("verbose") boolean verbose, 
+			@Attribute("linkable") int linkable) {
+		fVerbose = verbose;
+		fLinkable = linkable;
 	}
-	
-	public void addChoice(String id){
+
+	public void addChoice(Long id) {
 		fChoices.add(id);
 	}
 
@@ -34,16 +64,41 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 			return null;
 		}
 		
-		String s = fChoices.get(fCurrent++);
-		if (s.equals("n")) {
+		Long nextId = fChoices.get(fCurrent++);
+		if (nextId == null) {
 			return null;
 		}
 		
-		long nextId = Long.parseLong(s);
+		if (fVerbose) {
+			System.err.println("[node " + source.getID() + " selects " + nextId + "]");
+		}
 		
-		System.err.println("[node " + source.getID() + " selects " + nextId + "]");
-		
+		if (fLinkable == -1) {
+			return networkSelect(nextId, filter);
+		} else {
+			return linkableSelect(source, nextId, filter);
+		}
+	}
+	
+	private Node networkSelect(long nextId, ISelectionFilter filter) {
 		for(int i = 0; i < Network.size(); i++) {
+			Node candidate = Network.get(i);
+			if (nextId == candidate.getID()) {
+				if (!filter.canSelect(candidate)) {
+					return null;
+				}
+				
+				return filter.selected(candidate);
+			}
+		}
+		
+		throw new IllegalStateException("Node " + nextId + " cannot be found.");
+	}
+	
+	private Node linkableSelect(Node source, long nextId, ISelectionFilter filter) {
+		Linkable linkable = (Linkable)source.getProtocol(fLinkable);
+		int size = linkable.degree();
+		for (int i = 0; i < size; i++) {
 			Node candidate = Network.get(i);
 			if (nextId == candidate.getID()) {
 				if (!filter.canSelect(candidate)) {
@@ -64,11 +119,27 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 	public Object clone() {
 		try {
 			DeterministicSelector selector = (DeterministicSelector) super.clone();
-			selector.fChoices = new ArrayList<String>(this.fChoices);
+			selector.fChoices = new ArrayList<Long>(this.fChoices);
 			return selector;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-
+	
+	public static int assignSchedule(TestNetworkBuilder builder, Long [][] choices) {
+		List<Node> nodes = builder.getNodes();
+		int pid = -1;
+		for (int i = 0; i < nodes.size(); i++) {
+			Node node = nodes.get(i);
+			DeterministicSelector selector = new DeterministicSelector(true, -1);
+			
+			for (int round = 0; round < choices[i].length; round++) {
+				selector.addChoice(choices[i][round]);
+			}
+			pid = builder.addProtocol(node, selector);
+		}
+		
+		return pid;
+	}
 }
+

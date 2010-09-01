@@ -19,6 +19,7 @@ import it.unitn.disi.utils.logging.LogManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,11 +48,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// Logging constants and shared structures.
 	// ----------------------------------------------------------------------
 
-	/**
-	 * String identifier for the log in which events are to be written to.
-	 */
-	private static final String TWEET_LOG = "tweets";
-
 	private static final EventCodec fCodec = new EventCodec(Byte.class,
 			NewscastEvents.values());
 
@@ -65,20 +61,18 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	/**
 	 * ID of the {@link Linkable} containing the social neighborhood.
 	 */
-	@Attribute("social_neighborhood")
-	private int fSocialNetworkID;
+	private final int fSocialNetworkID;
 
 	/**
 	 * Our own protocol ID.
 	 */
-	private int fProtocolID;
+	private final int fProtocolID;
 
 	/**
 	 * If set to true, causes events to be logged into text form as well into
 	 * the standard error output.
 	 */
-	@Attribute("verbose")
-	private boolean fVerbose;
+	private final boolean fVerbose;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -117,9 +111,9 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	/**
-	 * Log manager instance.
+	 * Log handle.
 	 */
-	private LogManager fManager;
+	private OutputStream fTweetLog;
 
 	// ----------------------------------------------------------------------
 	// Misc.
@@ -131,27 +125,38 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	public SocialNewscastingService(@Attribute(Attribute.PREFIX) String prefix)
-			throws IOException {
-		// Inits the log manager.
+	public SocialNewscastingService(
+			@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute("social_neighborhood") int socialNetworkId,
+			@Attribute(value = "verbose", defaultValue = "false") boolean verbose
+		) throws IOException {
+		
+		this(prefix, protocolId(prefix), socialNetworkId, log(prefix),
+				configurator(prefix), verbose);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public SocialNewscastingService(String prefix, int protocolID,
+			int socialNetworkId, OutputStream log,
+			IApplicationConfigurator configurator, boolean verbose) {
 		fPrefix = prefix;
-		fManager = LogManager.getInstance();
-		fManager.add(prefix);
-		fProtocolID = this.resolveProtocolId(fPrefix);
-
-		// Configures the peer selection and update exchange strategies.
-		this.configure();
+		fProtocolID = protocolID;
+		fSocialNetworkID = socialNetworkId;
+		fVerbose = verbose;
+		
+		this.configure(configurator);
 	}
-
+	
 	// ----------------------------------------------------------------------
-
-	private void configure() {
+	
+	private void configure(IApplicationConfigurator configurator) {
 		this.flushState();
-		this.newConfigurator(fPrefix).configure(this, fProtocolID,
-				fSocialNetworkID);
+		configurator.configure(this, fProtocolID, fSocialNetworkID);
 	}
-
+	
 	// ----------------------------------------------------------------------
+
 
 	private void flushState() {
 		fObserver = new MergeObserverImpl();
@@ -163,18 +168,31 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	private int resolveProtocolId(String prefix) {
+	private static int protocolId(String prefix) {
 		int idx = prefix.lastIndexOf('.');
 		idx = (idx == -1) ? 0 : idx;
 		String name = prefix.substring(idx + 1);
 		return Configuration.lookupPid(name);
 	}
+	
+	// ----------------------------------------------------------------------
+	
+	private static OutputStream log(String prefix) throws IOException {
+		LogManager manager = LogManager.getInstance();
+		return manager.get(manager.addUnique(prefix));
+	}
+	
+	// ----------------------------------------------------------------------
 
+	private static IApplicationConfigurator configurator(String prefix) {
+		return new NewscastAppConfigurator(prefix);
+	}
+	
 	// ----------------------------------------------------------------------
 	// Configuration callbacks.
 	// ----------------------------------------------------------------------
 
-	protected void addStrategy(Class<? extends IContentExchangeStrategy> [] keys,
+	public void addStrategy(Class<? extends IContentExchangeStrategy> [] keys,
 			IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
 			IReference<ISelectionFilter> filter, double probability) {
@@ -193,17 +211,17 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 
 	// ----------------------------------------------------------------------
+	
+	protected void setStorage(IWritableEventStorage storage) {
+		fStorage = storage;
+	}
+
+	// ----------------------------------------------------------------------
 
 	// DON'T CALL THIS, EVER. It's the product of a flaw in an evolving design.
 	// Mainly I'm not sure where anti-entropy sits in our object model.
 	protected IMergeObserver internalObserver() {
 		return fObserver;
-	}
-
-	// ----------------------------------------------------------------------
-
-	private IApplicationConfigurator newConfigurator(String prefix) {
-		return new NewscastAppConfigurator(prefix);
 	}
 
 	// ----------------------------------------------------------------------
@@ -379,7 +397,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			SocialNewscastingService cloned = (SocialNewscastingService) super
 					.clone();
 			cloned.fStorage = (IWritableEventStorage) this.fStorage.clone();
-			cloned.configure();
+			cloned.configure(configurator(fPrefix));
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e); // Should never happen...
@@ -391,7 +409,11 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	private void log(int len) {
-		fManager.logWrite(TWEET_LOG, fBuffer, len);
+		try {
+			fTweetLog.write(fBuffer, 0, len);
+		} catch(IOException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	// ----------------------------------------------------------------------
