@@ -18,7 +18,7 @@ public interface IApplicationInterface {
 	 * Called when the application has new content to post. The node producing
 	 * the content will be inferred from {@link CommonState#getNode()}.
 	 */
-	public void postToFriends();
+	public Tweet postToFriends();
 
 	/**
 	 * Called when the application has a reply to post, to a previously received
@@ -28,7 +28,7 @@ public interface IApplicationInterface {
 	 * @param originator
 	 * @param sequenceId
 	 */
-	public void replyToPost(Tweet original);
+	public Tweet replyToPost(Tweet original);
 	
 	// ----------------------------------------------------------------------
 	// Accessors.

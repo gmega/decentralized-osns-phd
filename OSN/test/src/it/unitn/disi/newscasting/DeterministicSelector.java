@@ -99,7 +99,7 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		Linkable linkable = (Linkable)source.getProtocol(fLinkable);
 		int size = linkable.degree();
 		for (int i = 0; i < size; i++) {
-			Node candidate = Network.get(i);
+			Node candidate = linkable.getNeighbor(i);
 			if (nextId == candidate.getID()) {
 				if (!filter.canSelect(candidate)) {
 					return null;
@@ -126,12 +126,12 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		}
 	}
 	
-	public static int assignSchedule(TestNetworkBuilder builder, Long [][] choices) {
+	public static int assignSchedule(TestNetworkBuilder builder, int linkable, Long [][] choices) {
 		List<Node> nodes = builder.getNodes();
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
 			Node node = nodes.get(i);
-			DeterministicSelector selector = new DeterministicSelector(true, -1);
+			DeterministicSelector selector = new DeterministicSelector(true, linkable);
 			
 			for (int round = 0; round < choices[i].length; round++) {
 				selector.addChoice(choices[i][round]);

@@ -157,7 +157,19 @@ public class Tweet {
 
 	@Override
 	public String toString() {
-		return Integer.toString(sequenceNumber);
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("(p:");
+		buffer.append(poster.getID());
+		buffer.append(", s:");
+		buffer.append(sequenceNumber);
+		if (parent != null) {
+			buffer.append(" -> [");
+			buffer.append(parent.toString());
+			buffer.append("]");
+		}
+		buffer.append(")");
+		
+		return buffer.toString();
 	}
 
 	private int computeHash() {

@@ -38,7 +38,7 @@ public class TestNetworkBuilder {
 		}
 		
 		for (Node node : fNodes.keySet()) {
-			EasyMock.expect(node.protocolSize()).andReturn(fNodes.get(node));
+			EasyMock.expect(node.protocolSize()).andReturn(fNodes.get(node)).anyTimes();
 		}
 		
 		EasyMock.replay(fNodes.keySet().toArray());

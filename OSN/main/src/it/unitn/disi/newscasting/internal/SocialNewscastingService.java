@@ -144,6 +144,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		fProtocolID = protocolID;
 		fSocialNetworkID = socialNetworkId;
 		fVerbose = verbose;
+		fTweetLog = log;
 		
 		this.configure(configurator);
 	}
@@ -156,7 +157,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 	
 	// ----------------------------------------------------------------------
-
 
 	private void flushState() {
 		fObserver = new MergeObserverImpl();
@@ -191,7 +191,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 	// Configuration callbacks.
 	// ----------------------------------------------------------------------
-
+	
 	public void addStrategy(Class<? extends IContentExchangeStrategy> [] keys,
 			IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
@@ -212,7 +212,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 	
-	protected void setStorage(IWritableEventStorage storage) {
+	public void setStorage(IWritableEventStorage storage) {
 		fStorage = storage;
 	}
 
@@ -315,13 +315,18 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	public void postToFriends() {
-		this.replyToPost(null);
+	public Tweet postToFriends() {
+		return this.replyToPost(null);
 	}
 
 	// ----------------------------------------------------------------------
 
-	public void replyToPost(Tweet replyTo) {
+	public Tweet replyToPost(Tweet replyTo) {
+		// Sanity check.
+		if (!storage().contains(replyTo)) {
+			throw new IllegalArgumentException("Can't reply to an unknown post.");
+		}
+		
 		// As per the contract.
 		Node us = CommonState.getNode();
 		Tweet tweet = new Tweet(us, ++fSeqNumber, fVisibility, replyTo);
@@ -329,6 +334,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 		// Notifies everyone.
 		fObserver.tweeted(tweet);
+		
+		return tweet;
 	}
 
 	// ----------------------------------------------------------------------
@@ -459,6 +466,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			if (tweet.poster.equals(receiving)) {
 				throw new InternalError();
 			}
+			
+			System.out.println(tweet);
 
 			if (!duplicate) {
 				log(fBuffer, DELIVER_SINGLE_TWEET.magicNumber(),// event type

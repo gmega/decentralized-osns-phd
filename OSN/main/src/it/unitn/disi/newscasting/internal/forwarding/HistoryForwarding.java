@@ -286,7 +286,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 			// Checks that the neighbor is a destination for the message, and
 			// also that it is not in the history. 
 			if (tweet.isDestination(neighbor)
-					&& !historyContains(history, neighbor)) {
+					&& !historyContains(ourHistory, neighbor)) {
 				fPending.put(neighbor, tweet);
 			}
 		}
