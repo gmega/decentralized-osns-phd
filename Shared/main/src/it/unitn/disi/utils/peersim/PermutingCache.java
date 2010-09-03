@@ -1,5 +1,6 @@
 package it.unitn.disi.utils.peersim;
 
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
@@ -20,15 +21,20 @@ import peersim.core.Node;
  * @author giuliano
  */
 public class PermutingCache implements IExchanger, Cloneable {
-	
+
 	// ----------------------------------------------------------------------
-	// Shared (static) state. 
+	// Shared (static) state.
 	// ----------------------------------------------------------------------
 	/**
 	 * Manipulation buffer.
 	 */
 	private static Node[] fInternalCache = new Node[2000];
-	
+
+	/**
+	 * Size of the content that's been copied in here.
+	 */
+	private static int fSize = -1;
+
 	// ----------------------------------------------------------------------
 	// Parameter storage.
 	// ----------------------------------------------------------------------
@@ -37,17 +43,39 @@ public class PermutingCache implements IExchanger, Cloneable {
 	 */
 	private final int fLinkableId;
 
-	// ----------------------------------------------------------------------
-	// Size of the last content. 
-	// ----------------------------------------------------------------------
-	private int fSize = -1;
-	
+	/**
+	 * Creates a new {@link PermutingCache}, binding it to a linkable id.
+	 * 
+	 * @param linkableId
+	 */
 	public PermutingCache(int linkableId) {
 		fLinkableId = linkableId;
 	}
 
+	/**
+	 * Convenience method. Equivalent to:<BR>
+	 * <BR>
+	 * 
+	 * <code> this.populate(source, ISelectionFilter.ALWAYS_TRUE_FILTER);</code>
+	 */
 	public void populate(Node source) {
-		
+		this.populate(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
+	}
+
+	/**
+	 * Loads the content of the bound {@link Linkable} into the
+	 * {@link PermutingCache}, subject to an {@link ISelectionFilter}. Should be
+	 * always called before a manipulations begin.
+	 * 
+	 * @param source
+	 *            the node holding the {@link Linkable} instance.
+	 * 
+	 * @param filter
+	 *            an {@link ISelectionFilter} that dictates which neighbors will
+	 *            actually get transferred into the manipulation buffer.
+	 * 
+	 */
+	public void populate(Node source, ISelectionFilter filter) {
 		Linkable linkable = (Linkable) source.getProtocol(fLinkableId);
 		int size = linkable.degree();
 		if (size == 0) {
@@ -59,35 +87,60 @@ public class PermutingCache implements IExchanger, Cloneable {
 					.ceil(Math.log(size) / Math.log(2.0))))];
 		}
 
-		// Copies neighbors into cache.
+		// Copies "viable" neighbors into cache.
+		int k = 0;
 		for (int i = 0; i < size; i++) {
-			fInternalCache[i] = linkable.getNeighbor(i);
+			Node neighbor = linkable.getNeighbor(i);
+			if (neighbor != null && filter.canSelect(neighbor)) {
+				fInternalCache[k++] = neighbor;
+			} 
 		}
-
-		// Compacts because getNeighbor might have returned null.
-		fSize = MiscUtils.compact(fInternalCache, this, size);
+		
+		fSize = k;
 	}
 
+	/**
+	 * Produces a permutation of the cached content. Permutations are generated
+	 * uniformly at random.
+	 */
 	public void shuffle() {
 		check();
 		this.shuffle(0, fSize);
 	}
 
+	/**
+	 * Produces a permutation of a subset of the cached content. Permutations
+	 * are generated uniformly at random.
+	 */
 	public void shuffle(int start, int end) {
 		check();
 		OrderingUtils.permute(start, end, this, CommonState.r);
 	}
 
+	/**
+	 * Ranks the cached elements according to the ordering induced by a
+	 * {@link Comparator}.
+	 */
 	public void orderBy(Comparator<Node> comparator) {
 		check();
 		Arrays.sort(fInternalCache, 0, fSize, comparator);
 	}
 
+	/**
+	 * @return the current number of cached elements. 
+	 */
 	public int size() {
 		check();
 		return fSize;
 	}
 
+	/**
+	 * Returns an element.
+	 * 
+	 * @param i
+	 *            the element index to return.
+	 * @return the i-th cached element.
+	 */
 	public Node get(int i) {
 		check();
 		return fInternalCache[i];
@@ -103,17 +156,21 @@ public class PermutingCache implements IExchanger, Cloneable {
 
 		return false;
 	}
-	
+
+	/**
+	 * Invalidates the current cache. Should always be called after clients are
+	 * done with their manipulations.
+	 */
 	public void invalidate() {
 		fSize = -1;
 	}
 
 	private void check() {
-		if(fSize == -1) {
+		if (fSize == -1) {
 			throw new IllegalStateException();
 		}
 	}
-
+	
 	public void exchange(int i, int j) {
 		Node temp = fInternalCache[i];
 		fInternalCache[i] = fInternalCache[j];
@@ -121,11 +178,7 @@ public class PermutingCache implements IExchanger, Cloneable {
 	}
 
 	public Object clone() {
-		try {
-			PermutingCache cloned = (PermutingCache) super.clone();
-			return cloned;
-		} catch (CloneNotSupportedException ex) {
-			throw new RuntimeException(ex);
-		}
+		// We're immutable, so we can return ourselves.
+		return this;
 	}
 }
