@@ -12,4 +12,9 @@ public interface IWritableEventStorage extends IEventStorage, Protocol {
 	 *         store, or <code>true</code> otherwise.
 	 */
 	public boolean add(Tweet tweet);
+	
+	/**
+	 * Removes all of the content inside of the storage.
+	 */
+	public void clear();
 }

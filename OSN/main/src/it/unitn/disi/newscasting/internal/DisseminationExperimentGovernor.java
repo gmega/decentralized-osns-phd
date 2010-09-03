@@ -44,6 +44,12 @@ public class DisseminationExperimentGovernor implements Control {
 	@Attribute
 	private int application;
 	
+	@Attribute
+	private int repetitions;
+	
+	@Attribute
+	private int degreeCutoff;
+	
 	/**
 	 * List of ID intervals for scheduling.
 	 */
@@ -57,6 +63,7 @@ public class DisseminationExperimentGovernor implements Control {
 			@Attribute("ids") String idList) {
 		fScheduler = createScheduler(idList);
 		fSchedule = fScheduler.iterator();
+		repetitions--;
 	}
 	
 	static Scheduler createScheduler(String idList) {
@@ -103,16 +110,32 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 	
 	private boolean scheduleNext() {
-		if (!fSchedule.hasNext()) {
-			return false;
-		}
-
+		
 		if (!currentApp().isSuppressingTweets()) {
 			throw new IllegalStateException("Only one node should tweet at a time.");
 		}
 		
-		currentApp().scheduleOneShot(SimpleApplication.TWEET);
+		// If there are no nodes left...
+		if (!fSchedule.hasNext()) {
+			if (repetitions == 0) {
+				return true;
+			} else {
+				// ... increases the repetition count and restarts.
+				repetitions--;
+				fSchedule = fScheduler.iterator();
+			}
+		}
 		
+		// Skips neighborhoods smaller than a certain size.
+		int degree = -1;
+		do {
+			Node node = currentNode();
+			Linkable sn = (Linkable) node.getProtocol(linkable);
+			degree = sn.degree();
+			fSchedule.next();
+		} while (degree <= degreeCutoff);
+		
+		currentApp().scheduleOneShot(SimpleApplication.TWEET);		
 		return false;
 	}
 	

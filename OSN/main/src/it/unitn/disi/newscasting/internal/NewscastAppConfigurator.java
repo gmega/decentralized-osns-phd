@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -180,4 +180,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		return Double.parseDouble(Configuration.getString(percentageName));
 	}
 
+	public Object clone () {
+		return this;
+	}
 }

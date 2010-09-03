@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
 import it.unitn.disi.IDynamicLinkable;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
@@ -32,16 +32,10 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	/** Linkable over which selection is to take place. **/
 	private static final String PAR_PROTOCOL = "linkable";
 
-	/** Selection will consider first the nodes that fall above this 
-	 * percentile.
-	 */
-	private static final String PAR_PERCENTILE = "percentile";
-
 	/**
-	 * If less than psimin nodes fall into the selected percentile, use this
-	 * value instead.
+	 * Will select one amongst the psi top-ranked nodes.
 	 */
-	private static final String PAR_PSI_MINIMUM = "psimin";
+	private static final String PAR_PSI = "psi";
 	
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -49,9 +43,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	private int fLinkable;
 
-	private double fPsi;
-
-	private int fPsiMinimum;
+	private int fPsi;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -73,17 +65,15 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	public CentralitySelector(String prefix) {
 		this(Configuration.getPid(prefix + "." + PAR_PROTOCOL), Configuration
-				.getDouble(prefix + "." + PAR_PERCENTILE), Configuration.getInt(prefix
-				+ "." + PAR_PSI_MINIMUM), CommonState.r);
+				.getInt(prefix + "." + PAR_PSI), CommonState.r);
 	}
 	
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(int linkableId, double psi, int psiMinimum,
+	public CentralitySelector(int linkableId, int psi,
 			Random random) {
 		fLinkable = linkableId;
 		fPsi = psi;
-		fPsiMinimum = psiMinimum;
 		fRandom = random;
 		
 		// This is okay as PeerSim calls the constructor only once.
@@ -120,31 +110,17 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		// Step 2 - loads and sorts our neighbors by centrality.
 		fFriends.populate(source);
 		fFriends.orderBy(fCentralityComparator);
-		
-		// Step 3 - selects the approximate psi-th percentile.
-		int start = (int) Math.floor(fPsi * (double) fFriends.size());
-		// Finds whether nodes of smaller rank have equal centrality, so they can 
-		// enter the sample as well.
-		int cutCentrality = fCentralityScores.get(linkable.getNeighbor(start));
-		do {
-			start--;
-		}while (start >= 0 && fCentralityScores.get(linkable.getNeighbor(start)) == cutCentrality);
-		
-		start++;
-		
-		if ((fFriends.size() - start) < fPsiMinimum) {
-			start = Math.max(0, fFriends.size() - fPsiMinimum);
-		}
+				
+		// Step 3 - Defines the "most central nodes" set. It goes from "start"
+		// till the end of the list.
+		int start = Math.max(0, fFriends.size() - fPsi);
 
 		// Step 4 - scrambles the head.
 		OrderingUtils.permute(start, fFriends.size(), fFriends, fRandom);
 		
-		// Step 5 - separately scrambles the rest of the list.
-		OrderingUtils.permute(0, start, fFriends, fRandom);
-
-		// Step 6 - tries to pick someone up.
+		// Step 5 - tries to pick someone up.
 		Node selected = null;
-		for (int i = fFriends.size() - 1; i >= 0; i--) {
+		for (int i = fFriends.size() - 1; i >= start; i--) {
 			Node candidate = fFriends.get(i);
 			if (filter.canSelect(candidate)) {
 				selected = candidate;

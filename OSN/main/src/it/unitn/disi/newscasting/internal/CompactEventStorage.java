@@ -426,6 +426,13 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 	public Set<Node> nodes() {
 		return Collections.unmodifiableSet(fIntervals.keySet());
 	}
+	
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public void clear() {
+		fIntervals.clear();
+	}
 
 	// ----------------------------------------------------------------------
 	

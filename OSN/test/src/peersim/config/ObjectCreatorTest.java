@@ -1,23 +1,10 @@
 package peersim.config;
 
-import it.unitn.disi.test.framework.TestUtils;
-
-import java.io.File;
-import java.net.URL;
-
 import junit.framework.Assert;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ObjectCreatorTest {
-
-	@BeforeClass
-	public static void loadConfiguration() throws Exception {
-		URL fileURL = TestUtils.locate("creator_test_config.properties");
-		File f = new File(fileURL.toURI());
-		Configuration.setConfig(new ParsedProperties(f.getAbsolutePath()));
-	}
 	
 	@Test
 	public void simpleFieldInjection() throws Exception {

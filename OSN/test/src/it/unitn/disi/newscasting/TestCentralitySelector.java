@@ -9,7 +9,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import peersim.core.Node;
-import it.unitn.disi.newscasting.ISelectionFilter;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
@@ -34,7 +34,7 @@ public class TestCentralitySelector {
 			});
 		
 		Random r = new Random(42);
-		CentralitySelector slktor = new CentralitySelector(0, 0.6, 0, r);
+		CentralitySelector slktor = new CentralitySelector(0, 4, r);
 		Set<Integer> selectedSet = new HashSet<Integer>();
 		Node node = builder.getNodes().get(0);
 		

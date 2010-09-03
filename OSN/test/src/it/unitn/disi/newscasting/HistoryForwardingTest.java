@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.network.EvtDecoder;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -18,10 +18,7 @@ import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStreamReader;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import junit.framework.Assert;
 
@@ -64,9 +61,9 @@ public class HistoryForwardingTest {
 		
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
-			SocialNewscastingService sns = new SocialNewscastingService(null,
-					2, SOCIAL_NETWORK_ID, log, new CustomConfigurator(
-							new ProtocolReference<IPeerSelector>(1)), true);			
+			SocialNewscastingService sns = new SocialNewscastingService(2,
+					SOCIAL_NETWORK_ID, log, new CustomConfigurator(
+							new ProtocolReference<IPeerSelector>(1)), true);
 
 			IWritableEventStorage storage = new SimpleEventStorage();
 			storage.add(root);
@@ -104,9 +101,16 @@ public class HistoryForwardingTest {
 			Assert.assertTrue(storage.contains(reply));
 		}
 		
-		// Now match event by event.
+		// Now matches event by event.
 		EventMatcher matcher = new EventMatcher(new EventCodec(Byte.class, NewscastEvents.values()));
-		matcher.addEvent(NewscastEvents.TWEETED.magicNumber());
+		matcher.addEvent(NewscastEvents.TWEETED.magicNumber(), reply.poster.getID(), reply.sequenceNumber, 0L);
+		matcher.addEvent(NewscastEvents.DELIVER_SINGLE_TWEET.magicNumber(), reply.poster.getID(), 1L, 2L, reply.sequenceNumber, 0L);
+		matcher.addEvent(NewscastEvents.DELIVER_SINGLE_TWEET.magicNumber(), reply.poster.getID(), 2L, 3L, reply.sequenceNumber, 1L);
+		matcher.addEvent(NewscastEvents.DELIVER_SINGLE_TWEET.magicNumber(), reply.poster.getID(), 3L, 0L, reply.sequenceNumber, 2L);
+		matcher.addEvent(NewscastEvents.DUPLICATE_TWEET.magicNumber(), reply.poster.getID(), 1L, 0L, reply.sequenceNumber, 3L);
+		matcher.addEvent(NewscastEvents.DUPLICATE_TWEET.magicNumber(), reply.poster.getID(), 2L, 0L, reply.sequenceNumber, 3L);
+		
+		matcher.match(new ByteArrayInputStream(log.toByteArray()));
 	}
 	
 	class CustomConfigurator implements IApplicationConfigurator {
@@ -125,6 +129,10 @@ public class HistoryForwardingTest {
 			app.addStrategy(new Class[]{ BloomFilterHistoryFw.class, HistoryForwarding.class }, 
 					fw, fSelector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
 			app.addSubscriber(fw);
+		}
+		
+		public Object clone () {
+			return null;
 		}
 
 	}

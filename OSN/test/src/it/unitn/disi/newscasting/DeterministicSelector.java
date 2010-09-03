@@ -9,8 +9,8 @@ import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 /**

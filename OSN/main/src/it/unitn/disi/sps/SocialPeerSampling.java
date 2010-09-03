@@ -2,8 +2,8 @@ package it.unitn.disi.sps;
 
 import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.IRebootable;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.sps.View.BufferHandler;
 import it.unitn.disi.sps.selectors.ISelector;
 import it.unitn.disi.sps.selectors.RandomSelector;

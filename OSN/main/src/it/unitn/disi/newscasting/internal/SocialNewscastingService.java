@@ -4,13 +4,13 @@ import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_SINGLE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
@@ -96,6 +96,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 	// Exchange strategies configuration and communication.
 	// ----------------------------------------------------------------------
+	
+	private IApplicationConfigurator fConfigurator;
 
 	private BroadcastBus fChannel;
 
@@ -121,39 +123,38 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	private IMessageVisibility fVisibility;
 
-	private String fPrefix;
-
 	// ----------------------------------------------------------------------
 
 	public SocialNewscastingService(
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("social_neighborhood") int socialNetworkId,
-			@Attribute(value = "verbose", defaultValue = "false") boolean verbose
+			@Attribute(value = "verbose", defaultValue = "false") boolean verbose,
+			@Attribute(value = "configurator", defaultValue = "none") String configurator
 		) throws IOException {
 		
-		this(prefix, protocolId(prefix), socialNetworkId, log(prefix),
-				configurator(prefix), verbose);
+		this(protocolId(prefix), socialNetworkId, log(prefix),
+				configurator(prefix, configurator), verbose);
 	}
 	
 	// ----------------------------------------------------------------------
 	
-	public SocialNewscastingService(String prefix, int protocolID,
+	public SocialNewscastingService(int protocolID,
 			int socialNetworkId, OutputStream log,
 			IApplicationConfigurator configurator, boolean verbose) {
-		fPrefix = prefix;
 		fProtocolID = protocolID;
 		fSocialNetworkID = socialNetworkId;
 		fVerbose = verbose;
 		fTweetLog = log;
+		fConfigurator = configurator;
 		
-		this.configure(configurator);
+		this.configure();
 	}
 	
 	// ----------------------------------------------------------------------
 	
-	private void configure(IApplicationConfigurator configurator) {
+	private void configure() {
 		this.flushState();
-		configurator.configure(this, fProtocolID, fSocialNetworkID);
+		fConfigurator.configure(this, fProtocolID, fSocialNetworkID);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -184,10 +185,16 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	
 	// ----------------------------------------------------------------------
 
-	private static IApplicationConfigurator configurator(String prefix) {
-		return new NewscastAppConfigurator(prefix);
+	private static IApplicationConfigurator configurator(String prefix,
+			String configurator) {
+		if (configurator.equals("none")) {
+			return new NewscastAppConfigurator(prefix);
+		} else {
+			return (IApplicationConfigurator) Configuration
+					.getInstance(configurator);
+		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Configuration callbacks.
 	// ----------------------------------------------------------------------
@@ -404,7 +411,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			SocialNewscastingService cloned = (SocialNewscastingService) super
 					.clone();
 			cloned.fStorage = (IWritableEventStorage) this.fStorage.clone();
-			cloned.configure(configurator(fPrefix));
+			cloned.fConfigurator = (IApplicationConfigurator) this.fConfigurator.clone();
+			cloned.configure();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e); // Should never happen...

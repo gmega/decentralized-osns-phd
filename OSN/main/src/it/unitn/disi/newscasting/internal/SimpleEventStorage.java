@@ -52,6 +52,11 @@ public class SimpleEventStorage implements IWritableEventStorage {
 	}
 	
 	@Override
+	public void clear() {
+		fStore.clear();
+	}
+	
+	@Override
 	public Object clone() {
 		try {
 			SimpleEventStorage clone = (SimpleEventStorage) super.clone();

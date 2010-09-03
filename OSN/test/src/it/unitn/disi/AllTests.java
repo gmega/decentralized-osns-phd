@@ -1,11 +1,15 @@
 package it.unitn.disi;
 
 
+import java.io.File;
+import java.net.URL;
+
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.network.EvtDecoderTest;
 import it.unitn.disi.newscasting.EventStorageTest;
+import it.unitn.disi.newscasting.HistoryForwardingTest;
 import it.unitn.disi.newscasting.TestAntiCentralitySelector;
 import it.unitn.disi.newscasting.TestBiasedSelector;
 import it.unitn.disi.newscasting.TestCentralitySelector;
@@ -15,12 +19,16 @@ import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.TestPeerSelectors;
 import it.unitn.disi.sps.TestQueueManager;
 import it.unitn.disi.sps.TestView;
+import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.TestMiscUtils;
 
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import peersim.config.Configuration;
 import peersim.config.ObjectCreatorTest;
+import peersim.config.ParsedProperties;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -39,9 +47,16 @@ import peersim.config.ObjectCreatorTest;
 	EvtDecoderTest.class,
 	TestAntiCentralitySelector.class,
 	ObjectCreatorTest.class,
-	DisseminationGovernorTest.class
+	DisseminationGovernorTest.class,
+	HistoryForwardingTest.class
 })
 
 public class AllTests {
-    // why on earth I need this class, I have no idea! 
+	@BeforeClass
+	public static void loadPeersimConfig() throws Exception {
+		URL fileURL = TestUtils.locate("creator_test_config.properties");
+		File f = new File(fileURL.toURI());
+		Configuration.setConfig(new ParsedProperties(f.getAbsolutePath()));
+	}
+
 }

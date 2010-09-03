@@ -32,7 +32,7 @@ public class EventMatcher {
 		Iterator<Number> actual = fCodec.decodingStream(is);
 		
 		while(reference.hasNext()) {
-			Assert.assertEquals(reference.hasNext(), actual.hasNext());
+			Assert.assertEquals(reference.next(), actual.next());
 		}
 		
 		Assert.assertFalse(actual.hasNext());

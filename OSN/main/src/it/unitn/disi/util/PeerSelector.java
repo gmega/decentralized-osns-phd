@@ -1,10 +1,11 @@
 package it.unitn.disi.util;
 
+import it.unitn.disi.ISelectionFilter;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import it.unitn.disi.newscasting.ISelectionFilter;
 import peersim.core.Linkable;
 import peersim.core.Node;
 

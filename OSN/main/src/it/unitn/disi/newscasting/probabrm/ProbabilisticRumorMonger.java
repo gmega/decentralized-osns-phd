@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.probabrm;
 
 import it.unitn.disi.IDynamicLinkable;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;

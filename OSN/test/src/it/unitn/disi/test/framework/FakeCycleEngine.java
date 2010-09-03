@@ -1,10 +1,8 @@
 package it.unitn.disi.test.framework;
 
 import java.util.Collection;
-import java.util.Properties;
 
 import peersim.cdsim.CDProtocol;
-import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.core.Protocol;
@@ -18,7 +16,6 @@ public class FakeCycleEngine {
 	public FakeCycleEngine(Collection<Node> network, long rndSeed) {
 		fNetwork = network.toArray(new Node[network.size()]);
 		fRndSeed = rndSeed;
-		Configuration.setConfig(new Properties());
 	}
 	
 	public void run(int cycles) {

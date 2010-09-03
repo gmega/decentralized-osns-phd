@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.ISelectionFilter;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import peersim.config.Configuration;
 import peersim.core.Linkable;

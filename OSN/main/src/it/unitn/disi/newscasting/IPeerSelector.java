@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.ISelectionFilter;
 import peersim.core.Node;
 
 /**
