@@ -1,9 +1,6 @@
 package it.unitn.disi;
 
 
-import java.io.File;
-import java.net.URL;
-
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
@@ -18,17 +15,15 @@ import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.TestPeerSelectors;
 import it.unitn.disi.sps.TestQueueManager;
 import it.unitn.disi.sps.TestView;
-import it.unitn.disi.test.framework.TestUtils;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
+import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.TestMiscUtils;
 
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import peersim.config.Configuration;
 import peersim.config.ObjectCreatorTest;
-import peersim.config.ParsedProperties;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -48,15 +43,10 @@ import peersim.config.ParsedProperties;
 	TestAntiCentralitySelector.class,
 	ObjectCreatorTest.class,
 	SequentialSchedulerTest.class,
-	HistoryForwardingTest.class
+	HistoryForwardingTest.class,
+	PermutingCacheTest.class
 })
 
-public class AllTests {
-	@BeforeClass
-	public static void loadPeersimConfig() throws Exception {
-		URL fileURL = TestUtils.locate("creator_test_config.properties");
-		File f = new File(fileURL.toURI());
-		Configuration.setConfig(new ParsedProperties(f.getAbsolutePath()));
-	}
+public class AllTests extends PeerSimTest {
 
 }

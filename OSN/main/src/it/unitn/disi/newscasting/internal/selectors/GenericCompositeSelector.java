@@ -154,13 +154,23 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 			selected = doSelect(node, filter, selector);
 		}
 		
-		printSelector(selector, node);
+		printSelector(selector, node, selected);
 		return selected;
 	}
 	
-	private void printSelector(Object selector, Node node) {
+	private void printSelector(Object selector, Node node, Node selected) {
 		if(fVerbose) {
-			System.err.println("Used <<" + selector.getClass().getSimpleName() + ">>");
+			StringBuffer b = new StringBuffer();
+			b.append("N:");
+			b.append(node.getID());
+			b.append(",ROUND:");
+			b.append(CommonState.getTime());
+			b.append("<<");
+			b.append(selector.getClass().getSimpleName());
+			b.append(">>");
+			b.append(" -> ");
+			b.append(selected == null ? "none" : selected.getID());
+			System.err.println(b.toString());
 		}
 	}
 	

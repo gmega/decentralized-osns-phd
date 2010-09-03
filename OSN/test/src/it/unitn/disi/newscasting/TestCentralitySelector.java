@@ -34,7 +34,7 @@ public class TestCentralitySelector {
 			});
 		
 		Random r = new Random(42);
-		CentralitySelector slktor = new CentralitySelector(0, 4, r);
+		CentralitySelector slktor = new CentralitySelector(0, 4, false, r);
 		Set<Integer> selectedSet = new HashSet<Integer>();
 		Node node = builder.getNodes().get(0);
 		
