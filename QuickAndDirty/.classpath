@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="experiment_one"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Social_Peer_Sampling"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Utilities"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/peersim"/>
+	<classpathentry kind="lib" path="/Utilities/lib/google-collect-1.0-rc3.jar" sourcepath="/home/giuliano/Software/guava-r05/guava-src-r05.zip"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
