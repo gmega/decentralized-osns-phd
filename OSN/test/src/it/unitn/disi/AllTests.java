@@ -13,13 +13,13 @@ import it.unitn.disi.newscasting.HistoryForwardingTest;
 import it.unitn.disi.newscasting.TestAntiCentralitySelector;
 import it.unitn.disi.newscasting.TestBiasedSelector;
 import it.unitn.disi.newscasting.TestCentralitySelector;
-import it.unitn.disi.newscasting.experiments.DisseminationGovernorTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.TestPeerSelectors;
 import it.unitn.disi.sps.TestQueueManager;
 import it.unitn.disi.sps.TestView;
 import it.unitn.disi.test.framework.TestUtils;
+import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.utils.TestMiscUtils;
 
 import org.junit.BeforeClass;
@@ -47,7 +47,7 @@ import peersim.config.ParsedProperties;
 	EvtDecoderTest.class,
 	TestAntiCentralitySelector.class,
 	ObjectCreatorTest.class,
-	DisseminationGovernorTest.class,
+	SequentialSchedulerTest.class,
 	HistoryForwardingTest.class
 })
 

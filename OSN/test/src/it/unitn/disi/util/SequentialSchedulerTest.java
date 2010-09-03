@@ -1,7 +1,4 @@
-package it.unitn.disi.newscasting.experiments;
-
-import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
-import it.unitn.disi.newscasting.experiments.Scheduler;
+package it.unitn.disi.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -10,7 +7,7 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-public class DisseminationGovernorTest {
+public class SequentialSchedulerTest {
 	@Test
 	public void testScheduler() {
 		String intervals = "0,5 6,7 8,8 9,20";
@@ -22,7 +19,7 @@ public class DisseminationGovernorTest {
 				{9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 		};
 		
-		Scheduler scheduler = DisseminationExperimentGovernor.createScheduler(intervals);
+		SequentialScheduler scheduler = SequentialScheduler.createScheduler(intervals);
 		Iterator <Integer> it = scheduler.iterator();
 		
 		for (int i = 0; i < expected.length; i++) {
