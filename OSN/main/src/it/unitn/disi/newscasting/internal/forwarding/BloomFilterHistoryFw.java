@@ -22,9 +22,9 @@ public class BloomFilterHistoryFw extends HistoryForwarding {
 	// Parameter keys.
 	// ----------------------------------------------------------------------
 	
-	private static final String PAR_WINDOW_SIZE = "window_size";
+	public static final String PAR_WINDOW_SIZE = "window_size";
 	
-	private static final String PAR_BLOOM_FALSE_POSITIVE = "bloom_false_positive";
+	public static final String PAR_BLOOM_FALSE_POSITIVE = "bloom_false_positive";
 	
 	// ----------------------------------------------------------------------
 	// Parameter storage.

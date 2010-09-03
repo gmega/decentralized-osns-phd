@@ -108,7 +108,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		}
 		
 		// Step 2 - loads and sorts our neighbors by centrality.
-		fFriends.populate(source);
+		fFriends.populate(source, filter);
 		fFriends.orderBy(fCentralityComparator);
 				
 		// Step 3 - Defines the "most central nodes" set. It goes from "start"

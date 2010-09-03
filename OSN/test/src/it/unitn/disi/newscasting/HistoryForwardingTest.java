@@ -61,7 +61,7 @@ public class HistoryForwardingTest {
 		
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
-			SocialNewscastingService sns = new SocialNewscastingService(2,
+			SocialNewscastingService sns = new SocialNewscastingService(null, 2,
 					SOCIAL_NETWORK_ID, log, new CustomConfigurator(
 							new ProtocolReference<IPeerSelector>(1)), true);
 
@@ -123,7 +123,7 @@ public class HistoryForwardingTest {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public void configure(SocialNewscastingService app, int protocolId,
+		public void configure(SocialNewscastingService app, String prefix, int protocolId,
 				int socialNetworkId) {
 			BloomFilterHistoryFw fw = new BloomFilterHistoryFw(protocolId, socialNetworkId, 1, 50, 0.001);
 			app.addStrategy(new Class[]{ BloomFilterHistoryFw.class, HistoryForwarding.class }, 

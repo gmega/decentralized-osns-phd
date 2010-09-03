@@ -44,6 +44,8 @@ import peersim.core.Node;
 public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		IApplicationInterface {
 
+	private static final String CONFIGURATOR = "configurator";
+	
 	// ----------------------------------------------------------------------
 	// Logging constants and shared structures.
 	// ----------------------------------------------------------------------
@@ -73,6 +75,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	 * the standard error output.
 	 */
 	private final boolean fVerbose;
+	
+	private String fPrefix;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -128,19 +132,19 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	public SocialNewscastingService(
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("social_neighborhood") int socialNetworkId,
-			@Attribute(value = "verbose", defaultValue = "false") boolean verbose,
-			@Attribute(value = "configurator", defaultValue = "none") String configurator
+			@Attribute(value = "verbose", defaultValue = "false") boolean verbose
 		) throws IOException {
 		
-		this(protocolId(prefix), socialNetworkId, log(prefix),
-				configurator(prefix, configurator), verbose);
+		this(prefix, protocolId(prefix), socialNetworkId, log(prefix),
+				configurator(prefix), verbose);
 	}
 	
 	// ----------------------------------------------------------------------
 	
-	public SocialNewscastingService(int protocolID,
+	public SocialNewscastingService(String prefix, int protocolID,
 			int socialNetworkId, OutputStream log,
 			IApplicationConfigurator configurator, boolean verbose) {
+		fPrefix = prefix;
 		fProtocolID = protocolID;
 		fSocialNetworkID = socialNetworkId;
 		fVerbose = verbose;
@@ -154,7 +158,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	
 	private void configure() {
 		this.flushState();
-		fConfigurator.configure(this, fProtocolID, fSocialNetworkID);
+		fConfigurator.configure(this, fPrefix, fProtocolID, fSocialNetworkID);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -185,13 +189,12 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	
 	// ----------------------------------------------------------------------
 
-	private static IApplicationConfigurator configurator(String prefix,
-			String configurator) {
-		if (configurator.equals("none")) {
+	private static IApplicationConfigurator configurator(String prefix) {
+		if (!Configuration.contains(prefix + "." + CONFIGURATOR)) {
 			return new NewscastAppConfigurator(prefix);
 		} else {
 			return (IApplicationConfigurator) Configuration
-					.getInstance(configurator);
+					.getInstance(prefix + "." + CONFIGURATOR);
 		}
 	}
 
@@ -330,7 +333,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	public Tweet replyToPost(Tweet replyTo) {
 		// Sanity check.
-		if (!storage().contains(replyTo)) {
+		if (replyTo != null && !storage().contains(replyTo)) {
 			throw new IllegalArgumentException("Can't reply to an unknown post.");
 		}
 		
@@ -475,8 +478,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 				throw new InternalError();
 			}
 			
-			System.out.println(tweet);
-
 			if (!duplicate) {
 				log(fBuffer, DELIVER_SINGLE_TWEET.magicNumber(),// event type
 						tweet.poster.getID(), // node owning the tweet

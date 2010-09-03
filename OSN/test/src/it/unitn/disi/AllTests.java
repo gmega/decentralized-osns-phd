@@ -13,7 +13,7 @@ import it.unitn.disi.newscasting.HistoryForwardingTest;
 import it.unitn.disi.newscasting.TestAntiCentralitySelector;
 import it.unitn.disi.newscasting.TestBiasedSelector;
 import it.unitn.disi.newscasting.TestCentralitySelector;
-import it.unitn.disi.newscasting.internal.DisseminationGovernorTest;
+import it.unitn.disi.newscasting.experiments.DisseminationGovernorTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.TestPeerSelectors;

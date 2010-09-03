@@ -7,6 +7,7 @@ import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.NullReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Node;
@@ -18,6 +19,7 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class GenericCompositeSelector implements IPeerSelector, Protocol {
 
 	// ----------------------------------------------------------------------
@@ -37,29 +39,24 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	 */
 	private static final String PAR_PROBS = "probabs";
 
-	/**
-	 * One in {@link #VAL_PR}, {@link #VAL_RR}. See {@link #selectPeer(Node)}
-	 * for how these policies work.
-	 * @config
-	 */
-	private static final String PAR_CHOICE = "policy";
-	
-	public static final String VAL_PR = "random";
-	public static final String VAL_RR = "roundrobin";
-
-	/**
+		/**
 	 * If set, causes the round-robin policy to reset its counter at each
 	 * call to {@link #selectPeer(Node)}.
 	 */
 	private static final String PAR_NORESET = "statefulcounter";
+	
+	/**
+	 * If set, prints debugging information.
+	 */
+	private static final String PAR_VERBOSE = "verbose";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
 	// ----------------------------------------------------------------------
 
-	private boolean fRandom;
-
 	private boolean fNoReset;
+	
+	private boolean fVerbose;
 
 	// ----------------------------------------------------------------------
 	// State.
@@ -76,21 +73,21 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	public GenericCompositeSelector(String name) {
 		this(Configuration.contains(name + "." + PAR_NORESET), name, parsePids(
 				Configuration.getString(name + "." + PAR_SELECTOR), name),
-				Configuration.getString(name + "." + PAR_CHOICE));
+				Configuration.contains(name + "." + PAR_VERBOSE));
 	}
 	
 	public GenericCompositeSelector(boolean noReset, String name,
-			IReference<Object>[] selectors, String policy) {
+			IReference<Object>[] selectors, boolean verbose) {
 		this(noReset, selectors, parseDoubles(Configuration.getString(name
-				+ "." + PAR_PROBS), name), Configuration.getString(name + "."
-				+ PAR_CHOICE));
+				+ "." + PAR_PROBS, null)), verbose);
 	}
 
 	public GenericCompositeSelector(boolean noReset, IReference<Object>[] selectors,
-			double[] probabilities, String policy) {
+			double[] probabilities, boolean verbose) {
 		fNoReset = noReset;
 		fSelectorRefs = selectors;
-		initChoicePolicy(policy, probabilities);
+		fVerbose = verbose;
+		initChoicePolicy(probabilities);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -137,26 +134,34 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	 */
 	public Node selectPeer(Node node, ISelectionFilter filter) {
 		Node selected = null;
-		int randomChoice = -1;
+		int exclude = -1;
 
 		if (!fNoReset) {
 			fRRChoice = 0;
 		}
 
+		Object selector = null;
+		// Tries to pick a selector.
 		for (int i = 0; i < fSelectorRefs.length && selected == null; i++) {
-
-			// First draw.
-			if (i == 0 && fRandom) {
-				randomChoice = fWheel.spin();
-				selected = doSelect(node, filter, fSelectorRefs[randomChoice].get(node));
-				continue;
+			// First draw is random, if probabilities have been set.
+			if (i == 0 && fWheel != null) {
+				exclude = fWheel.spin();
+				selector = fSelectorRefs[exclude].get(node);
+			} else {
+				selector = drawRoundRobin(exclude).get(node); 
 			}
 
-			selected = doSelect(node, filter,
-					drawRoundRobin(randomChoice));
+			selected = doSelect(node, filter, selector);
 		}
-
+		
+		printSelector(selector, node);
 		return selected;
+	}
+	
+	private void printSelector(Object selector, Node node) {
+		if(fVerbose) {
+			System.err.println("Used <<" + selector.getClass().getSimpleName() + ">>");
+		}
 	}
 	
 	// ----------------------------------------------------------------------
@@ -190,26 +195,25 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 			return ((ISelector) object).selectPeer(filter);
 		}
 
-		throw new ClassCastException(filter.getClass().getName());
+		throw new ClassCastException(object.getClass().getName());
 	}
 	
 	// ----------------------------------------------------------------------
 
-	private void initChoicePolicy(String policy, double [] probabilities) {
-		if (policy.equals(VAL_PR)) {
+	private void initChoicePolicy(double [] probabilities) {
+		if (probabilities != null) {
 			checkLenghts(probabilities.length, fSelectorRefs.length,
 					"Missing probability assignments for selectors.");
-			fRandom = true;
 			fWheel = new RouletteWheel(probabilities, CommonState.r);
-		} else if (!policy.equals(VAL_RR)) {
-			throw new IllegalArgumentException("Unknown selection policy <"
-					+ policy + ">.");
-		}
+		} 
 	}
 	
 	// ----------------------------------------------------------------------
 
-	private static double[] parseDoubles(String string, String name) {
+	private static double[] parseDoubles(String string) {
+		if (string == null) {
+			return null;
+		}
 		String[] doublesS = string.split(" ");
 		double[] doubles = new double[doublesS.length];
 

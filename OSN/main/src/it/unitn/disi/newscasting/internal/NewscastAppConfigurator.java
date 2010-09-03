@@ -63,27 +63,25 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	
 	private static final String VAL_NONE = "none";
 	
-	private final String fPrefix;
-	
 	public NewscastAppConfigurator(String prefix) {
-		fPrefix = prefix;
 	}
 	
-	public void configure(SocialNewscastingService app, int protocolId, int socialNetworkId) {
-		configureStorage(app);
-		configureAntiEntropy(app, protocolId, socialNetworkId);
-		configureRumorMongering(app, protocolId, socialNetworkId); 
+	public void configure(SocialNewscastingService app, String prefix,
+			int protocolId, int socialNetworkId) {
+		configureStorage(app, prefix);
+		configureAntiEntropy(app, prefix, protocolId, socialNetworkId);
+		configureRumorMongering(app, prefix,protocolId, socialNetworkId); 
 	}
 
 	private void configureRumorMongering(SocialNewscastingService app,
-			int protocolId, int socialNetworkId) {
+			String prefix, int protocolId, int socialNetworkId) {
 		// Configures the rumor mongering strategy.
-		String rmType = Configuration.getString(fPrefix + "." + PAR_RUMOR_MONGER);
+		String rmType = Configuration.getString(prefix + "." + PAR_RUMOR_MONGER);
 		if(rmType.equals(VAL_DEMERS)) {
-			configureDemers(app, protocolId, socialNetworkId);
+			configureDemers(app, prefix, protocolId, socialNetworkId);
 		} else if (rmType.equals(VAL_FORWARDING)) {
-			configureGreedyDiffusion(app, protocolId, socialNetworkId,
-					Configuration.contains(fPrefix + "." + PAR_RUMOR_MONGER
+			configureGreedyDiffusion(app, prefix, protocolId, socialNetworkId,
+					Configuration.contains(prefix + "." + PAR_RUMOR_MONGER
 							+ "." + VAL_FORWARDING_BLOOM));
 		} else if (!rmType.equals(VAL_NONE)) {
 			throw new IllegalArgumentException();
@@ -92,9 +90,9 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 
 	@SuppressWarnings("unchecked")
 	private void configureAntiEntropy(SocialNewscastingService app,
-			int protocolId, int socialNetworkId) {
+			String prefix, int protocolId, int socialNetworkId) {
 		
-		if (Configuration.contains(fPrefix + "." + PAR_ANTI_ENTROPY + "."
+		if (Configuration.contains(prefix + "." + PAR_ANTI_ENTROPY + "."
 				+ VAL_NONE)) {
 			return;
 		}
@@ -110,14 +108,14 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 
 	@SuppressWarnings("unchecked")
 	private void configureGreedyDiffusion(SocialNewscastingService app,
-			int protocolId, int socialNetworkId, boolean histories) {
+			String prefix, int protocolId, int socialNetworkId, boolean histories) {
 		HistoryForwarding gd;
 		Class [] keys;
 		if (histories) {
-			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, prefix + "." + PAR_RUMOR_MONGER);
 			keys = new Class[] { HistoryForwarding.class, BloomFilterHistoryFw.class };
 		} else {
-			gd = new HistoryForwarding(protocolId, socialNetworkId, fPrefix + "." + PAR_RUMOR_MONGER);
+			gd = new HistoryForwarding(protocolId, socialNetworkId, prefix + "." + PAR_RUMOR_MONGER);
 			keys = new Class[] { HistoryForwarding.class };
 		}
 		
@@ -129,9 +127,9 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	}
 
 	@SuppressWarnings("unchecked")
-	private void configureDemers(SocialNewscastingService app, int protocolId,
-			int socialNetworkId) {
-		DemersRumorMonger demersRm = new DemersRumorMonger(fPrefix + "."
+	private void configureDemers(SocialNewscastingService app, String prefix,
+			int protocolId, int socialNetworkId) {
+		DemersRumorMonger demersRm = new DemersRumorMonger(prefix + "."
 				+ PAR_RUMOR_MONGER, protocolId, new ProtocolReference<Linkable>(socialNetworkId), CommonState.r);
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, demersRm,
 				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER),
@@ -141,8 +139,8 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		app.addSubscriber(demersRm);
 	}
 	
-	private void configureStorage(SocialNewscastingService service) {
-		String type = Configuration.getString(fPrefix + "." + PAR_STORAGE, VAL_SIMPLE);
+	private void configureStorage(SocialNewscastingService service, String prefix) {
+		String type = Configuration.getString(prefix + "." + PAR_STORAGE, VAL_SIMPLE);
 		
 		IWritableEventStorage storage;
 		if (type.equals(VAL_COMPACT)) {
@@ -158,11 +156,11 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	
 	private IReference<IPeerSelector> selector(String prefix) {
 		return new ProtocolReference<IPeerSelector>(Configuration
-				.getPid(fPrefix + "." + prefix + "." + PAR_SELECTOR));
+				.getPid(prefix + "." + prefix + "." + PAR_SELECTOR));
 	}
 	
 	private IReference<ISelectionFilter> filter(String prefix) {
-		String filterName = fPrefix + "." + prefix + "." + PAR_FILTER;
+		String filterName = prefix + "." + prefix + "." + PAR_FILTER;
 		if (!Configuration.contains(filterName)) {
 			return new FallThroughReference<ISelectionFilter>(ISelectionFilter.ALWAYS_TRUE_FILTER);
 		}
@@ -172,7 +170,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	}
 
 	private double probability(String prefix) {
-		String percentageName = fPrefix + "." + prefix + "." + PAR_PERCENTAGE;
+		String percentageName = prefix + "." + prefix + "." + PAR_PERCENTAGE;
 		if (!Configuration.contains(percentageName)) {
 			return 1.0;
 		}

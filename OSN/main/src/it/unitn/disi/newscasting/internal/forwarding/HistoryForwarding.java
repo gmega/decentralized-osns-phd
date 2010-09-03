@@ -28,7 +28,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	// ----------------------------------------------------------------------
 	// Parameter keys.
 	// ----------------------------------------------------------------------
-	private static final String PAR_CHUNK_SIZE = "chunk_size";
+	public static final String PAR_CHUNK_SIZE = "chunk_size";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.

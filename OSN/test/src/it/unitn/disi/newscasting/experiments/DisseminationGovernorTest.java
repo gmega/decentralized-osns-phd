@@ -1,4 +1,7 @@
-package it.unitn.disi.newscasting.internal;
+package it.unitn.disi.newscasting.experiments;
+
+import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
+import it.unitn.disi.newscasting.experiments.Scheduler;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
