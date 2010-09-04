@@ -37,13 +37,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	 */
 	private static final String PAR_PSI = "psi";
 
-	/**
-	 * If present, will cause the centrality heuristic to choose one amongst the
-	 * psi top-ranked <i>available</i> nodes, meaning that the neighborhood will
-	 * be subjected to filtering before selection.
-	 */
-	private static final String PAR_DYNAMIC = "dynamic";
-	
 	// ----------------------------------------------------------------------
 	// Parameter storage.
 	// ----------------------------------------------------------------------
@@ -51,8 +44,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	private int fLinkable;
 
 	private int fPsi;
-	
-	private boolean fDynamic;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -74,18 +65,15 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	public CentralitySelector(String prefix) {
 		this(Configuration.getPid(prefix + "." + PAR_PROTOCOL), Configuration
-				.getInt(prefix + "." + PAR_PSI), Configuration.contains(prefix
-				+ "." + PAR_DYNAMIC), CommonState.r);
+				.getInt(prefix + "." + PAR_PSI), CommonState.r);
 	}
 	
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(int linkableId, int psi, boolean dynamic,
-			Random random) {
+	public CentralitySelector(int linkableId, int psi, Random random) {
 		fLinkable = linkableId;
 		fPsi = psi;
 		fRandom = random;
-		fDynamic = dynamic;
 		
 		// This is okay as PeerSim calls the constructor only once.
 		fFriends = new PermutingCache(linkableId);
@@ -119,7 +107,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		}
 		
 		// Step 2 - loads and sorts our neighbors by centrality.
-		fFriends.populate(source, fDynamic ? filter : ISelectionFilter.ALWAYS_TRUE_FILTER);
+		fFriends.populate(source, filter);
 		fFriends.orderBy(fCentralityComparator);
 		
 		// Step 3 - Defines the "most central nodes" set. It goes from "start"

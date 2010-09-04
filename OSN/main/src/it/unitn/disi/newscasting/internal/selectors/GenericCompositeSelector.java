@@ -158,6 +158,8 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 		return selected;
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	private void printSelector(Object selector, Node node, Node selected) {
 		if(fVerbose) {
 			StringBuffer b = new StringBuffer();
