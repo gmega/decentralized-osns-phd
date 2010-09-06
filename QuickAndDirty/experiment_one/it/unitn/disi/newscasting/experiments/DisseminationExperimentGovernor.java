@@ -1,8 +1,5 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.ArrayList;
-import java.util.NoSuchElementException;
-
 import com.google.common.collect.PeekingIterator;
 
 import it.unitn.disi.application.SimpleApplication;
@@ -156,6 +153,9 @@ public class DisseminationExperimentGovernor implements Control {
 			setCurrentNode(nextNode);
 		}
 		
+		// Clears the latency tracker.
+		OnlineLatencyComputer.getInstance().done();
+		
 		currentApp().scheduleOneShot(SimpleApplication.TWEET);		
 		
 		return false;
@@ -176,21 +176,32 @@ public class DisseminationExperimentGovernor implements Control {
 		fCurrent = node;
 	}
 	
-	private void setNeighborhood(Node node, int state, boolean clearStorage) {
+	private void setNeighborhood(Node node, int state, boolean clearState) {
 		
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
 		node.setFailState(state);
+		if (clearState) {
+			clearStorage(node);
+		}
 		
 		for (int i = 0; i < degree; i++) {
 			Node nei = lnk.getNeighbor(i);
 			nei.setFailState(state);
-			if (clearStorage) {
-				ICoreInterface intf = (ICoreInterface) nei.getProtocol(sns);
-				IWritableEventStorage store = (IWritableEventStorage) intf.storage();
-				store.clear();
+			if (clearState) {
+				// Clears the event storage.
+				clearStorage(nei);
 			}
 		}
+	}
+
+	private void clearStorage(Node source) {
+		ICoreInterface intf = (ICoreInterface) source.getProtocol(sns);
+		IWritableEventStorage store = (IWritableEventStorage) intf.storage();
+		store.clear();
+		
+		// Clears all caches.
+		intf.clear(source);
 	}
 	
 	private boolean isQuiescent(Node node) {

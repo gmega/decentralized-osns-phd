@@ -47,13 +47,14 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 	
 	@SuppressWarnings("unchecked")
 	public void configure(SocialNewscastingService app, String prefix, int protocolId, int socialNetworkId) {
-		app.setStorage(new SimpleEventStorage());
+		app.setStorage(new SingleEventStorage());
 		BloomFilterHistoryFw fw = getBFW(protocolId, socialNetworkId, prefix);
 		IReference<IPeerSelector> selector = selector(app, prefix);
 		
 		app.addStrategy(new Class[] {BloomFilterHistoryFw.class, HistoryForwarding.class}, 
 				fw, selector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
 		app.addSubscriber(fw);
+		app.addSubscriber(OnlineLatencyComputer.getInstance());
 	}
 	
 	private BloomFilterHistoryFw getBFW(int pid, int snid, String prefix) {
@@ -80,7 +81,11 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		case PURE_RANDOM:
 			selector = new RandomSelectorOverLinkable(prefix);
 			break;
-		
+			
+		case PURE_CENTRALITY:
+			selector = new CentralitySelector(prefix);
+			break;
+			
 		case CA:
 			selector = newCA(prefix);
 			break;
@@ -90,7 +95,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 			break;
 			
 		default:
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException(type.toString());
 		}
 		
 		return new FallThroughReference<IPeerSelector>(selector);

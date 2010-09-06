@@ -1,0 +1,32 @@
+<project name="Quick-and-Dirty" default="compile-experiments" basedir=".">
+
+	<property name="build" location="bin" />
+	<property name="lib.path" location="../Utilities/lib" />
+	<property name="output.lib.path" location="../Utilities/lib-gen" />
+
+	<path id="compile.path">
+		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
+		<pathelement location="${lib.path}/jep-2.4.1.jar" />
+		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+		<pathelement location="${output.lib.path}/analyzer-j.jar" />
+		<pathelement location="${output.lib.path}/osns-protocols.jar" />
+	</path>
+
+	<target name="compile-experiments">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}" />
+		<!-- Compile the experiments into build. -->
+		<javac srcdir="./experiment_one" destdir="${build}" classpathref="compile.path" />
+		<!-- Add more experiments here... -->
+	</target>
+
+	<target name="build-experiments-jar" depends="compile-experiments">
+		<jar destfile="${output.lib.path}/experiments.jar">
+			<fileset dir="${build}" />
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
