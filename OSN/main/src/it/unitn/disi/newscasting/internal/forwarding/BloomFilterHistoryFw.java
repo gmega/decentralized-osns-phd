@@ -9,6 +9,7 @@ import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.BoundedHashMap;
 
 /**
  * {@link BloomFilterHistoryFw} is a {@link HistoryForwarding} extension which
@@ -56,18 +57,7 @@ public class BloomFilterHistoryFw extends HistoryForwarding {
 	 * Since we cannot keep histories for every message in memory, we keep a
 	 * window.
 	 */
-	@SuppressWarnings("serial")
-	private LinkedHashMap<Tweet, BloomFilter<Long>> fWindow = new LinkedHashMap<Tweet, BloomFilter<Long>>() {
-		@Override
-		protected boolean removeEldestEntry(
-				Map.Entry<Tweet, BloomFilter<Long>> entry) {
-			if (size() == fWindowSize) {
-				return true;
-			}
-
-			return false;
-		}
-	};
+	private Map<Tweet, BloomFilter<Long>> fWindow;
 	
 	// ----------------------------------------------------------------------
 
@@ -87,6 +77,16 @@ public class BloomFilterHistoryFw extends HistoryForwarding {
 		super(adaptableId, socialNetworkId, chunkSize);
 		fWindowSize = windowSize;
 		fBFFalsePositive = bFFalsePositive;
+		fWindow = new BoundedHashMap<Tweet, BloomFilter<Long>>(fWindowSize);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	/**
+	 * Disposes of all currently stored history objects.
+	 */
+	public void cleanHistoryCache() {
+		fWindow.clear();
 	}
 
 	// ----------------------------------------------------------------------

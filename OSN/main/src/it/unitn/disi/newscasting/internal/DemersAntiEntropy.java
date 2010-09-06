@@ -49,4 +49,9 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 	public ActivityStatus status() {
 		return ActivityStatus.PERPETUAL;
 	}
+
+	@Override
+	public void clear(Node source) {
+		// No cache to clear.
+	}
 }

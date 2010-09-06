@@ -120,6 +120,11 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 				.get(neighbor), null, false) + 1;
 	}
 	
+	@Override
+	public void clear(Node source) {
+		// We don't cache anything.
+	}
+	
 	// ----------------------------------------------------------------------
 	// Cloneable requirements.
 	// ----------------------------------------------------------------------
@@ -131,5 +136,4 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 			throw new RuntimeException();
 		}
 	}
-	
 }

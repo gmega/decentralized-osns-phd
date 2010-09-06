@@ -18,7 +18,7 @@ public class TestCentralitySelector {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.mkNodeArray(11);
 		
-		int pid = builder.assignLinkable(
+		builder.assignLinkable(
 			new long[][] {
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},	//0
 				{0, 2, 3, 4, 5, 6, 7, 8, 9, 10},	//1

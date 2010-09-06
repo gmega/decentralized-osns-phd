@@ -175,6 +175,18 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 			System.err.println(b.toString());
 		}
 	}
+
+	// ----------------------------------------------------------------------
+
+	@Override
+	public void clear(Node source) {
+		for (IReference<Object> reference : fSelectorRefs) {
+			Object selector = reference.get(source);
+			if (selector instanceof IPeerSelector) {
+				((IPeerSelector) selector).clear(source);
+			}
+		}
+	}
 	
 	// ----------------------------------------------------------------------
 	// Protocol.

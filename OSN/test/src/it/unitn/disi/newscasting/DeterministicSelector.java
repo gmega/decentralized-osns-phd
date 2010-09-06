@@ -141,5 +141,11 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		
 		return pid;
 	}
+
+	@Override
+	public void clear(Node source) {
+		// TODO Auto-generated method stub
+		
+	}
 }
 

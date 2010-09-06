@@ -1,12 +1,16 @@
 package it.unitn.disi.newscasting.internal;
 
+import java.io.IOException;
+
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.LoggingObserver;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.probabrm.ProbabilisticRumorMonger;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.logging.LogManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.Configuration;
@@ -67,10 +71,11 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	}
 	
 	public void configure(SocialNewscastingService app, String prefix,
-			int protocolId, int socialNetworkId) {
+			int protocolId, int socialNetworkId) throws Exception {
 		configureStorage(app, prefix);
+		configureLogging(app, prefix);
 		configureAntiEntropy(app, prefix, protocolId, socialNetworkId);
-		configureRumorMongering(app, prefix,protocolId, socialNetworkId); 
+		configureRumorMongering(app, prefix,protocolId, socialNetworkId);
 	}
 
 	private void configureRumorMongering(SocialNewscastingService app,
@@ -152,6 +157,16 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		}
 		
 		service.setStorage(storage);
+	}
+	
+	private void configureLogging(SocialNewscastingService service, String prefix) throws IOException {
+		LogManager mgr = LogManager.getInstance();
+		String logId = mgr.addUnique(prefix);
+		
+		if (logId != null) {
+			LoggingObserver observer = new LoggingObserver(mgr.get(logId), false);
+			service.addSubscriber(observer);
+		}
 	}
 	
 	private IReference<IPeerSelector> selector(String prefix) {

@@ -24,7 +24,7 @@ import peersim.core.Protocol;
  * @author giuliano
  */
 public class CentralitySelector implements IPeerSelector, Protocol {
-
+	
 	// ----------------------------------------------------------------------
 	// Parameter keys.
 	// ----------------------------------------------------------------------
@@ -36,6 +36,11 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	 * Will select one amongst the psi top-ranked nodes.
 	 */
 	private static final String PAR_PSI = "psi";
+
+	// ----------------------------------------------------------------------
+	// Shared state.
+	// ----------------------------------------------------------------------
+	private static final CentralityComparator fCentralityComparator = new CentralityComparator();
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -59,8 +64,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	private Random fRandom;
 	
-	private Comparator<Node> fCentralityComparator;
-
 	// ----------------------------------------------------------------------
 
 	public CentralitySelector(String prefix) {
@@ -78,7 +81,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		// This is okay as PeerSim calls the constructor only once.
 		fFriends = new PermutingCache(linkableId);
 		fCentralityScores = new HashMap<Node, Integer>();
-		fCentralityComparator = new CentralityComparator(fCentralityScores);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -107,6 +109,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		}
 		
 		// Step 2 - loads and sorts our neighbors by centrality.
+		fCentralityComparator.set(fCentralityScores);
 		fFriends.populate(source, filter);
 		fFriends.orderBy(fCentralityComparator);
 		
@@ -128,6 +131,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		}
 		
 		fFriends.invalidate();
+		fCentralityComparator.set(null);
 		return filter.selected(selected);
 	}
 	
@@ -167,6 +171,14 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	}
 	
 	// ----------------------------------------------------------------------
+	// ICachingObject interface.
+	// ----------------------------------------------------------------------
+	@Override
+	public void clear(Node source) {
+		fCentralityScores.clear();
+	}
+	
+	// ----------------------------------------------------------------------
 	// Protocol interface.
 	// ----------------------------------------------------------------------
 
@@ -176,7 +188,6 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 					.clone();
 			cloned.fFriends = new PermutingCache(fLinkable);
 			cloned.fCentralityScores = new HashMap<Node, Integer>(fCentralityScores);
-			cloned.fCentralityComparator = new CentralityComparator(cloned.fCentralityScores);
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);
@@ -189,9 +200,9 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	
 	private static class CentralityComparator implements Comparator<Node> {
 		
-		private final HashMap<Node, Integer> fCentralityScores;
+		private HashMap<Node, Integer> fCentralityScores;
 		
-		public CentralityComparator(HashMap<Node, Integer> centralityScores) {
+		public void set(HashMap<Node, Integer> centralityScores) {
 			fCentralityScores = centralityScores;
 		}
 		

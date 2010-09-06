@@ -1,9 +1,5 @@
 package it.unitn.disi.newscasting.internal;
 
-import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_SINGLE_TWEET;
-import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
-import static it.unitn.disi.newscasting.NewscastEvents.EXCHANGE_DIGESTS;
-import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
@@ -11,15 +7,11 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.logging.EventCodec;
-import it.unitn.disi.utils.logging.LogManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,16 +39,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	private static final String CONFIGURATOR = "configurator";
 	
 	// ----------------------------------------------------------------------
-	// Logging constants and shared structures.
-	// ----------------------------------------------------------------------
-
-	private static final EventCodec fCodec = new EventCodec(Byte.class,
-			NewscastEvents.values());
-
-	protected static final byte[] fBuffer = new byte[NewscastEvents.set
-			.sizeof(NewscastEvents.set.getLargest())];
-
-	// ----------------------------------------------------------------------
 	// Parameters.
 	// ----------------------------------------------------------------------
 
@@ -70,12 +52,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	 */
 	private final int fProtocolID;
 
-	/**
-	 * If set to true, causes events to be logged into text form as well into
-	 * the standard error output.
-	 */
-	private final boolean fVerbose;
-	
 	private String fPrefix;
 
 	// ----------------------------------------------------------------------
@@ -113,15 +89,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	private ArrayList<StrategyEntry> fStrategies;
 
 	// ----------------------------------------------------------------------
-	// Logging.
-	// ----------------------------------------------------------------------
-
-	/**
-	 * Log handle.
-	 */
-	private OutputStream fTweetLog;
-
-	// ----------------------------------------------------------------------
 	// Misc.
 	// ----------------------------------------------------------------------
 
@@ -131,24 +98,19 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	public SocialNewscastingService(
 			@Attribute(Attribute.PREFIX) String prefix,
-			@Attribute("social_neighborhood") int socialNetworkId,
-			@Attribute(value = "verbose", defaultValue = "false") boolean verbose
+			@Attribute("social_neighborhood") int socialNetworkId
 		) throws IOException {
 		
-		this(prefix, protocolId(prefix), socialNetworkId, log(prefix),
-				configurator(prefix), verbose);
+		this(prefix, protocolId(prefix), socialNetworkId, configurator(prefix));
 	}
 	
 	// ----------------------------------------------------------------------
 	
 	public SocialNewscastingService(String prefix, int protocolID,
-			int socialNetworkId, OutputStream log,
-			IApplicationConfigurator configurator, boolean verbose) {
+			int socialNetworkId, IApplicationConfigurator configurator) {
 		fPrefix = prefix;
 		fProtocolID = protocolID;
 		fSocialNetworkID = socialNetworkId;
-		fVerbose = verbose;
-		fTweetLog = log;
 		fConfigurator = configurator;
 		
 		this.configure();
@@ -158,7 +120,11 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	
 	private void configure() {
 		this.flushState();
-		fConfigurator.configure(this, fPrefix, fProtocolID, fSocialNetworkID);
+		try {
+			fConfigurator.configure(this, fPrefix, fProtocolID, fSocialNetworkID);
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 	
 	// ----------------------------------------------------------------------
@@ -178,13 +144,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		idx = (idx == -1) ? 0 : idx;
 		String name = prefix.substring(idx + 1);
 		return Configuration.lookupPid(name);
-	}
-	
-	// ----------------------------------------------------------------------
-	
-	private static OutputStream log(String prefix) throws IOException {
-		LogManager manager = LogManager.getInstance();
-		return manager.get(manager.addUnique(prefix));
 	}
 	
 	// ----------------------------------------------------------------------
@@ -347,7 +306,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		
 		return tweet;
 	}
-
+	
 	// ----------------------------------------------------------------------
 	// ICoreInterface
 	// ----------------------------------------------------------------------
@@ -389,6 +348,16 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	@Override
+	public void clear(Node node) {
+		for (StrategyEntry entry : fStrategies) {
+			entry.strategy.clear(node);
+			entry.selector.get(node).clear(node);
+		}
+	}
+	
+	// ----------------------------------------------------------------------
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends IContentExchangeStrategy> T getStrategy(Class<T> strategyKey) {
 		IContentExchangeStrategy strategy = fStrategyIndex.get(strategyKey);
@@ -423,23 +392,11 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 
 	// ----------------------------------------------------------------------
-	// Logging methods.
-	// ----------------------------------------------------------------------
-
-	private void log(int len) {
-		try {
-			fTweetLog.write(fBuffer, 0, len);
-		} catch(IOException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
-	// ----------------------------------------------------------------------
 	// IMergeObserver interface.
 	// ----------------------------------------------------------------------
 
 	private class MergeObserverImpl implements IMergeObserver {
-
+		
 		// ----------------------------------------------------------------------
 
 		public void tweeted(Tweet tweet) {
@@ -448,11 +405,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 				throw new IllegalStateException(
 						"Node can only tweet in its turn.");
 			}
-
-			log(fBuffer, TWEETED.magicNumber(), // event type
-					tweet.poster.getID(), // tweeting node (us)
-					tweet.sequenceNumber, // sequence number
-					CommonState.getTime()); // simulation time
 
 			// Looks up destinations and increase their pending count.
 			int size = tweet.destinations();
@@ -479,26 +431,10 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			}
 			
 			if (!duplicate) {
-				log(fBuffer, DELIVER_SINGLE_TWEET.magicNumber(),// event type
-						tweet.poster.getID(), // node owning the tweet
-						sending.getID(), // the sending node.
-						receiving.getID(), // node receiving the tweet
-						tweet.sequenceNumber, // sequence number of the tweet
-						CommonState.getTime()); // simulation time
-
 				// One less pending tweet to receive.
 				fPending--;
 			}
-
-			else {
-				log(fBuffer, DUPLICATE_TWEET.magicNumber(),// event type
-						tweet.poster.getID(), // node owning the tweet
-						sending.getID(), // the sending node.
-						receiving.getID(), // node receiving the tweet
-						tweet.sequenceNumber, // sequence number of the tweet
-						CommonState.getTime()); // simulation time
-			}
-
+			
 			// Passes the event forward.
 			fChannel.eventDelivered(sending, receiving, tweet, duplicate);
 		}
@@ -507,30 +443,10 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 		public void sendDigest(Node sender, Node receiver, Node owner,
 				List<Integer> holes) {
-			// When digests are exchanged, they flow from the node
-			// initiating the anti-entropy exchange to the pairing node.
-			// (The initiating node tells the pair what it doesn't have).
-			log(fBuffer, EXCHANGE_DIGESTS.magicNumber(), // Event type
-					sender.getID(), // ID of the digest sender.
-					receiver.getID(), // ID of digest receiver.
-					holes.size(), // Number of items in the digest.
-					CommonState.getTime()); // Simulation time.
-
 			fChannel.sendDigest(sender, receiver, owner, holes);
 		}
-
-		// ----------------------------------------------------------------------
-
-		private void log(byte[] buf, Number... event) {
-			if (fVerbose) {
-				System.out.println(fCodec.toString(event));
-			}
-
-			int len = fCodec.encodeEvent(buf, 0, event);
-			SocialNewscastingService.this.log(len);
-		}
 	};
-
+	
 	// ----------------------------------------------------------------------
 	// Debugging methods
 	// ----------------------------------------------------------------------

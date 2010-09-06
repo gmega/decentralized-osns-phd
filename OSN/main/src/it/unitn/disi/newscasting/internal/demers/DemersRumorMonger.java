@@ -178,6 +178,13 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	}
 	
 	// ----------------------------------------------------------------------
+
+	@Override
+	public void clear(Node source) { 
+		// No cache to clear.
+	}
+
+	// ----------------------------------------------------------------------
 	// IEventObserver interface.
 	// ----------------------------------------------------------------------
 	

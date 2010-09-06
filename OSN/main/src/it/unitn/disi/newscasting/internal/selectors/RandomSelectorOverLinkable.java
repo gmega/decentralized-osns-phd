@@ -70,6 +70,13 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 	}
 	
 	// ----------------------------------------------------------------------
+	
+	@Override
+	public void clear(Node node) {
+		// No cache to clear.
+	}
+	
+	// ----------------------------------------------------------------------
 	// Protocol interface.	
 	// ----------------------------------------------------------------------
 	

@@ -122,6 +122,12 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	}
 	
 	// ----------------------------------------------------------------------
+	
+	public void clear(Node source) {
+		
+	}
+	
+	// ----------------------------------------------------------------------
 	// IEventObserver interface.
 	// ----------------------------------------------------------------------
 

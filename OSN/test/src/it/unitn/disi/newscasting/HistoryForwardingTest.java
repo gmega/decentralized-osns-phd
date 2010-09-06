@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.test.framework.EventMatcher;
 import it.unitn.disi.test.framework.FakeCycleEngine;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.EventCodec;
@@ -27,7 +28,7 @@ import org.junit.Test;
 import peersim.core.CommonState;
 import peersim.core.Node;
 
-public class HistoryForwardingTest {
+public class HistoryForwardingTest extends PeerSimTest {
 
 	@Test
 	public void indirectDissemination(){
@@ -62,8 +63,11 @@ public class HistoryForwardingTest {
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
 			SocialNewscastingService sns = new SocialNewscastingService(null, 2,
-					SOCIAL_NETWORK_ID, log, new CustomConfigurator(
-							new ProtocolReference<IPeerSelector>(1)), true);
+					SOCIAL_NETWORK_ID, new CustomConfigurator(
+							new ProtocolReference<IPeerSelector>(1)));
+			
+			LoggingObserver logger = new LoggingObserver(log, true);
+			sns.addSubscriber(logger);
 
 			IWritableEventStorage storage = new SimpleEventStorage();
 			storage.add(root);

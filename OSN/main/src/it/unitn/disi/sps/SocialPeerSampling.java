@@ -217,6 +217,11 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 		return false;
 	}
 
+	@Override
+	public void clear(Node source) {
+		// Nothing to clear.
+	}
+
 	// --------------------------------------------------------------------------
 	// CDProtocol implementations (and helper methods)
 	// --------------------------------------------------------------------------

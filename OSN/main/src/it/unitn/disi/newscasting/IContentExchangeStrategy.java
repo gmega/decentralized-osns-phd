@@ -10,7 +10,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public interface IContentExchangeStrategy {
+public interface IContentExchangeStrategy extends ICachingObject {
 	
 	/**
 	 * Performs the exchange.

@@ -315,6 +315,12 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void clear(Node source) {
+		// TODO Auto-generated method stub
+		
+	}
 }
 
 /**

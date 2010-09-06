@@ -128,11 +128,6 @@ public class Tweet {
 
 	@Override
 	public boolean equals(Object other) {
-		// Quick test.
-		if (this.hashCode() != other.hashCode()) {
-			return false;
-		}
-
 		// Slow test.
 		boolean equals = false;
 		if (other instanceof Tweet) {

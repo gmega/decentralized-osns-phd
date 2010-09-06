@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import peersim.core.Node;
 import it.unitn.disi.newscasting.IApplicationInterface;
+import it.unitn.disi.newscasting.ICachingObject;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
 
@@ -14,7 +15,7 @@ import it.unitn.disi.newscasting.Tweet;
  * 
  * @author giuliano
  */
-public interface ICoreInterface extends IApplicationInterface {
+public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 
 	/**
 	 * Notifies the social newscasting service that a message has been received.
