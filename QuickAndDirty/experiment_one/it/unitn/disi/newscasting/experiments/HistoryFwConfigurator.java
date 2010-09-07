@@ -4,7 +4,6 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
-import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -24,8 +23,10 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		PURE_CENTRALITY,
 		PURE_ANTICENTRALITY,
 		PURE_RANDOM,
-		CA,
-		CR,
+		ALTERNATING_CA,
+		ALTERNATING_CR,
+		ONE_OTHER_CA,
+		ONE_OTHER_CR
 	}
 	
 	static class BFData {
@@ -66,6 +67,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 				bfdata.windowSize, bfdata.falsePositive);
 	}
 	
+	@SuppressWarnings("unchecked")
 	private IReference<IPeerSelector> selector(ICoreInterface app, String prefix) {
 		SelectorType type = SelectorType.valueOf(Configuration
 				.getString(prefix + "." + PAR_MODE));
@@ -86,12 +88,28 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 			selector = new CentralitySelector(prefix);
 			break;
 			
-		case CA:
-			selector = newCA(prefix);
+		case ALTERNATING_CA:
+			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
+				new FallThroughReference<Object>(new CentralitySelector(prefix)),
+				new FallThroughReference<Object>(new AntiCentralitySelector(prefix))
+			}, true);
 			break;
 
-		case CR:
-			selector = newCR(prefix);
+		case ALTERNATING_CR:
+			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
+				new FallThroughReference<Object>(new CentralitySelector(prefix)),
+				new FallThroughReference<Object>(new RandomSelectorOverLinkable(prefix))
+			}, true);
+			break;
+			
+		case ONE_OTHER_CA:
+			selector = new OneThanTheOther(new CentralitySelector(prefix),
+					new AntiCentralitySelector(prefix), prefix);
+			break;
+			
+		case ONE_OTHER_CR:
+			selector = new OneThanTheOther(new CentralitySelector(prefix),
+					new RandomSelectorOverLinkable(prefix), prefix);
 			break;
 			
 		default:
@@ -101,26 +119,6 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		return new FallThroughReference<IPeerSelector>(selector);
 	}
 
-	@SuppressWarnings("unchecked")
-	private IPeerSelector newCA(String prefix) {
-		IPeerSelector selector;
-		selector = new GenericCompositeSelector(false, prefix, new IReference [] {
-			new FallThroughReference<Object>(new CentralitySelector(prefix)),
-			new FallThroughReference<Object>(new AntiCentralitySelector(prefix))
-		}, true);
-		return selector;
-	}
-		
-	@SuppressWarnings("unchecked")
-	private IPeerSelector newCR(String prefix) {
-		IPeerSelector selector;
-		selector = new GenericCompositeSelector(false, prefix, new IReference [] {
-			new FallThroughReference<Object>(new CentralitySelector(prefix)),
-			new FallThroughReference<Object>(new RandomSelectorOverLinkable(prefix))
-		}, true);
-		return selector;
-	}
-	
 	public Object clone () {
 		return this;
 	}

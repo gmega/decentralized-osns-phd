@@ -16,7 +16,7 @@ import org.junit.Test;
 import junit.framework.TestCase;
 import peersim.core.Node;
 
-public class TestPeerSelectors{
+public class TestPeerSelectors {
 	@Test public void testTabooedSelector() throws Exception {
 		
 		int SIZE = 50;

@@ -48,10 +48,14 @@ public class LogManager implements Runnable {
 	
 	public synchronized String addUnique(String s) throws IOException {
 		ArrayList<String> allLogs = add(s);
-		if (allLogs.size() != 1) {
+		if (allLogs.size() > 1) {
 			throw new IllegalArgumentException(
 					"Cannot disambiguate: expected 1 registered stream, got "
 							+ allLogs.size() + ".");
+		}
+		
+		if (allLogs.size() == 0) {
+			return null;
 		}
 		
 		return allLogs.get(0);
@@ -177,9 +181,10 @@ public class LogManager implements Runnable {
 	public synchronized void run() {
 		for (OutputStream stream : fStreams.values()) {
 			try {
-				System.err.println("Close: " + stream.getClass());
+				System.err.print("Closing " + stream.getClass() + "...");
 				stream.flush();
 				stream.close();
+				System.err.println(" [OK]");
 			} catch (IOException ex) {
 				ex.printStackTrace();
 			}

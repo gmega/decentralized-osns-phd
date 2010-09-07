@@ -128,7 +128,6 @@ public class Tweet {
 
 	@Override
 	public boolean equals(Object other) {
-		// Slow test.
 		boolean equals = false;
 		if (other instanceof Tweet) {
 			Tweet evt = (Tweet) other;

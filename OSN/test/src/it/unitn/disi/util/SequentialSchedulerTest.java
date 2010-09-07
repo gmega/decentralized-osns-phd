@@ -19,7 +19,7 @@ public class SequentialSchedulerTest {
 				{9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 		};
 		
-		SequentialScheduler scheduler = SequentialScheduler.createScheduler(intervals);
+		IntervalScheduler scheduler = IntervalScheduler.createScheduler(intervals);
 		Iterator <Integer> it = scheduler.iterator();
 		
 		for (int i = 0; i < expected.length; i++) {

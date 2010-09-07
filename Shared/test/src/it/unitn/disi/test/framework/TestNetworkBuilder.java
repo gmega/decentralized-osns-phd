@@ -3,14 +3,16 @@ package it.unitn.disi.test.framework;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 
+import peersim.core.GeneralNode;
 import peersim.core.Linkable;
+import peersim.core.Network;
+import peersim.core.NetworkInitializer;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
@@ -21,6 +23,11 @@ public class TestNetworkBuilder {
 	private ArrayList<Node> fOrderedNodes = new ArrayList<Node>();
 	
 	private long fIds = 0;
+	
+	public TestNetworkBuilder() {
+		NetworkInitializer.createNodeArray();
+		Network.setCapacity(0);
+	}
 	
 	public List<Node> getNodes() {
 		return Collections.unmodifiableList(fOrderedNodes);
@@ -37,17 +44,28 @@ public class TestNetworkBuilder {
 			}
 		}
 		
-		for (Node node : fNodes.keySet()) {
+		for (int i = 0; i < fOrderedNodes.size(); i++) {
+			Node node = fOrderedNodes.get(i);
 			EasyMock.expect(node.protocolSize()).andReturn(fNodes.get(node)).anyTimes();
+			node.setIndex(i);
+			EasyMock.expectLastCall().once();
 		}
 		
 		EasyMock.replay(fNodes.keySet().toArray());
+		NetworkInitializer.createNodeArray();
+		
+		for (Node node : fOrderedNodes){
+			Network.add(node);
+		}
 	}
 	
 	public Node baseNode() {
 		Node node = EasyMock.createMock(Node.class);
-		EasyMock.expect(node.isUp()).andReturn(true).anyTimes();
 		EasyMock.expect(node.getID()).andReturn(fIds++).anyTimes();
+		EasyMock.expect(node.isUp()).andReturn(true).anyTimes();
+		node.setFailState(GeneralNode.DEAD);
+		EasyMock.expectLastCall().once();
+		
 		fNodes.put(node, 0);
 		fOrderedNodes.add(node);
 		return node;

@@ -5,11 +5,11 @@ import java.util.NoSuchElementException;
 
 import com.google.common.collect.PeekingIterator;
 
-public class SequentialScheduler {
+public class IntervalScheduler implements Iterable<Integer> {
 	
-	public static SequentialScheduler createScheduler(String idList) {
+	public static IntervalScheduler createScheduler(String idList) {
 		String [] intervals = idList.split(" ");
-		SequentialScheduler scheduler = new SequentialScheduler();
+		IntervalScheduler scheduler = new IntervalScheduler();
 		
 		for (int i = 0; i < intervals.length; i++){
 			String [] interval = intervals[i].split(",");

@@ -16,6 +16,8 @@ import it.unitn.disi.sps.TestPeerSelectors;
 import it.unitn.disi.sps.TestQueueManager;
 import it.unitn.disi.sps.TestView;
 import it.unitn.disi.test.framework.PeerSimTest;
+import it.unitn.disi.util.DegreeClassScheduler;
+import it.unitn.disi.util.RandomSchedulerTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.TestMiscUtils;
@@ -44,7 +46,8 @@ import peersim.config.ObjectCreatorTest;
 	ObjectCreatorTest.class,
 	SequentialSchedulerTest.class,
 	HistoryForwardingTest.class,
-	PermutingCacheTest.class
+	PermutingCacheTest.class,
+	RandomSchedulerTest.class
 })
 
 public class AllTests extends PeerSimTest {

@@ -48,7 +48,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	private int fLinkable;
 
-	private int fPsi;
+	private double fPsi;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -68,12 +68,12 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	public CentralitySelector(String prefix) {
 		this(Configuration.getPid(prefix + "." + PAR_PROTOCOL), Configuration
-				.getInt(prefix + "." + PAR_PSI), CommonState.r);
+				.getDouble(prefix + "." + PAR_PSI), CommonState.r);
 	}
 	
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(int linkableId, int psi, Random random) {
+	public CentralitySelector(int linkableId, double psi, Random random) {
 		fLinkable = linkableId;
 		fPsi = psi;
 		fRandom = random;
@@ -113,9 +113,8 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		fFriends.populate(source, filter);
 		fFriends.orderBy(fCentralityComparator);
 		
-		// Step 3 - Defines the "most central nodes" set. It goes from "start"
-		// till the end of the list.
-		int start = Math.max(0, fFriends.size() - fPsi);
+		// Step 3 - Defines where the "most central nodes" are.
+		int start = cut();
 
 		// Step 4 - scrambles the head.
 		OrderingUtils.permute(start, fFriends.size(), fFriends, fRandom);
@@ -133,6 +132,25 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		fFriends.invalidate();
 		fCentralityComparator.set(null);
 		return filter.selected(selected);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private int cut() {
+		if (fPsi >= 1.0) {
+			return Math.max(0, fFriends.size() - (int) fPsi);	
+		} else {
+			int cut = (int) Math.floor(fFriends.size() * fPsi);
+			// Now checks to see if the nodes to the left are the same
+			// centrality.
+			for (; cut > 0; cut--) {
+				if (fCentralityScores.get(fFriends.get(cut)) != fCentralityScores
+						.get(fFriends.get(cut - 1))) {
+					break;
+				}
+			}
+			return cut;
+		}
 	}
 	
 	// ----------------------------------------------------------------------

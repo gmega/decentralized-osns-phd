@@ -8,13 +8,14 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
-import it.unitn.disi.util.SequentialScheduler;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.GeneralNode;
 import peersim.core.Linkable;
+import peersim.core.Network;
 import peersim.core.Node;
 
 /**
@@ -27,6 +28,8 @@ import peersim.core.Node;
  */
 @AutoConfig
 public class DisseminationExperimentGovernor implements Control {
+	
+	private static final String SCHEDULER = "scheduler";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -60,34 +63,43 @@ public class DisseminationExperimentGovernor implements Control {
 	@Attribute(defaultValue = "false")
 	private boolean verbose;
 	
+	private boolean [] fSeen;
+	
+	private Node fCurrent;
+	
 	/**
 	 * List of ID intervals for scheduling.
 	 */
-	private SequentialScheduler fScheduler;
-	
-	private Node fCurrent;
+	private Iterable<Integer> fScheduler;
 	
 	private PeekingIterator<Integer> fSchedule;
 
 	// ----------------------------------------------------------------------
 	
 	public DisseminationExperimentGovernor(
-			@Attribute("ids") String idList) {
-		fScheduler = SequentialScheduler.createScheduler(idList);
-		fSchedule = fScheduler.iterator();
-				
-		System.err.println("-- Dissemination Governor Summary --");
-		System.err.println(" * Scheduled intervals: " + idList);
+			@Attribute(Attribute.PREFIX) String prefix) {
+		fScheduler = createScheduler(prefix);
+		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
+		fSeen = new boolean[Network.size()];
 	}
-	
-	
+
+	@SuppressWarnings("unchecked")
+	private Iterable<Integer> createScheduler(String prefix) {
+		return (Iterable<Integer>) Configuration.getInstance(prefix + "." + SCHEDULER);
+	}
 
 	@Override
 	public boolean execute() {
+		boolean willStop = false;
 		if (shouldScheduleNext()) {
-			return scheduleNext();
+			willStop = scheduleNext();
 		}
-		return false;
+		
+		if (willStop) {
+			OnlineLatencyComputer.getInstance().dumpStatistics(fSeen);
+		}
+		
+		return willStop;
 	}
 
 	/**
@@ -126,7 +138,7 @@ public class DisseminationExperimentGovernor implements Control {
 			if (repetitions == 0) {
 				return true;
 			} else {
-				fSchedule = fScheduler.iterator();
+				fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
 			}
 		}
 		
@@ -185,9 +197,12 @@ public class DisseminationExperimentGovernor implements Control {
 			clearStorage(node);
 		}
 		
+		fSeen[(int)node.getID()] = true;
+		
 		for (int i = 0; i < degree; i++) {
 			Node nei = lnk.getNeighbor(i);
 			nei.setFailState(state);
+			fSeen[(int)nei.getID()] = true;
 			if (clearState) {
 				// Clears the event storage.
 				clearStorage(nei);

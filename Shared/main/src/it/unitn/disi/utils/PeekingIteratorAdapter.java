@@ -3,18 +3,20 @@ package it.unitn.disi.utils;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import com.google.common.collect.PeekingIterator;
+
 /**
  * Wrapper over an {@link Iterator} which provides a peek operation.
  * 
  * @author giuliano
  */
-public class PeekIterator<E> implements Iterator<E>{
+public class PeekingIteratorAdapter<E> implements PeekingIterator<E>{
 	
 	private final Iterator<E> fDelegate;
 	
 	private E fLookahead;
 	
-	public PeekIterator(Iterator<E> delegate) {
+	public PeekingIteratorAdapter(Iterator<E> delegate) {
 		fDelegate = delegate;
 		this.updateLookahead();
 	}

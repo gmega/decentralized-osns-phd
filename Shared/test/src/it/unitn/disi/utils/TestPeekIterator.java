@@ -15,7 +15,7 @@ public class TestPeekIterator {
 			list.add(i);
 		}
 		
-		PeekIterator<Integer> peek = new PeekIterator<Integer>(list.iterator());
+		PeekingIteratorAdapter<Integer> peek = new PeekingIteratorAdapter<Integer>(list.iterator());
 		
 		for (int i = 0; i < 10; i++) {
 			Assert.assertTrue(peek.hasNext());

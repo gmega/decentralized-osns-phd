@@ -146,8 +146,8 @@ public class FastGraphProtocol implements Protocol, IDynamicLinkable {
 		return (int) fId;
 	}
 
-	public ArrayList<Integer> getNeighbors() {
-		return fEntry.fAdjList;
+	public List<Integer> getNeighbors() {
+		return fEntry.fRoAdjList;
 	}
 
 	private GraphEntry entry() {

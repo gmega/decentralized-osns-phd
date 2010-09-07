@@ -2,7 +2,7 @@ package it.unitn.disi.network;
 
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.newscasting.NewscastEvents;
-import it.unitn.disi.utils.PeekIterator;
+import it.unitn.disi.utils.PeekingIteratorAdapter;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
 
@@ -95,7 +95,7 @@ public class TraceBasedNetwork implements Control {
 
 	private NodeInitializer[] fNodeInits;
 
-	private PeekIterator<TraceEvent> fStream;
+	private PeekingIteratorAdapter<TraceEvent> fStream;
 	
 	private Set<String> fAdds = new HashSet<String>();
 	
@@ -118,7 +118,7 @@ public class TraceBasedNetwork implements Control {
 
 		File tracefile = new File(Configuration.getString(prefix + "."
 				+ PAR_TRACEFILE));
-		fStream = new PeekIterator<TraceEvent>(new EvtDecoder(new FileReader(
+		fStream = new PeekingIteratorAdapter<TraceEvent>(new EvtDecoder(new FileReader(
 				tracefile)));
 		
 		fLogManager = LogManager.getInstance();

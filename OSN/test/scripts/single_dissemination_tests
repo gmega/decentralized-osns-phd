@@ -52,8 +52,6 @@ protocol.sns SocialNewscastingService
 	rumor.window_size 50
 	rumor.bloom_false_positive 0.01
 	
-	# No logging.
-	logwriter tweets null
 }
 
 #================================================

@@ -4,7 +4,9 @@ import java.util.HashMap;
 
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
+import peersim.config.Configuration;
 import peersim.core.CommonState;
+import peersim.core.Network;
 import peersim.core.Node;
 import peersim.util.IncrementalStats;
 
@@ -18,13 +20,25 @@ public class OnlineLatencyComputer implements IEventObserver {
 	
 	private TweetData data;
 	
+	private int [] fSent;
+	
+	private int [] fReceived;
+	
+	private int [] fDups;
+	
+	public OnlineLatencyComputer() {
+		fSent = new int[Network.size()];
+		fReceived = new int[Network.size()];
+		fDups = new int[Network.size()];
+	}
+	
 	public void done() {
 		if (data == null) {
 			return;
 		}
-		
 		StringBuffer stats = new StringBuffer();
 		stats.append("DE:");
+		stats.append(" ");
 		stats.append(data.fTweet.profile().getID());
 		stats.append(" ");
 		stats.append(data.fTweet.destinations());
@@ -40,8 +54,31 @@ public class OnlineLatencyComputer implements IEventObserver {
 		stats.append(data.maxGain());
 		stats.append(" ");
 		stats.append(data.getDuplicates());
+		stats.append(" ");
+		stats.append(data.getUndelivered());
 		System.out.println(stats);
 		data = null;
+	}
+	
+	public void dumpStatistics(boolean [] nodes) {
+		StringBuffer stats = new StringBuffer();
+		stats.append("BEGIN_STATS_DUMP\n");
+		for (int i = 0; i < fSent.length; i++) {
+			if (nodes[i]) {
+				stats.append("N:");
+				stats.append(" ");
+				stats.append(i);
+				stats.append(" ");
+				stats.append(fSent[i]);
+				stats.append(" ");
+				stats.append(fReceived[i]);
+				stats.append(" ");
+				stats.append(fDups[i]);
+				stats.append("\n");
+			}
+		}
+		stats.append("END_STATS_DUMP\n");
+		System.out.println(stats.toString());
 	}
 
 	@Override
@@ -50,9 +87,13 @@ public class OnlineLatencyComputer implements IEventObserver {
 		
 		if (duplicate) {
 			data.duplicate();
+			fDups[(int)receiver.getID()]++;
 		} else {
 			data.received();
+			fReceived[(int)receiver.getID()]++;
 		}
+		
+		fSent[(int)sender.getID()]++;
 	}
 
 	@Override
@@ -123,5 +164,9 @@ class TweetData {
 	
 	public int getDuplicates(){ 
 		return fDups;
+	}
+	
+	public int getUndelivered() {
+		return fPending;
 	}
 }
