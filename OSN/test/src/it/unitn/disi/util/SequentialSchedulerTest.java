@@ -1,5 +1,7 @@
 package it.unitn.disi.util;
 
+import it.unitn.disi.utils.IntervalScheduler;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

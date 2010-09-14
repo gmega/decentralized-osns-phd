@@ -18,6 +18,10 @@ import it.unitn.disi.utils.ArrayExchanger;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.PeekingIteratorAdapter;
 
+/**
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class DegreeClassScheduler implements Iterable<Integer>{
 	

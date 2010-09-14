@@ -72,14 +72,13 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 	
 	public GenericCompositeSelector(String name) {
 		this(Configuration.contains(name + "." + PAR_NORESET), name, parsePids(
-				Configuration.getString(name + "." + PAR_SELECTOR), name),
-				Configuration.contains(name + "." + PAR_VERBOSE));
+				Configuration.getString(name + "." + PAR_SELECTOR), name));
 	}
 	
 	public GenericCompositeSelector(boolean noReset, String name,
-			IReference<Object>[] selectors, boolean verbose) {
+			IReference<Object>[] selectors) {
 		this(noReset, selectors, parseDoubles(Configuration.getString(name
-				+ "." + PAR_PROBS, null)), verbose);
+				+ "." + PAR_PROBS, null)), Configuration.contains(name + "." + PAR_VERBOSE));
 	}
 
 	public GenericCompositeSelector(boolean noReset, IReference<Object>[] selectors,

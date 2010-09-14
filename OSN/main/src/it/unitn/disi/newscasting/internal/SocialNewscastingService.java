@@ -203,11 +203,11 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		 * selectors.
 		 */
 		for (int i = 0; i < fStrategies.size(); i++) {
-			if (!runStrategy(i)) {
+			StrategyEntry entry = fStrategies.get(i);
+			
+			if (!runStrategy(entry)) {
 				continue;
 			}
-
-			StrategyEntry entry = fStrategies.get(i);
 
 			Node peer = selectPeer(ourNode, entry.selector.get(ourNode),
 					entry.filter);
@@ -260,12 +260,14 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	private boolean runStrategy(int i) {
-		if (CommonState.r.nextDouble() < fStrategies.get(i).probability) {
-			return true;
-		}
-
-		return false;
+	private boolean runStrategy(StrategyEntry entry) {
+		boolean shouldRun = true;
+		// A strategy is run if:
+		// 1 - it's not quiescent;
+		shouldRun &= entry.strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT;
+		// 2 - it passes the dice test.
+		shouldRun &= (CommonState.r.nextDouble() < entry.probability);
+		return shouldRun;
 	}
 
 	// ----------------------------------------------------------------------
