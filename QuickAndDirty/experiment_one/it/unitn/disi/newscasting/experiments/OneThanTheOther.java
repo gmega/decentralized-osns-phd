@@ -2,7 +2,6 @@ package it.unitn.disi.newscasting.experiments;
 
 import java.nio.channels.IllegalSelectorException;
 
-import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -14,10 +13,20 @@ import it.unitn.disi.newscasting.internal.IEventObserver;
 
 public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	
+	/**
+	 * The switching parameter.
+	 * @config
+	 */
 	private static final String PAR_N0 = "n0";
-	
+
+	/**
+	 * The single {@link Tweet} that's being propagated.
+	 */
 	private static Tweet fTweet;
 	
+	/**
+	 * Shared counters to facilitate programming.
+	 */
 	private static int [] fCounters;
 	
 	private int fNZero;
@@ -43,12 +52,19 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 
 	@Override
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		if (fTweet == null) {
-			return null;
+		int idx = (int) source.getID();
+		
+		Node selected = null;
+		if(fCounters[idx] < fNZero){
+			fCounters[idx]++;
+			selected = fFirst.selectPeer(source, filter);
 		}
 		
-		return fCounters[(int) source.getID()] < fNZero ? fFirst.selectPeer(
-				source, filter) : fSecond.selectPeer(source, filter);
+		if (selected == null) {
+			selected = fSecond.selectPeer(source, filter);
+		}
+		
+		return selected;
 	}
 
 	@Override

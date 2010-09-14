@@ -1,10 +1,8 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.HashMap;
 
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
-import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -39,15 +37,15 @@ public class OnlineLatencyComputer implements IEventObserver {
 		StringBuffer stats = new StringBuffer();
 		stats.append("DE:");
 		stats.append(" ");
-		stats.append(data.fTweet.profile().getID());
+		stats.append(data.fTweet.profile().getID()); 	// 1(2) - id
 		stats.append(" ");
-		stats.append(data.fTweet.destinations());
+		stats.append(data.fTweet.destinations());		// 2(3) - degree
 		stats.append(" ");
-		stats.append(data.getMax());
+		stats.append(data.getMax());					// 3(4) - max
 		stats.append(" ");
-		stats.append(data.getAvg());
+		stats.append(data.getAvg());					// 4(5) - avg
 		stats.append(" ");
-		stats.append(data.getVar());
+		stats.append(data.getVar());					// 5(6) - var
 		stats.append(" ");
 		stats.append(data.avgGain());
 		stats.append(" ");

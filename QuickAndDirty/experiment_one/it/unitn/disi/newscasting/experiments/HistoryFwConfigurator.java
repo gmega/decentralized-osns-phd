@@ -4,6 +4,7 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
+import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -92,24 +93,26 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
 				new FallThroughReference<Object>(new CentralitySelector(prefix)),
 				new FallThroughReference<Object>(new AntiCentralitySelector(prefix))
-			}, true);
+			});
 			break;
 
 		case ALTERNATING_CR:
 			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
 				new FallThroughReference<Object>(new CentralitySelector(prefix)),
 				new FallThroughReference<Object>(new RandomSelectorOverLinkable(prefix))
-			}, true);
+			});
 			break;
 			
 		case ONE_OTHER_CA:
 			selector = new OneThanTheOther(new CentralitySelector(prefix),
 					new AntiCentralitySelector(prefix), prefix);
+			app.addSubscriber((IEventObserver) selector);
 			break;
 			
 		case ONE_OTHER_CR:
 			selector = new OneThanTheOther(new CentralitySelector(prefix),
 					new RandomSelectorOverLinkable(prefix), prefix);
+			app.addSubscriber((IEventObserver) selector);
 			break;
 			
 		default:
