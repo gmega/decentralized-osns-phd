@@ -1,9 +1,21 @@
 package it.unitn.disi;
 
+import it.unitn.disi.cli.LightweightStaticGraph;
+import it.unitn.disi.codecs.AdjListGraphDecoder;
+import it.unitn.disi.utils.Pair;
+import it.unitn.disi.utils.ResettableFileInputStream;
+import it.unitn.disi.utils.SimpleScheduler;
+import it.unitn.disi.utils.graph.SubgraphDecorator;
+
+
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.LineNumberReader;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+import peersim.graph.Graph;
 
 /**
  * {@link DiffusionSimulator} implements an iterative, brute-force algorithm to
@@ -14,101 +26,225 @@ import java.io.LineNumberReader;
  */
 public class DiffusionSimulator {
 	
+	public static void main(String [] args) throws IOException {
+		
+		File graph = null;
+		File schedule = null;
+		Integer cores = null;
+		
+		switch(args.length) {
+		case 3:
+			cores = Integer.parseInt(args[2]);
+		case 2:
+			graph = new File(args[0]);
+			schedule = new File(args[1]);
+			break;
+		default:
+			System.err.println("Invalid arguments.");
+			System.exit(-1);
+		}
+		
+		Graph g = LightweightStaticGraph.load(new AdjListGraphDecoder(new ResettableFileInputStream(graph)));
+		if (cores == null) {
+			cores = Runtime.getRuntime().availableProcessors();
+		}
+		
+		DiffusionSimulator dsd = new DiffusionSimulator(g, SimpleScheduler
+				.fromFile(schedule));
+		dsd.run(cores);
+	}
+	
+	private int fCount = 1;
+	
+	private final Graph fGraph;
+	
+	private final Iterator<Integer> fSchedule;
+	
+	private SubgraphDecorator [] fDecorators;
+	                                 
+	public DiffusionSimulator(Graph g, Iterator<Integer> schedule) {
+		fSchedule = schedule;
+		fGraph = g;
+	}
+	
+	private void run(int cores) {
+		
+		Thread [] workers = new Thread[cores];
+		fDecorators = new SubgraphDecorator[cores];
+		
+		for (int i = 0; i < workers.length; i++) {
+			synchronized(this) {
+				// Safe publishing of the decorators to the workers.
+				fDecorators[i] = new SubgraphDecorator(fGraph, false);
+			}
+			workers[i] = new Thread(new DiffusionWorker(this, i));
+			workers[i].start();
+		}
+		
+		for (int i = 0; i < workers.length; i++) {
+			try {
+				workers[i].join();
+			} catch(InterruptedException ex) {
+				// Don't really care about this. 
+			}
+		}
+	}
+	
+	synchronized Pair<Integer, int[][]> work(DiffusionWorker worker) {
+		
+		if (!fSchedule.hasNext()) {
+			return null;
+		}
+		
+		SubgraphDecorator decorator = fDecorators[worker.id];	
+		int next = fSchedule.next();
+		Set<Integer> vertices = new HashSet<Integer>();
+		for (Integer neighbor : fGraph.getNeighbours(next)) {
+			vertices.add(neighbor);
+		}
+		vertices.add(next);
+		decorator.setVertexList(vertices);
+		
+		// Creates the fast-access subgraph.
+		int [][] graph = new int[decorator.size()][];
+		for (int i = 0; i < graph.length; i++) {
+			
+			Collection<Integer> neighbors = decorator.getNeighbours(i);
+			graph[i] = new int[decorator.getNeighbours(i).size()];
+			Iterator<Integer> it = neighbors.iterator();
+			
+			for (int j = 0; it.hasNext(); j++) {
+				graph[i][j] = it.next();
+			}
+			
+			// Just a little sanity check.
+			if (it.hasNext()) {
+				throw new IllegalStateException();
+			}
+		}
+		
+		System.err.println("Scheduled unit " + (fCount++) + " to worker "
+				+ worker.id + " (size " + graph.length + ").");
+		
+		return new Pair<Integer, int[][]> (decorator.idOf(next), graph);
+	}
+	
+	synchronized void newTMax(int tMax, int[] paintedBy, int[] paintSchedule, DiffusionWorker reporter) {
+		print("TMAX", Integer.toString(tMax), paintedBy, paintSchedule, reporter);
+	}
+	
+	synchronized void newTAvg(double tAvg, int[] paintedBy, int[] paintSchedule, DiffusionWorker reporter) {
+		print("TAVG", Double.toString(tAvg), paintedBy, paintSchedule, reporter);
+	}
+	
+	private void print(String tag, String quantity, int[] paintedBy, int[] paintSchedule, DiffusionWorker reporter) {
+		SubgraphDecorator decorator = fDecorators[reporter.id];
+		Integer root = findRoot(paintSchedule);
+		root = decorator.inverseIdOf(root);
+		
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(tag);
+		buffer.append(" ");
+		buffer.append(root);
+		buffer.append(" ");
+		buffer.append(quantity);
+		buffer.append("\nSCHED ");
+		buffer.append(root);
+		buffer.append(" ");
+		
+		for (int i = 0; i < paintSchedule.length; i++) {
+			String painter = paintedBy[i] == -1 ? "root" : Integer
+					.toString(decorator.inverseIdOf(paintedBy[i]));
+			buffer.append(painter);
+			buffer.append(":");
+			buffer.append(decorator.inverseIdOf(i));
+			buffer.append(":");
+			buffer.append(paintSchedule[i]);
+			buffer.append(",");
+		}
+		
+		buffer.deleteCharAt(buffer.length() - 1);
+		System.out.println(buffer.toString());
+	}
+
+	private Integer findRoot(int[] paintSchedule) {
+		Integer root = null;
+		// Finds the root.
+		for (int i = 0; i < paintSchedule.length; i++) {
+			if(paintSchedule[i] == -1) {
+				root = i;
+			}
+		}
+		return root;
+	}
+}
+
+class DiffusionWorker implements Runnable {
+	
 	private static final int UNPAINTED = Integer.MAX_VALUE;
 
-	private int[][] fGraph;
+	public final int id;
 	
-	private int[] fPainted;
-	private int[][] fCounters;
+	private final DiffusionSimulator fParent;
+	
+	private int [][] fGraph;
+	
+	private int [] fPainted;
+	
+	private int [] fPaintedBy;
+	
+	private int [][] fCounters;
+	
 	private int fPaintCount = 0;
-
+	
 	private int fMax;
-
-	/**
-	 * The command takes one single parameter: a text file, encoding a graph as
-	 * an adjacency list represented by sequence of integers.
-	 * 
-	 * @throws IOException
-	 *             if the provided file cannot be read.
-	 */
-	public static void main(String[] args) throws IOException {
-		DiffusionSimulator ds = new DiffusionSimulator();
-		
-		if (args.length < 1) {
-			System.err.println("Missing graph file.");
-		}
-		
-		if (ds.load(new File(args[0]))) {
-			ds.runAll();
-		}
-
-		System.out.println(ds.fMax);
-	}
-
-	public void runAll() {
-		fMax = Integer.MAX_VALUE;
-		
-		for (int i = 0; i < fGraph.length; i++) {
-			init();
-			paint(i);
-			run();
-		}
-	}
-
-	public void paint(int idx) {
-		fPainted[idx] = -1;
-		fPaintCount++;
-	}
-
-	public void init() {
-		for (int i = 0; i < fGraph.length; i++) {
-			fPainted[i] = UNPAINTED;
-			for (int j = 0; j < fCounters[i].length; j++) {
-				fCounters[i][j] = 0;
-			}
-		}
-		
-		fPaintCount = 0;
+	
+	private double fAvg;
+	
+	DiffusionWorker (DiffusionSimulator parent, int id) {
+		fParent = parent;
+		this.id = id;
 	}
 	
-	public boolean load(File file) throws IOException {
-
-		LineNumberReader reader = new LineNumberReader(new FileReader(file));
-
-		String header = reader.readLine();
-		if (header == null) {
-			return false;
+	@Override
+	public void run() {
+		System.err.println("Started worker (" + id + ").");
+		Pair<Integer, int[][]> work;
+		while((work = fParent.work(this)) != null) {
+			init(work.b);
+			paint(work.a);
+			runSim();
 		}
-
-		int size = Integer.parseInt(header);
-		fGraph = new int[size][];
-		fCounters = new int[size][];
-
-		String line = null;
-		while ((line = reader.readLine()) != null) {
-			String[] data = line.split(" ");
-			int source = Integer.parseInt(data[0]);
-			fGraph[source] = new int[data.length - 1];
-
-			for (int i = 1; i < data.length; i++) {
-				fGraph[source][i - 1] = Integer.parseInt(data[i]);
-			}
-		}
-		
+		System.err.println("Worker (" + id + ") is done.");
+	}
+	
+	private void init(int [][] graph) {
+		int size = graph.length;
 		// Allocates paint bits and counters.
-		fPainted = new int[fGraph.length];
+		fCounters = new int[size][];
+		fPainted = new int[size];
+		fPaintedBy = new int[size];
 		for (int i = 0; i < size; i++) {
 			fPainted[i] = UNPAINTED;
 			fCounters[i] = new int[size];
 		}
-
-		return true;
+		
+		fMax = Integer.MAX_VALUE;
+		fAvg = Double.MAX_VALUE;
+		fPaintCount = 0;
+		fGraph = graph;
 	}
-
-	public void run() {
+	
+	private void paint(int idx) {
+		fPainted[idx] = -1;
+		fPaintedBy[idx] = -1;
+		fPaintCount++;
+	}
+	
+	public void runSim() {
 
 		int step = 0;
-
+		
 		while (true) {
 			boolean progress = false;
 			for (int i = 0; i < fPainted.length; i++) {
@@ -120,6 +256,7 @@ public class DiffusionSimulator {
 						if (fPainted[neighbor] == UNPAINTED) {
 							// Paints neighbor.
 							fPainted[neighbor] = (step + 1);
+							fPaintedBy[neighbor] = i;
 							fPaintCount++;
 							progress = true;
 							break;
@@ -130,11 +267,27 @@ public class DiffusionSimulator {
 
 			// No progress in this step.
 			if (!progress) {
-				// This is an end state. Register the number of steps,
-				// if it's the smallest we've ever seen.
-				if (fPaintCount == fPainted.length && step < fMax) {
-					fMax = step;
-					System.out.println("MAX:" + step);
+				// This is an end state. 
+				if (fPaintCount == fPainted.length) {
+					// The graph is fully painted.
+					// Computes the average latency.
+					double avg = 0.0;
+					for (int i = 0; i < fPainted.length; i++) {
+						avg += fPainted[i];
+					}
+					avg++; // Re-sums the -1.0 from the root.
+					
+					// New best t_max?
+					if (step < fMax) {
+						fMax = step;
+						fParent.newTMax(fMax, fPaintedBy, fPainted, this);
+					}
+					
+					// New best t_avg?
+					if (avg < fAvg) {
+						fAvg = avg;
+						fParent.newTAvg(fAvg/(fPainted.length - 1), fPaintedBy, fPainted, this);
+					}
 				}
 				
 				// Undoes this step.

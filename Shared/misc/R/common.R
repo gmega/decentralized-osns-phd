@@ -178,6 +178,34 @@ metric_hist <- function(x, measure, algorithm, file_name=NULL, type="h", log="",
 
 ##############################################################
 #
+# Loads a series of tables into a single table.
+#
+##############################################################
+loadtables <- function(start, end, name_generator, header=TRUE, sep=" ") {
+  concat_table <- NULL
+  for (i in start:end) {
+    name <- name_generator(i)
+    entry <- read.table(name, header, sep)
+    concat_table <- rbind(concat_table, entry)
+  }
+
+  # Orders by id.
+  concat_table <- concat_table[with(concat_table,order(id)),]
+  
+  return(concat_table)
+}
+
+##############################################################
+
+simple_name_generator <- function(prefix, suffix) {
+  return(function(i) {
+    return (paste(prefix,i,suffix,sep=""))
+  })
+}
+
+
+##############################################################
+#
 # Very simple check for command line arguments.
 #
 ##############################################################

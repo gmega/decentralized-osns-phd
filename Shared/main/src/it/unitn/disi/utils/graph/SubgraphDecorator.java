@@ -100,6 +100,11 @@ public class SubgraphDecorator implements Graph {
 	
 
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * Given the index of a vertex in the subgraph, returns its index in the
+	 * original graph.
+	 */
 	public int inverseIdOf(int i) {
 		return fMappings[i];
 	}
