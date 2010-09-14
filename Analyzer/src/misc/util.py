@@ -140,6 +140,12 @@ class FileWrapper(object):
             return getattr(self._delegate, name)
 
 
+class Multicounter(object):
+    def __init__(self, fields):
+        for key, value in fields.items():
+            setattr(self, key, value)
+
+
 class NullList:
     
     

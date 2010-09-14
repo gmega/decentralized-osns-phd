@@ -294,6 +294,23 @@ class ParameterGenerator:
 
 #===============================================================================
 
+class Division:
+    
+    def __init__(self, total, parts):
+        self._total = int(total)
+        self._parts = int(total)/int(parts)
+        
+    def execute(self):
+        
+        for i in range(0, (self._total/self._parts)):
+            print str(i*self._parts + 1) + "," + str((i + 1) * self._parts)
+
+        remainder = self._total % self._parts
+        if remainder != 0:
+            print str(self._total - remainder + 1) + "," + str(self._total)
+
+#===============================================================================
+
 class CDF:
     """ Computes the empirical CDF, or just the frequency counts for
     a set of points. 
