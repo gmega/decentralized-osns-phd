@@ -56,7 +56,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		app.addStrategy(new Class[] {BloomFilterHistoryFw.class, HistoryForwarding.class}, 
 				fw, selector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
 		app.addSubscriber(fw);
-		app.addSubscriber(OnlineLatencyComputer.getInstance());
+		app.addSubscriber(ExperimentStatisticsManager.getInstance());
 	}
 	
 	private BloomFilterHistoryFw getBFW(int pid, int snid, String prefix) {

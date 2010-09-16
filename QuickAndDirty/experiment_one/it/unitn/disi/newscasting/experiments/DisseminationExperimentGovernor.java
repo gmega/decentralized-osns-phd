@@ -90,16 +90,10 @@ public class DisseminationExperimentGovernor implements Control {
 
 	@Override
 	public boolean execute() {
-		boolean willStop = false;
 		if (shouldScheduleNext()) {
-			willStop = scheduleNext();
+			return scheduleNext();
 		}
-		
-		if (willStop) {
-			OnlineLatencyComputer.getInstance().dumpStatistics(fSeen);
-		}
-		
-		return willStop;
+		return false;
 	}
 
 	/**
@@ -166,7 +160,7 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 		
 		// Clears the latency tracker.
-		OnlineLatencyComputer.getInstance().done();
+		ExperimentStatisticsManager.getInstance().done();
 		
 		currentApp().scheduleOneShot(SimpleApplication.TWEET);		
 		
