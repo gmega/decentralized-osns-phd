@@ -203,6 +203,18 @@ simple_name_generator <- function(prefix, suffix) {
   })
 }
 
+##############################################################
+#
+# Divides two vectors and applies the convention that 0/0 = 1
+#
+##############################################################
+safe_divide <- function(v1, v2) {
+  reckless <- v1/v2
+  replaces <- which(v1 == 0 & v2 == 0)
+  reckless[replaces] = 1.0
+  return(reckless)
+}
+
 
 ##############################################################
 #

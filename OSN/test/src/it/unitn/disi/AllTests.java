@@ -21,6 +21,7 @@ import it.unitn.disi.util.RandomSchedulerTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.TestMiscUtils;
+import it.unitn.disi.utils.TestTableReader;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -47,7 +48,8 @@ import peersim.config.ObjectCreatorTest;
 	SequentialSchedulerTest.class,
 	HistoryForwardingTest.class,
 	PermutingCacheTest.class,
-	RandomSchedulerTest.class
+	RandomSchedulerTest.class,
+	TestTableReader.class
 })
 
 public class AllTests extends PeerSimTest {

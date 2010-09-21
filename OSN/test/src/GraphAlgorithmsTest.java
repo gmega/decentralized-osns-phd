@@ -2,6 +2,7 @@ import java.io.InputStream;
 
 import org.junit.Test;
 
+import peersim.config.ObjectCreator;
 import peersim.graph.BitMatrixGraph;
 import peersim.graph.Graph;
 import peersim.graph.NeighbourListGraph;
@@ -44,7 +45,8 @@ public class GraphAlgorithmsTest {
 	@Test
 	public void testPercolationThresholdEstimate() throws Exception {
 		int DIM = 10;
-		PercolationThresholdEstimator est = new PercolationThresholdEstimator();
+		PercolationThresholdEstimator est = new ObjectCreator<PercolationThresholdEstimator>(
+				PercolationThresholdEstimator.class).create("");
 		
 		Graph largeLattice = mkLattice(DIM);
 		
@@ -76,7 +78,7 @@ public class GraphAlgorithmsTest {
 		}
 	}
 	
-	public static void percolationCompleteGraph(int DIM) {
+	public static void percolationCompleteGraph(int DIM) throws Exception {
 		BitMatrixGraph g = new BitMatrixGraph(DIM, false);
 		for (int i = 0; i < DIM; i++) {
 			for (int j = i; j < DIM; j++) {
@@ -84,7 +86,9 @@ public class GraphAlgorithmsTest {
 			}
 		}
 
-		PercolationThresholdEstimator est = new PercolationThresholdEstimator();
+		PercolationThresholdEstimator est = new ObjectCreator<PercolationThresholdEstimator>(
+				PercolationThresholdEstimator.class).create("");
+
 		double p_c = est.percolationThresholdEstimate(g);
 		
 //		double n = (double)DIM;
@@ -118,7 +122,7 @@ public class GraphAlgorithmsTest {
 		return j*dim + i;		
 	}
 	
-	public static void main(String [] args) {
+	public static void main(String [] args) throws Exception {
 //		PercolationThresholdEstimator est = new PercolationThresholdEstimator(30, 100, 0.1);
 //		for (int i = 2; i < 200; i++) {
 //			Graph g = mkLattice(i);

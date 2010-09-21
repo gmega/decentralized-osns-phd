@@ -1,5 +1,7 @@
 package it.unitn.disi.utils;
 
+import it.unitn.disi.utils.collections.Pair;
+
 import java.util.HashMap;
 
 /**

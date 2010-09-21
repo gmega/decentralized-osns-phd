@@ -9,7 +9,7 @@ import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.utils.BoundedHashMap;
+import it.unitn.disi.utils.collections.BoundedHashMap;
 
 /**
  * {@link BloomFilterHistoryFw} is a {@link HistoryForwarding} extension which

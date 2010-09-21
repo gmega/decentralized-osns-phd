@@ -3,8 +3,8 @@ package it.unitn.disi.newscasting;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.IExchanger;
 
 import java.util.List;
 import java.util.Random;

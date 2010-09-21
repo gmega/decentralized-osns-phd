@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.collections;
 
 /**
  * An {@link IExchanger} knows how to exchange elements. The exact details of

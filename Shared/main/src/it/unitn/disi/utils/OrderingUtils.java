@@ -1,6 +1,8 @@
 package it.unitn.disi.utils;
 
 
+import it.unitn.disi.utils.collections.IExchanger;
+
 import java.util.Random;
 
 public class OrderingUtils {

@@ -7,9 +7,9 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.sps.View.BufferHandler;
 import it.unitn.disi.sps.selectors.ISelector;
 import it.unitn.disi.sps.selectors.RandomSelector;
-import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.IExchanger;
 
 import java.util.HashMap;
 import java.util.Iterator;

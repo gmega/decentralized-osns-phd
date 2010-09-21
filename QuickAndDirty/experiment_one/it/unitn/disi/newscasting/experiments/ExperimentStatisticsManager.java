@@ -1,6 +1,8 @@
 package it.unitn.disi.newscasting.experiments;
 
 
+import java.io.PrintStream;
+
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import peersim.core.CommonState;
@@ -8,6 +10,12 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.util.IncrementalStats;
 
+/**
+ * {@link ExperimentStatisticsManager} tracks statistics for ongoing unit
+ * experiments.
+ * 
+ * @author giuliano
+ */
 public class ExperimentStatisticsManager implements IEventObserver {
 	
 	private static final ExperimentStatisticsManager fInstance = new ExperimentStatisticsManager();
@@ -25,10 +33,19 @@ public class ExperimentStatisticsManager implements IEventObserver {
 			return;
 		}
 		
-		System.out.println(fCurrentExperiment.latencyStatistics());
-		System.out.println(fCurrentExperiment.loadStatistics());
-		
 		fCurrentExperiment = null;
+	}
+	
+	public void printLatencyStatistics(PrintStream stream) {
+		if (fCurrentExperiment != null) {
+			System.out.println(fCurrentExperiment.latencyStatistics());
+		}
+	}
+	
+	public void printLoadStatistics(PrintStream stream) {
+		if (fCurrentExperiment != null) {
+			System.out.println(fCurrentExperiment.loadStatistics());
+		}
 	}
 	
 	@Override
@@ -272,6 +289,7 @@ class UnitExperimentData {
 		
 		// Appends the statistics.
 		appendLoad(buffer, fTweet.poster);
+		buffer.append("\n");
 		for (int i = 0; i < fTweet.destinations(); i++) {
 			appendLoad(buffer, fTweet.destination(i));
 			buffer.append("\n");
@@ -288,10 +306,10 @@ class UnitExperimentData {
 		buffer.append(" ");
 		// 2 - The node for which the statistics we are about to printed. 
 		buffer.append(i);
-		buffer.append(" ");
+		buffer.append(":");
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
-		buffer.append(" ");
+		buffer.append(":");
 		// 3 - Messages received by the node.
 		buffer.append(fReceived[i]);
 		buffer.append(" ");

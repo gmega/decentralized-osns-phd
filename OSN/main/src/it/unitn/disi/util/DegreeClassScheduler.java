@@ -14,9 +14,9 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.graph.Graph;
 import it.unitn.disi.sps.FastGraphProtocol;
-import it.unitn.disi.utils.ArrayExchanger;
 import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.PeekingIteratorAdapter;
+import it.unitn.disi.utils.collections.ArrayExchanger;
+import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 
 /**
  * 

@@ -1,6 +1,7 @@
 package it.unitn.disi.utils;
 
 import it.unitn.disi.codecs.GraphDecoder;
+import it.unitn.disi.utils.collections.IExchanger;
 
 import java.io.Closeable;
 import java.io.IOException;

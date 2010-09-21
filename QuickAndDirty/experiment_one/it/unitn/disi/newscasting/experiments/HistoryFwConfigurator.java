@@ -1,5 +1,9 @@
 package it.unitn.disi.newscasting.experiments;
 
+import java.io.IOException;
+
+import javax.imageio.stream.FileImageInputStream;
+
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
@@ -13,12 +17,20 @@ import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.Configuration;
+import peersim.core.CommonState;
+import peersim.core.Linkable;
 
 public class HistoryFwConfigurator implements IApplicationConfigurator{
 	
+	public static final String PAR_LINKABLE = "linkable";
+	
 	public static final String PAR_MODE = "mode";
+	
+	public static final String PARAMETER_FILE = "parameters";
 			
 	enum SelectorType {
 		PURE_CENTRALITY,
@@ -30,21 +42,29 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		ONE_OTHER_CR
 	}
 	
-	static class BFData {
+	static class FixedData {
 		int windowSize;
 		int chunkSize;
+		int linkable;
 		double falsePositive;
 		
-		BFData(String prefix) {
+		FixedData(String prefix) {
 			windowSize = Configuration.getInt(prefix + "." + BloomFilterHistoryFw.PAR_WINDOW_SIZE);
 			falsePositive = Configuration.getDouble(prefix + "." + BloomFilterHistoryFw.PAR_BLOOM_FALSE_POSITIVE);
 			chunkSize = Configuration.getInt(prefix + "." + HistoryForwarding.PAR_CHUNK_SIZE);
+			linkable = Configuration.getPid(prefix + "." + CentralitySelector.PAR_LINKABLE);
 		}
 	}
 	
-	static BFData bfdata;
-		
+	static FixedData bfdata;
+	
+	static TableReader fReader;
+	
+	static String fPrefix;
+	
 	public HistoryFwConfigurator(String prefix) {
+		fPrefix = prefix;
+		initConfig(prefix);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -57,13 +77,23 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 				fw, selector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
 		app.addSubscriber(fw);
 		app.addSubscriber(ExperimentStatisticsManager.getInstance());
+		
+		if (fReader != null) {
+			try {
+				fReader.next();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+	
+	private void initConfig(String prefix) {
+		if (bfdata == null) {
+			bfdata = new FixedData(prefix);
+		}
 	}
 	
 	private BloomFilterHistoryFw getBFW(int pid, int snid, String prefix) {
-		if (bfdata == null) {
-			bfdata = new BFData(prefix);
-		}
-
 		return new BloomFilterHistoryFw(pid, snid, bfdata.chunkSize,
 				bfdata.windowSize, bfdata.falsePositive);
 	}
@@ -78,7 +108,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		switch (type) {
 		
 		case PURE_ANTICENTRALITY:
-			selector = new AntiCentralitySelector(prefix);
+			selector = anticentrality();
 			break;
 		
 		case PURE_RANDOM:
@@ -86,32 +116,31 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 			break;
 			
 		case PURE_CENTRALITY:
-			selector = new CentralitySelector(prefix);
+			selector = centrality();
 			break;
 			
 		case ALTERNATING_CA:
 			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
-				new FallThroughReference<Object>(new CentralitySelector(prefix)),
-				new FallThroughReference<Object>(new AntiCentralitySelector(prefix))
+				new FallThroughReference<Object>(centrality()),
+				new FallThroughReference<Object>(anticentrality())
 			});
 			break;
 
 		case ALTERNATING_CR:
 			selector = new GenericCompositeSelector(false, prefix, new IReference [] {
-				new FallThroughReference<Object>(new CentralitySelector(prefix)),
-				new FallThroughReference<Object>(new RandomSelectorOverLinkable(prefix))
+				new FallThroughReference<Object>(centrality()),
+				new FallThroughReference<Object>(anticentrality())
 			});
 			break;
 			
 		case ONE_OTHER_CA:
-			selector = new OneThanTheOther(new CentralitySelector(prefix),
-					new AntiCentralitySelector(prefix), prefix);
+			selector = oneThanOther(centrality(), anticentrality());
 			app.addSubscriber((IEventObserver) selector);
 			break;
 			
 		case ONE_OTHER_CR:
-			selector = new OneThanTheOther(new CentralitySelector(prefix),
-					new RandomSelectorOverLinkable(prefix), prefix);
+			selector = oneThanOther(centrality(),
+					new RandomSelectorOverLinkable(prefix));
 			app.addSubscriber((IEventObserver) selector);
 			break;
 			
@@ -120,6 +149,33 @@ public class HistoryFwConfigurator implements IApplicationConfigurator{
 		}
 		
 		return new FallThroughReference<IPeerSelector>(selector);
+	}
+	
+	private IPeerSelector oneThanOther(CentralitySelector first,
+			RandomSelectorOverLinkable second) {
+		if (fReader == null) {	
+			return new OneThanTheOther(first, second, fPrefix);
+		}
+	}
+
+	private AntiCentralitySelector anticentrality() {
+		return new AntiCentralitySelector(new ProtocolReference<Linkable>(
+				bfdata.linkable), CommonState.r);
+	}
+	
+	private CentralitySelector centrality() {
+	
+		if (fReader == null) {
+			return new CentralitySelector(fPrefix);
+		}
+		
+		long id = Long.parseLong(fReader.get("id"));
+		if (id != CommonState.getNode().getID()) {
+			throw new IllegalStateException();
+		}
+		
+		return new CentralitySelector(bfdata.linkable, Double
+				.parseDouble(fReader.get("psi")), CommonState.r);
 	}
 
 	public Object clone () {

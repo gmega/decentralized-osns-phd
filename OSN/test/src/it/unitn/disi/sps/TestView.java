@@ -5,8 +5,8 @@ import it.unitn.disi.sps.SocialPeerSampling;
 import it.unitn.disi.sps.View;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.TestUtils;
-import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.IExchanger;
 
 import java.util.ArrayList;
 import java.util.Random;

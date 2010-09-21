@@ -2,7 +2,7 @@ package it.unitn.disi.network;
 
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.newscasting.NewscastEvents;
-import it.unitn.disi.utils.PeekingIteratorAdapter;
+import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
 

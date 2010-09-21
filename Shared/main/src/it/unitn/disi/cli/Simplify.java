@@ -2,8 +2,6 @@ package it.unitn.disi.cli;
 
 import it.unitn.disi.CommandAlias;
 import it.unitn.disi.codecs.ByteGraphDecoder;
-import it.unitn.disi.utils.ConfigurationProperties;
-import it.unitn.disi.utils.ConfigurationUtils;
 import it.unitn.disi.utils.InjectableProperty;
 import it.unitn.disi.utils.InjectableProperty.Type;
 import it.unitn.disi.utils.logging.CodecUtils;
@@ -15,6 +13,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import peersim.config.Attribute;
+
 /**
  * Command-line utility for simplifying a graph. Assumes binary format. Written
  * in Java for scalability - it can process very large graphs.
@@ -22,16 +22,12 @@ import java.util.Set;
  * @author giuliano
  */
 @CommandAlias("simplify")
-public class Simplify implements ITransformer, IParametricTransformer {
+public class Simplify implements ITransformer {
 	
-	public static final InjectableProperty DIRECTED = new InjectableProperty("directed",
-			"fDirected", Type.BOOLEAN);
-	
-	public static final InjectableProperty DISCARD_INTERVAL = new InjectableProperty("discard_interval",
-			"fDiscard", Type.INTEGER, "-1");
-	
+	@Attribute("directed")
 	private boolean fDirected;
-	
+
+	@Attribute(value = "discart_interval", defaultValue = "-1")
 	private int fDiscard;
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {
@@ -77,13 +73,4 @@ public class Simplify implements ITransformer, IParametricTransformer {
 			}
 		}
 	}
-
-	public Set<String> required() {
-		return ConfigurationUtils.collect(this.getClass());
-	}
-
-	public void setParameters(ConfigurationProperties props) {
-		ConfigurationUtils.inject(this, props);
-	}
-	
 }

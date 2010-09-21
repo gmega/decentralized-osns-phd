@@ -29,13 +29,13 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// Parameter keys.
 	// ----------------------------------------------------------------------
 	
-	/** Linkable over which selection is to take place. **/
-	private static final String PAR_PROTOCOL = "linkable";
+	/** {@link Linkable} over which selection is to take place. **/
+	public static final String PAR_LINKABLE = "linkable";
 
 	/**
 	 * Will select one amongst the psi top-ranked nodes.
 	 */
-	private static final String PAR_PSI = "psi";
+	public static final String PAR_PSI = "psi";
 
 	// ----------------------------------------------------------------------
 	// Shared state.
@@ -67,7 +67,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// ----------------------------------------------------------------------
 
 	public CentralitySelector(String prefix) {
-		this(Configuration.getPid(prefix + "." + PAR_PROTOCOL), Configuration
+		this(Configuration.getPid(prefix + "." + PAR_LINKABLE), Configuration
 				.getDouble(prefix + "." + PAR_PSI), CommonState.r);
 	}
 	

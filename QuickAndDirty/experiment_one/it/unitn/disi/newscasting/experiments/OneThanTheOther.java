@@ -36,9 +36,13 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	private IPeerSelector fSecond;
 	
 	public OneThanTheOther(IPeerSelector first, IPeerSelector second, String prefix) {
+		this(first, second, Configuration.getInt(prefix + "." + PAR_N0));
+	}
+		
+	public OneThanTheOther(IPeerSelector first, IPeerSelector second, int nzero) {
 		fFirst = first;
 		fSecond = second;
-		fNZero = Configuration.getInt(prefix + "." + PAR_N0);
+		fNZero = nzero;
 		
 		if (fCounters == null) {
 			fCounters = new int[Network.size()];

@@ -1,14 +1,9 @@
 package it.unitn.disi.analysis;
 
 import it.unitn.disi.cli.Edge;
-import it.unitn.disi.cli.IParametricTransformer;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.cli.LightweightStaticGraph;
 import it.unitn.disi.codecs.ByteGraphDecoder;
-import it.unitn.disi.utils.ConfigurationProperties;
-import it.unitn.disi.utils.ConfigurationUtils;
-import it.unitn.disi.utils.InjectableProperty;
-import it.unitn.disi.utils.InjectableProperty.Type;
 import it.unitn.disi.utils.graph.GraphAlgorithms;
 import it.unitn.disi.utils.graph.GraphWriter;
 import it.unitn.disi.utils.graph.SubgraphDecorator;
@@ -24,23 +19,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import peersim.config.Attribute;
 import peersim.graph.BitMatrixGraph;
 import peersim.graph.Graph;
 
-public class PercolationThresholdEstimator implements ITransformer,
-		IParametricTransformer {
-
-	public static final InjectableProperty STEP = new InjectableProperty("epsilon",
-			"fPrecision", Type.DOUBLE, ".001");
-
-	public static final InjectableProperty RUNS = new InjectableProperty("runs",
-			"fRuns", Type.INTEGER, "32");
-	
-	public static final InjectableProperty MAX_ITER = new InjectableProperty("max_iterations",
-			"fMaxIterations", Type.INTEGER, "100");
-	
-	public static final InjectableProperty TARGET_PROBABILITY = new InjectableProperty(
-			"target_probab", "fTargetProbability", Type.DOUBLE);
+public class PercolationThresholdEstimator implements ITransformer {
 
 	private final Random fRandom = new Random();
 	
@@ -54,11 +37,12 @@ public class PercolationThresholdEstimator implements ITransformer,
 	
 	private double fPrecision;
 
-	public PercolationThresholdEstimator() {
-	}
-
-	public PercolationThresholdEstimator(int runs, double targetProbability,
-			double precision, int maxIterations) {
+	public PercolationThresholdEstimator(
+			@Attribute(value = "runs", defaultValue = "32") int runs, 
+			@Attribute(value = "target_probab") double targetProbability,
+			@Attribute(value = "epsilon", defaultValue = ".001") double precision, 
+			@Attribute(value = "max_iterations", defaultValue = "100") int maxIterations) {
+		
 		fTargetProbability = targetProbability;
 		fRuns = runs;
 		fPrecision = precision;
@@ -225,13 +209,5 @@ public class PercolationThresholdEstimator implements ITransformer,
 		for (Integer neighbor : neighbors) {
 			vertexList.add(neighbor);
 		}
-	}
-
-	public Set<String> required() {
-		return ConfigurationUtils.collect(PercolationThresholdEstimator.class);
-	}
-
-	public void setParameters(ConfigurationProperties props) {
-		ConfigurationUtils.inject(this, props);
 	}
 }

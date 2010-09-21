@@ -16,7 +16,7 @@ import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.MutableSimplePair;
-import it.unitn.disi.utils.Pair;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
 /**

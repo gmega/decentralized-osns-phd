@@ -2,7 +2,7 @@ package it.unitn.disi.newscasting.probabrm;
 
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.Pair;
+import it.unitn.disi.utils.collections.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;

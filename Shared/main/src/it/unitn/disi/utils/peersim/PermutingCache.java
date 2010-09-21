@@ -1,9 +1,9 @@
 package it.unitn.disi.utils.peersim;
 
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.utils.IExchanger;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.IExchanger;
 
 import java.util.Arrays;
 import java.util.Comparator;

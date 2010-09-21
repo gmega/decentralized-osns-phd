@@ -1,6 +1,6 @@
 package it.unitn.disi.cli;
 
-import it.unitn.disi.utils.ConfigurationProperties;
+import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.ResettableFileInputStream;
 
 import java.io.BufferedInputStream;
@@ -24,6 +24,9 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 
 public class GenericDriver {
 
@@ -64,41 +67,23 @@ public class GenericDriver {
 				throw new CmdLineException("No processing class given.");
 			}
 			
+			IResolver [] resolver = { new HashMapResolver(parseProperties(fParameters)) };
+			
 			System.err.println("Starting the Java generic driver.");
 			
 			if (fVerbose) {
 				System.err.println("Loading processor class " + fArguments.get(0) + ".");
 			}
-			Object processor = create(fArguments.get(0));
 			
-			if (processor instanceof IParametricTransformer) {
-				Map<String, String> props = parseProperties(fParameters); 
-				IParametricTransformer parametric = (IParametricTransformer) processor;
-				ConfigurationProperties cp = new ConfigurationProperties(props);
-				Set<String> missing = cp.validate(parametric.required());
-				if (!missing.isEmpty()) {
-					System.err.println("Missing properties <"
-							+ missing.toString() + "> for processor "
-							+ fArguments.get(0) + ".");
-					System.exit(-1);
-				}
-				
-				parametric.setParameters(cp);
-			}
-
+			IMultiTransformer processor = create(fArguments.get(0), resolver);
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
-
-			if (processor instanceof IMultiTransformer) {
-				System.err.println("Now invoking multi transformer " + fArguments.get(0) + ".");
-				((IMultiTransformer) processor).execute(fIStreams, fOStreams);
-			} else {
-				System.err.println("Now invoking transformer " + fArguments.get(0) + ".");
-				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
-			}
+			processor.execute(fIStreams, fOStreams);
+			
 		} catch (CmdLineException ex) {
 			System.err.println(ex.getMessage());
 			printHelp(parser);
+			
 		} finally {
 			close(fIStreams);
 			close(fOStreams);
@@ -191,21 +176,30 @@ public class GenericDriver {
 		}
 	}
 
-	private Object create(String string) throws ClassNotFoundException,
+	private IMultiTransformer create(String string, IResolver [] resolvers) throws ClassNotFoundException,
 			SecurityException, NoSuchMethodException, IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
 
-		Class<? extends Object> klass = (Class<? extends Object>) Class
-				.forName(string);
+		@SuppressWarnings("unchecked")
+		Class <Object> klass = (Class<Object>) Class.forName(string);
 		
-		try {
-			Constructor<? extends Object> cons = klass.getConstructor(boolean.class);
-			return cons.newInstance(fVerbose);
-		} catch (Exception ex) {
-			Constructor<? extends Object> cons = klass.getConstructor();
-			return cons.newInstance();
+		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass, resolvers);
+		
+		Object transformer = creator.create(null);
+		IMultiTransformer mt;
+
+		if (transformer instanceof ITransformer) {
+			mt = new MultiTransformerAdapter((ITransformer) transformer);
+		} else if (transformer instanceof IMultiTransformer) {
+			mt = (IMultiTransformer) transformer;
+		} else {
+			throw new IllegalArgumentException("Class " + klass.getName()
+					+ " does not implement " + ITransformer.class.getName()
+					+ " nor " + IMultiTransformer.class.getName() + ".");
 		}
+		
+		return mt;
 	}
 
 	public static void main(String[] args) {
@@ -219,3 +213,17 @@ public class GenericDriver {
 	}
 }
 
+class MultiTransformerAdapter implements IMultiTransformer {
+
+	private final ITransformer fDelegate;
+	
+	public MultiTransformerAdapter(ITransformer delegate) {
+		fDelegate = delegate;
+	}
+	
+	@Override
+	public void execute(InputStream[] istreams, OutputStream[] ostreams)
+			throws IOException {
+		fDelegate.execute(istreams[0], ostreams[0]);
+	}
+}

@@ -1,6 +1,6 @@
 package it.unitn.disi.utils.logging;
 
-import it.unitn.disi.utils.NullOutputStream;
+import it.unitn.disi.utils.collections.NullOutputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

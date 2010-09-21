@@ -90,9 +90,14 @@ public class DisseminationExperimentGovernor implements Control {
 
 	@Override
 	public boolean execute() {
+		// Prints the load statistics.
+		ExperimentStatisticsManager.getInstance().printLoadStatistics(System.out);
+		
+		// Schedules the next experiment.
 		if (shouldScheduleNext()) {
 			return scheduleNext();
 		}
+		
 		return false;
 	}
 
@@ -160,7 +165,9 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 		
 		// Clears the latency tracker.
-		ExperimentStatisticsManager.getInstance().done();
+		ExperimentStatisticsManager manager = ExperimentStatisticsManager.getInstance();
+		manager.printLatencyStatistics(System.out);
+		manager.done();
 		
 		currentApp().scheduleOneShot(SimpleApplication.TWEET);		
 		

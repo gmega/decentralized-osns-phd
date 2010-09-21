@@ -2,9 +2,9 @@ package it.unitn.disi;
 
 import it.unitn.disi.cli.LightweightStaticGraph;
 import it.unitn.disi.codecs.AdjListGraphDecoder;
-import it.unitn.disi.utils.Pair;
 import it.unitn.disi.utils.ResettableFileInputStream;
 import it.unitn.disi.utils.SimpleScheduler;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 
 

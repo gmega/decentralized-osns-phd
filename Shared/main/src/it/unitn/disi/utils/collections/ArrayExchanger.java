@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.collections;
 
 public class ArrayExchanger<K> implements IExchanger {
 	private K [] fArray;
