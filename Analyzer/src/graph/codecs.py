@@ -80,7 +80,10 @@ class GraphLoader(object):
        
 
     def id_of(self, vertexId):
-        if (not self._id_map is None) and self._id_map.has_key(vertexId):
+        if (self._id_map is None):
+            raise Exception("To use id_of, you need to set retain_id_map to True.")
+        
+        if self._id_map.has_key(vertexId):
             return self._id_map[vertexId]
     
         return None

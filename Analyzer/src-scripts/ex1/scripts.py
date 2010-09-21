@@ -14,11 +14,15 @@ from resources import ORIGINAL_ID
 class BestPars:
     """ Given a set of simulation logs, computes which parameter combination 
     yields the best average dissemination latency. Reads the logs from the standard
-    input. Assumes parameter combinations appear prefixing each record. """
+    input. Assumes parameter combinations appear prefixing each record. Currently,
+    is hardwired to find the combination that optimizes the dissemination latency. 
+    
+    """
     
     def __init__(self, keys):
         self._stats = {}
         self._keys = keys.split(",")
+        
         
     def execute(self):
         
@@ -72,6 +76,7 @@ class BestPars:
             
     
 class Stat:
+    """ """
     
     def __init__(self, id, degree):
         self.degree = degree
@@ -109,11 +114,15 @@ class Stat:
 # =============================================================================
 
 class Join(object):
-    
+    """ Given a file with a set of keys, finds all lines in a second file that
+        start with these same keys.
+
+    """
+     
     def __init__(self, optimals, keylength):
         self._optimals = optimals
         self._keylength = int(keylength)
-        
+      
         
     def execute(self):
         # First reads the key.
@@ -146,16 +155,16 @@ class EstimateIdeals(object):
     def __init__(self, filename):
         self._filename = filename
         self._estimates = {}
+
                 
     def execute(self):
         # Reads the graph.
-        loader = GraphLoader(self._filename, AdjacencyListDecoder)
+        loader = GraphLoader(self._filename, AdjacencyListDecoder, retain_id_map=True)
         g = loader.load_graph()
         
         for id, tweets in self.__line__():
             mapped_id = loader.id_of(id)
             counter = self.__get__(mapped_id)
-            
             # Computes the worst-case sends.
             degree = g.degree(mapped_id)
             counter.worst_sends += degree*tweets          
@@ -163,13 +172,34 @@ class EstimateIdeals(object):
             counter.worst_t_avg_sum += ((degree + 1)/2.0)*tweets
             counter.worst_t_max_sum += degree
             # Computes intended receives.
-            for neighbor in igraph_neighbors(mapped_id):
-                counter.intended_receives += tweets
+            seen = set()
+            seen.add(mapped_id)
+            for neighbor in igraph_neighbors(mapped_id, g):
+                assert neighbor not in seen
+                seen.add(neighbor)
+                neighbor_counter = self.__get__(neighbor)
+                neighbor_counter.intended_receives += tweets
+                
             
         print "id wsent wreceived wlatency_sum wmax_latency_sum"    
         for id, counter in self._estimates.items():
-            print g.vs[id][ORIGINAL_ID],counter.worst_sends,counter.worst_t_avg_sum,counter.worst_t_max_sum
+            print g.vs[id][ORIGINAL_ID],counter.worst_sends,counter.intended_receives,counter.worst_t_avg_sum,counter.worst_t_max_sum
+
             
     def __line__(self):
         for line in sys.stdin:
             yield [int(i) for i in line.split(" ")]
+
+            
+    def __get__(self, id):
+        if id in self._estimates:
+            return self._estimates[id]
+        
+        counters = Multicounter({"worst_t_avg_sum":0.0, "worst_t_max_sum":0.0, "intended_receives":0, "worst_sends":0})
+        self._estimates[id] = counters
+        return counters
+    
+# =============================================================================
+
+        
+        

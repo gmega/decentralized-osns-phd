@@ -45,7 +45,7 @@ def get_object(obj_id, import_error_debug=False):
                 print err.args
         
     if current is None:
-        raise Exception("Could not import" + obj_id + ".")
+        raise Exception("Could not resolve " + obj_id + ".")
 
     # Now the attribute. Have to go from the start as __import__
     # gives back a reference to the root module.
