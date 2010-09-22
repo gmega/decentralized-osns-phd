@@ -1,5 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
+import java.util.Vector;
+
 import com.google.common.collect.PeekingIterator;
 
 import it.unitn.disi.application.SimpleApplication;
@@ -15,7 +17,6 @@ import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.GeneralNode;
 import peersim.core.Linkable;
-import peersim.core.Network;
 import peersim.core.Node;
 
 /**
@@ -28,6 +29,19 @@ import peersim.core.Node;
  */
 @AutoConfig
 public class DisseminationExperimentGovernor implements Control {
+	
+	// ----------------------------------------------------------------------
+	// Singleton hack for the lack of a proper configuration infrastructure
+	// in PeerSim.
+	// ----------------------------------------------------------------------
+	
+	private static DisseminationExperimentGovernor fInstance;
+	
+	public static DisseminationExperimentGovernor singletonInstance() {
+		return fInstance;
+	}
+	
+	// ----------------------------------------------------------------------
 	
 	private static final String SCHEDULER = "scheduler";
 
@@ -54,58 +68,118 @@ public class DisseminationExperimentGovernor implements Control {
 	@Attribute
 	private int application;
 	
+	/**
+	 * The number of times the schedule should be repeated.
+	 */
 	@Attribute
 	private int repetitions;
-	
+
+	/**
+	 * The degree cutoff value. Nodes that don't meet it won't be scheduled.
+	 */
 	@Attribute
 	private int degreeCutoff;
 	
+	/**
+	 * File describing per-experiment parameters. 
+	 */
+	@Attribute(value = "parameter_file", defaultValue = "null")
+	private String fParameterFile;
+	
+	/**
+	 * Whether or not to print assorted debugging and status information.
+	 */
 	@Attribute(defaultValue = "false")
 	private boolean verbose;
 	
-	private boolean [] fSeen;
+	// ----------------------------------------------------------------------
+	// State.
+	// ----------------------------------------------------------------------
 	
 	private Node fCurrent;
 	
+	private Vector<IExperimentObserver> fObservers;
+	
 	/**
-	 * List of ID intervals for scheduling.
+	 * The experiment scheduler.
 	 */
 	private Iterable<Integer> fScheduler;
-	
 	private PeekingIterator<Integer> fSchedule;
-
+	
 	// ----------------------------------------------------------------------
 	
 	public DisseminationExperimentGovernor(
 			@Attribute(Attribute.PREFIX) String prefix) {
+		fObservers = new Vector<IExperimentObserver>();
 		fScheduler = createScheduler(prefix);
-		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
-		fSeen = new boolean[Network.size()];
-	}
-
-	@SuppressWarnings("unchecked")
-	private Iterable<Integer> createScheduler(String prefix) {
-		return (Iterable<Integer>) Configuration.getInstance(prefix + "." + SCHEDULER);
+		resetScheduler();
+		publishSingleton();
 	}
 
 	@Override
 	public boolean execute() {
-		// Prints the load statistics.
-		ExperimentStatisticsManager.getInstance().printLoadStatistics(System.out);
-		
 		// Schedules the next experiment.
-		if (shouldScheduleNext()) {
-			return scheduleNext();
+		if (isCurrentExperimentOver()) {
+			// Runs post-unit-experiment code. 
+			wrapUpExperiment();
+			// Schedules the next one, if any.
+			return nextUnitExperiment();
 		}
 		
+		experimentCycled();
+		
+		return false;
+	}
+	
+	public void addExperimentObserver(IExperimentObserver observer) {
+		fObservers.add(observer);
+	}
+	
+	/**
+	 * Schedules the next unit experiment, if any.
+	 * 
+	 * @return <code>false</code> if there were still experiments to schedule,
+	 *         or <code>true</code> if no experiment has been scheduled (meaning
+	 *         the simulation should stop).
+	 */
+	private boolean nextUnitExperiment() {
+		
+		Node nextNode;
+		while(true) {
+			// Little sanity check.
+			assertTweetSuppression();
+		
+			// Gets a suitable next node.
+			nextNode = suitableNext();
+			
+			if (nextNode == null) {
+				// No viable node in the current schedule. 
+				// If ther are still repetitions left ...
+				if (--repetitions != 0) {
+					// ... restarts the scheduler.
+					resetScheduler();
+					continue;
+				} else {
+					// Otherwise reports that there are no more
+					// experiments to run.
+					return true;
+				}
+			}
+			break;
+		}
+
+		// Starts the next experiment.
+		initializeNextExperiment(nextNode);		
+		
+		// Simulation should go on.
 		return false;
 	}
 
 	/**
-	 * @return whether the next node should be scheduled for transmission or
-	 *         not.
+	 * @return <code>true</code> if there is an experiment currently running, or
+	 *         <code>false</code> otherwise.
 	 */
-	protected boolean shouldScheduleNext() {
+	private boolean isCurrentExperimentOver() {
 		Node node = currentNode();
 		
 		if(node == null) {
@@ -124,26 +198,64 @@ public class DisseminationExperimentGovernor implements Control {
 		return isQuiescent(node);
 	}
 	
-	private boolean scheduleNext() {
+	@SuppressWarnings("unchecked")
+	private Iterable<Integer> createScheduler(String prefix) {
+		return (Iterable<Integer>) Configuration.getInstance(prefix + "." + SCHEDULER);
+	}
+	
+	private void publishSingleton() {
+		if (fInstance != null) {
+			throw new IllegalStateException(
+					"Can't create more than one instance of "
+							+ this.getClass().getName() + ".");
+		}
 		
+		fInstance = this;
+	}
+	
+	private void initializeNextExperiment(Node nextNode) {
+		// Updates the current node.
+		setCurrentNode(nextNode);
+
+		// Schedules a single tweet (the unit experiment).
+		currentApp().scheduleOneShot(SimpleApplication.TWEET);
+		
+		// Notifies the observers.
+		for (IExperimentObserver observer : fObservers) {
+			observer.experimentStart(nextNode);
+		}
+	}
+
+	private void wrapUpExperiment() {
+		// Notifies the observers.
+		for (IExperimentObserver observer : fObservers) {
+			observer.experimentEnd(fCurrent);
+		}
+	}
+	
+	private void experimentCycled() {
+		for(IExperimentObserver observer : fObservers) {
+			observer.experimentCycled(fCurrent);
+		}
+	}
+
+	private void assertTweetSuppression() {
 		if (fCurrent != null && !currentApp().isSuppressingTweets()) {
 			throw new IllegalStateException("Only one node should tweet at a time.");
 		}
-		
-		// If there are no nodes left...
-		if (!fSchedule.hasNext()) {
-			// ... next repetition, if any left.
-			repetitions--;
-			if (repetitions == 0) {
-				return true;
-			} else {
-				fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
-			}
-		}
-		
-		// Selects the next node, skipping neighborhoods smaller than a certain size.
-		int degree = -1;
+	}
+
+	private void resetScheduler() {
+		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
+	}
+
+	/**
+	 * Selects the next node in the current schedule, skipping neighborhoods
+	 * smaller than a certain size.
+	 */
+	private Node suitableNext() {
 		Node nextNode = null;
+		int degree = -1;
 		while (degree <= degreeCutoff) {
 			if (verbose) {
 				if (nextNode != null) {
@@ -154,24 +266,7 @@ public class DisseminationExperimentGovernor implements Control {
 			Linkable sn = (Linkable) nextNode.getProtocol(linkable);
 			degree = sn.degree();
 		}
-		
-		if (nextNode == null) {
-			if (verbose) {
-				System.out.println("-- Reached end of schedule with null node. Restarting schedule.");
-			}
-			return scheduleNext();
-		} else {
-			setCurrentNode(nextNode);
-		}
-		
-		// Clears the latency tracker.
-		ExperimentStatisticsManager manager = ExperimentStatisticsManager.getInstance();
-		manager.printLatencyStatistics(System.out);
-		manager.done();
-		
-		currentApp().scheduleOneShot(SimpleApplication.TWEET);		
-		
-		return false;
+		return nextNode;
 	}
 	
 	private void setCurrentNode(Node node){
@@ -198,12 +293,9 @@ public class DisseminationExperimentGovernor implements Control {
 			clearStorage(node);
 		}
 		
-		fSeen[(int)node.getID()] = true;
-		
 		for (int i = 0; i < degree; i++) {
 			Node nei = lnk.getNeighbor(i);
 			nei.setFailState(state);
-			fSeen[(int)nei.getID()] = true;
 			if (clearState) {
 				// Clears the event storage.
 				clearStorage(nei);

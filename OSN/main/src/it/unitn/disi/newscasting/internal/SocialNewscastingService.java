@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.PeersimUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	/**
 	 * The configured exchange strategies.
 	 */
-	private HashMap<Class<? extends IContentExchangeStrategy>, IContentExchangeStrategy> fStrategyIndex;
+	private HashMap<Class<? extends IContentExchangeStrategy>, StrategyEntry> fStrategyIndex;
 	
 	private ArrayList<StrategyEntry> fStrategies;
 
@@ -101,7 +102,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			@Attribute("social_neighborhood") int socialNetworkId
 		) throws IOException {
 		
-		this(prefix, protocolId(prefix), socialNetworkId, configurator(prefix));
+		this(prefix, PeersimUtils.selfPid(prefix), socialNetworkId, configurator(prefix));
 	}
 	
 	// ----------------------------------------------------------------------
@@ -131,21 +132,12 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	private void flushState() {
 		fObserver = new MergeObserverImpl();
-		fStrategyIndex = new HashMap<Class<? extends IContentExchangeStrategy>, IContentExchangeStrategy>();
+		fStrategyIndex = new HashMap<Class<? extends IContentExchangeStrategy>, StrategyEntry>();
 		fStrategies = new ArrayList<StrategyEntry>();
 		fChannel = new BroadcastBus();
 		fVisibility = new DefaultVisibility(fSocialNetworkID);
 	}
 
-	// ----------------------------------------------------------------------
-
-	private static int protocolId(String prefix) {
-		int idx = prefix.lastIndexOf('.');
-		idx = (idx == -1) ? 0 : idx;
-		String name = prefix.substring(idx + 1);
-		return Configuration.lookupPid(name);
-	}
-	
 	// ----------------------------------------------------------------------
 
 	private static IApplicationConfigurator configurator(String prefix) {
@@ -175,7 +167,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		fStrategies.add(entry);
 		
 		for (Class<? extends IContentExchangeStrategy> key : keys) {
-			fStrategyIndex.put(key, strategy);
+			fStrategyIndex.put(key, entry);
 		}
 	}
 
@@ -362,17 +354,45 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends IContentExchangeStrategy> T getStrategy(Class<T> strategyKey) {
-		IContentExchangeStrategy strategy = fStrategyIndex.get(strategyKey);
-		if (strategy == null) {
+		// Will generate ClassCastException if client does a mistake.
+		return (T) lookupEntry(strategyKey).strategy; 
+	}
+	
+	// ----------------------------------------------------------------------
+
+	@Override
+	public IReference<ISelectionFilter> getFilter(
+			Class<? extends IContentExchangeStrategy> strategyKey) {
+		return lookupEntry(strategyKey).filter.right();
+	}
+
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public IReference<IPeerSelector> getSelector(
+			Class<? extends IContentExchangeStrategy> strategyKey) {
+		return lookupEntry(strategyKey).selector;		
+	}
+	
+	// ----------------------------------------------------------------------
+
+	@Override
+	public int pid() {
+		return fProtocolID;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	private StrategyEntry lookupEntry(Class<?> strategyKey) {
+		StrategyEntry entry = fStrategyIndex.get(strategyKey);
+		if (entry == null) {
 			throw new NoSuchElementException(
 					"Configuration error: unknown exchange strategy "
 							+ strategyKey.getName() + ".");
 		}
-		
-		// Will generate ClassCastException if client does a mistake.
-		return (T) strategy; 
+		return entry;
 	}
-
+	
 	// ----------------------------------------------------------------------
 	// Cloneable requirements.
 	// ----------------------------------------------------------------------

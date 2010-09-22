@@ -97,4 +97,16 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 		fTweet = tweet;
 		fCounters[(int) tweet.poster.getID()] = 0;
 	}
+	
+	public IPeerSelector first() {
+		return fFirst;
+	}
+	
+	public IPeerSelector second() {
+		return fSecond;
+	}
+	
+	public void setN0(int nZero) {
+		this.fNZero = nZero;
+	}
 }

@@ -3,10 +3,13 @@ package it.unitn.disi.newscasting.internal;
 import java.util.Collection;
 
 import peersim.core.Node;
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.ICachingObject;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.IReference;
 
 /**
  * Internal interface to the social newscasting service. Meant for communication
@@ -67,6 +70,10 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 */
 	public void resetCounters();
 
+	// ------------------------------------------------------------------------
+	// Methods allowing access to configuration data.
+	// ------------------------------------------------------------------------
+	
 	/**
 	 * @return a set with the concrete types of all of the configured
 	 *         {@link IContentExchangeStrategy}s.
@@ -78,4 +85,30 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 *         ran in the social newscasting service.
 	 */
 	public <T extends IContentExchangeStrategy> T getStrategy(Class<T> strategy);
+
+	/**
+	 * Returns the {@link IPeerSelector} instance associated with a given
+	 * {@link IContentExchangeStrategy}, or <code>null</code> if the strategy is
+	 * not in {@link #strategies()}.
+	 * 
+	 * @param strategy
+	 *            a configured strategy.
+	 */
+	public IReference<IPeerSelector> getSelector(
+			Class<? extends IContentExchangeStrategy> strategy);
+	
+	/**
+	 * Returns the {@link ISelectionFilter} instance associated with a given
+	 * {@link IContentExchangeStrategy}, or <code>null</code> if the stategy is
+	 * not in {@link #strategies()}.
+	 * 
+	 * @param strategy
+	 */
+	public IReference<ISelectionFilter> getFilter(
+			Class<? extends IContentExchangeStrategy> strategy);
+	
+	/**
+	 * @return the PeerSim protocol id of the implementor.
+	 */
+	public int pid();
 }

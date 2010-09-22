@@ -11,6 +11,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
@@ -23,6 +25,7 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class CentralitySelector implements IPeerSelector, Protocol {
 	
 	// ----------------------------------------------------------------------
@@ -66,9 +69,10 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(String prefix) {
-		this(Configuration.getPid(prefix + "." + PAR_LINKABLE), Configuration
-				.getDouble(prefix + "." + PAR_PSI), CommonState.r);
+	public CentralitySelector(
+			@Attribute("linkable") int linkableId, 
+			@Attribute("psi") double psi) {
+		this(linkableId, psi, CommonState.r);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -81,6 +85,12 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 		// This is okay as PeerSim calls the constructor only once.
 		fFriends = new PermutingCache(linkableId);
 		fCentralityScores = new HashMap<Node, Integer>();
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public void setPSI(double psi) {
+		this.fPsi = psi;
 	}
 	
 	// ----------------------------------------------------------------------

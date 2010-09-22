@@ -1,5 +1,6 @@
 package it.unitn.disi.utils.peersim;
 
+import peersim.config.Configuration;
 import peersim.config.FastConfig;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -14,6 +15,13 @@ public class PeersimUtils {
 	
 	public static int convertId(int protocolID, int linkableID) {
 		return FastConfig.getLinkable(protocolID, linkableID);
+	}
+	
+	public static int selfPid(String prefix) {
+		int idx = prefix.lastIndexOf('.');
+		idx = (idx == -1) ? 0 : idx;
+		String name = prefix.substring(idx + 1);
+		return Configuration.lookupPid(name);
 	}
 	
 	public static Node lookupNode(long id) {

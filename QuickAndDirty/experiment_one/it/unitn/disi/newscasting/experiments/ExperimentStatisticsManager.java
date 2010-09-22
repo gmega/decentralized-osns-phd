@@ -16,7 +16,7 @@ import peersim.util.IncrementalStats;
  * 
  * @author giuliano
  */
-public class ExperimentStatisticsManager implements IEventObserver {
+public class ExperimentStatisticsManager implements IEventObserver, IExperimentObserver {
 	
 	private static final ExperimentStatisticsManager fInstance = new ExperimentStatisticsManager();
 	
@@ -27,14 +27,6 @@ public class ExperimentStatisticsManager implements IEventObserver {
 	private UnitExperimentData fCurrentExperiment;
 	
 	private ExperimentStatisticsManager() { }
-	
-	public void done() {
-		if (fCurrentExperiment == null) {
-			return;
-		}
-		
-		fCurrentExperiment = null;
-	}
 	
 	public void printLatencyStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
@@ -65,6 +57,21 @@ public class ExperimentStatisticsManager implements IEventObserver {
 		}
 		fCurrentExperiment = new UnitExperimentData(tweet);
 	}
+
+	@Override
+	public void experimentEnd(Node root) {
+		if (fCurrentExperiment == null) {
+			return;
+		}
+		
+		fCurrentExperiment = null;	
+	}
+
+	@Override
+	public void experimentStart(Node root) { }
+	
+	@Override
+	public void experimentCycled(Node root) { }
 }
 
 /**

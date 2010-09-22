@@ -39,4 +39,12 @@ public class BinaryCompositeFilter implements ISelectionFilter {
 		fRight.get(fOwner).selected(node);
 		return node;
 	}
+	
+	public IReference<ISelectionFilter> left() {
+		return fLeft;
+	}
+	
+	public IReference<ISelectionFilter> right() {
+		return fLeft;
+	}
 }

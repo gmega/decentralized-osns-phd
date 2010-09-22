@@ -5,6 +5,7 @@ import java.util.List;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -38,11 +39,6 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 	 */
 	private ArrayList<Long> fChoices = new ArrayList<Long>();
 	
-	/**
-	 * The current selection index.
-	 */
-	private int fCurrent = 0;
-	
 	public DeterministicSelector(
 			@Attribute("verbose") boolean verbose, 
 			@Attribute("linkable") int linkable) {
@@ -60,11 +56,13 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		
-		if (fCurrent == fChoices.size()) {
+		int current = CommonState.getIntTime();
+		
+		if (current >= fChoices.size()) {
 			return null;
 		}
 		
-		Long nextId = fChoices.get(fCurrent++);
+		Long nextId = fChoices.get(current);
 		if (nextId == null) {
 			return null;
 		}
