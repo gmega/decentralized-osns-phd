@@ -226,4 +226,10 @@ class MultiTransformerAdapter implements IMultiTransformer {
 			throws IOException {
 		fDelegate.execute(istreams[0], ostreams[0]);
 	}
+
+	@Override
+	public String[] inputStreamNames() { return null; }
+
+	@Override
+	public String[] outputStreamNames() { return null; }
 }

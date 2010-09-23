@@ -22,7 +22,7 @@ public class FakeCycleEngine {
 		CommonState.setEndTime(cycles);
 		CommonState.initializeRandom(fRndSeed);
 		for (int i = 0; i < cycles; i++) {
-			CommonState.setTime((long)i);
+			CommonState.setTime((long) i);
 			runExperiment();
 		}
 	}

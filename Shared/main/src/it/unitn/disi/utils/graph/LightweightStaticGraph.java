@@ -1,5 +1,6 @@
-package it.unitn.disi.cli;
+package it.unitn.disi.utils.graph;
 
+import it.unitn.disi.cli.ByteGraphRemap;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import peersim.graph.Graph;
  * 
  * @author giuliano
  */
-public class LightweightStaticGraph implements Graph {
+public class LightweightStaticGraph implements IndexedNeighborGraph {
 
 	/**
 	 * Loads a graph into memory. Graphs must have a continuous range of IDs,
@@ -129,6 +130,10 @@ public class LightweightStaticGraph implements Graph {
 		}
 
 		return neighbors;
+	}
+	
+	public int getNeighbor(int node, int index) {
+		return fAdjacency[node][index];
 	}
 
 	public boolean isEdge(int i, int j) {

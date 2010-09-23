@@ -72,7 +72,6 @@ public class HistoryForwardingTest extends PeerSimTest {
 			IWritableEventStorage storage = new SimpleEventStorage();
 			storage.add(root);
 			sns.setStorage(storage);
-			
 			pid = builder.addProtocol(nodes.get(i), sns);
 		}
 		

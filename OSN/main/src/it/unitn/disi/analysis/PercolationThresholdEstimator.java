@@ -2,10 +2,10 @@ package it.unitn.disi.analysis;
 
 import it.unitn.disi.cli.Edge;
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.cli.LightweightStaticGraph;
 import it.unitn.disi.codecs.ByteGraphDecoder;
 import it.unitn.disi.utils.graph.GraphAlgorithms;
 import it.unitn.disi.utils.graph.GraphWriter;
+import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 
 import java.io.IOException;

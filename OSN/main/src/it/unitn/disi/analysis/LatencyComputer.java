@@ -2,9 +2,9 @@ package it.unitn.disi.analysis;
 
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.cli.LightweightStaticGraph;
 import it.unitn.disi.codecs.ByteGraphDecoder;
 import it.unitn.disi.newscasting.NewscastEvents;
+import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
@@ -362,6 +362,18 @@ public class LatencyComputer implements IMultiTransformer {
 		EventCodec decoder = new EventCodec(Byte.class, CodecUtils.merge(
 				NewscastEvents.values(), SimulationEvents.values()));
 		return decoder;
+	}
+
+	@Override
+	public String[] inputStreamNames() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] outputStreamNames() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
 

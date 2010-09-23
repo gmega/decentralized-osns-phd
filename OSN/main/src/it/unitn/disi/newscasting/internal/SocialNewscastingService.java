@@ -375,8 +375,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 	
 	// ----------------------------------------------------------------------
-
-	@Override
+	
 	public int pid() {
 		return fProtocolID;
 	}

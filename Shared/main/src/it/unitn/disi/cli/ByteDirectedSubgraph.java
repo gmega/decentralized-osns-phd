@@ -1,6 +1,7 @@
 package it.unitn.disi.cli;
 
 import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
 
 import java.io.IOException;
