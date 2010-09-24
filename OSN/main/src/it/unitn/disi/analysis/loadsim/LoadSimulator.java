@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -44,7 +47,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	private final ThreadPoolExecutor fExecutor;
 
-	private volatile UnitExperiment[] fExperiments;
+	private volatile Map<Integer, UnitExperiment> fExperiments;
 
 	private volatile IndexedNeighborGraph fGraph;
 
@@ -69,19 +72,21 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			public void afterExecute(Runnable r, Throwable t) {
 				Future<Pair<Integer, Collection<? extends MessageStatistics>>> future = 
 					(Future<Pair<Integer, Collection<? extends MessageStatistics>>>) r;
-
-				fSema.release();
 				
 				Pair<Integer, Collection<? extends MessageStatistics>> statistics = null;
 
 				try {
 					statistics = future.get();
 				} catch (ExecutionException ex) {
-					throw new RuntimeException(ex);
+					System.err.println("Error while running task.");
+					ex.printStackTrace();
+					fExecutor.shutdown();
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
+				} finally {
+					fSema.release();
 				}
-
+				
 				LoadSimulator.this
 						.synchronizedPrint(statistics.a, statistics.b);
 			}
@@ -113,7 +118,12 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	}
 
 	private void runExperiments() throws InterruptedException {
-		for (UnitExperiment experiment : fExperiments) {
+		System.err.println("Now running simulations using ["
+				+ fExecutor.getCorePoolSize() + "] threads.");
+		
+		Iterator<UnitExperiment> it = fExperiments.values().iterator();
+		while(it.hasNext() && !fExecutor.isTerminating()) {
+			UnitExperiment experiment = it.next();
 			PercentageRandomScheduler scheduler = new PercentageRandomScheduler(
 					this, experiment.id(), fPercentage, fRandom);
 			ExperimentRunner runner = new ExperimentRunner(experiment.id(), scheduler, this);
@@ -121,15 +131,17 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			fSema.acquire();
 		}
 		
+		System.err.print("Done. Shut down... ");
 		fExecutor.shutdown();
+		System.err.println("[OK]");
 	}
 
-	private UnitExperiment[] loadUnitExperiments(Graph graph, InputStream input)
+	private Map<Integer, UnitExperiment> loadUnitExperiments(Graph graph, InputStream input)
 			throws IOException {
-		UnitExperiment[] experiments = new UnitExperiment[graph.size()];
-		for (int i = 0; i < experiments.length; i++) {
-			experiments[i] = new UnitExperiment(i, graph.degree(i));
-		}
+		
+		System.err.print("Reading unit experiment data ... ");
+
+		Map<Integer, UnitExperiment> experiments = new HashMap<Integer, UnitExperiment>();
 
 		// Now loads the actual data.
 		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
@@ -143,14 +155,21 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			int sent = Integer.parseInt(lineParts[2]);
 			int received = Integer.parseInt(lineParts[3]);
 
-			experiments[id].addData(nodeId, sent, received);
+			UnitExperiment experiment = experiments.get(id);
+			if (experiment == null) {
+				experiment = new UnitExperiment(id, graph.degree(id));
+				experiments.put(id, experiment);
+			}
+			
+			experiment.addData(nodeId, sent, received);
 		}
 		
 		// Wraps up the experiments.
-		for(UnitExperiment experiment : experiments) {
+		for(UnitExperiment experiment : experiments.values()) {
 			experiment.done();
 		}
-
+		
+		System.err.println("[OK]");
 		return experiments;
 	}
 
@@ -169,11 +188,11 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			buffer.append(" ");
 			appendStatistic(statistic.receiveBandwidth, buffer);
 
-			System.out.println(buffer.toString());
+			fStream.println(buffer.toString());
 		}
 	}
 
-	private void appendStatistic(IncrementalStats stats,
+	private synchronized void appendStatistic(IncrementalStats stats,
 			StringBuffer buffer) {
 		buffer.append(stats.getMin());
 		buffer.append(" ");
@@ -187,7 +206,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	/* (non-Javadoc)
 	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#synchronizedPrint(java.lang.String)
 	 */
-	public synchronized void synchronizedPrint(String data) {
+	public void synchronizedPrint(String data) {
 		fStream.println(data.toString());
 	}
 
@@ -195,7 +214,11 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#unitExperiment(int)
 	 */
 	public UnitExperiment unitExperiment(int index) {
-		return fExperiments[index];
+		if (!fExperiments.containsKey(index)) {
+			fExecutor.shutdown();
+			System.err.println("ERROR: Missing unit experiment data " + index + ".");			
+		}
+		return fExperiments.get(index);
 	}
 
 	/* (non-Javadoc)

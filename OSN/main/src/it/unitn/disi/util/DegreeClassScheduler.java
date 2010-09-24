@@ -3,7 +3,10 @@ package it.unitn.disi.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import com.google.common.collect.PeekingIterator;
 
@@ -35,6 +38,9 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 	
 	@Attribute(defaultValue = "auto")
 	private String seed;
+	
+	@Attribute
+	private boolean includeNeighbors;
 		
 	private Random fRandom;
 	
@@ -95,14 +101,33 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 			}
 		}
 		xchgr.setArray(null);
-		
+
 		// Converts to integers.
 		ArrayList<Integer> intSchedule = new ArrayList<Integer>();
 		for (Node node : schedule) {
 			intSchedule.add((int) node.getID());
 		}
 		
+		// Now includes the neighbors.
+		// TODO this would probably look better as a scheduler decorator.
+		if (includeNeighbors) {
+			Set<Integer> neighbors = neighborsOf(intSchedule, graph);
+			System.err.println("Included " + neighbors.size() + " neighbors.");
+			intSchedule.addAll(neighbors);
+		}
+				
 		fSchedule = intSchedule;
+	}
+	
+	private Set<Integer> neighborsOf(List<Integer> schedule, Graph graph) {
+		Set<Integer> neighborSet = new HashSet<Integer>();
+
+		for (Integer nodeId : schedule) {
+			neighborSet.addAll(graph.getNeighbours(nodeId));
+		}
+		
+		neighborSet.removeAll(schedule);
+		return neighborSet;
 	}
 	
 	private Random getRandom() {

@@ -33,6 +33,8 @@ import peersim.core.Node;
  * 
  * It is also a mess, but the idea is to try to confine the mess here.
  * 
+ * XXX This is becoming <b>too</b> messy.
+ * 
  * @author giuliano
  */
 public class HistoryFwConfigurator implements IApplicationConfigurator, IExperimentObserver {
@@ -42,6 +44,10 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 	public static final String PAR_MODE = "mode";
 	
 	public static final String PARAMETER_FILE = "parameters";
+	
+	public static final String STAT_LATENCY = "latency";
+	
+	public static final String STAT_LOAD = "load";
 			
 	enum SelectorType {
 		PURE_CENTRALITY,
@@ -78,6 +84,8 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 	static IReference <ICoreInterface> fApplication;
 	
 	static Updater<IPeerSelector> fUpdater;
+	
+	static boolean fLoad, fLatency;
 
 	public HistoryFwConfigurator(String prefix) {
 
@@ -102,6 +110,9 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 
 		DisseminationExperimentGovernor.addExperimentObserver(this);
 		DisseminationExperimentGovernor.addExperimentObserver(ExperimentStatisticsManager.getInstance());
+		
+		fLoad = Configuration.contains(prefix + "." + STAT_LOAD);
+		fLatency = Configuration.contains(prefix + "." + STAT_LATENCY);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -215,6 +226,10 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 
 	@Override
 	public void experimentStart(Node root) {
+		
+		if (fReader == null) {
+			return;
+		}
 
 		long id = Long.parseLong(fReader.get("id"));
 		
@@ -239,16 +254,24 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 	@Override
 	public void experimentCycled(Node root) {
 		// Prints the load statistics.
-		ExperimentStatisticsManager.getInstance().printLoadStatistics(System.out);
+		if (fLoad) {
+			ExperimentStatisticsManager.getInstance().printLoadStatistics(System.out);
+		}
 	}
 
 	@Override
 	public void experimentEnd(Node root) {
 		ExperimentStatisticsManager manager = ExperimentStatisticsManager.getInstance();
-		manager.printLoadStatistics(System.out);
-		manager.printLatencyStatistics(System.out);
+		if (fLoad) {
+			manager.printLoadStatistics(System.out);
+		}
+		if (fLatency) {
+			manager.printLatencyStatistics(System.out);
+		}
 		try {
-			fReader.next();
+			if (fReader != null) { 
+				fReader.next();
+			}
 		} catch(IOException ex) {
 			throw new RuntimeException(ex);
 		}

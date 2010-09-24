@@ -26,7 +26,7 @@ public class PercentageRandomScheduler implements IScheduler {
 		fRandom = random;
 		
 		IndexedNeighborGraph graph = fParent.getGraph();
-		fTarget = (int) Math.round(graph.degree(unitRoot) * percentage);
+		fTarget = (int) Math.round(graph.degree(unitRoot) * percentage) + 1;
 	}
 
 	@Override
@@ -40,21 +40,22 @@ public class PercentageRandomScheduler implements IScheduler {
 		// Need to add the root unit experiment.
 		if (fCurrent == 0) {
 			toAdd.add(fParent.unitExperiment(fUnitRoot));
+			fCurrent++;
 		}
 		
-		for (int i = 0; i < fTarget; i++) {
+		for (; fCurrent <= fTarget; fCurrent++) {
 			toAdd.add(fParent.unitExperiment(randomNeighbor()));
 		}
-		
+		fCurrent--;
 		return toAdd;
 	}
 
 	@Override
 	public boolean experimentDone(UnitExperiment experiment) {
 		if (experiment == fParent.unitExperiment(fUnitRoot)) {
-			fCurrent = -1;
+			fCurrent = 0;
 		}
-		
+		fCurrent--;
 		return isOver();
 	}
 

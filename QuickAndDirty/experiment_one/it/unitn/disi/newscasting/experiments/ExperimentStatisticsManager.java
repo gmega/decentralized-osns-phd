@@ -5,6 +5,7 @@ import java.io.PrintStream;
 
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
+import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -26,7 +27,8 @@ public class ExperimentStatisticsManager implements IEventObserver, IExperimentO
 	
 	private UnitExperimentData fCurrentExperiment;
 	
-	private ExperimentStatisticsManager() { }
+	private ExperimentStatisticsManager() { 
+	}
 	
 	public void printLatencyStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
