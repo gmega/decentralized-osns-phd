@@ -32,13 +32,19 @@ public class DisseminationExperimentGovernor implements Control {
 	
 	// ----------------------------------------------------------------------
 	// Singleton hack for the lack of a proper configuration infrastructure
-	// in PeerSim.
+	// and component dependency management in PeerSim.
 	// ----------------------------------------------------------------------
 	
 	private static DisseminationExperimentGovernor fInstance;
 	
+	private static final Vector<IExperimentObserver> fObservers = new Vector<IExperimentObserver>();
+	
 	public static DisseminationExperimentGovernor singletonInstance() {
 		return fInstance;
+	}
+	
+	public static void addExperimentObserver(IExperimentObserver observer) {
+		fObservers.add(observer);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -81,12 +87,6 @@ public class DisseminationExperimentGovernor implements Control {
 	private int degreeCutoff;
 	
 	/**
-	 * File describing per-experiment parameters. 
-	 */
-	@Attribute(value = "parameter_file", defaultValue = "null")
-	private String fParameterFile;
-	
-	/**
 	 * Whether or not to print assorted debugging and status information.
 	 */
 	@Attribute(defaultValue = "false")
@@ -98,8 +98,6 @@ public class DisseminationExperimentGovernor implements Control {
 	
 	private Node fCurrent;
 	
-	private Vector<IExperimentObserver> fObservers;
-	
 	/**
 	 * The experiment scheduler.
 	 */
@@ -110,7 +108,6 @@ public class DisseminationExperimentGovernor implements Control {
 	
 	public DisseminationExperimentGovernor(
 			@Attribute(Attribute.PREFIX) String prefix) {
-		fObservers = new Vector<IExperimentObserver>();
 		fScheduler = createScheduler(prefix);
 		resetScheduler();
 		publishSingleton();
@@ -130,11 +127,7 @@ public class DisseminationExperimentGovernor implements Control {
 		
 		return false;
 	}
-	
-	public void addExperimentObserver(IExperimentObserver observer) {
-		fObservers.add(observer);
-	}
-	
+
 	/**
 	 * Schedules the next unit experiment, if any.
 	 * 
@@ -227,6 +220,10 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void wrapUpExperiment() {
+		if (fCurrent == null) {
+			return;
+		}
+		
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);

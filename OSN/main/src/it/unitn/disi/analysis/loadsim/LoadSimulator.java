@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -22,9 +23,10 @@ import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.graph.Graph;
+import peersim.util.IncrementalStats;
 
 @AutoConfig
-public class LoadSimulator implements IMultiTransformer {
+public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	private static final String FS = " ";
 
@@ -37,6 +39,8 @@ public class LoadSimulator implements IMultiTransformer {
 			this.index = index;
 		}
 	}
+	
+	private final Semaphore fSema;
 
 	private final ThreadPoolExecutor fExecutor;
 
@@ -50,30 +54,36 @@ public class LoadSimulator implements IMultiTransformer {
 
 	private PrintStream fStream;
 
-	public LoadSimulator(@Attribute double percentage, @Attribute int cores) {
+	public LoadSimulator(
+			@Attribute("percentage") double percentage, 
+			@Attribute("cores") int cores ) {
 
 		fPercentage = percentage;
 		fRandom = new Random();
+		fSema = new Semaphore(cores);
 		fExecutor = new ThreadPoolExecutor(cores, cores, 0L,
-				TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(1)) {
+				TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()) {
 
 			@Override
 			@SuppressWarnings("unchecked")
 			public void afterExecute(Runnable r, Throwable t) {
 				Future<Pair<Integer, Collection<? extends MessageStatistics>>> future = 
 					(Future<Pair<Integer, Collection<? extends MessageStatistics>>>) r;
+
+				fSema.release();
 				
-				Pair<Integer, Collection<? extends MessageStatistics>> pair = null;
-				
+				Pair<Integer, Collection<? extends MessageStatistics>> statistics = null;
+
 				try {
-					pair = future.get();
+					statistics = future.get();
 				} catch (ExecutionException ex) {
 					throw new RuntimeException(ex);
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				}
-				
-				LoadSimulator.this.synchronizedPrint(pair.a, pair.b);
+
+				LoadSimulator.this
+						.synchronizedPrint(statistics.a, statistics.b);
 			}
 		};
 	}
@@ -94,16 +104,24 @@ public class LoadSimulator implements IMultiTransformer {
 		fStream = new PrintStream(ostreams[0]);
 
 		// Runs the experiments
-		runExperiments();
+		try {
+			runExperiments();
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			return;
+		}
 	}
 
-	private void runExperiments() {
+	private void runExperiments() throws InterruptedException {
 		for (UnitExperiment experiment : fExperiments) {
 			PercentageRandomScheduler scheduler = new PercentageRandomScheduler(
 					this, experiment.id(), fPercentage, fRandom);
 			ExperimentRunner runner = new ExperimentRunner(experiment.id(), scheduler, this);
 			fExecutor.submit(runner);
+			fSema.acquire();
 		}
+		
+		fExecutor.shutdown();
 	}
 
 	private UnitExperiment[] loadUnitExperiments(Graph graph, InputStream input)
@@ -127,23 +145,62 @@ public class LoadSimulator implements IMultiTransformer {
 
 			experiments[id].addData(nodeId, sent, received);
 		}
+		
+		// Wraps up the experiments.
+		for(UnitExperiment experiment : experiments) {
+			experiment.done();
+		}
 
 		return experiments;
 	}
 
-	public synchronized void synchronizedPrint(int rootId,
-			Collection<? extends MessageStatistics> collection) {
+	public synchronized void synchronizedPrint(int root, Collection<? extends MessageStatistics> collection) {
+		for (MessageStatistics statistic : collection) {
+			StringBuffer buffer = new StringBuffer();
+			buffer.append(root);
+			buffer.append(" ");
+			buffer.append(statistic.id);
+			buffer.append(" ");
+			buffer.append(statistic.sent);
+			buffer.append(" ");
+			buffer.append(statistic.received);
+			buffer.append(" ");
+			appendStatistic(statistic.sendBandwidth, buffer);
+			buffer.append(" ");
+			appendStatistic(statistic.receiveBandwidth, buffer);
 
+			System.out.println(buffer.toString());
+		}
 	}
 
+	private void appendStatistic(IncrementalStats stats,
+			StringBuffer buffer) {
+		buffer.append(stats.getMin());
+		buffer.append(" ");
+		buffer.append(stats.getMax());
+		buffer.append(" ");
+		buffer.append(stats.getAverage());
+		buffer.append(" ");
+		buffer.append(stats.getVar());
+	}
+
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#synchronizedPrint(java.lang.String)
+	 */
 	public synchronized void synchronizedPrint(String data) {
 		fStream.println(data.toString());
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#unitExperiment(int)
+	 */
 	public UnitExperiment unitExperiment(int index) {
 		return fExperiments[index];
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#getGraph()
+	 */
 	public IndexedNeighborGraph getGraph() {
 		return fGraph;
 	}

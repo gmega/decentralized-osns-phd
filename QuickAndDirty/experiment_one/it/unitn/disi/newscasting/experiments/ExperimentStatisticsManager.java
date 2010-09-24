@@ -313,10 +313,10 @@ class UnitExperimentData {
 		buffer.append(" ");
 		// 2 - The node for which the statistics we are about to printed. 
 		buffer.append(i);
-		buffer.append(":");
+		buffer.append(" ");
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
-		buffer.append(":");
+		buffer.append(" ");
 		// 3 - Messages received by the node.
 		buffer.append(fReceived[i]);
 		buffer.append(" ");

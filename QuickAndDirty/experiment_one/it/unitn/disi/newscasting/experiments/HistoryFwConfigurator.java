@@ -4,10 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import javax.management.RuntimeErrorException;
 
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
@@ -22,7 +20,6 @@ import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
-import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.Configuration;
 import peersim.config.ObjectCreator;
@@ -84,33 +81,39 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 
 	public HistoryFwConfigurator(String prefix) {
 
-		// One-shot initializations.
-		// I know this is horrible, but fixing peersim is beyond the scope of my research. :-P
-		if (fPrefix == null) {
-			fPrefix = prefix;
+	}
 
-			String fileName = Configuration.getString(prefix + "."
-					+ PARAMETER_FILE, null);
-			if (fileName != null) {
-				try {
-					fReader = new TableReader(new FileInputStream(new File(
-							fileName)));
-				} catch (IOException ex) {
-					throw new RuntimeException(ex);
-				}
+	private void oneShotConfig(String prefix) {
+		fPrefix = prefix;
+
+		String fileName = Configuration.getString(prefix + "."
+				+ PARAMETER_FILE, null);
+		if (fileName != null) {
+			try {
+				fReader = new TableReader(new FileInputStream(new File(
+						fileName)));
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
 			}
-
-			fLinkable = new ProtocolReference<Linkable>(Configuration
-					.getPid(prefix + "." + PAR_LINKABLE));
-
-			DisseminationExperimentGovernor governor = DisseminationExperimentGovernor.singletonInstance();
-			governor.addExperimentObserver(this);
-			governor.addExperimentObserver(ExperimentStatisticsManager.getInstance());
 		}
+
+		fLinkable = new ProtocolReference<Linkable>(Configuration
+				.getPid(prefix + "." + PAR_LINKABLE));
+
+		DisseminationExperimentGovernor.addExperimentObserver(this);
+		DisseminationExperimentGovernor.addExperimentObserver(ExperimentStatisticsManager.getInstance());
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void configure(SocialNewscastingService app, String prefix, int protocolId, int socialNetworkId) {
+		
+		// One-shot initializations.
+		// I know this is horrible, but fixing peersim is beyond the scope of my
+		// research. :-P
+		if (fPrefix == null) {
+			oneShotConfig(prefix);
+		}
+		
 		app.setStorage(new SingleEventStorage());
 		BloomFilterHistoryFw fw = getBFW(protocolId, socialNetworkId, prefix);
 		IReference<IPeerSelector> selector = selector(app, prefix, protocolId);
@@ -242,6 +245,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 	@Override
 	public void experimentEnd(Node root) {
 		ExperimentStatisticsManager manager = ExperimentStatisticsManager.getInstance();
+		manager.printLoadStatistics(System.out);
 		manager.printLatencyStatistics(System.out);
 		try {
 			fReader.next();
@@ -252,7 +256,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator, IExperim
 	
 	private IPeerSelector getSelector(Node neighbor) {
 		ICoreInterface intf = fApplication.get(neighbor);
-		return (IPeerSelector) intf.getSelector(HistoryForwarding.class);
+		return intf.getSelector(HistoryForwarding.class).get(neighbor);
 	}
 
 	public Object clone () {
@@ -269,6 +273,7 @@ class CentralityUpdater implements Updater<IPeerSelector> {
 	@Override
 	public void update(IPeerSelector selector, TableReader reader) {
 		double psi = Double.parseDouble(reader.get("psi"));
+		System.out.println("SET PSI TO:" + psi);
 		CentralitySelector centrality = (CentralitySelector) selector;
 		centrality.setPSI(psi);
 	}

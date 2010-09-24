@@ -2,6 +2,8 @@ package it.unitn.disi;
 
 
 import it.unitn.disi.analysis.TestLatencyComputer;
+import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
+import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.network.EvtDecoderTest;
@@ -49,7 +51,9 @@ import peersim.config.ObjectCreatorTest;
 	HistoryForwardingTest.class,
 	PermutingCacheTest.class,
 	RandomSchedulerTest.class,
-	TestTableReader.class
+	TestTableReader.class,
+	ExperimentRunnerTest.class,
+	UnitExperimentTest.class
 })
 
 public class AllTests extends PeerSimTest {

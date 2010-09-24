@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class PercentageRandomScheduler implements IScheduler {
 
-	private final LoadSimulator fParent;
+	private final ILoadSim fParent;
 	
 	private final int fUnitRoot;
 	
@@ -19,7 +19,7 @@ public class PercentageRandomScheduler implements IScheduler {
 	
 	private int fCurrent;
 
-	public PercentageRandomScheduler(LoadSimulator parent, int unitRoot,
+	public PercentageRandomScheduler(ILoadSim parent, int unitRoot,
 			double percentage, Random random) {
 		fParent = parent;
 		fUnitRoot = unitRoot;

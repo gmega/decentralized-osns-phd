@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 
 public class ExperimentRunner implements Callable<Pair<Integer, Collection<? extends MessageStatistics>>>{
 
-	private final LoadSimulator fParent;
+	private final ILoadSim fParent;
 	
 	private final IScheduler fSchedule;
 	
@@ -22,9 +22,9 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 	
 	private final int fRoot;
 	
-	private LinkedList<UnitExperiment> fQueue = new LinkedList<UnitExperiment>();
+	private LinkedList<Pair<Integer, UnitExperiment>> fQueue = new LinkedList<Pair<Integer, UnitExperiment>>();
 	
-	public ExperimentRunner(int root, IScheduler schedule, LoadSimulator parent) {
+	public ExperimentRunner(int root, IScheduler schedule, ILoadSim parent) {
 		fSchedule = schedule;
 		fParent = parent;
 		fStatistics = new HashMap<Integer, InternalMessageStatistics>();
@@ -33,9 +33,8 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 	
 	@Override
 	public Pair<Integer, Collection<? extends MessageStatistics>> call() throws Exception {
-		int round = 0;
 		
-		while (!fSchedule.isOver()) {
+		for (int round = 0; !fSchedule.isOver(); round++) {
 			startExperiments(round);
 			runExperiments(round);
 			commitResults(round);
@@ -45,18 +44,23 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 	}
 
 	private void runExperiments(int round) {
-		Iterator <UnitExperiment> it = fQueue.iterator();
+		Iterator <Pair<Integer, UnitExperiment>> it = fQueue.iterator();
 		while (it.hasNext()) {
-			UnitExperiment experiment = it.next();
-			if (experiment.duration() == round) {			
-				it.remove();
-			}
+			Pair<Integer, UnitExperiment> entry = it.next();
+			int startTime = entry.a;
+			UnitExperiment experiment = entry.b;
 			
 			for (Integer nodeId : experiment.participants()) {
 				InternalMessageStatistics stats = getStatistics(nodeId, experiment.degree());
-				stats.roundReceived += experiment.messagesReceived(nodeId, round);
-				stats.roundSent += experiment.messagesSent(nodeId, round);
+				stats.roundReceived += experiment.messagesReceived(nodeId, round - startTime);
+				stats.roundSent += experiment.messagesSent(nodeId, round - startTime);
 				fActive.add(nodeId);
+			}
+			
+			if ((experiment.duration() + startTime - 1) == round) {			
+				it.remove();
+				fSchedule.experimentDone(experiment);
+				continue;
 			}
 		}
 	}
@@ -70,8 +74,8 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 			stats.sendBandwidth.add(stats.roundSent);
 			stats.receiveBandwidth.add(stats.roundReceived);
 			
-			stats.roundSent = 0;
-			stats.roundReceived = 0;
+			stats.sent += stats.roundSent;
+			stats.received += stats.roundReceived;
 			
 			// Prints out both values in case we want distributions later.
 			buff.append("I ");
@@ -79,6 +83,10 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 			buff.append(" ");
 			buff.append(round);
 			buff.append("\n");
+
+			// Resets the counters.
+			stats.roundSent = 0;
+			stats.roundReceived = 0;
 		}
 		
 		fParent.synchronizedPrint(buff.toString());
@@ -97,7 +105,9 @@ public class ExperimentRunner implements Callable<Pair<Integer, Collection<? ext
 	}
 
 	private void startExperiments(int round) {
-		fQueue.addAll(fSchedule.atTime(round));
+		for (UnitExperiment experiment : fSchedule.atTime(round)) {
+			fQueue.add(new Pair<Integer, UnitExperiment>(round, experiment));
+		}
 	}
 }
 

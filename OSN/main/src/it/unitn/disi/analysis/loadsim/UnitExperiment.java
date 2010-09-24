@@ -40,11 +40,11 @@ public class UnitExperiment {
 		int [] row = topRow();
 		row[sentIndex(j)] += sent;
 		row[receivedIndex(j)] += received;
+		fSeen.add(nodeId);
 	}
 
 	public void done() {
 		fSeen = null;
-		fIndexes = null;
 		ArrayList<int []> compact = new ArrayList<int []>(fData.size());
 		compact.addAll(fData);
 		fData = compact;
@@ -89,7 +89,7 @@ public class UnitExperiment {
 	}
 	
 	private void newRound() {
-		int [] row = new int[fDegree*3];
+		int [] row = new int[(fDegree + 1)*3];
 		Arrays.fill(row, 0);
 		fData.add(row);
 		fSeen.clear();

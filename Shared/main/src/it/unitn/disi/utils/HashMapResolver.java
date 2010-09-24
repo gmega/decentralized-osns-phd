@@ -53,6 +53,9 @@ public class HashMapResolver implements IResolver {
 		String actualValue = fAttributes.get(key);
 		if (actualValue == null) {
 			actualValue = attribute.defaultValue();
+			if (actualValue.equals(Attribute.VALUE_NONE)) {
+				actualValue = null;
+			}
 		}
 		
 		if (actualValue == null) {
