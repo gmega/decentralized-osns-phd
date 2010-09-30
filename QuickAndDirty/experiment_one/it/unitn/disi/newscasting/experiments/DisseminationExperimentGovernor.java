@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
+import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -252,17 +253,23 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	private Node suitableNext() {
 		Node nextNode = null;
-		int degree = -1;
-		while (degree <= degreeCutoff) {
+		INodeRegistry registry = NodeRegistry.getInstance();
+		
+		while (fSchedule.hasNext()) {
+			Node candidate = registry.getNode(fSchedule.next());
+			Linkable sn = (Linkable) candidate.getProtocol(linkable);
+			if (sn.degree() >= degreeCutoff) {
+				nextNode = candidate;
+				break;
+			} 
+			
 			if (verbose) {
 				if (nextNode != null) {
-					System.out.println("-- Skipped node " + nextNode.getID() + " (deg. " + degree + ").");
+					System.out.println("-- Skipped node " + candidate.getID() + " (deg. " + sn.degree() + ").");
 				}
 			}
-			nextNode = NodeRegistry.getInstance().getNode(fSchedule.next());
-			Linkable sn = (Linkable) nextNode.getProtocol(linkable);
-			degree = sn.degree();
 		}
+		
 		return nextNode;
 	}
 	

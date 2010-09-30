@@ -296,7 +296,6 @@ class CentralityUpdater implements Updater<IPeerSelector> {
 	@Override
 	public void update(IPeerSelector selector, TableReader reader) {
 		double psi = Double.parseDouble(reader.get("psi"));
-		System.out.println("SET PSI TO:" + psi);
 		CentralitySelector centrality = (CentralitySelector) selector;
 		centrality.setPSI(psi);
 	}
