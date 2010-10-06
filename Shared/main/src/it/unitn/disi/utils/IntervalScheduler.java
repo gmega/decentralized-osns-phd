@@ -3,14 +3,18 @@ package it.unitn.disi.utils;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+
 import com.google.common.collect.PeekingIterator;
 
+@AutoConfig
 public class IntervalScheduler implements Iterable<Integer> {
 	
-	public static IntervalScheduler createScheduler(String idList) {
-		String [] intervals = idList.split(" ");
-		IntervalScheduler scheduler = new IntervalScheduler();
-		
+	private final ArrayList<Integer> fIntervals = new ArrayList<Integer>();
+	
+	public IntervalScheduler(@Attribute("idlist") String idlist) {
+		String [] intervals = idlist.split(" ");
 		for (int i = 0; i < intervals.length; i++){
 			String [] interval = intervals[i].split(",");
 			
@@ -18,13 +22,9 @@ public class IntervalScheduler implements Iterable<Integer> {
 				throw new RuntimeException("Malformed interval " + intervals[i] + ".");
 			}
 			
-			scheduler.addInterval(Integer.parseInt(interval[0]), Integer.parseInt(interval[1]));
+			this.addInterval(Integer.parseInt(interval[0]), Integer.parseInt(interval[1]));
 		}
-		
-		return scheduler;
 	}
-	
-	private final ArrayList<Integer> fIntervals = new ArrayList<Integer>();
 	
 	public void addInterval(int start, int end) {
 		int last = Integer.MIN_VALUE;

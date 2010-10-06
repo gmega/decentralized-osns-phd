@@ -2,6 +2,8 @@ package it.unitn.disi.utils.graph;
 
 import it.unitn.disi.cli.ByteGraphRemap;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.graph.BFSIterable.BFSIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +18,9 @@ import peersim.graph.Graph;
  * Simple, fast, very lightweight, and very limited implementation of the
  * {@link Graph} interface, tailored specifically for read-only access of huge
  * (more than 200 million edges) static graphs.
+ * 
+ * TODO This code has proved itself to be quite useful, and is in need of some
+ * love.
  * 
  * @author giuliano
  */
@@ -42,10 +47,11 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 			throws IOException {
 		// Three-phase loading process.
 		System.err.println("Now loading.");
-		// Phase 1 - compute memory requirements and allocate memory.
+		
+		// Phase 1 - compute memory requirements.
 		System.err.println("Start pass 1 - computing required storage.");
 		int maxId = -1;
-		Map<Integer, Integer> sizes = new HashMap<Integer, Integer>();
+		final Map<Integer, Integer> sizes = new HashMap<Integer, Integer>();
 		while (decoder.hasNext()) {
 			int source = decoder.getSource();
 			int target = decoder.next();
@@ -57,14 +63,118 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 			maxId = Math.max(maxId, source);
 			maxId = Math.max(maxId, target);
 		}
-
 		
+		// Phase 2 - allocates memory.
 		System.err.println("Start pass 2 - allocating memory.");
 		System.err.println("Maximum id is: " + maxId);
+		int[][] adjacency = allocate(maxId + 1, new Accessor(){
+			@Override
+			public int get(int i) {
+				return sizes.get(i);
+			}
+		});
+
+		// Frees up some memory...
+		sizes.clear();
+
+		// Phase 3 - goes again through the input, and loads the graph.
+		System.err.println("Start pass 3 - loading graph into memory.");
+		decoder.reset();
+		int[] counters = new int[adjacency.length];
+		while (decoder.hasNext()) {
+			int source = decoder.getSource();
+			int target = decoder.next();
+			adjacency[source][counters[source]++] = target;
+		}
+
+		return new LightweightStaticGraph(adjacency, true);
+	}
+	
+	public static LightweightStaticGraph undirect(LightweightStaticGraph source) {
+		
+		// 1 - Computes requirements for undirected version of the graph.
+		final int [] sizes = new int[source.size()];
+		for (int i = 0; i < source.size(); i++) {
+			int [] neighbors = source.fastGetNeighbours(i);
+			for(int j = 0; j < neighbors.length; i++) {
+				sizes[i]++;
+				if (!source.isEdge(j, i)) {
+					sizes[j]++;
+				}
+			}
+		}
+
+		// 2 - Allocates memory.
+		int adjacency[][] = allocate(sizes.length, new Accessor() {
+			@Override
+			public int get(int i) {
+				return sizes[i];
+			}
+		});
+		
+		// 3 - Generates undirected version.
+		Arrays.fill(sizes, 0);
+		for (int i = 0; i < source.size(); i++) {
+			int [] neighbors = source.fastGetNeighbours(i);
+			for(int j = 0; j < neighbors.length; i++) {
+				adjacency[i][sizes[i]++] = neighbors[j];
+				if (!source.isEdge(j, i)) {
+					adjacency[j][sizes[j]++] = i;
+				}
+			}
+		}
+		
+		return new LightweightStaticGraph(adjacency, false);
+	}
+	
+	public static LightweightStaticGraph transitiveGraph(LightweightStaticGraph base, int order) {
+		
+		// 1 - Computes memory requirements.
+		final int [] sizes = new int[base.size()];
+		for (int i = 0; i < base.size(); i++) {
+			BFSIterator it = new BFSIterator(base, i);
+			while (it.hasNext()) {
+				// "a" is the node ID, "b" is the distance from the root.
+				Pair<Integer, Integer> next = it.next();
+				if (next.b > 2) {
+					break;
+				}
+				sizes[next.a]++;
+			}
+		}
+		
+		// 2 - Allocates memory.
+		int adjacency[][] = LightweightStaticGraph.allocate(sizes.length,
+				new LightweightStaticGraph.Accessor() {
+					@Override
+					public int get(int i) {
+						return sizes[i];
+					}
+				});
+		
+		// 3 - Creates the graph.
+		Arrays.fill(sizes, 0);
+		for (int i = 0; i < base.size(); i++) {
+			BFSIterator it = new BFSIterator(base, i);
+			while (it.hasNext()) {
+				// "a" is the node ID, "b" is the distance from the root.
+				Pair<Integer, Integer> next = it.next();
+				if (next.b > order) {
+					break;
+				}
+				adjacency[i][sizes[i]++] = next.a;
+			}
+		}
+		
+		return new LightweightStaticGraph(adjacency, base.directed());
+
+	}
+	
+	private static int[][] allocate(int size, Accessor accessor) {
+		int [][] adjacency = new int[size][];
 		int neighborless = 0;
-		int[][] adjacency = new int[maxId + 1][];
-		for (int i = 0; i <= maxId; i++) {
-			Integer neighbors = sizes.get(i);
+		for (int i = 0; i < size; i++) {
+			Integer neighbors = accessor.get(i);
 			if (neighbors == null) {
 				neighbors = 0;
 			}
@@ -80,27 +190,22 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 			System.err.println("Warning: there were (" + neighborless
 					+ ") nodes without neighbors (ID holes?).");
 		}
-
-		// Frees up some memory...
-		sizes = null;
-
-		// Phase 2 - loads the graph.
-		System.err.println("Start pass 3 - loading graph into memory.");
-		decoder.reset();
-		int[] counters = new int[adjacency.length];
-		while (decoder.hasNext()) {
-			int source = decoder.getSource();
-			int target = decoder.next();
-			adjacency[source][counters[source]++] = target;
-		}
-
-		return new LightweightStaticGraph(adjacency);
+		
+		return adjacency;
+	}
+	
+	public static interface Accessor {
+		public int get(int i);
 	}
 
 	private final int[][] fAdjacency;
+	
+	private final boolean fDirected;
 
-	private LightweightStaticGraph(int[][] adjacency) {
+	private LightweightStaticGraph(int[][] adjacency, boolean directed) {
 		fAdjacency = adjacency;
+		fDirected = directed;
+		sortAll();
 	}
 
 	public int degree(int i) {
@@ -115,7 +220,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return fAdjacency[i];
 	}
 	
-	public void sortAll(){
+	private void sortAll(){
 		for (int i = 0; i < fAdjacency.length; i++) {
 			Arrays.sort(fAdjacency[i]);
 		}
@@ -137,17 +242,15 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	}
 
 	public boolean isEdge(int i, int j) {
-		for (int k = 0; k < fAdjacency[i].length; k++) {
-			if (fAdjacency[i][k] == j) {
-				return true;
-			}
+		int index = Arrays.binarySearch(fAdjacency[i], j);
+		if (index < 0 || index >= fAdjacency[i].length) {
+			return false;
 		}
-
-		return false;
+		return fAdjacency[i][index] == j;
 	}
 
 	public boolean directed() {
-		return false;
+		return fDirected;
 	}
 
 	public Object getNode(int i) {

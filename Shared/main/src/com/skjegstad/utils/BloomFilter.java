@@ -213,10 +213,20 @@ public class BloomFilter<E> implements Serializable {
 	 * Merges a bloom filter into this one, essentially by OR-ing the bit sets.
 	 * Only this bloom filter will be modified.
 	 * 
+	 * 
 	 * @param other
 	 *            the bloom filter to be OR-ed into this one.
+	 * 
+	 * @throws IllegalArgumentException
+	 *             if the bloom filter bitset sizes differ.
 	 */
     public void merge(BloomFilter<E> other) {
+    	if(this.bitset.length() != other.bitset.length()) {
+			throw new IllegalArgumentException("BitSet sizes differ ("
+					+ this.bitset.length() + "!=" + other.bitset.length()
+					+ ").");
+    	}
+    	
     	this.bitset.or(other.bitset);
     }
 

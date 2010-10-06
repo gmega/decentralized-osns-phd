@@ -18,7 +18,6 @@ public class ByteDirectedSubgraph implements ITransformer{
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {
 		LightweightStaticGraph g = LightweightStaticGraph.load(new ByteGraphDecoder(is));
-		g.sortAll();
 		
 		byte [] buf = new byte[4];
 		

@@ -39,4 +39,8 @@ public class Pair <K1, K2>{
 	public int hashCode() {
 		return fHashCode;
 	}
+	
+	public String toString() {
+		return "(" + a + ", " + b + ")";
+	}
 }

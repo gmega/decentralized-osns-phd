@@ -39,7 +39,6 @@ public class EventCodec {
 
 	private final IPrimitiveCodec fTypeDecoder;
 
-	@SuppressWarnings("unchecked")
 	public EventCodec(Class<? extends Number> typeClass, IBinaryEvent[] types) {
 		fTypeDecoder = lookupDecoder(typeClass);
 		for (IBinaryEvent type : types) {

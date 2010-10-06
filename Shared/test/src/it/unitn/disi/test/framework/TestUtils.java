@@ -1,12 +1,16 @@
 package it.unitn.disi.test.framework;
 
 import it.unitn.disi.cli.Adj2ByteGraph;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.cli.Undirect;
 import it.unitn.disi.utils.graph.GraphWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.net.URL;
+
+import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 
@@ -34,14 +38,31 @@ public class TestUtils {
 	}
 	
 	public static ByteArrayInputStream encode(String graph) {
+		return runTransformer(new Adj2ByteGraph(), new ByteArrayInputStream(graph.getBytes()));
+	}
+	
+	public static ByteArrayInputStream undirect(ByteArrayInputStream input) {
+		return runTransformer(new Undirect(), input);
+	}
+		
+	public static ByteArrayInputStream runTransformer(ITransformer transformer, ByteArrayInputStream input) {
 		try {
-			Adj2ByteGraph conv = new Adj2ByteGraph();
 			ByteArrayOutputStream ost = new ByteArrayOutputStream();
-			conv.execute(new ByteArrayInputStream(graph.getBytes()), ost);
+			transformer.execute(input, ost);
 			return new ByteArrayInputStream(ost.toByteArray());
 		}catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+	
+	public static <T> void assertContains(T element, T [] array) {
+		for (int i = 0; i < array.length; i++) {
+			if (element.equals(array[i])) {
+				return;
+			}
+		}
+		
+		Assert.fail("Element " + element.toString() + " not found.");
 	}
 
 }

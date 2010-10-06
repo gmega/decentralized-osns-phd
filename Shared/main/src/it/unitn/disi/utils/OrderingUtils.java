@@ -94,4 +94,23 @@ public class OrderingUtils {
 			}
 		}
 	}
+
+	/**
+	 * Same as {@link #permute(int, int, IExchanger, Random)}, except that
+	 * instead of taking an exchanger, can operate directly into an array.
+	 * 
+	 * This method exists purely for efficiency reasons, since calling permute
+	 * in an inner loop can become quite costly.
+	 */
+	public static void permute(int start, int end, int [] array,
+			Random r) {
+		for (int i = start; i < end; i++) {
+			int j = i + r.nextInt(end - i);
+			if (i != j) {
+				int tmp = array[i];
+				array[i] = array[j];
+				array[j] = tmp;
+			}
+		}
+	}
 }
