@@ -1,6 +1,7 @@
 package it.unitn.disi.sps;
 
 import it.unitn.disi.IRebootable;
+import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import peersim.config.Configuration;
@@ -112,31 +113,26 @@ public class SocialBootstrap implements NodeInitializer, Control {
 			((IRebootable)sps).reset();
 		}
 		
-		FastGraphProtocol sn = (FastGraphProtocol) n.getProtocol(fSnPid);
+		Linkable sn = (Linkable) n.getProtocol(fSnPid);
 
 		int bSize = fBoostrapSize;
 		int degree = sps.degree();
 
-		INodeRegistry register = NodeRegistry.getInstance();
-
-		for (int nodeId : sn.getNeighbors()) {
+		for (int i = 0; i < sn.degree(); i++) {
 
 			if (bSize == 0 || degree == fMaxDegree) {
 				break;
 			}
+			Node peer = sn.getNeighbor(i);
+			sps.addNeighbor(peer);
+			bSize--;
+			degree++;
 
-			if (register.contains(nodeId)) {
-				Node peer = register.getNode(nodeId);
-				sps.addNeighbor(peer);
-				bSize--;
-				degree++;
-
-				// Adds the inverse link.
-				if (fPushPull) {
-					Linkable peerSps = (Linkable) peer.getProtocol(fPid);
-					if (peerSps.degree() < fMaxDegree) {
-						peerSps.addNeighbor(n);
-					}
+			// Adds the inverse link.
+			if (fPushPull) {
+				Linkable peerSps = (Linkable) peer.getProtocol(fPid);
+				if (peerSps.degree() < fMaxDegree) {
+					peerSps.addNeighbor(n);
 				}
 			}
 		}

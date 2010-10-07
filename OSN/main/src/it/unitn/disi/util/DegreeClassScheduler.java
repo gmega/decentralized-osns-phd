@@ -16,7 +16,7 @@ import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.graph.Graph;
-import it.unitn.disi.sps.FastGraphProtocol;
+import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.ArrayExchanger;
 import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
@@ -58,8 +58,8 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 	public PeekingIterator<Integer> iterator() {
 		if (fSchedule == null) {
 			Node node = Network.get(0);
-			FastGraphProtocol fgp = (FastGraphProtocol) node.getProtocol(linkable);
-			initialize(fgp.getGraph());
+			GraphProtocol fgp = (GraphProtocol) node.getProtocol(linkable);
+			initialize(fgp.graph());
 		}
 		
 		return new PeekingIteratorAdapter<Integer>(fSchedule.iterator());

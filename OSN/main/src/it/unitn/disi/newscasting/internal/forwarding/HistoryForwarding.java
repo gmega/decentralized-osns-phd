@@ -34,7 +34,7 @@ public class HistoryForwarding implements IContentExchangeStrategy, ISelectionFi
 	// Parameter storage.
 	// ----------------------------------------------------------------------
 	/**
-	 * ID for the {@link IAdaptable} implementor (the social newscast application).
+	 * ID for the {@link ICoreInterface} implementor (the social newscast application).
 	 */
 	protected final int fAdaptableId;
 

@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.sps.FastGraphProtocol;
+import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class ComponentComputationService implements Protocol {
 			return;
 		}
 		
-		FastGraphProtocol lnk = (FastGraphProtocol) node.getProtocol(fLinkableId);
+		GraphProtocol lnk = (GraphProtocol) node.getProtocol(fLinkableId);
 		boolean dirty = true;
 		
 		dirty = lnk.hasChanged(CommonState.getIntTime());
@@ -91,8 +91,8 @@ public class ComponentComputationService implements Protocol {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private void recomputeComponents(Node n, FastGraphProtocol fgp) {
-		Graph g = fgp.getGraph();
+	private void recomputeComponents(Node n, GraphProtocol fgp) {
+		Graph g = fgp.graph();
 		SubgraphDecorator neighborhood = new SubgraphDecorator(g, true);
 		neighborhood.setVertexList(g.getNeighbours(fgp.getId()));
 		

@@ -1,28 +1,28 @@
 package it.unitn.disi.newscasting;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Random;
 
 import junit.framework.Assert;
 
+import it.unitn.disi.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.newscasting.internal.selectors.BiasedComponentSelector;
-import it.unitn.disi.sps.FastGraphProtocol;
-import it.unitn.disi.sps.IInputStreamProvider;
-import it.unitn.disi.sps.SocialBootstrap;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
+import it.unitn.disi.utils.graph.LightweightStaticGraph;
+import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
-import org.easymock.EasyMock;
 import org.junit.Test;
 
 import peersim.core.Node;
 
 
-public class TestBiasedSelector {
+public class TestBiasedSelector extends PeerSimTest{
 	@Test
-	public void testSelectPeer() {
+	public void testSelectPeer() throws Exception{
 		
 		double EPSILON = 0.01;
 
@@ -53,35 +53,33 @@ public class TestBiasedSelector {
 			sb.append("\n");
 		}
 
-		FastGraphProtocol fgp = new FastGraphProtocol(
-				new IInputStreamProvider() {
-
-					public InputStream get() {
-						return new ByteArrayInputStream(sb
-								.toString().getBytes());
-					}
-					
-					public Object clone() {
-						return this;
-					}
-					
-				}, true, FastGraphProtocol.ADJACENCY);
+		LightweightStaticGraph graph = LightweightStaticGraph.load(new AdjListGraphDecoder(
+				new ByteArrayInputStream(sb.toString().getBytes())));
+		graph = LightweightStaticGraph.undirect(graph);
+		
+		INodeRegistry reg = NodeRegistry.getInstance();
 		
 		TestNetworkBuilder builder = new TestNetworkBuilder();
+		
+		int pid = -1;
 				
 		for (int i = 0; i <= 55; i++) {
 			Node node = builder.baseNode();
-			builder.addProtocol(node, fgp);
+			GraphProtocol gp = new GraphProtocol();
+			pid = builder.addProtocol(node, gp);
 		}
 		
 		builder.replayAll();
 		
 		for (int i = 0; i <= 55; i++) {
-			NodeRegistry.getInstance().registerNode(builder.getNodes().get(i));
+			Node node = builder.getNodes().get(i);
+			reg.registerNode(node);
+			GraphProtocol gp = (GraphProtocol) node.getProtocol(pid);			
+			gp.configure(node, graph, reg);
 		}
 
 		Random r = new Random(42);
-		BiasedComponentSelector bcs = new BiasedComponentSelector(0, r, fgp.getGraph(), true);
+		BiasedComponentSelector bcs = new BiasedComponentSelector(0, r, graph, true);
 		Node central = NodeRegistry.getInstance().getNode(55);
 				
 		int [] components = new int[10];

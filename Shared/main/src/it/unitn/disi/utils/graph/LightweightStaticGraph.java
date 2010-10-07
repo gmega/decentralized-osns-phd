@@ -18,13 +18,19 @@ import peersim.graph.Graph;
  * Simple, fast, very lightweight, and very limited implementation of the
  * {@link Graph} interface, tailored specifically for read-only access of huge
  * (more than 200 million edges) static graphs.
- * 
- * TODO This code has proved itself to be quite useful, and is in need of some
+ * <BR>
+ * This code has proved itself to be quite useful, and is in need of some
  * love.
+ * TODO Refactor graph operations to the template pattern (GoF). 
  * 
  * @author giuliano
  */
 public class LightweightStaticGraph implements IndexedNeighborGraph {
+	
+	// --------------------------------------------------------------------------
+	// Methods for loading and doing simple, memory-efficient transforms on the
+	// static graphs.
+	// --------------------------------------------------------------------------
 
 	/**
 	 * Loads a graph into memory. Graphs must have a continuous range of IDs,
@@ -70,7 +76,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		int[][] adjacency = allocate(maxId + 1, new Accessor(){
 			@Override
 			public int get(int i) {
-				return sizes.get(i);
+				return sizes.containsKey(i) ? sizes.get(i) : 0;
 			}
 		});
 
@@ -96,10 +102,11 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		final int [] sizes = new int[source.size()];
 		for (int i = 0; i < source.size(); i++) {
 			int [] neighbors = source.fastGetNeighbours(i);
-			for(int j = 0; j < neighbors.length; i++) {
+			for(int j = 0; j < neighbors.length; j++) {
+				int neighbor = neighbors[j];
 				sizes[i]++;
-				if (!source.isEdge(j, i)) {
-					sizes[j]++;
+				if (!source.isEdge(neighbor, i)) {
+					sizes[neighbor]++;
 				}
 			}
 		}
@@ -116,10 +123,11 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		Arrays.fill(sizes, 0);
 		for (int i = 0; i < source.size(); i++) {
 			int [] neighbors = source.fastGetNeighbours(i);
-			for(int j = 0; j < neighbors.length; i++) {
-				adjacency[i][sizes[i]++] = neighbors[j];
-				if (!source.isEdge(j, i)) {
-					adjacency[j][sizes[j]++] = i;
+			for(int j = 0; j < neighbors.length; j++) {
+				int neighbor = neighbors[j];
+				adjacency[i][sizes[i]++] = neighbor;
+				if (!source.isEdge(neighbor, i)) {
+					adjacency[neighbor][sizes[neighbor]++] = i;
 				}
 			}
 		}
@@ -194,9 +202,17 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return adjacency;
 	}
 	
+	// --------------------------------------------------------------------------
+	// Support interfaces (internal). 
+	// --------------------------------------------------------------------------
+	
 	public static interface Accessor {
 		public int get(int i);
 	}
+	
+	// --------------------------------------------------------------------------
+	// Actual graph implementation.
+	// --------------------------------------------------------------------------
 
 	private final int[][] fAdjacency;
 	

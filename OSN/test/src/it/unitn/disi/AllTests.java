@@ -6,6 +6,8 @@ import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestConnectivityComputer;
 import it.unitn.disi.cli.TestEventDecoder;
+import it.unitn.disi.graph.BFSIterableTest;
+import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.network.EvtDecoderTest;
 import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.HistoryForwardingTest;
@@ -53,7 +55,9 @@ import peersim.config.ObjectCreatorTest;
 	RandomSchedulerTest.class,
 	TestTableReader.class,
 	ExperimentRunnerTest.class,
-	UnitExperimentTest.class
+	UnitExperimentTest.class,
+	BFSIterableTest.class,
+	LSGTransformsTest.class
 })
 
 public class AllTests extends PeerSimTest {

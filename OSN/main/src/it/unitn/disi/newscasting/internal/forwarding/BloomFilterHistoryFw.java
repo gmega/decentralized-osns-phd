@@ -1,15 +1,15 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.collections.BoundedHashMap;
 
-import com.skjegstad.utils.BloomFilter;
+import java.util.Map;
 
 import peersim.config.Configuration;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.utils.collections.BoundedHashMap;
+
+import com.skjegstad.utils.BloomFilter;
 
 /**
  * {@link BloomFilterHistoryFw} is a {@link HistoryForwarding} extension which
@@ -131,6 +131,11 @@ public class BloomFilterHistoryFw extends HistoryForwarding {
 	@Override
 	protected BloomFilter<Long> historyCreate(Tweet tweet) {
 		// Determines the size of the neighborhood over which we are disseminating.
+		/*
+		 * Note to self: this is *not* a bug, as the protocol will never try to
+		 * merge bloom filters for different messages, and therefore will only
+		 * merge filters of the same size.
+		 */
 		Node central = tweet.poster;
 		Linkable socialNeighborhood = (Linkable) central.getProtocol(fSocialNetworkId);
 		int bloomFilterSize = (int) BloomFilter.requiredBitSetSizeFor(fBFFalsePositive, socialNeighborhood.degree());
