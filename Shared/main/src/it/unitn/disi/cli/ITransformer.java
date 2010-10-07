@@ -14,5 +14,5 @@ public interface ITransformer {
 	/**
 	 * see {@link IMultiTransformer#execute(InputStream[], OutputStream[])}
 	 */
-	public void execute(InputStream is, OutputStream oup) throws IOException;
+	public void execute(InputStream is, OutputStream oup) throws Exception;
 }

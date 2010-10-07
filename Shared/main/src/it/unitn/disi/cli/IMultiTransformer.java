@@ -22,7 +22,7 @@ public interface IMultiTransformer {
 	 * @throws IOException
 	 *             if an I/O error occurs during read or write of streams.
 	 */
-	public void execute (InputStream [] istreams, OutputStream [] ostreams) throws IOException;
+	public void execute (InputStream [] istreams, OutputStream [] ostreams) throws Exception;
 	
 	public String [] inputStreamNames();
 	

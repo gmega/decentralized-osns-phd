@@ -4,6 +4,8 @@ import it.unitn.disi.cli.ByteGraphRemap;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.graph.BFSIterable.BFSIterator;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -137,6 +139,9 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	
 	public static LightweightStaticGraph transitiveGraph(LightweightStaticGraph base, int order) {
 		
+		ProgressTracker tracker = Progress.newTracker("computing 2-hop neighborhood memory requirements", base.size());
+		
+		tracker.startTask();
 		// 1 - Computes memory requirements.
 		final int [] sizes = new int[base.size()];
 		for (int i = 0; i < base.size(); i++) {
@@ -149,7 +154,9 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 				}
 				sizes[next.a]++;
 			}
+			tracker.tick();
 		}
+		tracker.done();
 		
 		// 2 - Allocates memory.
 		int adjacency[][] = LightweightStaticGraph.allocate(sizes.length,
@@ -160,6 +167,8 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 					}
 				});
 		
+		tracker = Progress.newTracker("creating 2-hop neighbourhood", base.size());
+		tracker.startTask();
 		// 3 - Creates the graph.
 		Arrays.fill(sizes, 0);
 		for (int i = 0; i < base.size(); i++) {
@@ -172,7 +181,9 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 				}
 				adjacency[i][sizes[i]++] = next.a;
 			}
+			tracker.tick();
 		}
+		tracker.done();
 		
 		return new LightweightStaticGraph(adjacency, base.directed());
 
