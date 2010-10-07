@@ -35,7 +35,7 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 			fGraph = graph;
 			fQueue = new LinkedList<Pair<Integer, Integer>>();
 			fQueued = new BitSet(graph.size());
-			this.process(new Pair<Integer, Integer>(root, 0));
+			queue(root, 0);
 		}
 
 		@Override
@@ -66,10 +66,14 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 			for (int i = 0; i < degree; i++) {
 				int neighbor = fGraph.getNeighbor(id, i);
 				if (!fQueued.get(neighbor)) {
-					fQueue.add(new Pair<Integer, Integer>(neighbor, depth + 1));
-					fQueued.set(neighbor);
+					queue(neighbor, depth);
 				}
 			}
+		}
+
+		private void queue(int node, int depth) {
+			fQueue.add(new Pair<Integer, Integer>(node, depth + 1));
+			fQueued.set(node);
 		}
 	}
 }

@@ -6,27 +6,49 @@ import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.BitSet;
 
 import peersim.config.AutoConfig;
 
 @AutoConfig
-public class IsUndirected implements ITransformer {
+public class SimpleStats implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		LightweightStaticGraph graph = LightweightStaticGraph
 				.load(new ByteGraphDecoder(is));
 		PrintStream p = new PrintStream(oup);
-
+		
+		BitSet set = new BitSet(graph.size());
+		
+		boolean directed = false;
+		boolean simple = true;
+		
 		for (int i = 0; i < graph.size(); i++) {
+			set.clear();
 			for (int j = 0; j < graph.degree(i); j++) {
-				if (!graph.isEdge(j, i)) {
-					p.println("Directed.");
+				int neighbor = graph.getNeighbor(i, j);
+				if (!graph.isEdge(neighbor, i)) {
+					directed = true;
 				}
+				if (set.get(neighbor)) {
+					simple = false;
+				}
+				set.set(neighbor);
 			}
 		}
 		
-		p.println("Undirected.");
+		if (simple) {
+			p.println("Simple.");
+		} else {
+			p.println("Non-simple.");
+		}
+		
+		if(directed) {
+			p.println("Directed.");
+		} else {
+			p.println("Undirected.");
+		}
 	}
 
 }
