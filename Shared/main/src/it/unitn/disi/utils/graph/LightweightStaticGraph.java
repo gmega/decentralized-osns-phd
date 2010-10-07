@@ -146,13 +146,15 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		final int [] sizes = new int[base.size()];
 		for (int i = 0; i < base.size(); i++) {
 			BFSIterator it = new BFSIterator(base, i);
+			// Skips the root.
+			it.next();
 			while (it.hasNext()) {
 				// "a" is the node ID, "b" is the distance from the root.
 				Pair<Integer, Integer> next = it.next();
-				if (next.b > 2) {
+				if (next.b > order) {
 					break;
 				}
-				sizes[next.a]++;
+				sizes[i]++;
 			}
 			tracker.tick();
 		}
@@ -173,6 +175,8 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		Arrays.fill(sizes, 0);
 		for (int i = 0; i < base.size(); i++) {
 			BFSIterator it = new BFSIterator(base, i);
+			// Skips the root.
+			it.next();
 			while (it.hasNext()) {
 				// "a" is the node ID, "b" is the distance from the root.
 				Pair<Integer, Integer> next = it.next();

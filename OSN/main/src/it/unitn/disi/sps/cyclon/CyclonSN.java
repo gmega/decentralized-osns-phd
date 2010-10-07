@@ -51,8 +51,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 
 		public int twoHopPid;
 
-		public int transportPid;
-
 		public int ownPid;
 
 		public int viewSize;
@@ -79,15 +77,14 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 	public CyclonSN(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("one_hop") int oneHopPid,
 			@Attribute("two_hop") int twoHopPid,
-			@Attribute("transport") int transportPid,
-			@Attribute("view_size") int viewSize, @Attribute("l") int l) {
+			@Attribute("view_size") int viewSize, 
+			@Attribute("l") int l) {
 
 		// Shared protocol parameters.
 		if (fPars == null) {
 			fPars = new Parameters();
 			fPars.oneHopPid = oneHopPid;
 			fPars.twoHopPid = twoHopPid;
-			fPars.transportPid = transportPid;
 			fPars.ownPid = PeersimUtils.selfPid(prefix);
 			fPars.viewSize = viewSize;
 			fPars.l = l;
@@ -201,6 +198,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 		// friends-of-friends that we share with the receiver.
 		Linkable twoHop = (Linkable) receiver.getProtocol(fPars.twoHopPid);
 		fillPayload(message, offset, fPars.l - 1 - offset, twoHop);
+		
 		return message;
 	}
 	

@@ -87,6 +87,8 @@ public class LSGTransformsTest {
 			int order) {
 		BFSIterator iterator = new BFSIterator(graph, root);
 		List<Integer> neighbors = new ArrayList<Integer>();
+		// Skips the root.
+		iterator.next();
 		while(iterator.hasNext()) {
 			Pair<Integer, Integer> next = iterator.next();
 			if (next.b > order) {

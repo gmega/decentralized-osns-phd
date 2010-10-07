@@ -18,7 +18,7 @@ class TextProgressTracker extends ProgressTracker {
 
 	@Override
 	protected void reportProgress(double percentage) {
-		System.err.println(String.format("[ %1$s ]: %2$.2f %% complete.", title(), percentage));
+		System.err.println(String.format("[%1$s]: %2$.2f %% complete.", title(), percentage));
 	}
 
 }

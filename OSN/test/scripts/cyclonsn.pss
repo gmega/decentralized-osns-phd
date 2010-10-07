@@ -1,0 +1,97 @@
+# ----------------------------------------------------------------------
+# Constants.
+# ----------------------------------------------------------------------
+
+# Standard time constants.
+
+SECOND 1000
+MINUTE 60*SECOND
+HOUR 60*MINUTE
+DAY 24*HOUR
+
+# Other simulation constants.
+
+CYCLE SECOND
+CYCLES 100
+MINDELAY 20
+MAXDELAY 70
+SIZE 72303
+
+# ----------------------------------------------------------------------
+# PeerSim boilerplate.
+# ----------------------------------------------------------------------
+
+network.size SIZE
+it.unitn.disi.registry contiguous
+
+simulation.endtime CYCLE*CYCLES
+simulation.logtime CYCLE
+
+# ----------------------------------------------------------------------
+# One-hop and two-hop social networks.
+# ----------------------------------------------------------------------
+
+protocol.onehop GraphProtocol
+protocol.twohop GraphProtocol
+
+# ----------------------------------------------------------------------
+# CyclonSN
+# ----------------------------------------------------------------------
+
+protocol.peersampling CyclonSN 
+{
+	one_hop onehop
+	two_hop twohop
+	view_size 50
+	l 5
+}
+
+protocol.uniform UniformRandomTransport
+{
+	mindelay (CYCLE*MINDELAY)/100
+	maxdelay (CYCLE*MAXDELAY)/100
+}
+
+protocol.scheduler EDEpidemicManager 
+{
+	protocol peersampling
+	transport uniform
+	period CYCLE
+}
+
+# ----------------------------------------------------------------------
+# Initializers.
+# ----------------------------------------------------------------------
+
+# Node registry initializer (id to Node mapping service).
+
+init.registry NodeRegistryInit
+
+# One and two-hop initializers.
+
+init.onehopinit GraphProtocolInit
+{
+	protocol onehop
+	file /home/giuliano/Graphs/Facebook.al
+	undirected
+}
+
+init.twohopinit GraphProtocolInit
+{
+	protocol twohop
+	file /home/giuliano/Graphs/Facebook-2-hop.bin
+	decoder it.unitn.disi.codecs.ByteGraphDecoder
+	undirected
+}
+
+include.init registry onehopinit twohopinit
+
+# ----------------------------------------------------------------------
+# Controls.
+# ---------------------------------------------------------------------
+
+control.CyclonSNMonitor
+{
+	protocol peersampling
+	step 10*CYCLE
+}

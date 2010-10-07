@@ -1,5 +1,6 @@
 package it.unitn.disi.graph;
 
+import it.unitn.disi.codecs.GraphCodecHelper;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.ResettableFileInputStream;
 import it.unitn.disi.utils.graph.IndexedNeighborGraph;
@@ -58,7 +59,7 @@ public class GraphProtocolInit implements Control {
 	public boolean execute() {
 		IndexedNeighborGraph graph;
 		try {
-			graph = loadGraph(createDecoder(file, decoder));
+			graph = loadGraph(GraphCodecHelper.createDecoder(file, decoder));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -74,16 +75,6 @@ public class GraphProtocolInit implements Control {
 		return false;
 	}
 	
-	@SuppressWarnings("unchecked")
-	private ResettableGraphDecoder createDecoder(String file,
-			String decoderClass) throws Exception {
-		Class<? extends ResettableGraphDecoder> klass = (Class<? extends ResettableGraphDecoder>) Class
-				.forName(decoder);
-		Constructor<? extends ResettableGraphDecoder> constructor = klass
-				.getConstructor(InputStream.class);
-		return constructor.newInstance(new ResettableFileInputStream(new File(file)));
-	}
-
 	private IndexedNeighborGraph loadGraph(ResettableGraphDecoder decoder) throws IOException{
 		LightweightStaticGraph graph = LightweightStaticGraph.load(decoder);
 		return transform(graph);
