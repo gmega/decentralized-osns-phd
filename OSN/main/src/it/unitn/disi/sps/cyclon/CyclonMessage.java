@@ -17,17 +17,13 @@ public class CyclonMessage extends AbstractMessage {
 	
 	private NodeDescriptor [] fPayload;
 	
-	private int [] fIndices;
-	
-	private boolean fInvalidated;
+	private boolean fInUse;
 	
 	private int size;
 	
 	public CyclonMessage(int maxSize) {
 		fPayload = new NodeDescriptor[maxSize];
-		fIndices = new int[maxSize];
 		size = 0;
-		invalidateIndex();
 	}
 	
 	public NodeDescriptor getDescriptor(int index) {
@@ -35,37 +31,15 @@ public class CyclonMessage extends AbstractMessage {
 		return fPayload[index];
 	}
 	
-	public void setDescriptor(int index, NodeDescriptor descriptor) {
-		checkSetIndex(index);
-		fPayload[index] = descriptor;
-		size = Math.max(size, index);
-	}
-	
-	public int getIndex(int index) {
-		checkGetIndex(index);
-		int value = fIndices[index];
-		if (value < 0) {
-			throw new IllegalArgumentException("Index " + index
-					+ " is unset or invalid.");
-		}
-		return value;
-	}
-	
-	public void setIndex(int index, int value) {
-		checkSetIndex(index);
-		fIndices[index] = value;
-	}
-	
-	private void checkGetIndex(int index) {
-		if (index > size) {
+	public void append(NodeDescriptor descriptor) {
+		if (isFull()) {
 			throw new ArrayIndexOutOfBoundsException();
 		}
+		fPayload[size++] = descriptor;
 	}
-	
-	private void checkSetIndex(int index) {
-		if (index >= size) {
-			throw new ArrayIndexOutOfBoundsException();
-		}
+
+	public boolean isFull() {
+		return size == fPayload.length;
 	}
 	
 	public int size() {
@@ -73,14 +47,24 @@ public class CyclonMessage extends AbstractMessage {
 	}
 
 	public void clear() {
-		invalidateIndex();
 		size = 0;
 	}
 	
-	public void invalidateIndex() {
-		if (!fInvalidated) {
-			Arrays.fill(fIndices, -1);
-			fInvalidated = true;
+	public void acquire() {
+		if (fInUse) {
+			throw new IllegalStateException("Message already in use.");
+		}
+		fInUse = true;
+	}
+	
+	public void release() {
+		fInUse = false;
+		clear();
+	}
+	
+	private void checkGetIndex(int index) {
+		if (index >= size) {
+			throw new ArrayIndexOutOfBoundsException();
 		}
 	}
 	
@@ -99,8 +83,6 @@ public class CyclonMessage extends AbstractMessage {
 				clone.fPayload[i] = NodeDescriptor.cloneFrom(matrix.fPayload[i]);
 			}
 		}
-		
-		System.arraycopy(matrix.fIndices, 0, clone.fIndices, 0, matrix.fIndices.length);
 		return clone;
 	}
 }

@@ -2,6 +2,7 @@ package it.unitn.disi.sps.cyclon;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Linkable;
 import peersim.core.Network;
@@ -39,12 +40,9 @@ public class CyclonSNMonitor implements Control {
 		}
 		
 		// Dumps the in-degrees.
-		System.out.println("BEGIN_INDEGREEDUMP");
 		for (int i = 0; i < inDegree.getMax(); i++) {
-			System.out.println(i + " " + inDegree.getFreq(i));
+			System.out.println("INDG " + CommonState.getTime() + " " + i + " " + inDegree.getFreq(i));
 		}
-		System.out.println("END_INDEGREEDUMP");
-		
 		return false;
 	}
 

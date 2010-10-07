@@ -14,7 +14,7 @@ DAY 24*HOUR
 CYCLE SECOND
 CYCLES 100
 MINDELAY 20
-MAXDELAY 70
+MAXDELAY 45
 SIZE 72303
 
 # ----------------------------------------------------------------------
@@ -73,7 +73,6 @@ init.onehopinit GraphProtocolInit
 {
 	protocol onehop
 	file /home/giuliano/Graphs/Facebook.al
-	undirected
 }
 
 init.twohopinit GraphProtocolInit
@@ -81,16 +80,22 @@ init.twohopinit GraphProtocolInit
 	protocol twohop
 	file /home/giuliano/Graphs/Facebook-2-hop.bin
 	decoder it.unitn.disi.codecs.ByteGraphDecoder
-	undirected
 }
 
-include.init registry onehopinit twohopinit
+init.cyclonbootstrap CyclonSNBootstrap
+{
+	protocol peersampling
+	neighborhood twohop
+	size 10
+}
+
+include.init registry onehopinit twohopinit cyclonbootstrap
 
 # ----------------------------------------------------------------------
 # Controls.
 # ---------------------------------------------------------------------
 
-control.CyclonSNMonitor
+control.monitor CyclonSNMonitor
 {
 	protocol peersampling
 	step 10*CYCLE
