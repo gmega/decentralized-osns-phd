@@ -98,5 +98,6 @@ include.init registry onehopinit twohopinit cyclonbootstrap
 control.monitor CyclonSNMonitor
 {
 	protocol peersampling
-	step 10*CYCLE
+	one_hop onehop
+	step 2*CYCLE
 }

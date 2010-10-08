@@ -22,6 +22,12 @@ public class CyclonSNMonitor implements Control {
 	@Attribute
 	private int protocol;
 	
+	/**
+	 * Protocol ID of the one-hop social network.
+	 */
+	@Attribute("one_hop")
+	private int onehop;
+	
 	// ----------------------------------------------------------------------
 	// State.
 	// ----------------------------------------------------------------------
@@ -40,8 +46,12 @@ public class CyclonSNMonitor implements Control {
 		}
 		
 		// Dumps the in-degrees.
-		for (int i = 0; i < inDegree.getMax(); i++) {
-			System.out.println("INDG " + CommonState.getTime() + " " + i + " " + inDegree.getFreq(i));
+		for (int i = 0; i < Network.size(); i++) {
+			Node node = Network.get(i);
+			Linkable sn = (Linkable) node.getProtocol(onehop);
+			// [id], [social degree], [in-degree], [simulation time]
+			System.out.println("INDG " + node.getID() + " " + sn.degree() + " "
+					+ inDegree.getFreq((int) node.getID()) + " " + CommonState.getTime());
 		}
 		return false;
 	}

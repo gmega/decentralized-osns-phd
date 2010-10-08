@@ -2,16 +2,13 @@ package it.unitn.disi.graph;
 
 import it.unitn.disi.codecs.GraphCodecHelper;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
-import it.unitn.disi.utils.ResettableFileInputStream;
 import it.unitn.disi.utils.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.graph.LightweightStaticGraph;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
+import java.io.UnsupportedEncodingException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -21,7 +18,11 @@ import peersim.core.Node;
 
 @AutoConfig
 public class GraphProtocolInit implements Control {
-
+	
+	enum Representation {
+		ARRAY, BITMATRIX
+	}
+	
 	// --------------------------------------------------------------------------
 	// Parameters
 	// --------------------------------------------------------------------------
@@ -52,6 +53,15 @@ public class GraphProtocolInit implements Control {
 	@Attribute
 	private boolean undirected;
 	
+	/**
+	 * Which underlying representation to use for the graph.
+	 */
+	@Attribute
+	private String representation;
+	
+	@Attribute(defaultValue = "-1")
+	private int size;
+	
 	// --------------------------------------------------------------------------
 	// Methods
 	// --------------------------------------------------------------------------
@@ -76,13 +86,32 @@ public class GraphProtocolInit implements Control {
 	}
 	
 	private IndexedNeighborGraph loadGraph(ResettableGraphDecoder decoder) throws IOException{
-		LightweightStaticGraph graph = LightweightStaticGraph.load(decoder);
-		return transform(graph);
+		switch(Representation.valueOf(representation.toUpperCase())) {
+		case ARRAY:
+			return arrayGraph(decoder);
+		case BITMATRIX:
+			return bitmatrixGraph(decoder);
+		default:
+			throw new IllegalArgumentException("Invalid representation "
+					+ representation + ".");
+		}
 	}
 	
-	protected LightweightStaticGraph transform(LightweightStaticGraph graph) {
+	protected BitMatrixGraphAdapter bitmatrixGraph(ResettableGraphDecoder decoder) {
+		if (size < 0) {
+			throw new IllegalStateException("When using a bit matrix representation, you need to specify the size.");
+		}
+		BitMatrixGraphAdapter graph = new BitMatrixGraphAdapter(size);
+		while (decoder.hasNext()) {
+			graph.setEdge(decoder.getSource(), decoder.next());
+		}
+		return graph;
+	}
+	
+	protected LightweightStaticGraph arrayGraph (ResettableGraphDecoder decoder) throws IOException {
+		LightweightStaticGraph graph = LightweightStaticGraph.load(decoder);
 		if (undirected) {
-			return LightweightStaticGraph.undirect(graph);
+			graph = LightweightStaticGraph.undirect(graph);
 		}
 		return graph;
 	}
