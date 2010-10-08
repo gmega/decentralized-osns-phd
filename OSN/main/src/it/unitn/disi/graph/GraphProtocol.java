@@ -97,15 +97,15 @@ public class GraphProtocol implements Protocol, IDynamicLinkable {
 	// ----------------------------------------------------------------------
 
 	public boolean contains(Node neighbor) {
-		return graph().isEdge(fId, (int) neighbor.getID());
+		return fGraph.isEdge(fId, (int) neighbor.getID());
 	}
 
 	public int degree() {
-		return graph().degree(fId);
+		return fGraph.degree(fId);
 	}
 
 	public Node getNeighbor(int i) {
-		return registry().getNode((long) graph().getNeighbor(fId, i));
+		return fRegistry.getNode(fGraph.getNeighbor(fId, i));
 	}
 
 	@Override

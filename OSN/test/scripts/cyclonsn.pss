@@ -73,6 +73,8 @@ init.onehopinit GraphProtocolInit
 {
 	protocol onehop
 	file /home/giuliano/Graphs/Facebook.al
+	representation bitmatrix
+	size SIZE
 }
 
 init.twohopinit GraphProtocolInit
@@ -80,6 +82,8 @@ init.twohopinit GraphProtocolInit
 	protocol twohop
 	file /home/giuliano/Graphs/Facebook-2-hop.bin
 	decoder it.unitn.disi.codecs.ByteGraphDecoder
+	representation bitmatrix
+	size SIZE
 }
 
 init.cyclonbootstrap CyclonSNBootstrap

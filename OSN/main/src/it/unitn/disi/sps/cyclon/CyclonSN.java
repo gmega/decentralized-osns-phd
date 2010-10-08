@@ -1,10 +1,7 @@
 package it.unitn.disi.sps.cyclon;
 
 import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.collections.IExchanger;
 import it.unitn.disi.utils.peersim.PeersimUtils;
-
-import java.util.ArrayList;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -15,7 +12,7 @@ import peersim.extras.am.epidemic.EpidemicProtocol;
 import peersim.extras.am.epidemic.Message;
 
 @AutoConfig
-public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
+public class CyclonSN implements Linkable, EpidemicProtocol {
 
 	// ----------------------------------------------------------------------
 	// Parameters.
@@ -37,7 +34,9 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 	// State.
 	// ----------------------------------------------------------------------
 
-	private ArrayList<NodeDescriptor> fView;
+	private NodeDescriptor [] fView;
+	
+	private int fViewSize;
 
 	private CyclonMessage fRequestMsg;
 
@@ -59,7 +58,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 			fPars.viewSize = viewSize;
 		}
 
-		fView = new ArrayList<NodeDescriptor>(viewSize);
+		fView = new NodeDescriptor[viewSize];
 		fRequestMsg = new CyclonMessage(l);
 		fReplyMsg = new CyclonMessage(l);
 		fRequestMsg.setRequest(true);
@@ -73,13 +72,13 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 	public Node selectPeer(Node lnode) {
 		// XXX Note that this implementation is NOT prepared to handle
 		// more than one selectPeer call per cycle.
-		if (fView.size() == 0) {
+		if (fViewSize == 0) {
 			return null;
 		}
 		// Returns the node with the highest age.
-		NodeDescriptor max = fView.get(0);
-		for (int i = 1; i < fView.size(); i++) {
-			NodeDescriptor candidate = fView.get(i);
+		NodeDescriptor max = fView[0];
+		for (int i = 1; i < fViewSize; i++) {
+			NodeDescriptor candidate = fView[i];
 			if (candidate.age() > max.age()) {
 				max = candidate;
 			}
@@ -126,8 +125,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 			}
 
 			// Otherwise, first tries to use an empty cache slot, and...
-			if (fView.size() < fPars.viewSize) {
-				fView.add(candidate);
+			if (fViewSize < fPars.viewSize) {
+				fView[fViewSize++] = candidate;
 			}
 
 			// ... if not enough are available, goes for the node descriptors
@@ -165,7 +164,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 		message.append(new NodeDescriptor(sender));
 
 		// 2. Shuffles our view.
-		OrderingUtils.permute(0, fView.size(), this, CommonState.r);
+		OrderingUtils.permute(0, fViewSize, fView, CommonState.r);
 
 		// 3. Tries to pick l - 1 nodes from our view that are direct
 		// friends with the receiver.
@@ -200,8 +199,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 	 */
 
 	private void fillPayload(CyclonMessage message, Linkable filter) {
-		for (int i = 0; i < fView.size() && !message.isFull(); i++) {
-			NodeDescriptor candidate = fView.get(i);
+		for (int i = 0; i < fViewSize && !message.isFull(); i++) {
+			NodeDescriptor candidate = fView[i];
 			if (filter.contains(candidate.node())) {
 				message.append(NodeDescriptor.cloneFrom(candidate));
 			}
@@ -222,20 +221,20 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 			return;
 		}
 
-		NodeDescriptor replacement = fView.remove(fView.size() - 1);
-		// If we removed the element we had to remove anyways, we're done.
-		if (index != fView.size()) {
-			// Otherwise put a replacement where the previous element
-			// was.
-			fView.set(index, replacement);
+		fView[index] = null;
+		fViewSize--;
+		
+		if (index != fViewSize) {
+			fView[index] = fView[fViewSize];
+			fViewSize--;
 		}
 	}
 
 	// ----------------------------------------------------------------------
 
 	private int descriptorIndexOf(Node node) {
-		for (int i = 0; i < fView.size(); i++) {
-			NodeDescriptor descriptor = fView.get(i);
+		for (int i = 0; i < fViewSize; i++) {
+			NodeDescriptor descriptor = fView[i];
 			if (descriptor.node().equals(node)) {
 				return i;
 			}
@@ -250,15 +249,15 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 		if (idx == -1) {
 			return false;
 		}
-		fView.set(idx, neuw);
+		fView[idx] = neuw;
 		return true;
 	}
 
 	// ----------------------------------------------------------------------
 
 	private void increaseAge() {
-		for (NodeDescriptor descriptor : fView) {
-			descriptor.increaseAge();
+		for (int i = 0; i < fViewSize; i++) {
+			fView[i].increaseAge();
 		}
 	}
 
@@ -268,8 +267,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 
 	@Override
 	public boolean addNeighbor(Node neighbour) {
-		if (fView.size() < fPars.viewSize) {
-			fView.add(new NodeDescriptor(neighbour, 0));
+		if (fViewSize < fPars.viewSize) {
+			fView[fViewSize++] = new NodeDescriptor(neighbour, 0);
 			return true;
 		}
 
@@ -280,8 +279,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 
 	@Override
 	public boolean contains(Node neighbor) {
-		for (int i = 0; i < fView.size(); i++) {
-			if (neighbor.equals(fView.get(i).node())) {
+		for (int i = 0; i < fViewSize; i++) {
+			if (neighbor.equals(fView[i].node())) {
 				return true;
 			}
 		}
@@ -293,14 +292,14 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 
 	@Override
 	public int degree() {
-		return fView.size();
+		return fViewSize;
 	}
 
 	// ----------------------------------------------------------------------
 
 	@Override
 	public Node getNeighbor(int i) {
-		return fView.get(i).node();
+		return fView[i].node();
 	}
 
 	// ----------------------------------------------------------------------
@@ -318,23 +317,14 @@ public class CyclonSN implements Linkable, EpidemicProtocol, IExchanger {
 	}
 
 	// ----------------------------------------------------------------------
-
-	@Override
-	public void exchange(int i, int j) {
-		NodeDescriptor tmp = fView.get(i);
-		fView.set(i, fView.get(j));
-		fView.set(j, tmp);
-	}
-
-	// ----------------------------------------------------------------------
 	// Cloneable requirements.
 	// ----------------------------------------------------------------------
 	public Object clone() {
 		try {
 			CyclonSN clone = (CyclonSN) super.clone();
-			clone.fView = new ArrayList<NodeDescriptor>(fPars.viewSize);
-			for (int i = 0; i < fView.size(); i++) {
-				clone.fView.set(i, NodeDescriptor.cloneFrom(fView.get(i)));
+			clone.fView = new NodeDescriptor[fPars.viewSize];
+			for (int i = 0; i < fViewSize; i++) {
+				clone.fView[i] = NodeDescriptor.cloneFrom(fView[i]);
 			}
 			clone.fRequestMsg = CyclonMessage.cloneFrom(fRequestMsg);
 			clone.fRequestMsg = CyclonMessage.cloneFrom(fReplyMsg);

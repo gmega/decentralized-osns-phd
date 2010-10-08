@@ -2,6 +2,8 @@ package it.unitn.disi.graph;
 
 import java.util.BitSet;
 
+import it.unitn.disi.util.FastBitMatrixGraph;
+import it.unitn.disi.util.FastGetBitset;
 import it.unitn.disi.utils.graph.IndexedNeighborGraph;
 import peersim.graph.BitMatrixGraph;
 
@@ -13,13 +15,13 @@ import peersim.graph.BitMatrixGraph;
  * 
  * @author giuliano
  */
-public class BitMatrixGraphAdapter extends BitMatrixGraph implements IndexedNeighborGraph {
+public class BitMatrixGraphAdapter extends FastBitMatrixGraph implements IndexedNeighborGraph {
 	
 	private final int [] fCache;
 	
 	private int fDegree = -1; 
 	
-	private Integer fId = null;
+	private int fId = -1;
 
 	public BitMatrixGraphAdapter(int n) {
 		this(n, true);
@@ -34,10 +36,11 @@ public class BitMatrixGraphAdapter extends BitMatrixGraph implements IndexedNeig
 	public int getNeighbor(int nodeIndex, int neighborIndex) {
 		if (nodeIndex != fId) {
 			fDegree = 0;
-			BitSet bs = set(nodeIndex);
+			FastGetBitset bs = sets[nodeIndex];
 			for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i + 1)) {
 				fCache[fDegree++] = i;
 			}
+			fId = nodeIndex;
 		}
 		
 		if (neighborIndex >= fDegree) {
