@@ -1,5 +1,7 @@
 package it.unitn.disi.sps.cyclon;
 
+import java.util.NoSuchElementException;
+
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 
@@ -28,19 +30,27 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 		public int viewSize;
 	}
 
-	static Parameters fPars;
+	private static Parameters fPars;
+
+	// ----------------------------------------------------------------------
+	// Shared data structures.
+	// ----------------------------------------------------------------------
+
+	private static NodeDescriptor[] fStorage;
 
 	// ----------------------------------------------------------------------
 	// State.
 	// ----------------------------------------------------------------------
 
-	private NodeDescriptor [] fView;
-	
+	private NodeDescriptor[] fView;
+
 	private int fViewSize;
 
 	private CyclonMessage fRequestMsg;
 
 	private CyclonMessage fReplyMsg;
+	
+	private ContactTracker fContactTracker;
 
 	// ----------------------------------------------------------------------
 
@@ -56,6 +66,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			fPars.twoHopPid = twoHopPid;
 			fPars.ownPid = PeersimUtils.selfPid(prefix);
 			fPars.viewSize = viewSize;
+			fStorage = new NodeDescriptor[viewSize];
 		}
 
 		fView = new NodeDescriptor[viewSize];
@@ -101,6 +112,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	@Override
 	public Message prepareResponse(Node responder, Node requester,
 			Message request) {
+		// Debugging.
+		registerContact(responder, requester);
 		return populateMessage(fReplyMsg, responder, requester);
 	}
 
@@ -136,9 +149,9 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 				if (index >= pair.size()) {
 					break;
 				}
-				
+
 				// Replacement might not succeed if the view has been
-				// changed in the meantime between the a prepareRequest
+				// changed in the window between a prepareRequest
 				// and a merge.
 				if (!replace(pair.getDescriptor(index++), candidate)) {
 					i--;
@@ -168,13 +181,15 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 		// 3. Tries to pick l - 1 nodes from our view that are direct
 		// friends with the receiver.
-		Linkable oneHop = (Linkable) receiver.getProtocol(fPars.oneHopPid);
-		fillPayload(message, oneHop);
+		int removed = fillPayload(message, onehop(receiver), true);
 
 		// 4. If those were not enough, tries to fill in the remaining gaps with
 		// friends-of-friends that we share with the receiver.
 		Linkable twoHop = (Linkable) receiver.getProtocol(fPars.twoHopPid);
-		fillPayload(message, twoHop);
+		fillPayload(message, twoHop, false);
+
+		// Puts the descriptors removed in step (3) back into the view.
+		restoreView(removed);
 
 		return message;
 	}
@@ -196,13 +211,39 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	 *            the filtering {@link Linkable}. Only node descriptors
 	 *            returning nodes for which {@link Linkable#contains(Node)}
 	 *            returns <code>true</code> will be considered.
+	 * @param removeSelected
+	 *            if set to <code>true</code>, causes the selected descriptors
+	 *            to be set to <code>null</code> in the view, but without
+	 *            changing the view size. Removed elements will be transferred
+	 *            to a storage array ({@link #fStorage}).
+	 * 
+	 * @return the number of elements added to the message (and removed from the
+	 *         view, if removeSelected was set to <code>true</code>).
 	 */
 
-	private void fillPayload(CyclonMessage message, Linkable filter) {
+	private int fillPayload(CyclonMessage message, Linkable filter,
+			boolean removeSelected) {
+		int added = 0;
 		for (int i = 0; i < fViewSize && !message.isFull(); i++) {
 			NodeDescriptor candidate = fView[i];
-			if (filter.contains(candidate.node())) {
+			if (candidate != null && filter.contains(candidate.node())) {
 				message.append(NodeDescriptor.cloneFrom(candidate));
+				if (removeSelected) {
+					fStorage[added++] = fView[i];
+					fView[i] = null;
+				}
+			}
+		}
+		return added;
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void restoreView(int removed) {
+		int k = 0;
+		for (int i = 0; i < fViewSize && k != removed; i++) {
+			if (fView[i] == null) {
+				fView[i] = fStorage[k++];
 			}
 		}
 	}
@@ -218,15 +259,14 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	private void removeDescriptor(Node node) {
 		int index = descriptorIndexOf(node);
 		if (index == -1) {
-			return;
+			throw new NoSuchElementException();
 		}
 
 		fView[index] = null;
 		fViewSize--;
-		
+
 		if (index != fViewSize) {
-			fView[index] = fView[fViewSize];
-			fViewSize--;
+			fView[index] = fView[--fViewSize];
 		}
 	}
 
@@ -307,7 +347,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	@Override
 	public void onKill() {
 		fView = null;
-
 	}
 
 	// ----------------------------------------------------------------------
@@ -332,5 +371,97 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+	
+	// ----------------------------------------------------------------------
+	// Convenience accessors.
+	// ----------------------------------------------------------------------
+
+	protected Linkable onehop(Node node) {
+		return (Linkable) node.getProtocol(fPars.oneHopPid);
+	}
+	
+	protected Linkable twohop(Node node) {
+		return (Linkable) node.getProtocol(fPars.twoHopPid);
+	}
+	
+	protected CyclonSN cyclon(Node node) {
+		return (CyclonSN) node.getProtocol(fPars.ownPid);
+	}
+
+	// ----------------------------------------------------------------------
+	// Debugging methods.
+	// ----------------------------------------------------------------------
+	
+	public void enableContactTracking() {
+		if (fContactTracker == null) {
+			fContactTracker = new ContactTracker(this);
+		}
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private void registerContact(Node contacted, Node initiator) {
+		if (contacted.getID() == 299) {
+			enableContactTracking();
+		}
+		
+		if (fContactTracker == null) {
+			return;
+		}
+		
+		Linkable onehop = (Linkable) contacted.getProtocol(fPars.oneHopPid);
+		Linkable twohop = (Linkable) contacted.getProtocol(fPars.twoHopPid);
+		
+		if (onehop.contains(initiator)) {
+			fContactTracker.traceOnehopContact(contacted, initiator);
+		} else if (twohop.contains(initiator)) {
+			fContactTracker.traceTwohopContact(contacted, initiator);
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+}
+
+class ContactTracker {
+	
+	public final CyclonSN fParent;
+
+	public ContactTracker(CyclonSN parent) {
+		fParent = parent;
+	}
+
+	public void traceOnehopContact(Node contacted, Node initiator) {
+		System.out.println("F1 " + contacted.getID() + " " + initiator.getID()
+				+ " " + countIndegree(contacted, false)
+				+ " " + CommonState.getTime());
+	}
+
+	public void traceTwohopContact(Node contacted, Node initiator) {
+		System.out.println("F2 " + contacted.getID() + " " + initiator.getID()
+				+ " " + countIndegree(contacted, true)
+				+ " " + CommonState.getTime());
+	}
+
+	private int countIndegree(Node contacted, boolean twohopIndegree) {
+		int indegree = 0;
+		Linkable onehop = fParent.onehop(contacted);
+		Linkable twohop = fParent.twohop(contacted);
+		
+		Linkable filter = twohopIndegree ? twohop : onehop;
+		
+		for (int i = 0; i < filter.degree(); i++) {
+			Node candidate = filter.getNeighbor(i);
+			if (twohopIndegree && onehop.contains(candidate)) {
+				continue;
+			}
+			
+			CyclonSN neighbor = fParent.cyclon(candidate);
+			if (neighbor.contains(contacted)) {
+				indegree++;
+			}
+		}
+		return indegree;
 	}
 }
