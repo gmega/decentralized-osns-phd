@@ -66,13 +66,13 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 			for (int i = 0; i < degree; i++) {
 				int neighbor = fGraph.getNeighbor(id, i);
 				if (!fQueued.get(neighbor)) {
-					queue(neighbor, depth);
+					queue(neighbor, depth + 1);
 				}
 			}
 		}
 
 		private void queue(int node, int depth) {
-			fQueue.add(new Pair<Integer, Integer>(node, depth + 1));
+			fQueue.add(new Pair<Integer, Integer>(node, depth));
 			fQueued.set(node);
 		}
 	}

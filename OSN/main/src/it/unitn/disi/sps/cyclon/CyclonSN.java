@@ -21,8 +21,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	// ----------------------------------------------------------------------
 
 	static class Parameters {
-		public int oneHopPid;
-
 		public int twoHopPid;
 
 		public int ownPid;
@@ -49,20 +47,17 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	private CyclonMessage fRequestMsg;
 
 	private CyclonMessage fReplyMsg;
-	
-	private ContactTracker fContactTracker;
 
 	// ----------------------------------------------------------------------
 
 	public CyclonSN(@Attribute(Attribute.PREFIX) String prefix,
-			@Attribute("one_hop") int oneHopPid,
 			@Attribute("two_hop") int twoHopPid,
-			@Attribute("view_size") int viewSize, @Attribute("l") int l) {
+			@Attribute("view_size") int viewSize, 
+			@Attribute("l") int l) {
 
 		// Shared protocol parameters.
 		if (fPars == null) {
 			fPars = new Parameters();
-			fPars.oneHopPid = oneHopPid;
 			fPars.twoHopPid = twoHopPid;
 			fPars.ownPid = PeersimUtils.selfPid(prefix);
 			fPars.viewSize = viewSize;
@@ -113,7 +108,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	public Message prepareResponse(Node responder, Node requester,
 			Message request) {
 		// Debugging.
-		registerContact(responder, requester);
 		return populateMessage(fReplyMsg, responder, requester);
 	}
 
@@ -124,7 +118,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 		CyclonMessage received = (CyclonMessage) msg;
 		// Gets the message that "pairs" with this one.
-		CyclonMessage pair = msg.isRequest() ? fReplyMsg : fRequestMsg;
+		CyclonMessage sent = msg.isRequest() ? fReplyMsg : fRequestMsg;
 
 		int index = 1;
 		for (int i = 0; i < received.size(); i++) {
@@ -143,24 +137,24 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			}
 
 			// ... if not enough are available, goes for the node descriptors
-			// that we sent with the pair message.
+			// that in the message we sent last.
 			else {
 				// We don't have any more available free slots. Stop.
-				if (index >= pair.size()) {
+				if (index >= sent.size()) {
 					break;
 				}
 
 				// Replacement might not succeed if the view has been
 				// changed in the window between a prepareRequest
 				// and a merge.
-				if (!replace(pair.getDescriptor(index++), candidate)) {
+				if (!replace(sent.getDescriptor(index++), candidate)) {
 					i--;
 				}
 			}
 		}
 
 		// Releases the pair message.
-		pair.release();
+		sent.release();
 	}
 
 	// ----------------------------------------------------------------------
@@ -179,18 +173,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 		// 2. Shuffles our view.
 		OrderingUtils.permute(0, fViewSize, fView, CommonState.r);
 
-		// 3. Tries to pick l - 1 nodes from our view that are direct
-		// friends with the receiver.
-		int removed = fillPayload(message, onehop(receiver), true);
-
-		// 4. If those were not enough, tries to fill in the remaining gaps with
-		// friends-of-friends that we share with the receiver.
-		Linkable twoHop = (Linkable) receiver.getProtocol(fPars.twoHopPid);
-		fillPayload(message, twoHop, false);
-
-		// Puts the descriptors removed in step (3) back into the view.
-		restoreView(removed);
-
+		// 3. Fills the message with shared friends-of-friends.
+		fillPayload(message, twohop(receiver), false);
 		return message;
 	}
 
@@ -235,17 +219,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			}
 		}
 		return added;
-	}
-
-	// ----------------------------------------------------------------------
-
-	private void restoreView(int removed) {
-		int k = 0;
-		for (int i = 0; i < fViewSize && k != removed; i++) {
-			if (fView[i] == null) {
-				fView[i] = fStorage[k++];
-			}
-		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -377,91 +350,11 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	// Convenience accessors.
 	// ----------------------------------------------------------------------
 
-	protected Linkable onehop(Node node) {
-		return (Linkable) node.getProtocol(fPars.oneHopPid);
-	}
-	
 	protected Linkable twohop(Node node) {
 		return (Linkable) node.getProtocol(fPars.twoHopPid);
 	}
 	
 	protected CyclonSN cyclon(Node node) {
 		return (CyclonSN) node.getProtocol(fPars.ownPid);
-	}
-
-	// ----------------------------------------------------------------------
-	// Debugging methods.
-	// ----------------------------------------------------------------------
-	
-	public void enableContactTracking() {
-		if (fContactTracker == null) {
-			fContactTracker = new ContactTracker(this);
-		}
-	}
-	
-	// ----------------------------------------------------------------------
-	
-	private void registerContact(Node contacted, Node initiator) {
-		if (contacted.getID() == 299) {
-			enableContactTracking();
-		}
-		
-		if (fContactTracker == null) {
-			return;
-		}
-		
-		Linkable onehop = (Linkable) contacted.getProtocol(fPars.oneHopPid);
-		Linkable twohop = (Linkable) contacted.getProtocol(fPars.twoHopPid);
-		
-		if (onehop.contains(initiator)) {
-			fContactTracker.traceOnehopContact(contacted, initiator);
-		} else if (twohop.contains(initiator)) {
-			fContactTracker.traceTwohopContact(contacted, initiator);
-		} else {
-			throw new IllegalStateException();
-		}
-	}
-
-}
-
-class ContactTracker {
-	
-	public final CyclonSN fParent;
-
-	public ContactTracker(CyclonSN parent) {
-		fParent = parent;
-	}
-
-	public void traceOnehopContact(Node contacted, Node initiator) {
-		System.out.println("F1 " + contacted.getID() + " " + initiator.getID()
-				+ " " + countIndegree(contacted, false)
-				+ " " + CommonState.getTime());
-	}
-
-	public void traceTwohopContact(Node contacted, Node initiator) {
-		System.out.println("F2 " + contacted.getID() + " " + initiator.getID()
-				+ " " + countIndegree(contacted, true)
-				+ " " + CommonState.getTime());
-	}
-
-	private int countIndegree(Node contacted, boolean twohopIndegree) {
-		int indegree = 0;
-		Linkable onehop = fParent.onehop(contacted);
-		Linkable twohop = fParent.twohop(contacted);
-		
-		Linkable filter = twohopIndegree ? twohop : onehop;
-		
-		for (int i = 0; i < filter.degree(); i++) {
-			Node candidate = filter.getNeighbor(i);
-			if (twohopIndegree && onehop.contains(candidate)) {
-				continue;
-			}
-			
-			CyclonSN neighbor = fParent.cyclon(candidate);
-			if (neighbor.contains(contacted)) {
-				indegree++;
-			}
-		}
-		return indegree;
 	}
 }

@@ -1,7 +1,5 @@
 package it.unitn.disi.sps.cyclon;
 
-import java.util.Arrays;
-
 import peersim.extras.am.epidemic.AbstractMessage;
 import peersim.extras.am.epidemic.xtman.ViewMessage;
 

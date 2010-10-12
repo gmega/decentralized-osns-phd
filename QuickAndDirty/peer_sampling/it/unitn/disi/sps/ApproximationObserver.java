@@ -26,15 +26,43 @@ public class ApproximationObserver implements Control {
 		int built = 0;
 		int total = 0;
 		
+		int randomHits = 0;
+		int proactiveHits = 0;
+		
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
 			F2FOverlayCollector collector = (F2FOverlayCollector) node
 					.getProtocol(fPid);
+			
+			randomHits += collector.randomHits();
+			proactiveHits += collector.proactiveHits();
+			
 			built += collector.achieved();
 			total += ((Linkable) node.getProtocol(fSnPid)).degree();
 		}
 		
-		System.out.println("ApproximationObserver: " + built + " " + total);
+		int totalHits = randomHits + proactiveHits;
+		
+		StringBuffer buffer = new StringBuffer();
+		
+		buffer.append("ApproximationObserver: ");
+		buffer.append(built);
+		buffer.append(" ");
+		buffer.append(total);
+		buffer.append(" ");
+		buffer.append(safeDivide(randomHits, totalHits));
+		buffer.append(" ");
+		buffer.append(safeDivide(proactiveHits, totalHits));
+		
+		System.out.println(buffer);
 		return false;
+	}
+	
+	private String safeDivide(int numerator, int denominator) {
+		if (denominator == 0) {
+			return "NaN";
+		}
+		
+		return Double.toString(((double)numerator)/denominator);
 	}
 }

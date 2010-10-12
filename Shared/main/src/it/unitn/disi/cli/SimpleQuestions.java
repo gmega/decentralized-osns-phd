@@ -10,8 +10,14 @@ import java.util.BitSet;
 
 import peersim.config.AutoConfig;
 
+/**
+ * Answers two simple questions about a graph: whether it is simple, and whether
+ * it is directed.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
-public class SimpleStats implements ITransformer {
+public class SimpleQuestions implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {

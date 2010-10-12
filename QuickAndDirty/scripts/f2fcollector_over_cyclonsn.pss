@@ -1,121 +1,122 @@
-CYCLE 1000
-CYCLES 200
+# ----------------------------------------------------------------------
+# Constants.
+# ----------------------------------------------------------------------
 
-SIZE 100
+# Standard time constants.
 
 SECOND 1000
 MINUTE 60*SECOND
 HOUR 60*MINUTE
 DAY 24*HOUR
 
-#range.1 file;0:72302|1
-range.1 file;2:20|1
-#range.0 k;0:100|1
+# Other simulation constants.
 
-# parameters of message transfer
-# delay values here are relative to cycle length, in percentage,
-# eg 50 means half the cycle length, 200 twice the cycle length, etc.
+CYCLE SECOND
+CYCLES 100
 MINDELAY 20
-MAXDELAY 70
-DROP 0
+MAXDELAY 45
+SIZE 72303
 
-network.size 72303
+# ----------------------------------------------------------------------
+# PeerSim boilerplate.
+# ----------------------------------------------------------------------
+
+network.size SIZE
+it.unitn.disi.registry contiguous
+
 simulation.endtime CYCLE*CYCLES
 simulation.logtime CYCLE
 
-###################################################################
-# Transport configuration.
-###################################################################
+# ----------------------------------------------------------------------
+# One-hop and two-hop social networks.
+# ----------------------------------------------------------------------
 
-protocol.urt UniformRandomTransport
+protocol.onehop GraphProtocol
+protocol.twohop GraphProtocol
+
+# ----------------------------------------------------------------------
+# CyclonSN
+# ----------------------------------------------------------------------
+
+protocol.peersampling CyclonSN 
+{
+	one_hop onehop
+	two_hop twohop
+	view_size 50
+	l 5
+}
+
+protocol.uniform UniformRandomTransport
 {
 	mindelay (CYCLE*MINDELAY)/100
 	maxdelay (CYCLE*MAXDELAY)/100
 }
 
-protocol.tr UnreliableTransport
+protocol.scheduler EDEpidemicManager 
 {
-	transport urt
-	drop DROP
+	protocol peersampling
+	transport uniform
+	period CYCLE
 }
 
-###################################################################
-# Protocol holding the social network.
-###################################################################
-
-protocol.idle IdleProtocolSN
-
-###################################################################
-# Cyclon SN.
-###################################################################
-
-protocol.gossip CyclonSN
-{
-	cache 50
-	l 5
-	idle idle
-	countContact false
-	transport tr
-
-	step SECOND
-	
-	# 0 for never run the init class
-	emptyCycles 120
-	init.wire SNNodeInit
-	{
-		idle idle
-		linkable gossip
-		n 20
-	}
-}
-
-###################################################################
+# ----------------------------------------------------------------------
 # The Social Network reconstructor.
-###################################################################
+# ----------------------------------------------------------------------
 
 protocol.approximator F2FOverlayCollector
 {
-	social_neighbourhood idle
-	sps gossip
+	social_neighbourhood onehop
+	sps peersampling
 	step SECOND
 }
 
-###################################################################
-# Misc.
-###################################################################
-
-network.node SNNode
-
-init.sch CDScheduler
-{
-	protocol gossip approximator
-}
-
-###################################################################
+# ----------------------------------------------------------------------
 # Initializers.
-###################################################################
+# ----------------------------------------------------------------------
 
-init.prepareNet InitSocialNetwork
+# Node registry initializer (id to Node mapping service).
+
+init.registry NodeRegistryInit
+
+# One and two-hop initializers.
+
+init.onehopinit GraphProtocolInit
 {
-	linkable idle
-	directory /home/giuliano/Graphs/
-	fileBegin Facebook-
-	fileNo 0
+	protocol onehop
+	file /home/giuliano/Graphs/Facebook.al
+	representation array
 }
 
-init.wireNet WireNet
+init.twohopinit GraphProtocolInit
 {
-	idle idle
-	linkable gossip
-	n 20
+	protocol twohop
+	file /home/giuliano/Graphs/Facebook-2-hop.bin
+	decoder it.unitn.disi.codecs.ByteGraphDecoder
+	representation bitmatrix
+	size SIZE
 }
 
-###################################################################
+init.cyclonbootstrap CyclonSNBootstrap
+{
+	protocol peersampling
+	neighborhood twohop
+	size 10
+}
+
+init.scheduler CDScheduler
+{
+	protocol approximator
+}
+
+include.init registry onehopinit twohopinit cyclonbootstrap scheduler
+
+# ----------------------------------------------------------------------
 # Controls.
-###################################################################
+# ---------------------------------------------------------------------
+
 control.approx ApproximationObserver
 {
-	social_neighbourhood idle
+	social_neighbourhood onehop
 	protocol approximator
 	step SECOND*5
 }

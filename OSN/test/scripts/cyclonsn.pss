@@ -73,8 +73,7 @@ init.onehopinit GraphProtocolInit
 {
 	protocol onehop
 	file /home/giuliano/Graphs/Facebook.al
-	representation bitmatrix
-	size SIZE
+	representation array
 }
 
 init.twohopinit GraphProtocolInit
