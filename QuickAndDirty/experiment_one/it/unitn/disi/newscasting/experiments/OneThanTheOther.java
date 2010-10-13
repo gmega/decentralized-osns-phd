@@ -1,14 +1,15 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.newscasting.internal.IEventObserver;
+
 import java.nio.channels.IllegalSelectorException;
 
 import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
-import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 
 
 public class OneThanTheOther implements IPeerSelector, IEventObserver {

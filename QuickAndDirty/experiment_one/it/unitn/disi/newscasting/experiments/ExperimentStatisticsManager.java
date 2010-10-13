@@ -1,11 +1,11 @@
 package it.unitn.disi.newscasting.experiments;
 
 
-import java.io.PrintStream;
-
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
-import peersim.config.Configuration;
+
+import java.io.PrintStream;
+
 import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;

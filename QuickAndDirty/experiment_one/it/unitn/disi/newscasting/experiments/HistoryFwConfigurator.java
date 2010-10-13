@@ -1,10 +1,5 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
-
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
@@ -21,6 +16,11 @@ import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
 import peersim.config.Configuration;
 import peersim.config.ObjectCreator;
 import peersim.core.Linkable;

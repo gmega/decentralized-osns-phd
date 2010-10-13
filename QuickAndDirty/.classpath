@@ -7,6 +7,8 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/Utilities"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/peersim"/>
 	<classpathentry kind="lib" path="/Utilities/lib/google-collect-1.0-rc3.jar" sourcepath="/home/giuliano/Software/guava-r05/guava-src-r05.zip"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Social Peer Sampling"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/extras"/>
+	<classpathentry kind="lib" path="/Utilities/lib/args4j-2.0.9.jar"/>
+	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

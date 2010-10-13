@@ -1,9 +1,5 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.Vector;
-
-import com.google.common.collect.PeekingIterator;
-
 import it.unitn.disi.application.SimpleApplication;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
@@ -12,6 +8,9 @@ import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+
+import java.util.Vector;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
@@ -19,6 +18,8 @@ import peersim.core.Control;
 import peersim.core.GeneralNode;
 import peersim.core.Linkable;
 import peersim.core.Node;
+
+import com.google.common.collect.PeekingIterator;
 
 /**
  * {@link DisseminationExperimentGovernor} will schedule one node after the other for

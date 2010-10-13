@@ -1,11 +1,12 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.newscasting.internal.IWritableEventStorage;
+
 import java.util.Iterator;
 import java.util.Set;
 
 import peersim.core.Node;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 
 public class SingleEventStorage implements IWritableEventStorage{
 
