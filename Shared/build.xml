@@ -8,6 +8,7 @@
 	<path id="analyzer.compile.path">
 		<pathelement location="${lib.path}/jep-2.4.1.jar" />
 		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+		<pathelement location="${lib.path}/log4j-1.2.16.jar" />
 	</path>
 
 	<target name="compile-analyzer">
@@ -23,7 +24,7 @@
 			<manifest>
 				<attribute name="Built-By" value="Giuliano Mega" />
 				<attribute name="Main-Class" value="it.unitn.disi.cli.GenericDriver" />
-				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar peersim.jar peersim-extras.jar" />
+				<attribute name="Class-Path" value="log4j-1.2.16.jar args4j-2.0.9.jar google-collect-1.0-rc3.jar peersim.jar peersim-extras.jar" />
 			</manifest>
 		</jar>
 	</target>
