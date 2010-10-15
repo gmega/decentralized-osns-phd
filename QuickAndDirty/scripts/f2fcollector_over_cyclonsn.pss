@@ -71,6 +71,7 @@ protocol.approximator F2FOverlayCollector
 	
 	query_neighborhood collector
 	selection_mode highestranking
+	utility_function oracle
 	
 	step SECOND
 }
@@ -124,4 +125,11 @@ control.approx ApproximationObserver
 	social_neighbourhood onehop
 	protocol approximator
 	step SECOND*5
+}
+
+control.dump MissingList 
+{
+	linkable onehop
+	collector approximator
+	step SECOND*20
 }

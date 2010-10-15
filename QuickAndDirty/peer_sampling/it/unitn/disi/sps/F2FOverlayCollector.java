@@ -31,13 +31,37 @@ public class F2FOverlayCollector implements CDProtocol {
 
 	private static final StaticVector<Integer> fIndexes = new StaticVector<Integer>();
 
-	enum QueryNeighborhood {
+	/**
+	 * Query modes.
+	 * 
+	 * @author giuliano
+	 */
+	static enum QueryNeighborhood {
 		NOPROACTIVE, PEERSAMPLING, COLLECTOR;
 	}
 
-	enum SelectionMode {
+	/**
+	 * Selection heuristics.
+	 * 
+	 * @author giuliano
+	 */
+	static enum SelectionMode {
 		FIRSTFIT, SHUFFLING, HIGHESTRANKING;
 	}
+
+	/**
+	 * Utility functions.
+	 * 
+	 * @author giuliano
+	 * 
+	 */
+	static enum UtilityFunction {
+		LOCAL, ORACLE
+	}
+
+	// ----------------------------------------------------------------------
+	// Parameters.
+	// ----------------------------------------------------------------------
 
 	@Attribute("social_neighbourhood")
 	private int fStatic;
@@ -45,39 +69,47 @@ public class F2FOverlayCollector implements CDProtocol {
 	@Attribute("sps")
 	private int fSampled;
 
-	private IPeerSelector fSelector;
-
 	private QueryNeighborhood fMode;
 
 	private SelectionMode fSelectionMode;
 
-	private BitSet fSeen;
-	
+	private UtilityFunction fUtilityFunction;
+
+	// ----------------------------------------------------------------------
+	// State.
+	// ----------------------------------------------------------------------
+
 	private TabooSelectionFilter fTabooFilter;
+
+	private IPeerSelector fSelector;
+
+	private BitSet fSeen;
 
 	private int fCasualHits;
 
 	private int fProactiveHits;
 
-	public F2FOverlayCollector(
-			@Attribute("query_neighborhood") String query,
+	public F2FOverlayCollector(@Attribute("query_neighborhood") String query,
 			@Attribute("selection_mode") String mode,
+			@Attribute("utility_function") String utility,
 			@Attribute(value = "taboo", defaultValue = "0") int tabooSize) {
 		fMode = QueryNeighborhood.valueOf(query.toUpperCase());
 		fSelectionMode = SelectionMode.valueOf(mode.toUpperCase());
+		fUtilityFunction = UtilityFunction.valueOf(utility.toUpperCase());
 		if (tabooSize > 0) {
 			fTabooFilter = new TabooSelectionFilter(tabooSize);
 		}
-		fSelector = configureSelector();
+		fSelector = selector();
 	}
 
-	private IPeerSelector configureSelector() {
+	private IPeerSelector selector() {
 		IPeerSelector selector = null;
+
 		switch (fSelectionMode) {
 		case HIGHESTRANKING:
 			selector = new CentralitySelector(new ProtocolReference<Linkable>(
 					fSampled), new FallThroughReference<IUtilityFunction>(
-					new IntersectingUnseenUtility()), 1.0, CommonState.r);
+					utilityFunction()), 1.0, CommonState.r);
 			break;
 		case FIRSTFIT:
 			selector = new FirstFitSelector(false);
@@ -89,13 +121,24 @@ public class F2FOverlayCollector implements CDProtocol {
 		return selector;
 	}
 
+	private IUtilityFunction utilityFunction() {
+		switch (fUtilityFunction) {
+		case LOCAL:
+			return new IntersectingUnseenUtility();
+		case ORACLE:
+			return new OracleMaximumGainUtility();
+		}
+
+		throw new IllegalArgumentException(fUtilityFunction.toString());
+	}
+
 	@Override
 	public void nextCycle(Node node, int protocolID) {
 		Linkable statik = (Linkable) node.getProtocol(fStatic);
 		CyclonSN sampled = (CyclonSN) node.getProtocol(fSampled);
-		
+
 		fIndexes.clear();
-		
+
 		init(statik);
 		resetCounters();
 
@@ -122,14 +165,14 @@ public class F2FOverlayCollector implements CDProtocol {
 		/** Picks a peer. **/
 		Node neighbor = fTabooFilter == null ? fSelector.selectPeer(ourNode)
 				: fSelector.selectPeer(ourNode, fTabooFilter);
-		
+
 		if (neighbor == null) {
 			return;
 		}
-		
+
 		Linkable ourSn = (Linkable) ourNode.getProtocol(fStatic);
 		fIndexes.resize(ourSn.degree(), false);
-		
+
 		// If he does, "contacts" the neighbor and queries for a useful IP.
 		// Contact strategy depends on the mode.
 		switch (fMode) {
@@ -194,8 +237,9 @@ public class F2FOverlayCollector implements CDProtocol {
 		/**
 		 * Note: this is more contorted than linkableCollect because we need to
 		 * do an expensive index mapping operation before we can assert whether
-		 * our neighbor's collector has seen
+		 * our neighbor's collector has seen a neighbor of ours or not.
 		 */
+		int counter = 0;
 		// From the set of neighbors seen by our neighbor...
 		for (int i = seen.nextSetBit(0); i >= 0; i = seen.nextSetBit(i + 1)) {
 			Node candidate = neighborSn.getNeighbor(i);
@@ -204,17 +248,15 @@ public class F2FOverlayCollector implements CDProtocol {
 				// ... and we haven't seen it yet.
 				int idx = PeersimUtils.indexOf(candidate, ourSn);
 				if (!fSeen.get(idx)) {
-					checkIndex(idx, ourSn);
-					storage.append(idx);
+					counter++;
+					if (storage != null) {
+						storage.append(idx);
+					}
 				}
 			}
 		}
 
-		for (int i = 0; i < fIndexes.size(); i++) {
-			checkIndex(fIndexes.get(i), ourSn);
-		}
-
-		return storage.size();
+		return counter;
 	}
 
 	private int linkableCollect(Linkable ourSn, Linkable another,
@@ -243,6 +285,14 @@ public class F2FOverlayCollector implements CDProtocol {
 			fSeen = new BitSet(statik.degree());
 		}
 	}
+	
+	public boolean seen(int index) {
+		if (fSeen == null) {
+			return false;
+		}
+		
+		return fSeen.get(index);
+	}
 
 	public int achieved() {
 		if (fSeen == null) {
@@ -270,24 +320,25 @@ public class F2FOverlayCollector implements CDProtocol {
 				clone.fSeen = new BitSet(fSeen.size());
 				clone.fSeen.or(fSeen);
 			}
-			clone.fSelector = clone.configureSelector();
+			clone.fSelector = clone.selector();
 			return clone;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-	
+
 	private void checkIndex(int i, Linkable ourSn) {
 		if (i >= ourSn.degree()) {
 			throw new IllegalStateException();
 		}
-		
-		Linkable theReal = (Linkable) CommonState.getNode().getProtocol(fStatic);
+
+		Linkable theReal = (Linkable) CommonState.getNode()
+				.getProtocol(fStatic);
 		if (i >= theReal.degree()) {
 			throw new IllegalStateException("The real.");
 		}
 	}
-	
+
 	/**
 	 * Selects the first node in our peer sampling view which has neighbors that
 	 * are shared with our neighborhood, and that we haven't yet seen.
@@ -364,6 +415,31 @@ public class F2FOverlayCollector implements CDProtocol {
 		public Object clone() {
 			return null;
 		}
+	}
+
+	/**
+	 * Cheating utility function which looks into the receiving peer's cache
+	 * before actual selection
+	 * 
+	 * @author giuliano
+	 */
+	private class OracleMaximumGainUtility implements IUtilityFunction {
+
+		@Override
+		public int utility(Node base, Node target) {
+			return F2FOverlayCollector.this
+					.collectorCollect(base, target, null);
+		}
+
+		@Override
+		public boolean isDynamic() {
+			return true;
+		}
+
+		public Object clone() {
+			return null;
+		}
+
 	}
 
 }
