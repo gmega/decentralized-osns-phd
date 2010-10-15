@@ -8,7 +8,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public interface IPeerSelector extends ICachingObject{
+public interface IPeerSelector extends ICachingObject {
 	/**
 	 * Selects a peer.
 	 * 

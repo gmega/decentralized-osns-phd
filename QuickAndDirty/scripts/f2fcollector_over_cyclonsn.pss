@@ -67,6 +67,11 @@ protocol.approximator F2FOverlayCollector
 {
 	social_neighbourhood onehop
 	sps peersampling
+	taboo 5
+	
+	query_neighborhood collector
+	selection_mode highestranking
+	
 	step SECOND
 }
 
