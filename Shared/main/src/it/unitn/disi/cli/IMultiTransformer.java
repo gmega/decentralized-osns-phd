@@ -23,8 +23,4 @@ public interface IMultiTransformer {
 	 *             if an I/O error occurs during read or write of streams.
 	 */
 	public void execute (InputStream [] istreams, OutputStream [] ostreams) throws Exception;
-	
-	public String [] inputStreamNames();
-	
-	public String [] outputStreamNames();
 }

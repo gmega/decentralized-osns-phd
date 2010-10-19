@@ -42,7 +42,7 @@ def get_object(obj_id, import_error_debug=False):
             break
         except ImportError as err:
             if (import_error_debug):
-                print err.args
+                print err.args, ":",module
         
     if current is None:
         raise Exception("Could not resolve " + obj_id + ".")

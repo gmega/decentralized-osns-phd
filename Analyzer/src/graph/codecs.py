@@ -178,8 +178,9 @@ class AdjacencyListEncoder():
     """ Encodes a graph in adjacency list format.
     """
     
-    def __init__(self, file):
+    def __init__(self, file, remap_attribute=None):
         self._file = file
+        self._remap_attribute = remap_attribute
         
         
     def recode(self, decoder):
@@ -201,8 +202,8 @@ class AdjacencyListEncoder():
         """
         for vertex in g.vs:
             line = []
-            line.append(str(vertex.index))
-            line += [str(neighbor) for neighbor in igraph_neighbors(vertex.index, g)]
+            line.append(str(__map__(g, vertex.index, self._remap_attribute)))
+            line += [str(__map__(g, neighbor, self._remap_attribute)) for neighbor in igraph_neighbors(vertex.index, g)]
             print >> self._file, " ".join(line)
 
 
@@ -236,8 +237,9 @@ class EdgeListEncoder():
     """ Encodes a graph in edge list format.
     """
     
-    def __init__(self, file):
+    def __init__(self, file, remap_attribute=None):
         self._file = file
+        self._remap_attribute = remap_attribute
     
     
     def recode(self, decoder):
@@ -255,11 +257,11 @@ class EdgeListEncoder():
             weights = self.graph.es[0].attributes().has_key(WEIGHT)
         
         for edge in self.graph.es:
-            line = str(edge.source) + " " + str(edge.target)
+            line = __map__(self._remap_attribute, g, edge.source) + " " + __map__(self._remap_attribute, g, edge.target)
             if weights: 
                 line = line + " " + str(edge[WEIGHT])
             print >> self._file, line
-            
+
 
 class GDLEncoder:
     """Outputs the graph to aiSee's GDL format. Does not support direct recoding.
@@ -303,7 +305,13 @@ class GDLEncoder:
             print >> f, "edge: { source: \"" + str(edge.source) + "\" target: \"" + str(edge.target) + "\" arrowstyle: none}"
         
         print >> f, "}" 
-        
+            
+    
+def __map__(g, id, attribute):
+    if not attribute is None:
+        id = g.vs[id][attribute]
+    return str(id)            
+
 
 class SVGEncoder:
     """Outputs the graph to SVG. Does not support direct recoding.

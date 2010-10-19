@@ -41,7 +41,7 @@ protocol.twohop GraphProtocol
 protocol.peersampling CyclonSN 
 {
 	two_hop twohop
-	view_size 0.2
+	view_size 50
 	l 5
 }
 
@@ -67,7 +67,8 @@ protocol.approximator F2FOverlayCollector
 	social_neighbourhood onehop
 	sps peersampling
 	
-	query_neighborhood collector
+	selection_layer collector
+	exchange_layer collector
 	selection_mode highestranking
 	utility_function oracle
 	

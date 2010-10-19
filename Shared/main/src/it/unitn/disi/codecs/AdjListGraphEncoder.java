@@ -24,7 +24,7 @@ public class AdjListGraphEncoder implements GraphEncoder {
 				line.append(" ");
 				line.append(neighbor);
 			}
-			
+
 			fStream.println(line.toString());
 		}
 	}

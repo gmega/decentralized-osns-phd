@@ -1,6 +1,6 @@
 package it.unitn.disi.utils.graph;
 
-import it.unitn.disi.cli.ByteGraphRemap;
+import it.unitn.disi.cli.GraphRemap;
 import it.unitn.disi.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.graph.BFSIterable.BFSIterator;
@@ -39,7 +39,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	 * meaning that vertices must be labeled from 0 to N, where N is the number
 	 * of vertices in the graph.
 	 * 
-	 * {@link ByteGraphRemap} can do the work of ID remapping for graphs which
+	 * {@link GraphRemap} can do the work of ID remapping for graphs which
 	 * do not present continuous ID ranges.
 	 * 
 	 * @param decoder

@@ -3,6 +3,7 @@ package it.unitn.disi.utils.collections;
 import it.unitn.disi.utils.MiscUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Lightweight, static vector, conceived with maximum efficiency in mind.
@@ -33,6 +34,10 @@ public class StaticVector<T extends Object> {
 		}
 		
 		fData = resized;
+	}
+	
+	public boolean contains(T object) {
+		return MiscUtils.contains(fData, object);
 	}
 	
 	public T get(int i) {

@@ -227,15 +227,4 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public IndexedNeighborGraph getGraph() {
 		return fGraph;
 	}
-
-	@Override
-	public String[] inputStreamNames() {
-		return new String[] { Inputs.graph.toString(),
-				Inputs.experiments.toString() };
-	}
-
-	@Override
-	public String[] outputStreamNames() {
-		return new String[] {};
-	}
 }

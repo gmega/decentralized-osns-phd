@@ -11,6 +11,12 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.graph.NeighbourListGraph;
 
+/**
+ * Disarrayed collection of functions.
+ * 
+ * @author giuliano
+ *
+ */
 public class MiscUtils {
 	
 	public static void safeClose(Closeable is, boolean rethrow) {
@@ -29,23 +35,6 @@ public class MiscUtils {
 	public static void grow(ArrayList<?> list, int size) {
 		while (list.size() < size) {
 			list.add(null);
-		}
-	}
-	
-	public static NeighbourListGraph load(NeighbourListGraph graph, GraphDecoder dec) {
-		while (dec.hasNext()) {
-			int source = dec.getSource();
-			int target = dec.next();
-			grow(graph, Math.max(source, target));
-			graph.setEdge(source, target);
-		}
-		
-		return graph;
-	}
-
-	private static void grow(NeighbourListGraph graph, int max) {
-		while (graph.size() <= max) {
-			graph.addNode(new Object());
 		}
 	}
 	
@@ -102,7 +91,33 @@ public class MiscUtils {
 		
 		return end - gap;
 	}
+	
+	public static <T> boolean contains (T [] array, T object) { 
+		for (int i = 0; i < array.length; i++) {
+			if (object.equals(array[i])) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static NeighbourListGraph load(NeighbourListGraph graph, GraphDecoder dec) {
+		while (dec.hasNext()) {
+			int source = dec.getSource();
+			int target = dec.next();
+			grow(graph, Math.max(source, target));
+			graph.setEdge(source, target);
+		}
+		
+		return graph;
+	}
 
+	private static void grow(NeighbourListGraph graph, int max) {
+		while (graph.size() <= max) {
+			graph.addNode(new Object());
+		}
+	}
+	
 	public static int countIntersections(Linkable l1, Node n2, int linkableId) {
 		return countIntersections(l1, (Linkable) n2.getProtocol(linkableId), null, false);
 	}

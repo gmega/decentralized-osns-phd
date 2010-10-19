@@ -113,9 +113,20 @@ public class GenericDriver {
 			return new OutputStream [] { System.out };
 		}
 		
+		boolean stdoutUsed = false;
 		String [] outputs = outputString.split(":");
 		OutputStream[] oStreams = new OutputStream[outputs.length];
 		for (int i = 0; i < outputs.length; i++) {
+			if (outputs[i].equals("stdout")){
+				if (stdoutUsed) {
+					throw new IllegalArgumentException("stdout cannot be assigned twice.");
+				}
+				System.err.println("Output " + i + " is standard output.");
+				oStreams[i] = System.out;
+				stdoutUsed = true;
+				continue;
+			}
+
 			oStreams[i] = new BufferedOutputStream(new FileOutputStream(
 					new File(outputs[i])));
 		}
@@ -223,9 +234,4 @@ class MultiTransformerAdapter implements IMultiTransformer {
 		fDelegate.execute(istreams[0], ostreams[0]);
 	}
 
-	@Override
-	public String[] inputStreamNames() { return null; }
-
-	@Override
-	public String[] outputStreamNames() { return null; }
 }

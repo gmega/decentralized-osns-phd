@@ -5,6 +5,7 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.collections.StaticVector;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.PeersimUtils;
@@ -26,26 +27,16 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class F2FOverlayCollector implements CDProtocol {
+public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 	private static final StaticVector<Integer> fIndexes = new StaticVector<Integer>();
 
-	/**
-	 * Query modes.
-	 * 
-	 * @author giuliano
-	 */
-	static enum QueryNeighborhood {
-		NOPROACTIVE, PEERSAMPLING, COLLECTOR;
+	static enum Layer {
+		PEERSAMPLING, COLLECTOR;
 	}
 
-	/**
-	 * Selection heuristics.
-	 * 
-	 * @author giuliano
-	 */
-	static enum SelectionMode {
-		FIRSTFIT, SHUFFLING, HIGHESTRANKING;
+	static enum ProactiveSelection {
+		PASSIVE, FIRSTFIT, SHUFFLING, HIGHESTRANKING;
 	}
 
 	/**
@@ -68,9 +59,11 @@ public class F2FOverlayCollector implements CDProtocol {
 	@Attribute("sps")
 	private int fSampled;
 
-	private QueryNeighborhood fMode;
+	private Layer fSelection;
 
-	private SelectionMode fSelectionMode;
+	private Layer fExchange;
+
+	private ProactiveSelection fSelectionMode;
 
 	private UtilityFunction fUtilityFunction;
 
@@ -88,13 +81,18 @@ public class F2FOverlayCollector implements CDProtocol {
 
 	private int fProactiveHits;
 
-	public F2FOverlayCollector(@Attribute("query_neighborhood") String query,
-			@Attribute("selection_mode") String mode,
+	public F2FOverlayCollector(
+			@Attribute("selection_layer") String selectionLayer,
+			@Attribute("exchange_layer") String exchangeLayer,
+			@Attribute("selection_mode") String selectionMode,
 			@Attribute(value = "utility_function", defaultValue = "LOCAL") String utility,
 			@Attribute(value = "taboo", defaultValue = "0") int tabooSize) {
-		fMode = QueryNeighborhood.valueOf(query.toUpperCase());
-		fSelectionMode = SelectionMode.valueOf(mode.toUpperCase());
+		fSelection = Layer.valueOf(selectionLayer.toUpperCase());
+		fExchange = Layer.valueOf(exchangeLayer.toUpperCase());
+		fSelectionMode = ProactiveSelection
+				.valueOf(selectionMode.toUpperCase());
 		fUtilityFunction = UtilityFunction.valueOf(utility.toUpperCase());
+
 		if (tabooSize > 0) {
 			fTabooFilter = new TabooSelectionFilter(tabooSize);
 		}
@@ -102,19 +100,27 @@ public class F2FOverlayCollector implements CDProtocol {
 	}
 
 	private IPeerSelector selector() {
+
+		IReference<Linkable> neighborhood;
+		if (fSelection == Layer.PEERSAMPLING) {
+			neighborhood = new ProtocolReference<Linkable>(fSampled);
+		} else {
+			neighborhood = new FallThroughReference<Linkable>(this);
+		}
+
 		IPeerSelector selector = null;
 
 		switch (fSelectionMode) {
 		case HIGHESTRANKING:
-			selector = new CentralitySelector(new ProtocolReference<Linkable>(
-					fSampled), new FallThroughReference<IUtilityFunction>(
-					utilityFunction()), 1.0, CommonState.r);
+			selector = new CentralitySelector(neighborhood,
+					new FallThroughReference<IUtilityFunction>(
+							utilityFunction()), 1.0, CommonState.r);
 			break;
 		case FIRSTFIT:
-			selector = new FirstFitSelector(false);
+			selector = new FirstFitSelector(false, neighborhood);
 			break;
 		case SHUFFLING:
-			selector = new FirstFitSelector(true);
+			selector = new FirstFitSelector(true, neighborhood);
 			break;
 		}
 		return selector;
@@ -133,10 +139,12 @@ public class F2FOverlayCollector implements CDProtocol {
 
 	@Override
 	public void nextCycle(Node node, int protocolID) {
-		Linkable statik = (Linkable) node.getProtocol(fStatic);
-		Linkable sampled = (Linkable) node.getProtocol(fSampled);
+		Linkable statik = statik(node);
+		Linkable sampled = sampled(node);
 
+		// Clear static cached data.
 		fIndexes.clear();
+		fIterationCache.clear();
 
 		init(statik);
 		resetCounters();
@@ -145,7 +153,7 @@ public class F2FOverlayCollector implements CDProtocol {
 		collectFriends(statik, sampled);
 
 		// Proactively tries to obtain new entries.
-		if (fMode != QueryNeighborhood.NOPROACTIVE) {
+		if (fSelectionMode != ProactiveSelection.PASSIVE) {
 			proactiveQuery(node);
 		}
 	}
@@ -169,15 +177,14 @@ public class F2FOverlayCollector implements CDProtocol {
 			return;
 		}
 
-		Linkable ourSn = (Linkable) ourNode.getProtocol(fStatic);
+		Linkable ourSn = statik(ourNode);
 		fIndexes.resize(ourSn.degree(), false);
 
 		// If he does, "contacts" the neighbor and queries for a useful IP.
-		// Contact strategy depends on the mode.
-		switch (fMode) {
+		// Exchange strategy depends on the mode.
+		switch (fExchange) {
 		case PEERSAMPLING:
-			linkableCollect(ourSn, (Linkable) neighbor.getProtocol(fSampled),
-					fIndexes);
+			linkableCollect(ourSn, sampled(neighbor), fIndexes);
 			break;
 		case COLLECTOR:
 			collectorCollect(ourNode, neighbor, fIndexes);
@@ -186,10 +193,17 @@ public class F2FOverlayCollector implements CDProtocol {
 
 		// Found something.
 		for (int i = 0; i < fIndexes.size(); i++) {
-			checkIndex(fIndexes.get(i), ourSn);
 			fSeen.set(fIndexes.get(i));
 			fProactiveHits++;
 		}
+	}
+
+	private Linkable sampled(Node node) {
+		return (Linkable) node.getProtocol(fSampled);
+	}
+
+	private Linkable statik(Node node) {
+		return (Linkable) node.getProtocol(fStatic);
 	}
 
 	// ----------------------------------------------------------------------
@@ -222,8 +236,8 @@ public class F2FOverlayCollector implements CDProtocol {
 	 */
 	private int collectorCollect(Node ours, Node neighbor,
 			StaticVector<Integer> storage) {
-		Linkable ourSn = (Linkable) ours.getProtocol(fStatic);
-		Linkable neighborSn = (Linkable) neighbor.getProtocol(fStatic);
+		Linkable ourSn = statik(ours);
+		Linkable neighborSn = statik(neighbor);
 		F2FOverlayCollector neighborCollector = (F2FOverlayCollector) neighbor
 				.getProtocol(CommonState.getPid());
 
@@ -266,7 +280,6 @@ public class F2FOverlayCollector implements CDProtocol {
 		for (int i = 0; i < degree; i++) {
 			Node candidate = ourSn.getNeighbor(i);
 			if (another.contains(candidate) && !fSeen.get(i)) {
-				checkIndex(i, ourSn);
 				if (storage != null) {
 					storage.append(i);
 				}
@@ -284,44 +297,44 @@ public class F2FOverlayCollector implements CDProtocol {
 			fSeen = new BitSet(statik.degree());
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public boolean seen(int index) {
 		if (fSeen == null) {
 			return false;
 		}
-		
+
 		return fSeen.get(index);
 	}
 
 	// ----------------------------------------------------------------------
-	
+
 	public int achieved() {
 		if (fSeen == null) {
 			return -1;
 		}
 		return fSeen.cardinality();
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public int randomHits() {
 		return fCasualHits;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public int proactiveHits() {
 		return fProactiveHits;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void resetCounters() {
 		fCasualHits = fProactiveHits = 0;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public Object clone() {
@@ -338,17 +351,84 @@ public class F2FOverlayCollector implements CDProtocol {
 		}
 	}
 
-	private void checkIndex(int i, Linkable ourSn) {
-		if (i >= ourSn.degree()) {
-			throw new IllegalStateException();
+	// ----------------------------------------------------------------------
+	// Linkable interface.
+	// ----------------------------------------------------------------------
+
+	private final static StaticVector<Node> fIterationCache = new StaticVector<Node>();
+
+	private static Node fOwner = null;
+
+	private static long fChangeTime = -1;
+
+	/*
+	 * XXX The linkable interface for F2FOverlayCollector has several
+	 * limitations. Be careful with these methods, as they will only work if the
+	 * caller node is the one owning the linkable. Also, their efficiency is
+	 * coupled to certain call patterns -- iteration is only guaranteed to be
+	 * O(n) if locality is preserved.
+	 */
+
+	@Override
+	public int degree() {
+		cacheInit(CommonState.getNode());
+		return fIterationCache.size();
+	}
+
+	@Override
+	public Node getNeighbor(int i) {
+		cacheInit(CommonState.getNode());
+		return fIterationCache.get(i);
+	}
+
+	@Override
+	public boolean contains(Node node) {
+		cacheInit(CommonState.getNode());
+		return fIterationCache.contains(node);
+	}
+
+	@Override
+	public boolean addNeighbor(Node neighbour) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void pack() {
+	}
+
+	@Override
+	public void onKill() {
+		fSeen = null;
+		fSelector = null;
+	}
+
+	private void cacheInit(Node node) {
+		long time = CommonState.getTime();
+		if (node.equals(fOwner) && fChangeTime == time) {
+			return;
 		}
 
-		Linkable theReal = (Linkable) CommonState.getNode()
-				.getProtocol(fStatic);
-		if (i >= theReal.degree()) {
-			throw new IllegalStateException("The real.");
+		fOwner = node;
+		fChangeTime = time;
+
+		fIterationCache.clear();
+		Linkable sampled = sampled(node);
+		fIterationCache.resize(fSeen.cardinality() + sampled.degree(), false);
+
+		// Adds the sampled neighborhood to the cache.
+		int degree = sampled.degree();
+		for (int i = 0; i < degree; i++) {
+			fIterationCache.append(sampled.getNeighbor(i));
+		}
+
+		// And then the nodes in the collector view.
+		Linkable statik = statik(node);
+		for (int i = fSeen.nextSetBit(0); i >= 0; i = fSeen.nextSetBit(i + 1)) {
+			fIterationCache.append(statik.getNeighbor(i));
 		}
 	}
+
+	// ----------------------------------------------------------------------
 
 	/**
 	 * Selects the first node in our peer sampling view which has neighbors that
@@ -362,8 +442,9 @@ public class F2FOverlayCollector implements CDProtocol {
 
 		private final PermutingCache fCache;
 
-		public FirstFitSelector(boolean shuffle) {
-			fCache = new PermutingCache(fSampled);
+		public FirstFitSelector(boolean shuffle,
+				IReference<Linkable> linkableRef) {
+			fCache = new PermutingCache(linkableRef);
 			fShuffle = shuffle;
 		}
 
@@ -452,5 +533,4 @@ public class F2FOverlayCollector implements CDProtocol {
 		}
 
 	}
-
 }

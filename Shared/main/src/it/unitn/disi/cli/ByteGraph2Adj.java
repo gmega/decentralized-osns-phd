@@ -12,6 +12,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import peersim.config.AutoConfig;
+
+@AutoConfig
 public class ByteGraph2Adj implements ITransformer {
 	public void execute(InputStream is, OutputStream oup) throws IOException {
 		ByteGraphDecoder dec = new ByteGraphDecoder(is);

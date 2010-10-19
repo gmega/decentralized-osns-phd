@@ -363,18 +363,6 @@ public class LatencyComputer implements IMultiTransformer {
 				NewscastEvents.values(), SimulationEvents.values()));
 		return decoder;
 	}
-
-	@Override
-	public String[] inputStreamNames() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String[] outputStreamNames() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
 
 class EventId {
