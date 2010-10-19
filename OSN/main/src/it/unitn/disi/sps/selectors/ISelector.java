@@ -1,7 +1,7 @@
 package it.unitn.disi.sps.selectors;
 
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.sps.IView;
+import it.unitn.disi.sps.newscast.IView;
 import peersim.core.Node;
 
 /**

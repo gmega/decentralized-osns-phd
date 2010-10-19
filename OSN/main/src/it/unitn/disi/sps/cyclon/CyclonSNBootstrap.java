@@ -32,7 +32,9 @@ public class CyclonSNBootstrap implements Control {
 
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
-			Linkable peerSampling = (Linkable) node.getProtocol(protocol);
+			CyclonSN peerSampling = (CyclonSN) node.getProtocol(protocol);
+			peerSampling.init(node);
+			
 			cache.populate(node);
 			cache.shuffle();
 			for (int j = 0; j < cache.size() && peerSampling.degree() < size; j++) {

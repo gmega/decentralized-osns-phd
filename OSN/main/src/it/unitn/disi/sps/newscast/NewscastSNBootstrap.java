@@ -1,4 +1,4 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import it.unitn.disi.IRebootable;
 import it.unitn.disi.graph.GraphProtocol;
@@ -16,7 +16,7 @@ import peersim.dynamics.NodeInitializer;
  * initializer (for bootstrapping nodes in dynamic networks) and a network
  * initializer (for bootstrapping the whole network).
  */
-public class SocialBootstrap implements NodeInitializer, Control {
+public class NewscastSNBootstrap implements NodeInitializer, Control {
 
 	// --------------------------------------------------------------------------
 	// Parameters
@@ -88,7 +88,7 @@ public class SocialBootstrap implements NodeInitializer, Control {
 	 * @param prefix
 	 *            the configuration prefix for this class
 	 */
-	public SocialBootstrap(String prefix) {
+	public NewscastSNBootstrap(String prefix) {
 		fPid = Configuration.getPid(prefix + "." + PAR_PROT);
 		fSnPid = Configuration.getPid(prefix + "." + PAR_SN);
 		fPack = Configuration.contains(prefix + "." + PAR_PACK);

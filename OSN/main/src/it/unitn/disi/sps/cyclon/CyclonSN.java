@@ -25,16 +25,10 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 		public int ownPid;
 
-		public int viewSize;
+		public double viewSize;
 	}
 
 	private static Parameters fPars;
-
-	// ----------------------------------------------------------------------
-	// Shared data structures.
-	// ----------------------------------------------------------------------
-
-	private static NodeDescriptor[] fStorage;
 
 	// ----------------------------------------------------------------------
 	// State.
@@ -52,7 +46,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 	public CyclonSN(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("two_hop") int twoHopPid,
-			@Attribute("view_size") int viewSize, 
+			@Attribute("view_size") double viewSize, 
 			@Attribute("l") int l) {
 
 		// Shared protocol parameters.
@@ -61,13 +55,20 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			fPars.twoHopPid = twoHopPid;
 			fPars.ownPid = PeersimUtils.selfPid(prefix);
 			fPars.viewSize = viewSize;
-			fStorage = new NodeDescriptor[viewSize];
 		}
 
-		fView = new NodeDescriptor[viewSize];
 		fRequestMsg = new CyclonMessage(l);
 		fReplyMsg = new CyclonMessage(l);
 		fRequestMsg.setRequest(true);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public void init(Node node) {
+		Linkable neighborhood = (Linkable) node.getProtocol(fPars.twoHopPid);
+		int actualSize = fPars.viewSize > 1.0 ? (int) fPars.viewSize
+				: (int) Math.ceil(fPars.viewSize * neighborhood.degree());
+		fView = new NodeDescriptor [actualSize];
 	}
 
 	// ----------------------------------------------------------------------
@@ -132,7 +133,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			}
 
 			// Otherwise, first tries to use an empty cache slot, and...
-			if (fViewSize < fPars.viewSize) {
+			if (fViewSize < fView.length) {
 				fView[fViewSize++] = candidate;
 			}
 
@@ -213,7 +214,6 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			if (candidate != null && filter.contains(candidate.node())) {
 				message.append(NodeDescriptor.cloneFrom(candidate));
 				if (removeSelected) {
-					fStorage[added++] = fView[i];
 					fView[i] = null;
 				}
 			}
@@ -280,7 +280,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 	@Override
 	public boolean addNeighbor(Node neighbour) {
-		if (fViewSize < fPars.viewSize) {
+		if (fViewSize < fView.length) {
 			fView[fViewSize++] = new NodeDescriptor(neighbour, 0);
 			return true;
 		}
@@ -334,9 +334,11 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	public Object clone() {
 		try {
 			CyclonSN clone = (CyclonSN) super.clone();
-			clone.fView = new NodeDescriptor[fPars.viewSize];
-			for (int i = 0; i < fViewSize; i++) {
-				clone.fView[i] = NodeDescriptor.cloneFrom(fView[i]);
+			if (fView != null) {
+				clone.fView = new NodeDescriptor[fView.length];
+				for (int i = 0; i < fViewSize; i++) {
+					clone.fView[i] = NodeDescriptor.cloneFrom(fView[i]);
+				}
 			}
 			clone.fRequestMsg = CyclonMessage.cloneFrom(fRequestMsg);
 			clone.fRequestMsg = CyclonMessage.cloneFrom(fReplyMsg);

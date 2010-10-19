@@ -1,4 +1,4 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import peersim.core.Node;
 

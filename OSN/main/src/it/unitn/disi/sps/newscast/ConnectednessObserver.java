@@ -1,4 +1,4 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import it.unitn.disi.utils.graph.SubgraphDecorator;
 

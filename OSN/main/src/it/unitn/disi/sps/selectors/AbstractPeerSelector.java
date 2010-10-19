@@ -1,6 +1,6 @@
 package it.unitn.disi.sps.selectors;
 
-import it.unitn.disi.sps.IView;
+import it.unitn.disi.sps.newscast.IView;
 
 public abstract class AbstractPeerSelector implements ISelector {
 	

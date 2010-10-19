@@ -1,10 +1,10 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.IRebootable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.sps.View.BufferHandler;
+import it.unitn.disi.sps.newscast.View.BufferHandler;
 import it.unitn.disi.sps.selectors.ISelector;
 import it.unitn.disi.sps.selectors.RandomSelector;
 import it.unitn.disi.utils.MiscUtils;
@@ -39,7 +39,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class SocialPeerSampling implements IPeerSelector, IRebootable,
+public class NewscastSN implements IPeerSelector, IRebootable,
 		CDProtocol, IDynamicLinkable {
 
 	// --------------------------------------------------------------------------
@@ -142,7 +142,7 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 	// --------------------------------------------------------------------------
 
 	/** PeerSim-specific constructor. */
-	public SocialPeerSampling(String s) {
+	public NewscastSN(String s) {
 		this(Configuration.getInt(s + "." + PAR_CACHE), Configuration.getInt(s
 				+ "." + PAR_HEALER), Configuration
 				.getInt(s + "." + PAR_SWAPPER), CommonState.r, Configuration
@@ -153,7 +153,7 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 	// --------------------------------------------------------------------------
 
 	/** "Regular" constructor (doesn't require PeerSim to be running). */
-	SocialPeerSampling(int cacheSize, int h, int s, Random r, boolean debug, boolean activeInjectionOnly) {
+	NewscastSN(int cacheSize, int h, int s, Random r, boolean debug, boolean activeInjectionOnly) {
 		this.init(cacheSize, h, s, r, debug, activeInjectionOnly);
 	}
 
@@ -235,7 +235,7 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 			return;
 		}
 
-		SocialPeerSampling peer = (SocialPeerSampling) peerNode
+		NewscastSN peer = (NewscastSN) peerNode
 				.getProtocol(protocolID);
 
 		// Linkables representing the social networks.
@@ -251,7 +251,7 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 
 	// --------------------------------------------------------------------------
 
-	private void verify(SocialPeerSampling peer, Linkable thisSn,
+	private void verify(NewscastSN peer, Linkable thisSn,
 			Linkable peerSn, boolean queue) {
 		if (fDebug) {
 			this.view().verifyFriends(thisSn);
@@ -282,7 +282,7 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 
 	// --------------------------------------------------------------------
 
-	void doCycle(SocialPeerSampling peer, Linkable thisSn, Linkable peerSn,
+	void doCycle(NewscastSN peer, Linkable thisSn, Linkable peerSn,
 			Node thisNode, Node peerNode) {
 		// Resets the storage buffers.
 		View.beginExchange();
@@ -320,8 +320,8 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 	 * areas. Note that this method DOES NOT change the actual view. A call to
 	 * {@link BufferHandler#store()} is needed to commit the changes.
 	 */
-	void select(int h, int s, SocialPeerSampling receiver, Linkable receiverSn,
-			SocialPeerSampling sender, Node senderNode, int buffer, boolean addFresh) {
+	void select(int h, int s, NewscastSN receiver, Linkable receiverSn,
+			NewscastSN sender, Node senderNode, int buffer, boolean addFresh) {
 
 		// Copies the receiver's view into the manipulation area.
 		receiver.view().buffer(buffer).load();
@@ -410,9 +410,9 @@ public class SocialPeerSampling implements IPeerSelector, IRebootable,
 	// --------------------------------------------------------------------------
 
 	public Object clone() {
-		SocialPeerSampling clone;
+		NewscastSN clone;
 		try {
-			clone = (SocialPeerSampling) super.clone();
+			clone = (NewscastSN) super.clone();
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
@@ -463,7 +463,7 @@ class QueueManager implements IExchanger {
 	private Node[] fQueue;
 
 	/**
-	 * Counter indicating the length of {@link SocialPeerSampling#fQueue}.
+	 * Counter indicating the length of {@link NewscastSN#fQueue}.
 	 */
 	private int fQueueLength = 0;
 
