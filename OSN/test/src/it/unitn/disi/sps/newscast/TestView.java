@@ -1,8 +1,8 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import static org.junit.Assert.*;
-import it.unitn.disi.sps.SocialPeerSampling;
-import it.unitn.disi.sps.View;
+import it.unitn.disi.sps.newscast.NewscastSN;
+import it.unitn.disi.sps.newscast.View;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.OrderingUtils;
@@ -22,8 +22,8 @@ public class TestView {
 
 	Random r = new Random(42);
 
-	SocialPeerSampling p1;
-	SocialPeerSampling p2;
+	NewscastSN p1;
+	NewscastSN p2;
 
 	int[] tStamps1;
 	int[] tStamps2;
@@ -38,8 +38,8 @@ public class TestView {
 	}
 
 	public void init() {
-		p1 = new SocialPeerSampling(10, 2, 2, r, false, false);
-		p2 = new SocialPeerSampling(10, 2, 2, r, false, false);
+		p1 = new NewscastSN(10, 2, 2, r, false, false);
+		p2 = new NewscastSN(10, 2, 2, r, false, false);
 
 		Node[] nd1 = builder.mkNodeArray(10);
 		Node[] nd2 = builder.mkNodeArray(10);
@@ -191,8 +191,8 @@ public class TestView {
 
 		View.beginExchange();
 
-		SocialPeerSampling p1 = new SocialPeerSampling(10, 2, 2, r,	false, false);
-		SocialPeerSampling p2 = new SocialPeerSampling(10, 2, 2, r,	false, false);
+		NewscastSN p1 = new NewscastSN(10, 2, 2, r,	false, false);
+		NewscastSN p2 = new NewscastSN(10, 2, 2, r,	false, false);
 
 		int[] tStamps1 = { 5, 7, 1, 2, 4, 9, 10, 3, 1, 2 };
 		int[] tStamps2 = { 13, 4, 2, 7, 9, 1, 23, 12, 1, 4 };

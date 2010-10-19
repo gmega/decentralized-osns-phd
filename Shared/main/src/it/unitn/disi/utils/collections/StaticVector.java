@@ -11,31 +11,36 @@ import java.util.Arrays;
  */
 public class StaticVector<T extends Object> {
 
-	/**
-	 * Public for efficiency reasons, should be treated as read-only.
-	 */
-	public T[] data;
+	private T [] fData;
 	
 	private int fSize;
 	
-	private int fPow = 0;
-
 	public StaticVector() {
-		data = alloc(0);
+		fData = alloc(4);
 	}
 	
 	public void resize(int size, boolean copy) {
-		if (size < data.length) {
+		if (size < fData.length) {
 			return;
 		}
 		
 		int powerOfTwo = (int) Math.round(MiscUtils.log2(size));
+		T[] resized = alloc((int) Math.round(Math.pow(2, powerOfTwo + 1)));
+		if (copy) {
+			System.arraycopy(fData, 0, resized, 0, fSize);
+		} else {
+			fSize = 0;
+		}
 		
-		data = resized;
+		fData = resized;
+	}
+	
+	public T get(int i) {
+		return (T) fData[i];
 	}
 	
 	public void append(T object) {
-		data[fSize++] = object;
+		fData[fSize++] = object;
 	}
 	
 	public int size() {
@@ -48,7 +53,7 @@ public class StaticVector<T extends Object> {
 	
 	public void deepClear() {
 		clear();
-		Arrays.fill(data, null);
+		Arrays.fill(fData, null);
 	}
 
 	@SuppressWarnings("unchecked")

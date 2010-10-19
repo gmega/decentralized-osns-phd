@@ -1,7 +1,7 @@
 package it.unitn.disi.utils.peersim;
 
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
 
@@ -41,7 +41,7 @@ public class PermutingCache implements IExchanger, Cloneable {
 	/**
 	 * ID of the linkable.
 	 */
-	private final int fLinkableId;
+	private final IReference<Linkable> fLinkable;
 
 	/**
 	 * Creates a new {@link PermutingCache}, binding it to a linkable id.
@@ -49,7 +49,11 @@ public class PermutingCache implements IExchanger, Cloneable {
 	 * @param linkableId
 	 */
 	public PermutingCache(int linkableId) {
-		fLinkableId = linkableId;
+		this(new ProtocolReference<Linkable>(linkableId));
+	}
+	
+	public PermutingCache(IReference<Linkable> linkable) {
+		fLinkable = linkable;
 	}
 
 	/**
@@ -76,9 +80,10 @@ public class PermutingCache implements IExchanger, Cloneable {
 	 * 
 	 */
 	public void populate(Node source, ISelectionFilter filter) {
-		Linkable linkable = (Linkable) source.getProtocol(fLinkableId);
+		Linkable linkable = fLinkable.get(source);
 		int size = linkable.degree();
 		if (size == 0) {
+			fSize = 0;
 			return;
 		}
 
@@ -180,5 +185,43 @@ public class PermutingCache implements IExchanger, Cloneable {
 	public Object clone() {
 		// We're immutable, so we can return ourselves.
 		return this;
+	}
+	
+	// ----------------------------------------------------------------------
+	// Linkable view for permuting cache.
+	// ----------------------------------------------------------------------
+	
+	private final Linkable fLinkableView = new Linkable() {
+
+		@Override
+		public int degree() {
+			return PermutingCache.this.size();
+		}
+
+		@Override
+		public Node getNeighbor(int i) {
+			return PermutingCache.this.get(i);
+		}
+
+		@Override
+		public boolean contains(Node neighbor) {
+			return PermutingCache.this.contains(neighbor);
+		}
+		
+		@Override
+		public boolean addNeighbor(Node neighbour) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void onKill() { }
+
+		@Override
+		public void pack() { }
+	
+	};
+	
+	public Linkable asLinkable() {
+		return fLinkableView;
 	}
 }

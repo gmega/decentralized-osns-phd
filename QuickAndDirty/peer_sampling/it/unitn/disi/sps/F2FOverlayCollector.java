@@ -4,7 +4,6 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
-import it.unitn.disi.sps.cyclon.CyclonSN;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
 import it.unitn.disi.utils.collections.StaticVector;
 import it.unitn.disi.utils.peersim.FallThroughReference;
@@ -91,7 +90,7 @@ public class F2FOverlayCollector implements CDProtocol {
 
 	public F2FOverlayCollector(@Attribute("query_neighborhood") String query,
 			@Attribute("selection_mode") String mode,
-			@Attribute("utility_function") String utility,
+			@Attribute(value = "utility_function", defaultValue = "LOCAL") String utility,
 			@Attribute(value = "taboo", defaultValue = "0") int tabooSize) {
 		fMode = QueryNeighborhood.valueOf(query.toUpperCase());
 		fSelectionMode = SelectionMode.valueOf(mode.toUpperCase());
@@ -135,7 +134,7 @@ public class F2FOverlayCollector implements CDProtocol {
 	@Override
 	public void nextCycle(Node node, int protocolID) {
 		Linkable statik = (Linkable) node.getProtocol(fStatic);
-		CyclonSN sampled = (CyclonSN) node.getProtocol(fSampled);
+		Linkable sampled = (Linkable) node.getProtocol(fSampled);
 
 		fIndexes.clear();
 
@@ -151,7 +150,7 @@ public class F2FOverlayCollector implements CDProtocol {
 		}
 	}
 
-	private void collectFriends(Linkable statik, CyclonSN sampled) {
+	private void collectFriends(Linkable statik, Linkable sampled) {
 		for (int i = 0; i < statik.degree(); i++) {
 			Node neighbor = statik.getNeighbor(i);
 			if (sampled.contains(neighbor) && !fSeen.get(i)) {
@@ -286,6 +285,8 @@ public class F2FOverlayCollector implements CDProtocol {
 		}
 	}
 	
+	// ----------------------------------------------------------------------
+	
 	public boolean seen(int index) {
 		if (fSeen == null) {
 			return false;
@@ -294,24 +295,34 @@ public class F2FOverlayCollector implements CDProtocol {
 		return fSeen.get(index);
 	}
 
+	// ----------------------------------------------------------------------
+	
 	public int achieved() {
 		if (fSeen == null) {
 			return -1;
 		}
 		return fSeen.cardinality();
 	}
+	
+	// ----------------------------------------------------------------------
 
 	public int randomHits() {
 		return fCasualHits;
 	}
+	
+	// ----------------------------------------------------------------------
 
 	public int proactiveHits() {
 		return fProactiveHits;
 	}
+	
+	// ----------------------------------------------------------------------
 
 	private void resetCounters() {
 		fCasualHits = fProactiveHits = 0;
 	}
+	
+	// ----------------------------------------------------------------------
 
 	public Object clone() {
 		try {

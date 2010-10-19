@@ -3,6 +3,7 @@ package it.unitn.disi.test.framework;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -16,7 +17,7 @@ import peersim.core.NetworkInitializer;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class TestNetworkBuilder {
+public class TestNetworkBuilder implements Iterable<Node> {
 
 	private HashMap<Node, Integer> fNodes = new HashMap<Node, Integer>();
 	
@@ -27,6 +28,10 @@ public class TestNetworkBuilder {
 	public TestNetworkBuilder() {
 		NetworkInitializer.createNodeArray();
 		Network.setCapacity(0);
+	}
+	
+	public Iterator<Node> iterator() {
+		return fOrderedNodes.iterator();
 	}
 	
 	public List<Node> getNodes() {

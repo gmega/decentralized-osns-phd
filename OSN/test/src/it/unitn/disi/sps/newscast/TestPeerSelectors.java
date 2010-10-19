@@ -1,8 +1,8 @@
-package it.unitn.disi.sps;
+package it.unitn.disi.sps.newscast;
 
 import static org.junit.Assert.*;
-import it.unitn.disi.sps.IView;
-import it.unitn.disi.sps.View;
+import it.unitn.disi.sps.newscast.IView;
+import it.unitn.disi.sps.newscast.View;
 import it.unitn.disi.sps.selectors.RandomSelector;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
 import it.unitn.disi.test.framework.TestNetworkBuilder;

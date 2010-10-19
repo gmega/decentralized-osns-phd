@@ -35,27 +35,14 @@ protocol.onehop GraphProtocol
 protocol.twohop GraphProtocol
 
 # ----------------------------------------------------------------------
-# CyclonSN
+# Perfect Peer Sampling
 # ----------------------------------------------------------------------
 
-protocol.peersampling CyclonSN 
+protocol.peersampling PerfectF2FPeerSampling 
 {
-	two_hop twohop
-	view_size 0.2
-	l 5
-}
-
-protocol.uniform UniformRandomTransport
-{
-	mindelay (CYCLE*MINDELAY)/100
-	maxdelay (CYCLE*MAXDELAY)/100
-}
-
-protocol.scheduler EDEpidemicManager 
-{
-	protocol peersampling
-	transport uniform
-	period CYCLE
+	twohop twohop
+	view_size 50
+	step CYCLE
 }
 
 # ----------------------------------------------------------------------
@@ -100,19 +87,17 @@ init.twohopinit GraphProtocolInit
 	size SIZE
 }
 
-init.cyclonbootstrap CyclonSNBootstrap
+init.psbootstrap PerfectF2FPSBootstrap
 {
 	protocol peersampling
-	neighborhood twohop
-	size 10
 }
 
 init.scheduler CDScheduler
 {
-	protocol approximator
+	protocol peersampling approximator
 }
 
-include.init registry onehopinit twohopinit cyclonbootstrap scheduler
+include.init registry onehopinit twohopinit psbootstrap scheduler
 
 # ----------------------------------------------------------------------
 # Controls.
@@ -129,5 +114,5 @@ control.dump MissingList
 {
 	linkable onehop
 	collector approximator
-	step SECOND*480
+	step SECOND*20
 }
