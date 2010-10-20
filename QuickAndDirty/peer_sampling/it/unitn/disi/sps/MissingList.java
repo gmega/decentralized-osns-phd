@@ -35,7 +35,6 @@ public class MissingList implements Control {
 			dump(node);
 		}
 		System.out.println("E_" + MissingList.class.getSimpleName());
-		
 		return false;
 	}
 

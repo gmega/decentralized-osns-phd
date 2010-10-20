@@ -76,6 +76,8 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	private IPeerSelector fSelector;
 
 	private BitSet fSeen;
+	
+	private Node fNode;
 
 	private int fCasualHits;
 
@@ -136,9 +138,19 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 		throw new IllegalArgumentException(fUtilityFunction.toString());
 	}
+	
+	public void init(Node node) {
+		fNode = node;
+		Linkable statik = statik(node);
+		init(statik);		
+	}
 
 	@Override
 	public void nextCycle(Node node, int protocolID) {
+		if (node != fNode) {
+			throw new IllegalStateException();
+		}
+		
 		Linkable statik = statik(node);
 		Linkable sampled = sampled(node);
 
@@ -146,7 +158,6 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		fIndexes.clear();
 		fIterationCache.clear();
 
-		init(statik);
 		resetCounters();
 
 		// Collect friends from the peer sampling layer (if any).
@@ -178,21 +189,21 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		}
 
 		Linkable ourSn = statik(ourNode);
-		fIndexes.resize(ourSn.degree(), false);
+		fIndexes.resize(2*ourSn.degree(), false);
 
 		// If he does, "contacts" the neighbor and queries for a useful IP.
 		// Exchange strategy depends on the mode.
 		switch (fExchange) {
-		case PEERSAMPLING:
-			linkableCollect(ourSn, sampled(neighbor), fIndexes);
-			break;
 		case COLLECTOR:
 			collectorCollect(ourNode, neighbor, fIndexes);
+		case PEERSAMPLING:
+			linkableCollect(ourSn, sampled(neighbor), fIndexes);
 			break;
 		}
 
 		// Found something.
 		for (int i = 0; i < fIndexes.size(); i++) {
+			checkIndex(fIndexes.get(i), ourSn);			
 			fSeen.set(fIndexes.get(i));
 			fProactiveHits++;
 		}
@@ -242,11 +253,6 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 				.getProtocol(CommonState.getPid());
 
 		BitSet seen = neighborCollector.fSeen;
-		// Oops, not initialized yet.
-		if (seen == null) {
-			return 0;
-		}
-
 		/**
 		 * Note: this is more contorted than linkableCollect because we need to
 		 * do an expensive index mapping operation before we can assert whether
@@ -301,19 +307,12 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	// ----------------------------------------------------------------------
 
 	public boolean seen(int index) {
-		if (fSeen == null) {
-			return false;
-		}
-
 		return fSeen.get(index);
 	}
 
 	// ----------------------------------------------------------------------
 
 	public int achieved() {
-		if (fSeen == null) {
-			return -1;
-		}
 		return fSeen.cardinality();
 	}
 
@@ -333,6 +332,20 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 	private void resetCounters() {
 		fCasualHits = fProactiveHits = 0;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private void checkIndex(int i, Linkable ourSn) {
+		if (i >= ourSn.degree()) {
+			throw new IllegalStateException();
+		}
+
+		Linkable theReal = (Linkable) CommonState.getNode()
+				.getProtocol(fStatic);
+		if (i >= theReal.degree()) {
+			throw new IllegalStateException("The real.");
+		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -371,19 +384,19 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 	@Override
 	public int degree() {
-		cacheInit(CommonState.getNode());
+		cacheInit(fNode);
 		return fIterationCache.size();
 	}
 
 	@Override
 	public Node getNeighbor(int i) {
-		cacheInit(CommonState.getNode());
+		cacheInit(fNode);
 		return fIterationCache.get(i);
 	}
 
 	@Override
 	public boolean contains(Node node) {
-		cacheInit(CommonState.getNode());
+		cacheInit(fNode);
 		return fIterationCache.contains(node);
 	}
 
@@ -412,6 +425,9 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		fChangeTime = time;
 
 		fIterationCache.clear();
+		if (fSeen == null) {
+			return;
+		}
 		Linkable sampled = sampled(node);
 		fIterationCache.resize(fSeen.cardinality() + sampled.degree(), false);
 
@@ -519,7 +535,10 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 		@Override
 		public int utility(Node base, Node target) {
-			return F2FOverlayCollector.this
+			Linkable statik = statik(base);
+			Linkable sampled = sampled(target);
+			return F2FOverlayCollector.this.linkableCollect(statik, sampled, null) + 
+				F2FOverlayCollector.this
 					.collectorCollect(base, target, null);
 		}
 

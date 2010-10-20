@@ -9,13 +9,19 @@ import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
+/**
+ * Reference peer sampling which produces perfectly random samples of the
+ * network.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class PerfectF2FPeerSampling implements Linkable, CDProtocol {
 
 	private int fTwoHop;
 	
 	private int fViewSize;
-
+	
 	private PermutingCache fCache;
 
 	private Node [] fView;
