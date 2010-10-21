@@ -1,14 +1,14 @@
 package it.unitn.disi.graph;
 
-import it.unitn.disi.codecs.GraphCodecHelper;
-import it.unitn.disi.codecs.ResettableGraphDecoder;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.LightweightStaticGraph;
+import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.utils.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -44,7 +44,7 @@ public class GraphProtocolInit implements Control {
 	/**
 	 * The {@link ResettableGraphDecoder} used to decode the graph format.
 	 */
-	@Attribute(defaultValue = "it.unitn.disi.codecs.AdjListGraphDecoder")
+	@Attribute(defaultValue = "it.unitn.disi.utils.graph.codecs.AdjListGraphDecoder")
 	private String decoder;
 	
 	/**
@@ -67,11 +67,14 @@ public class GraphProtocolInit implements Control {
 	// --------------------------------------------------------------------------
 
 	public boolean execute() {
+		
+		System.out.println(this.getClass().getName() + ": using " + file + ".");
+		
 		IndexedNeighborGraph graph;
 		try {
 			graph = loadGraph(GraphCodecHelper.createDecoder(file, decoder));
 		} catch (Exception ex) {
-			throw new RuntimeException(ex);
+			throw MiscUtils.nestRuntimeException(ex);
 		}
 
 		INodeRegistry registry = NodeRegistry.getInstance();

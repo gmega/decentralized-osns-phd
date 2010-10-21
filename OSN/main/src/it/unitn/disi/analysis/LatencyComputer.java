@@ -2,9 +2,10 @@ package it.unitn.disi.analysis;
 
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.newscasting.NewscastEvents;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
+import it.unitn.disi.utils.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
@@ -52,6 +53,14 @@ public class LatencyComputer implements IMultiTransformer {
 	
 	private static final String XCGH_DIGESTS = "D";
 	
+	public static enum Inputs {
+		graph, log
+	}
+	
+	public static enum Outputs {
+		latencies
+	}
+	
 	// ----------------------------------------------------------------------
 	// Parameters.
 	// ----------------------------------------------------------------------
@@ -78,13 +87,13 @@ public class LatencyComputer implements IMultiTransformer {
 		fVerbose = verbose;
 	}
 
-	public void execute(InputStream[] is, OutputStream[] oup)
+	public void execute(StreamProvider p)
 			throws IOException {
 		LightweightStaticGraph sn = LightweightStaticGraph
-				.load(new ByteGraphDecoder(is[0]));
-		OutputStreamWriter writer = new OutputStreamWriter(oup[0]);
+				.load(new ByteGraphDecoder(p.input(Inputs.graph)));
+		OutputStreamWriter writer = new OutputStreamWriter(p.output(Outputs.latencies));
 		EventCodec decoder = createDecoder();
-		DecodingStream stream = decoder.decodingStream(is[1]);
+		DecodingStream stream = decoder.decodingStream(p.input(Inputs.log));
 		
 		System.err.println("Now parsing binary log.");
 

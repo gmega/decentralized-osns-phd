@@ -2,9 +2,9 @@ package it.unitn.disi.graph;
 
 import java.util.BitSet;
 
-import it.unitn.disi.util.FastBitMatrixGraph;
-import it.unitn.disi.util.FastGetBitset;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.FastBitMatrixGraph;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.utils.collections.FastGetBitset;
 import peersim.graph.BitMatrixGraph;
 
 /**

@@ -10,10 +10,10 @@ import peersim.graph.NeighbourListGraph;
 import junit.framework.Assert;
 
 import it.unitn.disi.analysis.PercolationThresholdEstimator;
-import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.GraphAlgorithms;
+import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.test.framework.TestUtils;
-import it.unitn.disi.utils.graph.GraphAlgorithms;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
+import it.unitn.disi.utils.graph.codecs.ByteGraphDecoder;
 
 
 public class GraphAlgorithmsTest {

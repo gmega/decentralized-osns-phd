@@ -1,6 +1,6 @@
 package it.unitn.disi.sps.newscast;
 
-import it.unitn.disi.utils.graph.SubgraphDecorator;
+import it.unitn.disi.graph.SubgraphDecorator;
 
 import java.io.File;
 import java.io.FileWriter;

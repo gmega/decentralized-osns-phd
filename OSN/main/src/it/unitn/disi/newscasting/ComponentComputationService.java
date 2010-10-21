@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.utils.graph.SubgraphDecorator;
+import it.unitn.disi.graph.SubgraphDecorator;
 
 import java.util.ArrayList;
 import java.util.HashMap;

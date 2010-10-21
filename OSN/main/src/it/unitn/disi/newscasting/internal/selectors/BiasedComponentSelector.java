@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
 import it.unitn.disi.IDynamicLinkable;
+import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.util.RouletteWheel;
-import it.unitn.disi.utils.graph.SubgraphDecorator;
 
 import java.util.Iterator;
 import java.util.Map;

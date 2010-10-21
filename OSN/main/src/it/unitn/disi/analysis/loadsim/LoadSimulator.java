@@ -19,10 +19,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.codecs.AdjListGraphDecoder;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
+import it.unitn.disi.utils.graph.codecs.AdjListGraphDecoder;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.graph.Graph;
@@ -33,15 +34,14 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	private static final String FS = " ";
 
-	enum Inputs {
-		graph(0), experiments(1);
-
-		final int index;
-
-		Inputs(int index) {
-			this.index = index;
-		}
+	public static enum Inputs {
+		graph, experiments;
 	}
+	
+	public static enum Ouputs {
+		load;
+	}
+	
 	
 	private final Semaphore fSema;
 
@@ -94,19 +94,19 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	}
 
 	@Override
-	public void execute(InputStream[] istreams, OutputStream[] ostreams)
+	public void execute(StreamProvider p)
 			throws IOException {
 
 		// Loads the graph.
 		fGraph = LightweightStaticGraph.load(new AdjListGraphDecoder(
-				istreams[Inputs.graph.index]));
+				p.input(Inputs.graph)));
 
 		// Loads the unit experiments.
 		fExperiments = loadUnitExperiments(fGraph,
-				istreams[Inputs.experiments.index]);
+				p.input(Inputs.experiments));
 
 		// Sets up the output stream.
-		fStream = new PrintStream(ostreams[0]);
+		fStream = new PrintStream(p.output(Ouputs.load));
 
 		// Runs the experiments
 		try {

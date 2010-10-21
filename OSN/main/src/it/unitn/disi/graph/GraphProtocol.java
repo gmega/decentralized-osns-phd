@@ -1,8 +1,8 @@
 package it.unitn.disi.graph;
 
 import it.unitn.disi.IDynamicLinkable;
+import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.sps.IInputStreamProvider;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 
 import java.io.File;

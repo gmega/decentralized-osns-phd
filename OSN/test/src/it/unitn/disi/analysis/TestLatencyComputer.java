@@ -13,7 +13,8 @@ import java.io.OutputStream;
 import junit.framework.Assert;
 
 import it.unitn.disi.SimulationEvents;
-import it.unitn.disi.cli.Adj2ByteGraph;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.Adj2ByteGraph;
 import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.CodecUtils;
@@ -147,10 +148,10 @@ public class TestLatencyComputer {
 		LatencyComputer computer = new LatencyComputer(false);
 
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
-		computer.execute(new InputStream[] {
+		computer.execute(new StreamProvider(new InputStream[] {
 				new ByteArrayInputStream(socialNetwork),
 				new ByteArrayInputStream(oup.toByteArray()) },
-				new OutputStream[] { output });
+				new OutputStream[] { output }, LatencyComputer.class));
 		
 		return new String(output.toByteArray());
 	}
