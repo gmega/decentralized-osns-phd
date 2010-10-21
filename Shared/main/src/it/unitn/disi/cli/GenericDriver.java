@@ -64,22 +64,25 @@ public class GenericDriver {
 			}
 			
 			IResolver [] resolver = { new HashMapResolver(parseProperties(fParameters)) };
-			
 			System.err.println("Starting the Java generic driver.");
-			
-			if (fVerbose) {
-				System.err.println("Loading processor class " + fArguments.get(0) + ".");
-			}
-			
-			IMultiTransformer processor = create(fArguments.get(0), resolver);
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
-			processor.execute(fIStreams, fOStreams);
+
+			Object processor = create(fArguments.get(0), resolver);
+			if (processor instanceof ITransformer) {
+				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);	
+			} else if (processor instanceof IMultiTransformer) {
+				StreamProvider provider = new StreamProvider(fIStreams,
+						fOStreams, processor.getClass());
+				((IMultiTransformer) processor).execute(provider);				
+			} else {
+				System.err.println("Class " + processor.getClass().getName()
+						+ " is not a valid processor.");
+			}
 			
 		} catch (CmdLineException ex) {
 			System.err.println(ex.getMessage());
 			printHelp(parser);
-			
 		} finally {
 			close(fIStreams);
 			close(fOStreams);
@@ -183,30 +186,20 @@ public class GenericDriver {
 		}
 	}
 
-	private IMultiTransformer create(String string, IResolver [] resolvers) throws ClassNotFoundException,
+	private Object create(String string, IResolver [] resolvers) throws ClassNotFoundException,
 			SecurityException, NoSuchMethodException, IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
-
+		
+		if (fVerbose) {
+			System.err.println("Loading processor class " + string + ".");
+		}
+		
 		@SuppressWarnings("unchecked")
 		Class <Object> klass = (Class<Object>) Class.forName(string);
 		
 		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass, resolvers);
-		
-		Object transformer = creator.create(null);
-		IMultiTransformer mt;
-
-		if (transformer instanceof ITransformer) {
-			mt = new MultiTransformerAdapter((ITransformer) transformer);
-		} else if (transformer instanceof IMultiTransformer) {
-			mt = (IMultiTransformer) transformer;
-		} else {
-			throw new IllegalArgumentException("Class " + klass.getName()
-					+ " does not implement " + ITransformer.class.getName()
-					+ " nor " + IMultiTransformer.class.getName() + ".");
-		}
-		
-		return mt;
+		return creator.create(null);
 	}
 
 	public static void main(String[] args) {
@@ -220,18 +213,3 @@ public class GenericDriver {
 	}
 }
 
-class MultiTransformerAdapter implements IMultiTransformer {
-
-	private final ITransformer fDelegate;
-	
-	public MultiTransformerAdapter(ITransformer delegate) {
-		fDelegate = delegate;
-	}
-	
-	@Override
-	public void execute(InputStream[] istreams, OutputStream[] ostreams)
-			throws Exception {
-		fDelegate.execute(istreams[0], ostreams[0]);
-	}
-
-}
