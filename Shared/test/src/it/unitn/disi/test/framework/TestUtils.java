@@ -1,9 +1,9 @@
 package it.unitn.disi.test.framework;
 
-import it.unitn.disi.cli.Adj2ByteGraph;
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.cli.Undirect;
-import it.unitn.disi.utils.graph.GraphWriter;
+import it.unitn.disi.graph.Adj2ByteGraph;
+import it.unitn.disi.graph.GraphWriter;
+import it.unitn.disi.graph.Undirect;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

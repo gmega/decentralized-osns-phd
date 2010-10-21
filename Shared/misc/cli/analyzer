@@ -2,7 +2,5 @@
 
 export PYTHONPATH=$WORKSPACE_HOME/GraphAnalyzer2/src:$WORKSPACE_HOME/GraphAnalyzer2/src-scripts
 
-echo $PYTHONPATH
-
 python -m main $@
 

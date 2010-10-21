@@ -1,11 +1,9 @@
 package it.unitn.disi.graph;
 
-import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.BFSIterable.BFSIterator;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
-import it.unitn.disi.utils.graph.BFSIterable.BFSIterator;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

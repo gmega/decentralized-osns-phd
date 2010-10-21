@@ -194,7 +194,7 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 				+ ex.getMessage());
 	}
 
-	public void processDone(ProcessEntry entry, int value) {
+	public void processDone(ProcessEntry entry, int value, long time) {
 		fLogger.info("Process " + entry.descriptor.pid + ": terminated.");
 
 		// Waits for the stream processors to stop.
@@ -211,7 +211,8 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 			// threads.
 		}
 		fLogger.info("Process " + entry.descriptor.pid
-				+ ": pipe streams terminated.");
+				+ ": pipe streams terminated. Completion time:" + time
+				+ " (approximately).");
 
 		// Removes process from process table.
 		fProcessTable.remove(entry.descriptor.pid);
@@ -371,7 +372,11 @@ class GarbageCollector extends Thread {
 			for (ProcessEntry entry : fParent) {
 				try {
 					int value = entry.process.exitValue();
-					fParent.processDone(entry, value);
+					// Quite loose, as we have no idea for how long the process
+					// has already been dead. Only way to fix this would be to
+					// not use polling, but instead launch a thread per process.
+					long time = System.currentTimeMillis() - entry.startTime;
+					fParent.processDone(entry, value, time);
 				} catch (IllegalThreadStateException ex) {
 					// Swallows, means process hasn't terminated.
 				}
@@ -443,9 +448,14 @@ class StreamPipe implements Runnable {
 
 class ProcessEntry {
 	public final ProcessDescriptor descriptor;
+
 	public final Process process;
+
 	public final Thread input;
+
 	public final Thread output;
+
+	public final long startTime;
 
 	public volatile boolean terminating = false;
 
@@ -453,6 +463,7 @@ class ProcessEntry {
 			Thread input, Thread output) {
 		this.descriptor = descriptor;
 		this.process = process;
+		this.startTime = System.currentTimeMillis();
 		this.input = input;
 		this.output = output;
 	}

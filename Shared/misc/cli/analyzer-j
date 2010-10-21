@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -Xmx2048m -cp $WORKSPACE_HOME/Social_Peer_Sampling/bin:$WORKSPACE_HOME/Utilities/lib/args4j-2.0.9.jar:$WORKSPACE_HOME/Utilities/lib/google-collect-1.0-rc3.jar:$WORKSPACE_HOME/peersim/bin:$WORKSPACE_HOME/Utilities/bin:$WORKSPACE_HOME/Utilities/ext-1.1.1.jar:$WORKSPACE_HOME/Utilities/jep-2.4.1.jar it.unitn.disi.cli.GenericDriver $@
+java -Xmx2048m -cp $WORKSPACE_HOME/Social_Peer_Sampling/bin:$WORKSPACE_HOME/Utilities/lib/args4j-2.0.9.jar:$WORKSPACE_HOME/Utilities/lib/google-collect-1.0-rc3.jar:$WORKSPACE_HOME/peersim/bin:$WORKSPACE_HOME/Utilities/bin:$WORKSPACE_HOME/Utilities/bin:$WORKSPACE_HOME/Utilities/ext-1.1.1.jar:$WORKSPACE_HOME/Utilities/jep-2.4.1.jar:$WORKSPACE_HOME/QuickAndDirty/bin it.unitn.disi.cli.GenericDriver $@

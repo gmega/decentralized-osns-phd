@@ -5,12 +5,10 @@ import java.util.NoSuchElementException;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.BFSIterable.BFSIterator;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.graph.IndexedNeighborGraph;
-import it.unitn.disi.utils.graph.LightweightStaticGraph;
-import it.unitn.disi.utils.graph.BFSIterable.BFSIterator;
 
 import org.junit.Test;
 

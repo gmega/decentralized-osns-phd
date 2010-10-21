@@ -1,6 +1,6 @@
 package it.unitn.disi.utils;
 
-import it.unitn.disi.codecs.GraphDecoder;
+import it.unitn.disi.graph.codecs.GraphDecoder;
 import it.unitn.disi.utils.collections.IExchanger;
 
 import java.io.Closeable;
@@ -29,6 +29,14 @@ public class MiscUtils {
 				throw new RuntimeException(ex);
 			}
 			ex.printStackTrace();
+		}
+	}
+	
+	public static RuntimeException nestRuntimeException(Exception ex) {
+		if (ex instanceof RuntimeException) {
+			return (RuntimeException) ex;
+		} else {
+			return new RuntimeException(ex);
 		}
 	}
 	
