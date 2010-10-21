@@ -55,7 +55,7 @@ public class ApproximationObserver implements Control {
 		buffer.append(safeDivide(proactiveHits, totalHits));
 		
 		System.out.println(buffer);
-		return false;
+		return built == total;
 	}
 	
 	private String safeDivide(int numerator, int denominator) {

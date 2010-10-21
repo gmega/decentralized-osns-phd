@@ -375,11 +375,8 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	private static long fChangeTime = -1;
 
 	/*
-	 * XXX The linkable interface for F2FOverlayCollector has several
-	 * limitations. Be careful with these methods, as they will only work if the
-	 * caller node is the one owning the linkable. Also, their efficiency is
-	 * coupled to certain call patterns -- iteration is only guaranteed to be
-	 * O(n) if locality is preserved.
+	 * XXX The linkable interface for F2FOverlayCollector has severe performance
+	 * penalties, but at least traversals are guaranteed linear.
 	 */
 
 	@Override
