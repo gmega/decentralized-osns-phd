@@ -59,6 +59,9 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	@Attribute("sps")
 	private int fSampled;
 
+	@Attribute(value = "log_hits", defaultValue = "false")
+	boolean fLogHits;
+
 	private Layer fSelection;
 
 	private Layer fExchange;
@@ -76,7 +79,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	private IPeerSelector fSelector;
 
 	private BitSet fSeen;
-	
+
 	private Node fNode;
 
 	private int fCasualHits;
@@ -138,11 +141,11 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 
 		throw new IllegalArgumentException(fUtilityFunction.toString());
 	}
-	
+
 	public void init(Node node) {
 		fNode = node;
 		Linkable statik = statik(node);
-		init(statik);		
+		init(statik);
 	}
 
 	@Override
@@ -150,7 +153,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		if (node != fNode) {
 			throw new IllegalStateException();
 		}
-		
+
 		Linkable statik = statik(node);
 		Linkable sampled = sampled(node);
 
@@ -161,7 +164,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		resetCounters();
 
 		// Collect friends from the peer sampling layer (if any).
-		collectFriends(statik, sampled);
+		collectFriends(node, statik, sampled);
 
 		// Proactively tries to obtain new entries.
 		if (fSelectionMode != ProactiveSelection.PASSIVE) {
@@ -169,12 +172,12 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		}
 	}
 
-	private void collectFriends(Linkable statik, Linkable sampled) {
+	private void collectFriends(Node ours, Linkable statik, Linkable sampled) {
 		for (int i = 0; i < statik.degree(); i++) {
 			Node neighbor = statik.getNeighbor(i);
 			if (sampled.contains(neighbor) && !fSeen.get(i)) {
 				fCasualHits++;
-				fSeen.set(i);
+				markSeen(i, ours, statik);
 			}
 		}
 	}
@@ -189,24 +192,40 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		}
 
 		Linkable ourSn = statik(ourNode);
-		fIndexes.resize(2*ourSn.degree(), false);
+		fIndexes.resize(ourSn.degree(), false);
 
 		// If he does, "contacts" the neighbor and queries for a useful IP.
 		// Exchange strategy depends on the mode.
 		switch (fExchange) {
 		case COLLECTOR:
 			collectorCollect(ourNode, neighbor, fIndexes);
+			markSeen(fIndexes, ourNode, ourSn);
+			fIndexes.clear();
+		
 		case PEERSAMPLING:
 			linkableCollect(ourSn, sampled(neighbor), fIndexes);
+			markSeen(fIndexes, ourNode, ourSn);
 			break;
 		}
+	}
 
+	private void markSeen(StaticVector<Integer> indexes, Node ourNode,
+			Linkable ourSn) {
 		// Found something.
 		for (int i = 0; i < fIndexes.size(); i++) {
-			checkIndex(fIndexes.get(i), ourSn);			
-			fSeen.set(fIndexes.get(i));
+			markSeen(indexes.get(i), ourNode, ourSn);
 			fProactiveHits++;
 		}
+	}
+
+	private void markSeen(int i, Node node, Linkable statik) {
+		checkIndex(i, statik);
+		if (fLogHits) {
+			System.out.println("SEEN " + node.getID() + " "
+					+ statik.getNeighbor(i).getID() + " "
+					+ CommonState.getTime());
+		}
+		fSeen.set(i);
 	}
 
 	private Linkable sampled(Node node) {
@@ -333,9 +352,9 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 	private void resetCounters() {
 		fCasualHits = fProactiveHits = 0;
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	private void checkIndex(int i, Linkable ourSn) {
 		if (i >= ourSn.degree()) {
 			throw new IllegalStateException();
@@ -534,9 +553,10 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		public int utility(Node base, Node target) {
 			Linkable statik = statik(base);
 			Linkable sampled = sampled(target);
-			return F2FOverlayCollector.this.linkableCollect(statik, sampled, null) + 
-				F2FOverlayCollector.this
-					.collectorCollect(base, target, null);
+			return F2FOverlayCollector.this.linkableCollect(statik, sampled,
+					null)
+					+ F2FOverlayCollector.this.collectorCollect(base, target,
+							null);
 		}
 
 		@Override

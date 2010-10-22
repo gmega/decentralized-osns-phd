@@ -6,7 +6,7 @@ import it.unitn.disi.graph.GraphAlgorithms;
 import it.unitn.disi.graph.GraphWriter;
 import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
-import it.unitn.disi.utils.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 
 import java.io.IOException;
 import java.io.InputStream;

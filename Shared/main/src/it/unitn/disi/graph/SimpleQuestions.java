@@ -2,12 +2,14 @@ package it.unitn.disi.graph;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.codecs.GraphCodecHelper;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.BitSet;
 
+import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
@@ -19,20 +21,24 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class SimpleQuestions implements ITransformer {
 
+	@Attribute(value="decoder", defaultValue="it.unitn.disi.graph.codecs.ByteGraphDecoder")
+	private String decoder;
+	
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		LightweightStaticGraph graph = LightweightStaticGraph
-				.load(new ByteGraphDecoder(is));
+				.load(GraphCodecHelper.createDecoder(is, this.decoder));
 		PrintStream p = new PrintStream(oup);
 		
 		BitSet set = new BitSet(graph.size());
 		
 		boolean directed = false;
 		boolean simple = true;
-		
+		int edges = 0;
 		for (int i = 0; i < graph.size(); i++) {
 			set.clear();
 			for (int j = 0; j < graph.degree(i); j++) {
+				edges++;
 				int neighbor = graph.getNeighbor(i, j);
 				if (!graph.isEdge(neighbor, i)) {
 					directed = true;
@@ -55,6 +61,8 @@ public class SimpleQuestions implements ITransformer {
 		} else {
 			p.println("Undirected.");
 		}
+		
+		System.out.println("Edges (directed) " + edges+".");
 	}
 
 }

@@ -9,6 +9,9 @@ import resources
 from resources import ORIGINAL_ID, IGRAPH_ID
 from graph.codecs import GraphLoader, AdjacencyListDecoder, AdjacencyListEncoder
 from graph.transformers import snowball_sample
+import igraph
+import math
+from graph.util import igraph_edges
 
 class GenerateDatasets(object):
     """ Given a graph, generates a number of 2-hop neighborhoods from that graph, 
@@ -49,15 +52,85 @@ class GenerateDatasets(object):
         vset = set([i[IGRAPH_ID] for i in two_hop.vs])
         return (vset, two_hop) 
 
-class MapFile(object):
-    
+# =============================================================================
+
+class DescriptorEvolution(object):
     def __init__(self, input):
         self._input = input
-    
+        
     def execute(self):
-        loader = GraphLoader(self._input, AdjacencyListDecoder)
+        discard = lambda x,y,z: None
+        freq = {}
+        time = 0
+
+        processor = discard
+        with open(self._input, "r") as file:
+            for line in file:
+                # Discards empty lines.
+                line = line.lstrip().rstrip()
+                if line == '':
+                    continue
+
+                if line.startswith("B_DescriptorObserver"):
+                    processor = self.__process_descriptor__
+                    prefix, time = line.split(" ")
+                    time = int(time)
+                elif line.startswith("E_DescriptorObserver"):
+                    processor = discard
+                    self.__print_counts__(freq, time)
+                    freq.clear()
+                else:
+                    processor(line, time, freq)
+    
+    def __process_descriptor__(self, line, time, freq):
+        holder, descriptor = [int(i) for i in line.split(" ")]
+        count = freq.setdefault(descriptor, 0)
+        freq[descriptor] = count + 1
+        
+    def __print_counts__(self, freq, time):
+        for descriptor, frequency in freq.items():
+            print descriptor,frequency,time
+
+# =============================================================================
+
+class Stragglers:
+    """ Given a simulation log for the reconstruction protocol, sorts the events
+    by time and determines the straggler edges. Current implementation isn't 
+    efficient in any way, but it's easy to understand. """
+    
+    def __init__(self, onehop, logfile):
+        self._onehop = onehop
+        self._logfile = logfile
+        
+    def execute(self):
+        loader = GraphLoader(self._onehop, AdjacencyListDecoder, True, True, False)
+        # Finds the missing.
         g = loader.load_graph()
         
-        for vertex in g.vs:
-            print sys.stdout >> vertex[ORIGINAL_ID], vertex[IGRAPH_ID]
+        evts = []
+        with open(self._logfile, "r") as file:
+            for line in file:
+                line = line.lstrip().rstrip()
+                u, v, time = [int(i) for i in line.split(" ")]
+                evts.append(((u,v), time))
+        
+        evts.sort(cmp = lambda x,y: x[1] - y[1]) 
+                
+        rebuilt = igraph.Graph(len(g.vs), directed=True);
+        rebuilt.add_edges([evt[0] for evt in evts])
+        time = sys.maxint
+        for vertex in range(0, len(g.vs)):
+            original = set(g.neighbors(vertex, type=igraph.OUT))
+            neighbors = set(rebuilt.neighbors(vertex, type=igraph.OUT))
             
+            # Adds the stragglers: non-reconstructed edges.
+            stragglers = original.difference(neighbors)
+            for straggler in stragglers:
+                evts.append(((vertex, straggler), time))
+
+        # Sanity test.            
+        assert len(evts) == len(g.es)
+        # Prints the whole darn thing.
+        for edge, time in evts:
+            u,v = edge
+            print u,v,time

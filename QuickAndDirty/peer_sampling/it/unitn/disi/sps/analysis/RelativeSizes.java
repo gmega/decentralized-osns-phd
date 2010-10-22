@@ -7,7 +7,7 @@ import peersim.config.AutoConfig;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.LightweightStaticGraph;
-import it.unitn.disi.utils.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 
 @AutoConfig
 public class RelativeSizes implements IMultiTransformer {

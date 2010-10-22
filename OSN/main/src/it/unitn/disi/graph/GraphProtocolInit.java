@@ -2,9 +2,9 @@ package it.unitn.disi.graph;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.LightweightStaticGraph;
+import it.unitn.disi.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.graph.codecs.GraphCodecHelper;
-import it.unitn.disi.utils.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
@@ -44,7 +44,7 @@ public class GraphProtocolInit implements Control {
 	/**
 	 * The {@link ResettableGraphDecoder} used to decode the graph format.
 	 */
-	@Attribute(defaultValue = "it.unitn.disi.utils.graph.codecs.AdjListGraphDecoder")
+	@Attribute(defaultValue = "it.unitn.disi.graph.codecs.AdjListGraphDecoder")
 	private String decoder;
 	
 	/**

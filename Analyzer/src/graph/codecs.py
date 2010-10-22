@@ -34,7 +34,7 @@ class GraphLoader(object):
         self._retain_data = retain_id_map
         self._logger = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
         self._decoder = decoder
-        self._simplify = True
+        self._simplify = simplify
         self._id_map = None
     
     
@@ -91,7 +91,7 @@ class GraphLoader(object):
     
     def __igraph_create__(self, id_table, black_set, edge_list, weight_list):         
         
-        graph = Graph(len(id_table))
+        graph = Graph(len(id_table), directed=self._directed)
         
         for orig_id, igraph_id in id_table.items():
             vertex = graph.vs[igraph_id]
@@ -227,7 +227,7 @@ class EdgeListDecoder():
             if len(integers) == 3:
                 weight = int(integers[2])
             elif len(integers) != 2:
-                print sys.stderr >> "Malformed line ", i, " has been ignored."
+                print >> sys.stderr, "Malformed line ", i, " has been ignored."
                 continue
                 
             yield (int(integers[0]), int(integers[1]), weight)
