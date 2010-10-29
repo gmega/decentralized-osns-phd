@@ -2,8 +2,9 @@
 # Constants.
 # -----------------------------------------------------------------------------
 
+random.seed -1119980560846483977
 simulation.cycles 200000
-range.0=CHURN;0.01,0.05,0.1,0.2,0.4,0.5,0.7
+range.0=CHURN;0.00,0.01,0.05,0.1,0.2,0.4,0.5,0.7
 
 SIZE 72303
 
@@ -70,6 +71,7 @@ init.onehopinit GraphProtocolInit
 init.nrinit NodeRegistryInit
 
 include.init nrinit onehopinit generic
+
 # -----------------------------------------------------------------------------
 # Cycle-driven Action Scheduler
 # -----------------------------------------------------------------------------

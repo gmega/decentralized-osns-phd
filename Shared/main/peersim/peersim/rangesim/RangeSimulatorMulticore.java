@@ -18,6 +18,7 @@ package peersim.rangesim;
  *
  */
 
+import it.unitn.disi.scheduler.ClientAPI;
 import it.unitn.disi.scheduler.CommandDescriptor;
 import it.unitn.disi.scheduler.SchedulerDaemon;
 import it.unitn.disi.utils.MiscUtils;
@@ -144,7 +145,7 @@ public class RangeSimulatorMulticore {
 	private String outputPattern;
 
 	/** Executor */
-	private SchedulerDaemon executor;
+	private ClientAPI dispatcher;
 
 	// --------------------------------------------------------------------------
 	// Main
@@ -206,9 +207,8 @@ public class RangeSimulatorMulticore {
 		// Executes experiments; report short messages about exceptions that are
 		// handled by the configuration mechanism.
 		try {
-			executor = startDaemon(args);
+			dispatcher = startDaemon(args);
 			submitExperiments(args);
-			executor.join();
 		} catch (Exception e) {
 			System.err.println(e + "");
 			System.exit(101);
@@ -277,12 +277,9 @@ public class RangeSimulatorMulticore {
 
 	// --------------------------------------------------------------------
 
-	private SchedulerDaemon startDaemon(String[] args) throws RemoteException {
+	private ClientAPI startDaemon(String[] args) throws RemoteException {
 		BasicConfigurator.configure();
-		SchedulerDaemon daemon = new SchedulerDaemon(Runtime.getRuntime()
-				.availableProcessors());
-		daemon.start();
-		return daemon;
+		return new ClientAPI();
 	}
 
 	// --------------------------------------------------------------------
@@ -383,7 +380,7 @@ public class RangeSimulatorMulticore {
 				outputFile.getAbsolutePath(), System.getenv("PWD"));
 
 		try {
-			executor.submit(descriptor);
+			dispatcher.resolveObject().submit(descriptor);
 		} catch (RemoteException ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}

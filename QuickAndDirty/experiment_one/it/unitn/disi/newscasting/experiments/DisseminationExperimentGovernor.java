@@ -89,13 +89,6 @@ public class DisseminationExperimentGovernor implements Control {
 	private int degreeCutoff;
 
 	/**
-	 * Waits for warmup rounds before tweeting, after starting a unit
-	 * experiment.
-	 */
-	@Attribute(value = "warmup", defaultValue = "0")
-	private int fWarmUp;
-
-	/**
 	 * Whether or not to print assorted debugging and status information.
 	 */
 	@Attribute(defaultValue = "false")
@@ -247,26 +240,9 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void scheduleTweet(final Node nextNode) {
-		final ActionExecutor exec = (ActionExecutor) nextNode
-				.getProtocol(executor);
-		final IAction action = ActionExecutor.TWEET;
-		// XXX Hack: node might be dead. If that is the case, reschedules.
-		exec.add(fWarmUp, nextNode, new IAction() {
-			private int fReschedules = 0;
-			
-			@Override
-			public void execute(Node node) {
-				if (!node.isUp()) {
-					fReschedules++;
-					exec.add(0, nextNode, action);
-				} else {
-					if (fReschedules > 0) {
-						System.err.println("RESCHEDULES: " + fReschedules);
-					}
-					action.execute(node);
-				}
-			}
-		});
+		ReschedulingAction action = new ReschedulingAction(
+				ActionExecutor.TWEET, executor);
+		action.schedule(nextNode);
 	}
 
 	private void wrapUpExperiment() {
@@ -371,5 +347,38 @@ public class DisseminationExperimentGovernor implements Control {
 
 	private Node currentNode() {
 		return fCurrent;
+	}
+}
+
+class ReschedulingAction implements IAction {
+
+	private final IAction fDelegate;
+
+	private final int fExecutorId;
+
+	private int fReschedules = 0;
+
+	public ReschedulingAction(IAction delegate, int executorId) {
+		fDelegate = delegate;
+		fExecutorId = executorId;
+	}
+
+	public void schedule(Node node) {
+		ActionExecutor executor = (ActionExecutor) node
+				.getProtocol(fExecutorId);
+		executor.add(1, node, this);
+	}
+
+	@Override
+	public void execute(Node node) {
+		if (!node.isUp()) {
+			fReschedules++;
+			schedule(node);
+		} else {
+			if (fReschedules > 0) {
+				System.err.println("RESCHEDULES: " + fReschedules);
+			}
+			fDelegate.execute(node);
+		}
 	}
 }

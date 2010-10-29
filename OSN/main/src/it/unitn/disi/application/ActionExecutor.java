@@ -104,10 +104,6 @@ public class ActionExecutor implements EDProtocol<IAction> {
 
 	@Override
 	public void processEvent(Node node, int pid, IAction event) {
-		if (!node.isUp()) {
-			throw new IllegalStateException(
-					"Dead nodes can't generate traffic.");
-		}
 		event.execute(node);
 	}
 

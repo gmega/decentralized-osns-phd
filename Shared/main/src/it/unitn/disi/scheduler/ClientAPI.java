@@ -21,6 +21,10 @@ public class ClientAPI {
 	private static final Logger fLogger = Logger.getLogger(ClientAPI.class);
 
 	private final int fPort;
+	
+	public ClientAPI() {
+		this(0);
+	}
 
 	public ClientAPI(int port) {
 		fPort = port;
