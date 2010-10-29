@@ -88,7 +88,7 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 	/**
 	 * Starts the server.
 	 */
-	public void start() throws RemoteException {
+	public synchronized void start() throws RemoteException {
 		fLogger.info("Initializing server.");
 
 		if (fDispatcher != null) {
@@ -100,10 +100,26 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 
 		fDispatcher.start();
 		fCollector.start();
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				try {
+					SchedulerDaemon.this.shutdown();
+				} catch (RemoteException ex) {
+					fLogger.error("Clean shutdown failed.", ex);
+				}
+			}
+		});
 	}
 
 	@Override
-	public void shutdown() throws RemoteException {
+	public synchronized void shutdown() throws RemoteException {
+		// Server has already been shut down.
+		if (fRunState.getCount() == 0) {
+			return;
+		}
+
 		fLogger.info("Initiate orderly shutdown.");
 		fLogger.info("Halting process dispatcher.");
 		// Stops submitting.
@@ -144,7 +160,7 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 	}
 
 	@Override
-	public void kill(int pid) throws RemoteException {
+	public synchronized void kill(int pid) throws RemoteException {
 		ProcessEntry entry = fProcessTable.get(pid);
 		if (entry == null) {
 			throw new NoSuchElementException(Integer.toString(pid));
@@ -153,14 +169,14 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 	}
 
 	@Override
-	public void killall() throws RemoteException {
+	public synchronized void killall() throws RemoteException {
 		for (ProcessEntry entry : fProcessTable.values()) {
 			entry.process.destroy();
 		}
 	}
 
 	@Override
-	public List<ProcessDescriptor> list() throws RemoteException {
+	public synchronized List<ProcessDescriptor> list() throws RemoteException {
 		ArrayList<ProcessDescriptor> list = new ArrayList<ProcessDescriptor>();
 		for (ProcessEntry entry : fProcessTable.values()) {
 			list.add(entry.descriptor);
@@ -349,7 +365,7 @@ class ProcessDispatcher extends Thread {
 	}
 
 	public void submit(CommandDescriptor descriptor) {
-		logger.info("Queueing command \"" + descriptor.command + "\".");
+		logger.info("Queueing command \"" + descriptor.commandString() + "\".");
 		fQueued.add(descriptor);
 	}
 }

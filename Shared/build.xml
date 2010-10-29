@@ -28,5 +28,22 @@
 			</manifest>
 		</jar>
 	</target>
+	
+	
+	<target name="build-scheduler-jar" depends="compile-analyzer">
+		<jar destfile="${output.lib.path}/scheduler.jar">
+			<fileset dir="${build}">
+				<include name="it/unitn/disi/scheduler/**"/>
+				<include name="it/unitn/disi/utils/collections/**"/>
+				<include name="it/unitn/disi/utils/MiscUtils**"/>
+			</fileset>
+			<zipfileset src="${lib.path}/args4j-2.0.9.jar"/>
+			<zipfileset src="${lib.path}/log4j-1.2.16.jar"/>
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+				<attribute name="Main-Class" value="it.unitn.disi.scheduler.Client" />
+			</manifest>
+		</jar>
+	</target>
 
 </project>

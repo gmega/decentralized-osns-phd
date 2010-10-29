@@ -155,6 +155,11 @@ public class Client {
 			defaultMessage("List acquisition", ex);
 			return;
 		}
+		
+		if (entries.size() == 0) {
+			System.err.println("There are no running processes.");
+			return;
+		}
 
 		System.err.println("Running processes:");
 
