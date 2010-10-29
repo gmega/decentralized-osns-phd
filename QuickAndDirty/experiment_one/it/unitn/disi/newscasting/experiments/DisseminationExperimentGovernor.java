@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
-import it.unitn.disi.application.SimpleApplication;
+import it.unitn.disi.application.ActionExecutor;
+import it.unitn.disi.application.IAction;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
@@ -15,15 +16,14 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.core.Control;
-import peersim.core.GeneralNode;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
 import com.google.common.collect.PeekingIterator;
 
 /**
- * {@link DisseminationExperimentGovernor} will schedule one node after the other for
- * dissemination on the network.
+ * {@link DisseminationExperimentGovernor} will schedule one node after the
+ * other for dissemination on the network.
  * 
  * NOTE: this code is quick and dirty, and as it is it's throw away code.
  * 
@@ -31,32 +31,32 @@ import com.google.common.collect.PeekingIterator;
  */
 @AutoConfig
 public class DisseminationExperimentGovernor implements Control {
-	
+
 	// ----------------------------------------------------------------------
 	// Singleton hack for the lack of a proper configuration infrastructure
 	// and component dependency management in PeerSim.
 	// ----------------------------------------------------------------------
-	
+
 	private static DisseminationExperimentGovernor fInstance;
-	
+
 	private static final Vector<IExperimentObserver> fObservers = new Vector<IExperimentObserver>();
-	
+
 	public static DisseminationExperimentGovernor singletonInstance() {
 		return fInstance;
 	}
-	
+
 	public static void addExperimentObserver(IExperimentObserver observer) {
 		fObservers.add(observer);
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	private static final String SCHEDULER = "scheduler";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
 	// ----------------------------------------------------------------------
-	
+
 	/**
 	 * {@link Linkable} representing the neighborhood graph (for which
 	 * quiescence is to be checked).
@@ -67,15 +67,15 @@ public class DisseminationExperimentGovernor implements Control {
 	/**
 	 * {@link IApplicationInterface} protocol id.
 	 */
-	@Attribute
+	@Attribute("social_newscasting")
 	private int sns;
 
 	/**
-	 * {@link SimpleApplication} protocol id.
+	 * {@link SimpleTrafficGenerator} protocol id.
 	 */
 	@Attribute
-	private int application;
-	
+	private int executor;
+
 	/**
 	 * The number of times the schedule should be repeated.
 	 */
@@ -87,27 +87,34 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	@Attribute
 	private int degreeCutoff;
-	
+
+	/**
+	 * Waits for warmup rounds before tweeting, after starting a unit
+	 * experiment.
+	 */
+	@Attribute(value = "warmup", defaultValue = "0")
+	private int fWarmUp;
+
 	/**
 	 * Whether or not to print assorted debugging and status information.
 	 */
 	@Attribute(defaultValue = "false")
 	private boolean verbose;
-	
+
 	// ----------------------------------------------------------------------
 	// State.
 	// ----------------------------------------------------------------------
-	
+
 	private Node fCurrent;
-	
+
 	/**
 	 * The experiment scheduler.
 	 */
 	private Iterable<Integer> fScheduler;
 	private PeekingIterator<Integer> fSchedule;
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public DisseminationExperimentGovernor(
 			@Attribute(Attribute.PREFIX) String prefix) {
 		fScheduler = createScheduler(prefix);
@@ -117,16 +124,17 @@ public class DisseminationExperimentGovernor implements Control {
 
 	@Override
 	public boolean execute() {
+
 		// Schedules the next experiment.
 		if (isCurrentExperimentOver()) {
-			// Runs post-unit-experiment code. 
+			// Runs post-unit-experiment code.
 			wrapUpExperiment();
 			// Schedules the next one, if any.
 			return nextUnitExperiment();
 		}
-		
+
 		experimentCycled();
-		
+
 		return false;
 	}
 
@@ -138,17 +146,14 @@ public class DisseminationExperimentGovernor implements Control {
 	 *         the simulation should stop).
 	 */
 	private boolean nextUnitExperiment() {
-		
+
 		Node nextNode;
-		while(true) {
-			// Little sanity check.
-			assertTweetSuppression();
-		
+		while (true) {
 			// Gets a suitable next node.
 			nextNode = suitableNext();
-			
+
 			if (nextNode == null) {
-				// No viable node in the current schedule. 
+				// No viable node in the current schedule.
 				// If ther are still repetitions left ...
 				if (--repetitions != 0) {
 					// ... restarts the scheduler.
@@ -164,8 +169,8 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 
 		// Starts the next experiment.
-		initializeNextExperiment(nextNode);		
-		
+		initializeNextExperiment(nextNode);
+
 		// Simulation should go on.
 		return false;
 	}
@@ -176,71 +181,108 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	private boolean isCurrentExperimentOver() {
 		Node node = currentNode();
-		
-		if(node == null) {
+		if (node == null) {
 			return true;
 		}
-		
+
 		Linkable sn = (Linkable) node.getProtocol(linkable);
-		
+
+		// Check that everyone is quiescent.
+		boolean terminated = true;
 		for (int i = 0; i < sn.degree(); i++) {
 			Node neighbor = sn.getNeighbor(i);
 			if (!isQuiescent(neighbor)) {
-				return false;
+				terminated = false;
+				break;
 			}
 		}
-		
-		return isQuiescent(node);
+
+		if (!terminated || !isQuiescent(node)) {
+			return false;
+		}
+
+		// If everyone is quiescent, check that at least one node had the
+		// opportunity to tweet.
+		terminated = false;
+		for (int i = 0; i < sn.degree(); i++) {
+			Node neighbor = sn.getNeighbor(i);
+			if (hasSomething(neighbor)) {
+				terminated = true;
+				break;
+			}
+		}
+
+		terminated |= hasSomething(node);
+
+		return terminated;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private Iterable<Integer> createScheduler(String prefix) {
-		return (Iterable<Integer>) Configuration.getInstance(prefix + "." + SCHEDULER);
+		return (Iterable<Integer>) Configuration.getInstance(prefix + "."
+				+ SCHEDULER);
 	}
-	
+
 	private void publishSingleton() {
 		if (fInstance != null) {
 			throw new IllegalStateException(
 					"Can't create more than one instance of "
 							+ this.getClass().getName() + ".");
 		}
-		
+
 		fInstance = this;
 	}
-	
+
 	private void initializeNextExperiment(Node nextNode) {
 		// Updates the current node.
 		setCurrentNode(nextNode);
 
 		// Schedules a single tweet (the unit experiment).
-		currentApp().scheduleOneShot(SimpleApplication.TWEET);
-		
+		scheduleTweet(nextNode);
+
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentStart(nextNode);
 		}
 	}
 
+	private void scheduleTweet(final Node nextNode) {
+		final ActionExecutor exec = (ActionExecutor) nextNode
+				.getProtocol(executor);
+		final IAction action = ActionExecutor.TWEET;
+		// XXX Hack: node might be dead. If that is the case, reschedules.
+		exec.add(fWarmUp, nextNode, new IAction() {
+			private int fReschedules = 0;
+			
+			@Override
+			public void execute(Node node) {
+				if (!node.isUp()) {
+					fReschedules++;
+					exec.add(0, nextNode, action);
+				} else {
+					if (fReschedules > 0) {
+						System.err.println("RESCHEDULES: " + fReschedules);
+					}
+					action.execute(node);
+				}
+			}
+		});
+	}
+
 	private void wrapUpExperiment() {
 		if (fCurrent == null) {
 			return;
 		}
-		
+
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
 	}
-	
-	private void experimentCycled() {
-		for(IExperimentObserver observer : fObservers) {
-			observer.experimentCycled(fCurrent);
-		}
-	}
 
-	private void assertTweetSuppression() {
-		if (fCurrent != null && !currentApp().isSuppressingTweets()) {
-			throw new IllegalStateException("Only one node should tweet at a time.");
+	private void experimentCycled() {
+		for (IExperimentObserver observer : fObservers) {
+			observer.experimentCycled(fCurrent);
 		}
 	}
 
@@ -255,56 +297,49 @@ public class DisseminationExperimentGovernor implements Control {
 	private Node suitableNext() {
 		Node nextNode = null;
 		INodeRegistry registry = NodeRegistry.getInstance();
-		
+
 		while (fSchedule.hasNext()) {
 			Node candidate = registry.getNode(fSchedule.next());
 			Linkable sn = (Linkable) candidate.getProtocol(linkable);
 			if (sn.degree() >= degreeCutoff) {
 				nextNode = candidate;
 				break;
-			} 
-			
+			}
+
 			if (verbose) {
 				if (nextNode != null) {
-					System.out.println("-- Skipped node " + candidate.getID() + " (deg. " + sn.degree() + ").");
+					System.out.println("-- Skipped node " + candidate.getID()
+							+ " (deg. " + sn.degree() + ").");
 				}
 			}
 		}
-		
+
 		return nextNode;
 	}
-	
-	private void setCurrentNode(Node node){
+
+	private void setCurrentNode(Node node) {
 		if (fCurrent != null) {
-			setNeighborhood(fCurrent, GeneralNode.DOWN, true);
+			clearState(fCurrent);
 		}
-		
+
 		if (verbose) {
 			Linkable sn = (Linkable) node.getProtocol(linkable);
 			int degree = sn.degree();
-			System.out.println("-- Scheduled node " + node.getID() + " (deg. " + degree + ").");
+			System.out.println("-- Scheduled node " + node.getID() + " (deg. "
+					+ degree + ").");
 		}
-	
-		setNeighborhood(node, GeneralNode.OK, false);
+
 		fCurrent = node;
 	}
-	
-	private void setNeighborhood(Node node, int state, boolean clearState) {
-		
+
+	private void clearState(Node node) {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
-		node.setFailState(state);
-		if (clearState) {
-			clearStorage(node);
-		}
-		
+		clearStorage(node);
+
 		for (int i = 0; i < degree; i++) {
 			Node nei = lnk.getNeighbor(i);
-			nei.setFailState(state);
-			if (clearState) {
-				// Clears the event storage.
-				clearStorage(nei);
-			}
+			clearStorage(nei);
 		}
 	}
 
@@ -312,23 +347,26 @@ public class DisseminationExperimentGovernor implements Control {
 		ICoreInterface intf = (ICoreInterface) source.getProtocol(sns);
 		IWritableEventStorage store = (IWritableEventStorage) intf.storage();
 		store.clear();
-		
+
 		// Clears all caches.
 		intf.clear(source);
 	}
-	
+
 	private boolean isQuiescent(Node node) {
 		ICoreInterface intf = (ICoreInterface) node.getProtocol(sns);
-		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf.getStrategy(HistoryForwarding.class);
+		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf
+				.getStrategy(HistoryForwarding.class);
 		if (strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT) {
 			return false;
 		}
-		
+
 		return true;
 	}
-	
-	private SimpleApplication currentApp() {
-		return (SimpleApplication) currentNode().getProtocol(application);
+
+	private boolean hasSomething(Node node) {
+		ICoreInterface socialNewscasting = (ICoreInterface) node
+				.getProtocol(sns);
+		return socialNewscasting.storage().elements() != 0;
 	}
 
 	private Node currentNode() {
