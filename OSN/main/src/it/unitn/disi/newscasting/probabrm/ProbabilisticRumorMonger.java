@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.probabrm;
 
 import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
@@ -214,7 +215,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		// Picks the intersection.
 		double probability = fFlood ? 1.0 : fForwardProbabilities.get(owner
 				.getID());
-		MiscUtils.countIntersections(senderNeighborhood, ourNeighborhood,
+		GraphUtils.countIntersections(senderNeighborhood, ourNeighborhood,
 				intersection, true);
 
 		int i = (start == -1) ? end : start;

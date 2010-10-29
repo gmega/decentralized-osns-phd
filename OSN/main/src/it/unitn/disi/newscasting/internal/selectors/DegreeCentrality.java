@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.utils.MiscUtils;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -22,7 +23,7 @@ public class DegreeCentrality implements IUtilityFunction {
 
 	@Override
 	public int utility(Node source, Node target){
-		return MiscUtils.countIntersections(source, target, fLinkable);
+		return GraphUtils.countIntersections(source, target, fLinkable);
 	}
 
 	public Object clone() {

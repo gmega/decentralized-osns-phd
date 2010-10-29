@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
-import it.unitn.disi.application.SimpleApplication;
+import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
@@ -69,7 +69,7 @@ public class PredictableTrafficInitializer implements Control, NodeInitializer {
 			throw new IllegalStateException("ID range must be contiguous.");
 		}
 		
-		SimpleApplication app = (SimpleApplication) n.getProtocol(fApplicationId);
+		SimpleTrafficGenerator app = (SimpleTrafficGenerator) n.getProtocol(fApplicationId);
 		app.setTrafficGeneratorSeed(fSeedGenerator.nextLong());
 	}
 	

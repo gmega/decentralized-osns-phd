@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
@@ -35,10 +36,10 @@ import peersim.core.Node;
  */
 @AutoConfig
 public class SocialNewscastingService implements CDProtocol, ICoreInterface,
-		IApplicationInterface {
+		IApplicationInterface, IInitializable {
 
 	private static final String CONFIGURATOR = "configurator";
-	
+
 	// ----------------------------------------------------------------------
 	// Parameters.
 	// ----------------------------------------------------------------------
@@ -53,6 +54,14 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	 */
 	private final int fProtocolID;
 
+	/**
+	 * The node assigned to this instance of the social newscasting service.
+	 */
+	private Node fOwner;
+
+	/**
+	 * Our configuration prefix.
+	 */
 	private String fPrefix;
 
 	// ----------------------------------------------------------------------
@@ -77,7 +86,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 	// Exchange strategies configuration and communication.
 	// ----------------------------------------------------------------------
-	
+
 	private IApplicationConfigurator fConfigurator;
 
 	private BroadcastBus fChannel;
@@ -86,7 +95,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	 * The configured exchange strategies.
 	 */
 	private HashMap<Class<? extends IContentExchangeStrategy>, StrategyEntry> fStrategyIndex;
-	
+
 	private ArrayList<StrategyEntry> fStrategies;
 
 	// ----------------------------------------------------------------------
@@ -97,37 +106,36 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	public SocialNewscastingService(
-			@Attribute(Attribute.PREFIX) String prefix,
-			@Attribute("social_neighborhood") int socialNetworkId
-		) throws IOException {
-		
-		this(prefix, PeersimUtils.selfPid(prefix), socialNetworkId, configurator(prefix));
+	public SocialNewscastingService(@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute("social_neighborhood") int socialNetworkId)
+			throws IOException {
+
+		this(prefix, PeersimUtils.selfPid(prefix), socialNetworkId,
+				configurator(prefix));
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public SocialNewscastingService(String prefix, int protocolID,
 			int socialNetworkId, IApplicationConfigurator configurator) {
 		fPrefix = prefix;
 		fProtocolID = protocolID;
 		fSocialNetworkID = socialNetworkId;
 		fConfigurator = configurator;
-		
-		this.configure();
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	private void configure() {
 		this.flushState();
 		try {
-			fConfigurator.configure(this, fPrefix, fProtocolID, fSocialNetworkID);
+			fConfigurator.configure(this, fPrefix, fProtocolID,
+					fSocialNetworkID);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void flushState() {
@@ -144,16 +152,16 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		if (!Configuration.contains(prefix + "." + CONFIGURATOR)) {
 			return new NewscastAppConfigurator(prefix);
 		} else {
-			return (IApplicationConfigurator) Configuration
-					.getInstance(prefix + "." + CONFIGURATOR);
+			return (IApplicationConfigurator) Configuration.getInstance(prefix
+					+ "." + CONFIGURATOR);
 		}
 	}
 
 	// ----------------------------------------------------------------------
 	// Configuration callbacks.
 	// ----------------------------------------------------------------------
-	
-	public void addStrategy(Class<? extends IContentExchangeStrategy> [] keys,
+
+	public void addStrategy(Class<? extends IContentExchangeStrategy>[] keys,
 			IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
 			IReference<ISelectionFilter> filter, double probability) {
@@ -163,16 +171,16 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 						new FallThroughReference<ISelectionFilter>(
 								ISelectionFilter.UP_FILTER), filter),
 				probability);
-		
+
 		fStrategies.add(entry);
-		
+
 		for (Class<? extends IContentExchangeStrategy> key : keys) {
 			fStrategyIndex.put(key, entry);
 		}
 	}
 
 	// ----------------------------------------------------------------------
-	
+
 	public void setStorage(IWritableEventStorage storage) {
 		fStorage = storage;
 	}
@@ -196,7 +204,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		 */
 		for (int i = 0; i < fStrategies.size(); i++) {
 			StrategyEntry entry = fStrategies.get(i);
-			
+
 			if (!runStrategy(entry)) {
 				continue;
 			}
@@ -287,20 +295,20 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	public Tweet replyToPost(Tweet replyTo) {
 		// Sanity check.
 		if (replyTo != null && !storage().contains(replyTo)) {
-			throw new IllegalArgumentException("Can't reply to an unknown post.");
+			throw new IllegalArgumentException(
+					"Can't reply to an unknown post.");
 		}
-		
+
 		// As per the contract.
-		Node us = CommonState.getNode();
-		Tweet tweet = new Tweet(us, ++fSeqNumber, fVisibility, replyTo);
+		Tweet tweet = new Tweet(fOwner, ++fSeqNumber, fVisibility, replyTo);
 		fStorage.add(tweet);
 
 		// Notifies everyone.
 		fObserver.tweeted(tweet);
-		
+
 		return tweet;
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// ICoreInterface
 	// ----------------------------------------------------------------------
@@ -323,6 +331,10 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	@Override
 	public void addSubscriber(IEventObserver observer) {
 		fChannel.addSubscriber(observer);
+	}
+
+	public void removeSubscriber(IEventObserver observer) {
+		fChannel.removeSubscriber(observer);
 	}
 
 	// ----------------------------------------------------------------------
@@ -348,16 +360,17 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			entry.selector.get(node).clear(node);
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T extends IContentExchangeStrategy> T getStrategy(Class<T> strategyKey) {
+	public <T extends IContentExchangeStrategy> T getStrategy(
+			Class<T> strategyKey) {
 		// Will generate ClassCastException if client does a mistake.
-		return (T) lookupEntry(strategyKey).strategy; 
+		return (T) lookupEntry(strategyKey).strategy;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	@Override
@@ -367,19 +380,19 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 
 	// ----------------------------------------------------------------------
-	
+
 	@Override
 	public IReference<IPeerSelector> getSelector(
 			Class<? extends IContentExchangeStrategy> strategyKey) {
-		return lookupEntry(strategyKey).selector;		
+		return lookupEntry(strategyKey).selector;
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public int pid() {
 		return fProtocolID;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private StrategyEntry lookupEntry(Class<?> strategyKey) {
@@ -393,19 +406,29 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	}
 	
 	// ----------------------------------------------------------------------
+	// IInitializable interface.
+	// ----------------------------------------------------------------------
+
+	@Override
+	public void initialize(Node node) {
+		fOwner = node;
+		this.configure();
+	}
+	
+	@Override
+	public void reinitialize() {
+		// XXX Tell protocol parts that node rejoined the network.
+	}
+
+	// ----------------------------------------------------------------------
 	// Cloneable requirements.
 	// ----------------------------------------------------------------------
 
 	public Object clone() {
-		// Cloning here is tricky because of loose coupling. Therefore, calling
-		// configure is the best way out, but it won't produce clones: only
-		// fresh instances.
+		// Cloning here is tricky because of loose coupling. 
 		try {
 			SocialNewscastingService cloned = (SocialNewscastingService) super
 					.clone();
-			cloned.fStorage = (IWritableEventStorage) this.fStorage.clone();
-			cloned.fConfigurator = (IApplicationConfigurator) this.fConfigurator.clone();
-			cloned.configure();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e); // Should never happen...
@@ -417,12 +440,12 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	private class MergeObserverImpl implements IMergeObserver {
-		
+
 		// ----------------------------------------------------------------------
 
 		public void tweeted(Tweet tweet) {
 			// Sanity check.
-			if (CommonState.getNode() != tweet.poster) {
+			if (fOwner != tweet.poster) {
 				throw new IllegalStateException(
 						"Node can only tweet in its turn.");
 			}
@@ -450,12 +473,12 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			if (tweet.poster.equals(receiving)) {
 				throw new InternalError();
 			}
-			
+
 			if (!duplicate) {
 				// One less pending tweet to receive.
 				fPending--;
 			}
-			
+
 			// Passes the event forward.
 			fChannel.eventDelivered(sending, receiving, tweet, duplicate);
 		}
@@ -467,7 +490,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			fChannel.sendDigest(sender, receiver, owner, holes);
 		}
 	};
-	
+
 	// ----------------------------------------------------------------------
 	// Debugging methods
 	// ----------------------------------------------------------------------

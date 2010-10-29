@@ -65,6 +65,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 			SocialNewscastingService sns = new SocialNewscastingService(null, 2,
 					SOCIAL_NETWORK_ID, new CustomConfigurator(
 							new ProtocolReference<IPeerSelector>(1)));
+			sns.initialize(nodes.get(i));
 			
 			LoggingObserver logger = new LoggingObserver(log, true);
 			sns.addSubscriber(logger);

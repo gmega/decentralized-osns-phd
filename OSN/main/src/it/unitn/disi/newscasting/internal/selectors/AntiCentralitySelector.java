@@ -11,6 +11,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.core.Protocol;
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;
@@ -116,7 +117,7 @@ public class AntiCentralitySelector implements IPeerSelector, Protocol {
 	}
 	
 	private int centrality(Linkable neighborhood, Node neighbor) {
-		return MiscUtils.countIntersections(neighborhood, fLinkable
+		return GraphUtils.countIntersections(neighborhood, fLinkable
 				.get(neighbor), null, false) + 1;
 	}
 	

@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.application.SimpleApplication;
+import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 
 import java.io.BufferedReader;
@@ -45,7 +45,7 @@ public class DeterministicSelectionReader implements Control {
 		
 		// Disables tweeting for everyone.
 		for (int i = 0; i < Network.size(); i++) {
-			((SimpleApplication) Network.get(i).getProtocol(fAppId)).suppressTweeting(true);
+			((SimpleTrafficGenerator) Network.get(i).getProtocol(fAppId)).suppressTweeting(true);
 		}
 		
 		String line = reader.readLine();
@@ -54,7 +54,7 @@ public class DeterministicSelectionReader implements Control {
 		// First line specifies who tweets.
 		for (int i = 0; i < spec.length; i++) {
 			long nodeId = Long.parseLong(spec[i]);
-			SimpleApplication app = (SimpleApplication) PeersimUtils
+			SimpleTrafficGenerator app = (SimpleTrafficGenerator) PeersimUtils
 				.lookupNode(nodeId).getProtocol(fAppId);
 			app.suppressTweeting(false);			
 		}	

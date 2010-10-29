@@ -4,7 +4,6 @@ import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
@@ -27,18 +26,6 @@ import peersim.core.Protocol;
  */
 @AutoConfig
 public class CentralitySelector implements IPeerSelector, Protocol {
-
-	// ----------------------------------------------------------------------
-	// Parameter keys.
-	// ----------------------------------------------------------------------
-
-	/** {@link Linkable} over which selection is to take place. **/
-	public static final String PAR_LINKABLE = "linkable";
-
-	/**
-	 * Will select one amongst the psi top-ranked nodes.
-	 */
-	public static final String PAR_PSI = "psi";
 
 	// ----------------------------------------------------------------------
 	// Shared state.

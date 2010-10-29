@@ -2,6 +2,8 @@ package it.unitn.disi.sps.cyclon;
 
 import java.util.NoSuchElementException;
 
+import it.unitn.disi.epidemics.CyclonMessage;
+import it.unitn.disi.epidemics.NodeDescriptor;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 

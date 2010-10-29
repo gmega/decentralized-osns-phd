@@ -10,17 +10,6 @@ network.size 72303
 it.unitn.disi.registry contiguous
 
 #================================================
-# Social Network
-#================================================
-
-protocol.social_network FastGraphProtocol 
-{
-	file /home/giuliano/Graphs/Facebook.al
-	undir 
-	encoding adjacency
-}
-
-#================================================
 # Random Selector
 #================================================
 
@@ -68,17 +57,9 @@ protocol.application SimpleApplication
 }
 
 #================================================
-# Initializers
-#================================================
-
-init.0 FastGraphProtocolInit 
-{
-	protocol sn
-}
-
-#================================================
 # Controls
 #================================================
+
 control.governor DisseminationExperimentGovernor 
 {
 	application application

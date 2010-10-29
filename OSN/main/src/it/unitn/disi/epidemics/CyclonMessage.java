@@ -1,11 +1,11 @@
-package it.unitn.disi.sps.cyclon;
+package it.unitn.disi.epidemics;
 
 import peersim.extras.am.epidemic.AbstractMessage;
 import peersim.extras.am.epidemic.xtman.ViewMessage;
 
 /**
- * A more sophisticated version of {@link ViewMessage} for Cyclon which, instead
- * of holding nodes, holds {@link NodeDescriptor}s.
+ * A more sophisticated version of {@link ViewMessage} which, instead of holding
+ * nodes, holds {@link NodeDescriptor}s.
  * 
  * It is somewhat inefficient, but is less amenable to bugs.
  * 

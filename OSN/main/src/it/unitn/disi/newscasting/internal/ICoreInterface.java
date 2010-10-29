@@ -54,10 +54,15 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 
 	/**
 	 * Registers an observer to the newscasting service events.
-	 * 
-	 * @param observer
 	 */
 	public void addSubscriber(IEventObserver observer);
+
+	/**
+	 * Removes a previously registered observer to the newscasting service
+	 * events, or does nothing if the supplied observer hadn't been previously
+	 * registered.
+	 */
+	public void removeSubscriber(IEventObserver observer);
 
 	/**
 	 * @return the number of messages pending receive from the last call to
@@ -73,7 +78,7 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	// ------------------------------------------------------------------------
 	// Methods allowing access to configuration data.
 	// ------------------------------------------------------------------------
-	
+
 	/**
 	 * @return a set with the concrete types of all of the configured
 	 *         {@link IContentExchangeStrategy}s.
@@ -96,7 +101,7 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 */
 	public IReference<IPeerSelector> getSelector(
 			Class<? extends IContentExchangeStrategy> strategy);
-	
+
 	/**
 	 * Returns the {@link ISelectionFilter} instance associated with a given
 	 * {@link IContentExchangeStrategy}, or <code>null</code> if the stategy is
@@ -106,7 +111,7 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 */
 	public IReference<ISelectionFilter> getFilter(
 			Class<? extends IContentExchangeStrategy> strategy);
-	
+
 	/**
 	 * @return the PeerSim protocol id of the implementor.
 	 */

@@ -1,6 +1,6 @@
 package it.unitn.disi.network;
 
-import it.unitn.disi.application.SimpleApplication;
+import it.unitn.disi.application.SimpleTrafficGenerator;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Control;
@@ -20,7 +20,7 @@ public class AllQuiet implements Control{
 		
 		for (int i = 0; i < size; i++) {
 			Node node = Network.get(i);
-			SimpleApplication app = (SimpleApplication) node.getProtocol(application);
+			SimpleTrafficGenerator app = (SimpleTrafficGenerator) node.getProtocol(application);
 			app.suppressTweeting(true);
 		}
 		

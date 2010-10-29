@@ -1,7 +1,5 @@
 package it.unitn.disi.newscasting;
 
-import peersim.core.CommonState;
-
 /**
  * {@link IApplicationInterface} defines the interface between application and
  * the social newscasting service.
@@ -15,15 +13,13 @@ public interface IApplicationInterface {
 	// ----------------------------------------------------------------------
 	
 	/**
-	 * Called when the application has new content to post. The node producing
-	 * the content will be inferred from {@link CommonState#getNode()}.
+	 * Called when the application has new content to post. 
 	 */
 	public Tweet postToFriends();
 
 	/**
 	 * Called when the application has a reply to post, to a previously received
-	 * {@link Tweet}. The node posting the reply will be inferred from
-	 * {@link CommonState#getNode()}.
+	 * {@link Tweet}.
 	 * 
 	 * @param originator
 	 * @param sequenceId

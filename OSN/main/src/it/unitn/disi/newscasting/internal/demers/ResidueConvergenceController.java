@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal.demers;
 
-import it.unitn.disi.application.SimpleApplication;
+import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.Tweet;
 import peersim.config.Attribute;
@@ -35,7 +35,7 @@ public class ResidueConvergenceController implements Control{
 		Node tweeting = null;
 		for (int i = 0; i < Network.size(); i++) {
 			Node candidate = Network.get(i);
-			SimpleApplication app = (SimpleApplication) Network.get(i).getProtocol(fApplicationId);
+			SimpleTrafficGenerator app = (SimpleTrafficGenerator) Network.get(i).getProtocol(fApplicationId);
 			if (!app.isSuppressingTweets()) {
 				tweeting = candidate; 
 				break;

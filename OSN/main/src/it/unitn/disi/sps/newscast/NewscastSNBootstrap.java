@@ -1,9 +1,6 @@
 package it.unitn.disi.sps.newscast;
 
-import it.unitn.disi.IRebootable;
-import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.utils.peersim.INodeRegistry;
-import it.unitn.disi.utils.peersim.NodeRegistry;
+import it.unitn.disi.IInitializable;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Linkable;
@@ -109,8 +106,8 @@ public class NewscastSNBootstrap implements NodeInitializer, Control {
 	 */
 	public void initialize(Node n) {
 		Linkable sps = (Linkable) n.getProtocol(fPid);
-		if (sps instanceof IRebootable) {
-			((IRebootable)sps).reset();
+		if (sps instanceof IInitializable) {
+			((IInitializable)sps).reinitialize();
 		}
 		
 		Linkable sn = (Linkable) n.getProtocol(fSnPid);

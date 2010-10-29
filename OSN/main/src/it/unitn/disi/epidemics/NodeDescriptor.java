@@ -1,4 +1,4 @@
-package it.unitn.disi.sps.cyclon;
+package it.unitn.disi.epidemics;
 
 import peersim.core.Node;
 

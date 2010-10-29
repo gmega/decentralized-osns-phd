@@ -1,7 +1,7 @@
 package it.unitn.disi.sps.newscast;
 
 import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.IRebootable;
+import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.sps.newscast.View.BufferHandler;
@@ -39,7 +39,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class NewscastSN implements IPeerSelector, IRebootable,
+public class NewscastSN implements IPeerSelector, IInitializable,
 		CDProtocol, IDynamicLinkable {
 
 	// --------------------------------------------------------------------------
@@ -166,7 +166,13 @@ public class NewscastSN implements IPeerSelector, IRebootable,
 		fFilter = ISelectionFilter.UP_FILTER;
 	}
 
-	public void reset() {
+	@Override
+	public void initialize(Node node) {
+		
+	}
+	
+	@Override
+	public void reinitialize() {
 		this.init(fView.capacity(), fH, fS, fRandom, fDebug,
 				fActiveInjectionOnly);
 	}

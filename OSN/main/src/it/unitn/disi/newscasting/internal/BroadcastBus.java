@@ -20,6 +20,10 @@ public class BroadcastBus implements IMergeObserver {
 	public void addSubscriber(IEventObserver observer) {
 		fDelegates.add(observer);
 	}
+	
+	public void removeSubscriber(IEventObserver observer) {
+		fDelegates.remove(observer);
+	}
 
 	public void sendDigest(Node sender, Node receiver, Node owner,
 			List<Integer> holes) {
