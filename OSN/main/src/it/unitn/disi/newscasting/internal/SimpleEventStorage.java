@@ -1,15 +1,15 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.newscasting.Tweet;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-
 import peersim.core.Node;
 
-import it.unitn.disi.newscasting.Tweet;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * Non-scalable, simple event storage which simply stores all {@link Tweet}

@@ -3,17 +3,14 @@ package it.unitn.disi.sps.debug;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.MultiCounter;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
-import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**

@@ -1,9 +1,10 @@
 package it.unitn.disi.sps;
 
-import java.util.Arrays;
-
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
+
+import java.util.Arrays;
+
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;

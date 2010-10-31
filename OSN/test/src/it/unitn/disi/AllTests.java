@@ -20,7 +20,6 @@ import it.unitn.disi.sps.newscast.TestPeerSelectors;
 import it.unitn.disi.sps.newscast.TestQueueManager;
 import it.unitn.disi.sps.newscast.TestView;
 import it.unitn.disi.test.framework.PeerSimTest;
-import it.unitn.disi.util.DegreeClassScheduler;
 import it.unitn.disi.util.RandomSchedulerTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;

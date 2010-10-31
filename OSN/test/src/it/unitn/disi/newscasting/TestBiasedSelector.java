@@ -1,11 +1,5 @@
 package it.unitn.disi.newscasting;
 
-import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.Random;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
@@ -14,6 +8,12 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+
+import java.io.ByteArrayInputStream;
+import java.util.Arrays;
+import java.util.Random;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

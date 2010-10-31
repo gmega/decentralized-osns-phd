@@ -20,19 +20,24 @@ package peersim.rangesim;
 
 import it.unitn.disi.scheduler.ClientAPI;
 import it.unitn.disi.scheduler.CommandDescriptor;
-import it.unitn.disi.scheduler.SchedulerDaemon;
 import it.unitn.disi.utils.MiscUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 import org.apache.log4j.BasicConfigurator;
 
-import peersim.*;
-import peersim.config.*;
-import peersim.core.*;
-import peersim.util.*;
+import peersim.Simulator;
+import peersim.config.Configuration;
+import peersim.config.IllegalParameterException;
+import peersim.config.ParsedProperties;
+import peersim.core.CommonState;
+import peersim.util.StringListParser;
 
 /**
  * This class is the main class for the Range Simulator. A range is a collection
@@ -122,6 +127,8 @@ public class RangeSimulatorMulticore {
 	public static final String PAR_OUTPUT_FOLDER = "output.folder";
 
 	public static final String PAR_OUTPUT_PATTERN = "output.pattern";
+
+	public static final String PAR_OUTPUT_COMPRESS = "output.compress";
 
 	// --------------------------------------------------------------------------
 	// Static variables
@@ -358,7 +365,8 @@ public class RangeSimulatorMulticore {
 			executeProcess(
 					list,
 					new File(outputFolder, String.format(outputPattern,
-							(Object[]) rangeVals)));
+							(Object[]) rangeVals)),
+					Configuration.contains(PAR_OUTPUT_COMPRESS));
 
 			// Increment values
 			nextValues(idx, values);
@@ -374,10 +382,11 @@ public class RangeSimulatorMulticore {
 	 * current one. If not possible, we use the first java command found in the
 	 * path.
 	 */
-	private void executeProcess(List<String> list, File outputFile) {
+	private void executeProcess(List<String> list, File outputFile,
+			boolean compress) {
 		CommandDescriptor descriptor = new CommandDescriptor(
 				list.toArray(new String[list.size()]), CommandDescriptor.NONE,
-				outputFile.getAbsolutePath(), System.getenv("PWD"));
+				outputFile.getAbsolutePath(), System.getenv("PWD"), compress);
 
 		try {
 			dispatcher.resolveObject().submit(descriptor);

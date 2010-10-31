@@ -6,7 +6,6 @@ import it.unitn.disi.utils.collections.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;

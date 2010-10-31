@@ -1,17 +1,18 @@
 package it.unitn.disi.cli;
 
+import it.unitn.disi.utils.logging.CodecUtils;
+import it.unitn.disi.utils.logging.EventCodec;
+import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
+import it.unitn.disi.utils.logging.EventSet;
+import it.unitn.disi.utils.logging.IBinaryEvent;
+
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import junit.framework.Assert;
-import it.unitn.disi.utils.logging.CodecUtils;
-import it.unitn.disi.utils.logging.EventCodec;
-import it.unitn.disi.utils.logging.EventSet;
-import it.unitn.disi.utils.logging.IBinaryEvent;
-import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
+
+import org.junit.Test;
 
 public class TestEventDecoder {
 	

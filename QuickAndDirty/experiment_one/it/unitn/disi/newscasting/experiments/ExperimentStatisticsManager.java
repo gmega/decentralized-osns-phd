@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.experiments;
 
-
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.PrintStream;
 
@@ -17,33 +17,37 @@ import peersim.util.IncrementalStats;
  * 
  * @author giuliano
  */
-public class ExperimentStatisticsManager implements IEventObserver, IExperimentObserver {
-	
+public class ExperimentStatisticsManager implements IEventObserver,
+		IExperimentObserver {
+
 	private static final ExperimentStatisticsManager fInstance = new ExperimentStatisticsManager();
-	
+
 	public static ExperimentStatisticsManager getInstance() {
 		return fInstance;
 	}
-	
+
 	private UnitExperimentData fCurrentExperiment;
-	
-	private ExperimentStatisticsManager() { 
+
+	private ExperimentStatisticsManager() {
 	}
-	
+
 	public void printLatencyStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
 			System.out.println(fCurrentExperiment.latencyStatistics());
+			System.out.println("RT: "
+					+ fCurrentExperiment.fTweet.poster.getID() + " "
+					+ fCurrentExperiment.disseminationTime());
 		}
 	}
-	
+
 	public void printLoadStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
 			System.out.println(fCurrentExperiment.loadStatistics());
 		}
 	}
-	
+
 	@Override
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		if (duplicate) {
 			fCurrentExperiment.duplicateReceived(sender, receiver);
@@ -65,15 +69,17 @@ public class ExperimentStatisticsManager implements IEventObserver, IExperimentO
 		if (fCurrentExperiment == null) {
 			return;
 		}
-		
-		fCurrentExperiment = null;	
+
+		fCurrentExperiment = null;
 	}
 
 	@Override
-	public void experimentStart(Node root) { }
-	
+	public void experimentStart(Node root) {
+	}
+
 	@Override
-	public void experimentCycled(Node root) { }
+	public void experimentCycled(Node root) {
+	}
 }
 
 /**
@@ -85,28 +91,28 @@ class UnitExperimentData {
 	/**
 	 * Number of messages received by each node (tracks mainly duplicates).
 	 */
-	private static final int [] fReceived = new int[Network.size()];
-	
+	private static final int[] fReceived = new int[Network.size()];
+
 	/**
 	 * Number of messages sent by each node.
 	 */
-	private static final int [] fSent = new int[Network.size()];
-		
+	private static final int[] fSent = new int[Network.size()];
+
 	/**
 	 * {@link IncrementalStats} for latency statistics.
 	 */
 	private static final IncrementalStats fLatency = new IncrementalStats();
-	
+
 	/**
 	 * The {@link Tweet} undergoing dissemination.
 	 */
 	public Tweet fTweet;
-	
+
 	/**
 	 * The number of pending destinations.
 	 */
 	private int fPending;
-	
+
 	/**
 	 * The time at which the current tweet has been produced.
 	 */
@@ -118,7 +124,7 @@ class UnitExperimentData {
 		fTweet = tweet;
 		clear();
 	}
-	
+
 	private void clear() {
 		for (int i = 0; i < fReceived.length; i++) {
 			fReceived[i] = 0;
@@ -140,17 +146,17 @@ class UnitExperimentData {
 	 * @return <code>true</code> if the message has been <b>delivered</b> to all
 	 *         of its destinations, or <code>false</code> otherwise.
 	 */
-	public boolean messageDelivered(Node sender, Node receiver) {
+	public boolean messageDelivered(SNNode sender, SNNode receiver) {
 		fPending--;
 		if (fPending < 0) {
 			throw new IllegalStateException();
 		}
-		
-		fLatency.add(CommonState.getIntTime() - fTime);
+
+		fLatency.add(receiver.uptime());
 		count(sender.getID(), receiver.getID());
 		return fPending == 0;
 	}
-	
+
 	/**
 	 * Called when a duplicate message has been received, so that it can be
 	 * accounted for.
@@ -164,12 +170,12 @@ class UnitExperimentData {
 	public void duplicateReceived(Node sender, Node receiver) {
 		count(sender.getID(), receiver.getID());
 	}
-	
+
 	private void count(long sender, long receiver) {
-		fSent[(int)sender]++;
-		fReceived[(int)receiver]++;
+		fSent[(int) sender]++;
+		fReceived[(int) receiver]++;
 	}
-	
+
 	/**
 	 * @return received() + sent()
 	 */
@@ -186,7 +192,7 @@ class UnitExperimentData {
 		for (int i = 0; i < fSent.length; i++) {
 			sent += fSent[i];
 		}
-		
+
 		return sent;
 	}
 
@@ -206,7 +212,7 @@ class UnitExperimentData {
 	 * @return a count of the duplicate messages received by all nodes during
 	 *         this unit experiment.
 	 */
-	public int duplicates(){ 
+	public int duplicates() {
 		return received() - delivered() + undelivered();
 	}
 
@@ -214,7 +220,7 @@ class UnitExperimentData {
 	 * @return a count of the messages delivered to all nodes during this unit
 	 *         experiment.
 	 */
-	public int delivered () {
+	public int delivered() {
 		return fTweet.destinations() - undelivered();
 	}
 
@@ -225,28 +231,28 @@ class UnitExperimentData {
 	public int undelivered() {
 		return fPending;
 	}
-	
+
 	/**
 	 * @return the maximum message latency.
 	 */
 	public int getMax() {
 		return (int) fLatency.getMax();
 	}
-	
+
 	/**
 	 * @return the minimum message latency.
 	 */
 	public int getMin() {
 		return (int) fLatency.getMin();
 	}
-	
+
 	/**
 	 * @return the average message latency.
 	 */
 	public double getAvg() {
 		return fLatency.getAverage();
 	}
-	
+
 	/**
 	 * @return the message latency variance.
 	 */
@@ -260,28 +266,35 @@ class UnitExperimentData {
 	public double minimumSpeedup() {
 		return (double) (fTweet.destinations()) / getMax();
 	}
-	
+
 	/**
 	 * @return the average speedup over the naïve dissemination approach.
 	 */
 	public double averageSpeedup() {
 		double worstAverage = (double) (fTweet.destinations() + 1) / 2.0;
-		return worstAverage/getAvg();
+		return worstAverage / getAvg();
 	}
-	
+
+	/**
+	 * @return time it took for the message to reach all destinations.
+	 */
+	public int disseminationTime() {
+		return CommonState.getIntTime() - fTime;
+	}
+
 	public String latencyStatistics() {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("DE:");
 		buffer.append(" ");
-		buffer.append(fTweet.profile().getID()); 	// 1(2) - id
+		buffer.append(fTweet.profile().getID()); // 1(2) - id
 		buffer.append(" ");
-		buffer.append(fTweet.destinations());		// 2(3) - degree
+		buffer.append(fTweet.destinations()); // 2(3) - degree
 		buffer.append(" ");
-		buffer.append(getMax());					// 3(4) - max
+		buffer.append(getMax()); // 3(4) - max
 		buffer.append(" ");
-		buffer.append(getAvg());					// 4(5) - avg
+		buffer.append(getAvg()); // 4(5) - avg
 		buffer.append(" ");
-		buffer.append(getVar());					// 5(6) - var
+		buffer.append(getVar()); // 5(6) - var
 		buffer.append(" ");
 		buffer.append(averageSpeedup());
 		buffer.append(" ");
@@ -292,10 +305,10 @@ class UnitExperimentData {
 		buffer.append(undelivered());
 		return buffer.toString();
 	}
-	
+
 	public String loadStatistics() {
 		StringBuffer buffer = new StringBuffer();
-		
+
 		// Appends the statistics.
 		appendLoad(buffer, fTweet.poster);
 		buffer.append("\n");
@@ -303,7 +316,7 @@ class UnitExperimentData {
 			appendLoad(buffer, fTweet.destination(i));
 			buffer.append("\n");
 		}
-		
+
 		return buffer.toString();
 	}
 
@@ -313,7 +326,7 @@ class UnitExperimentData {
 		// 1 - Originator (identifies the unit experiment).
 		buffer.append(fTweet.poster.getID());
 		buffer.append(" ");
-		// 2 - The node for which the statistics we are about to printed. 
+		// 2 - The node for which the statistics we are about to printed.
 		buffer.append(i);
 		buffer.append(" ");
 		// 3 - Messages sent by the node.

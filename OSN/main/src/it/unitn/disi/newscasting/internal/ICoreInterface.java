@@ -1,8 +1,5 @@
 package it.unitn.disi.newscasting.internal;
 
-import java.util.Collection;
-
-import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.ICachingObject;
@@ -10,6 +7,11 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.SNNode;
+
+import java.util.Collection;
+
+import peersim.core.Node;
 
 /**
  * Internal interface to the social newscasting service. Meant for communication
@@ -49,7 +51,7 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 * @return <code>true</code> if the message has been delivered for the first
 	 *         time, or <code>false</code> if it was a duplicate.
 	 */
-	public boolean receiveTweet(Node sender, Node ours, Tweet tweet,
+	public boolean receiveTweet(SNNode sender, SNNode ours, Tweet tweet,
 			IEventObserver broadcaster);
 
 	/**

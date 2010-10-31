@@ -1,7 +1,5 @@
 package it.unitn.disi.graph;
 
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.MiscUtils;

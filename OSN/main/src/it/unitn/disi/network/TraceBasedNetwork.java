@@ -1,7 +1,6 @@
 package it.unitn.disi.network;
 
 import it.unitn.disi.SimulationEvents;
-import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
@@ -11,7 +10,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import peersim.config.Attribute;

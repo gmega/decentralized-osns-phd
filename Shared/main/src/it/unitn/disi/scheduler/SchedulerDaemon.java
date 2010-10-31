@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
 
@@ -328,14 +329,20 @@ class ProcessDispatcher extends Thread {
 	}
 
 	private OutputStream openOStream(CommandDescriptor command)
-			throws FileNotFoundException {
+			throws FileNotFoundException, IOException {
 		String output = command.output;
 
 		if (output.equals(CommandDescriptor.NONE)) {
 			return new NullOutputStream();
 		}
+		
+		OutputStream fOut = new FileOutputStream(new File(output));
+		
+		if (command.compressOutput) {
+			fOut = new GZIPOutputStream(fOut);
+		}
 
-		return new FileOutputStream(new File(output));
+		return fOut;
 	}
 
 	private InputStream openIStream(CommandDescriptor command)

@@ -4,7 +4,6 @@ import it.unitn.disi.utils.logging.CodecUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.NoSuchElementException;
 
 /**
  * {@link ByteGraphDecoder} provides an iterator-like interface to access of

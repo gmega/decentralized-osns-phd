@@ -1,7 +1,7 @@
 package it.unitn.disi.analysis.loadsim;
 
-import peersim.graph.Graph;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import peersim.graph.Graph;
 
 /**
  * {@link ILoadSim} is the interface providing access to read-only, shared data

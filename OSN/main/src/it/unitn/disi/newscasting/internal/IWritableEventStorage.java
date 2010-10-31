@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.internal;
 
-import peersim.core.Protocol;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.Tweet;
+import peersim.core.Protocol;
 
 public interface IWritableEventStorage extends IEventStorage, Protocol {
 	/**

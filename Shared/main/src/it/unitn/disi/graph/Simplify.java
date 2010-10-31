@@ -3,8 +3,6 @@ package it.unitn.disi.graph;
 import it.unitn.disi.CommandAlias;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.utils.InjectableProperty;
-import it.unitn.disi.utils.InjectableProperty.Type;
 import it.unitn.disi.utils.logging.CodecUtils;
 
 import java.io.IOException;

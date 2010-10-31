@@ -1,13 +1,12 @@
 package it.unitn.disi.test.framework;
 
+import it.unitn.disi.utils.logging.EventCodec;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 import junit.framework.Assert;
-
-import it.unitn.disi.utils.logging.EventCodec;
-import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
 
 public class EventMatcher {
 	

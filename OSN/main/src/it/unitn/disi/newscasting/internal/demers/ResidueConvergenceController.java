@@ -5,7 +5,6 @@ import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.Tweet;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;

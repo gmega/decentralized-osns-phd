@@ -4,6 +4,12 @@ import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_SINGLE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_TWEET_RANGE;
 import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
+import it.unitn.disi.SimulationEvents;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.Adj2ByteGraph;
+import it.unitn.disi.newscasting.NewscastEvents;
+import it.unitn.disi.utils.logging.CodecUtils;
+import it.unitn.disi.utils.logging.EventCodec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,14 +17,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import junit.framework.Assert;
-
-import it.unitn.disi.SimulationEvents;
-import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.Adj2ByteGraph;
-import it.unitn.disi.newscasting.NewscastEvents;
-import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.logging.CodecUtils;
-import it.unitn.disi.utils.logging.EventCodec;
 
 import org.junit.Test;
 

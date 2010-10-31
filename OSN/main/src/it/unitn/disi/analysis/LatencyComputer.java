@@ -12,8 +12,6 @@ import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.Collections;

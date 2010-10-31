@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -374,8 +375,8 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			Node key, int start, int end) {
 
 		for (int i = start; i <= end; i++) {
-			observer.eventDelivered(sender, receiver, new Tweet(key, i),
-					false);
+			observer.eventDelivered((SNNode) sender, (SNNode) receiver,
+					new Tweet(key, i), false);
 		}
 	}
 

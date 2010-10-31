@@ -1,15 +1,15 @@
 package it.unitn.disi.application;
 
-import java.util.Iterator;
-
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
+
+import java.util.Iterator;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;

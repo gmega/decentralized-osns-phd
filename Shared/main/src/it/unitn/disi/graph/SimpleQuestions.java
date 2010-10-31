@@ -1,7 +1,6 @@
 package it.unitn.disi.graph;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 
 import java.io.InputStream;

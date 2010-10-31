@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import peersim.config.Configuration;
-import peersim.config.ObjectCreator;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;

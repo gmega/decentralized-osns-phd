@@ -1,14 +1,13 @@
 package it.unitn.disi.graph;
 
+import it.unitn.disi.cli.IMultiTransformer;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.codecs.GraphCodecHelper;
+
 import java.io.PrintStream;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-
-import it.unitn.disi.cli.IMultiTransformer;
-
-import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.codecs.GraphCodecHelper;
 
 @AutoConfig
 public class ComputeIntersections implements IMultiTransformer {

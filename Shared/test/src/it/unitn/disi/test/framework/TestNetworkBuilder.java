@@ -1,5 +1,7 @@
 package it.unitn.disi.test.framework;
 
+import it.unitn.disi.utils.peersim.SNNode;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,7 +67,7 @@ public class TestNetworkBuilder implements Iterable<Node> {
 	}
 	
 	public Node baseNode() {
-		Node node = EasyMock.createMock(Node.class);
+		Node node = EasyMock.createMock(SNNode.class);
 		EasyMock.expect(node.getID()).andReturn(fIds++).anyTimes();
 		EasyMock.expect(node.isUp()).andReturn(true).anyTimes();
 		node.setFailState(GeneralNode.DEAD);

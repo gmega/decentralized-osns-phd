@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.application.ActionExecutor;
 import it.unitn.disi.application.IAction;
+import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
@@ -9,6 +10,7 @@ import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.Vector;
 
@@ -98,7 +100,7 @@ public class DisseminationExperimentGovernor implements Control {
 	// State.
 	// ----------------------------------------------------------------------
 
-	private Node fCurrent;
+	private SNNode fCurrent;
 
 	/**
 	 * The experiment scheduler.
@@ -123,7 +125,10 @@ public class DisseminationExperimentGovernor implements Control {
 			// Runs post-unit-experiment code.
 			wrapUpExperiment();
 			// Schedules the next one, if any.
-			return nextUnitExperiment();
+			if(nextUnitExperiment()) {
+				System.err.println("-- Unit experiment schedule done.");
+				return true;
+			}
 		}
 
 		experimentCycled();
@@ -140,7 +145,7 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	private boolean nextUnitExperiment() {
 
-		Node nextNode;
+		SNNode nextNode;
 		while (true) {
 			// Gets a suitable next node.
 			nextNode = suitableNext();
@@ -226,7 +231,7 @@ public class DisseminationExperimentGovernor implements Control {
 		fInstance = this;
 	}
 
-	private void initializeNextExperiment(Node nextNode) {
+	private void initializeNextExperiment(SNNode nextNode) {
 		// Updates the current node.
 		setCurrentNode(nextNode);
 
@@ -241,7 +246,7 @@ public class DisseminationExperimentGovernor implements Control {
 
 	private void scheduleTweet(final Node nextNode) {
 		ReschedulingAction action = new ReschedulingAction(
-				ActionExecutor.TWEET, executor);
+				ActionExecutor.TWEET);
 		action.schedule(nextNode);
 	}
 
@@ -253,6 +258,11 @@ public class DisseminationExperimentGovernor implements Control {
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
+		}
+
+		if (verbose && fCurrent != null) {
+			System.err.println("-- Unit experiment " + fCurrent.getID()
+					+ " is done.");
 		}
 	}
 
@@ -270,7 +280,7 @@ public class DisseminationExperimentGovernor implements Control {
 	 * Selects the next node in the current schedule, skipping neighborhoods
 	 * smaller than a certain size.
 	 */
-	private Node suitableNext() {
+	private SNNode suitableNext() {
 		Node nextNode = null;
 		INodeRegistry registry = NodeRegistry.getInstance();
 
@@ -290,12 +300,12 @@ public class DisseminationExperimentGovernor implements Control {
 			}
 		}
 
-		return nextNode;
+		return (SNNode) nextNode;
 	}
 
-	private void setCurrentNode(Node node) {
+	private void setCurrentNode(SNNode node) {
 		if (fCurrent != null) {
-			clearState(fCurrent);
+			clearNeighborhoodState(fCurrent);
 		}
 
 		if (verbose) {
@@ -304,17 +314,17 @@ public class DisseminationExperimentGovernor implements Control {
 			System.out.println("-- Scheduled node " + node.getID() + " (deg. "
 					+ degree + ").");
 		}
-
+		
 		fCurrent = node;
 	}
 
-	private void clearState(Node node) {
+
+	private void clearNeighborhoodState(SNNode node) {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
 		clearStorage(node);
-
 		for (int i = 0; i < degree; i++) {
-			Node nei = lnk.getNeighbor(i);
+			SNNode nei = (SNNode) lnk.getNeighbor(i);
 			clearStorage(nei);
 		}
 	}
@@ -348,37 +358,50 @@ public class DisseminationExperimentGovernor implements Control {
 	private Node currentNode() {
 		return fCurrent;
 	}
-}
+	
+	class ReschedulingAction implements IAction {
 
-class ReschedulingAction implements IAction {
+		private final IAction fDelegate;
 
-	private final IAction fDelegate;
+		private int fReschedules = 0;
 
-	private final int fExecutorId;
+		public ReschedulingAction(IAction delegate) {
+			fDelegate = delegate;
+		}
 
-	private int fReschedules = 0;
+		public void schedule(Node node) {
+			ActionExecutor exec = (ActionExecutor) node
+					.getProtocol(executor);
+			exec.add(1, node, this);
+		}
 
-	public ReschedulingAction(IAction delegate, int executorId) {
-		fDelegate = delegate;
-		fExecutorId = executorId;
-	}
+		@Override
+		public void execute(Node node) {
+			if (!node.isUp()) {
+				fReschedules++;
+				schedule(node);
+			} else {
+				if (fReschedules > 0) {
+					System.err.println("RESCHEDULES: " + fReschedules);
+				}
 
-	public void schedule(Node node) {
-		ActionExecutor executor = (ActionExecutor) node
-				.getProtocol(fExecutorId);
-		executor.add(1, node, this);
-	}
-
-	@Override
-	public void execute(Node node) {
-		if (!node.isUp()) {
-			fReschedules++;
-			schedule(node);
-		} else {
-			if (fReschedules > 0) {
-				System.err.println("RESCHEDULES: " + fReschedules);
+				// Make uptimes be relative to the tweet time.
+				resetNeighborhoodUptimes((SNNode) node);
+				fDelegate.execute(node);
 			}
-			fDelegate.execute(node);
+		}
+		
+		private void resetNeighborhoodUptimes(SNNode node) {
+			Linkable lnk = (Linkable) node.getProtocol(linkable);
+			int degree = lnk.degree();
+			node.clearDowntime();
+			node.clearUptime();
+			for (int i = 0; i < degree; i++) {
+				SNNode nei = (SNNode) lnk.getNeighbor(i);
+				nei.clearDowntime();
+				nei.clearUptime();
+			}
 		}
 	}
 }
+

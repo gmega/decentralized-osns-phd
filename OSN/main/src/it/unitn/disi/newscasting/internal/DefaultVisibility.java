@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.internal;
 
-import peersim.core.Linkable;
-import peersim.core.Node;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.Tweet;
+import peersim.core.Linkable;
+import peersim.core.Node;
 
 /**
  * {@link DefaultVisibility} means that a {@link Tweet} is to be addressed to

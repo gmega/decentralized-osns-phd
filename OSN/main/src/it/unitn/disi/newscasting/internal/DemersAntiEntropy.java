@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.utils.peersim.SNNode;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -15,7 +16,7 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 		fSnLinkableId = snLinkableId;
 	}
 
-	public boolean doExchange(Node source, Node target) {
+	public boolean doExchange(SNNode source, SNNode target) {
 		// Selected node was null. Returns.
 		if (target == null) {
 			return false;
@@ -41,7 +42,7 @@ public class DemersAntiEntropy implements IContentExchangeStrategy, Cloneable {
 		return true;
 	}
 
-	public int throttling(Node source) {
+	public int throttling(SNNode source) {
 		return 1;
 	}
 

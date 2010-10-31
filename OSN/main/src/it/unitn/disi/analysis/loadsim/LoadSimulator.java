@@ -1,5 +1,12 @@
 package it.unitn.disi.analysis.loadsim;
 
+import it.unitn.disi.cli.IMultiTransformer;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.LightweightStaticGraph;
+import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.utils.collections.Pair;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,12 +24,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.LightweightStaticGraph;
-import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
-import it.unitn.disi.utils.collections.Pair;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.graph.Graph;

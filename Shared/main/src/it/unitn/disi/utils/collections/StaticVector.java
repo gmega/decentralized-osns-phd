@@ -4,7 +4,6 @@ import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 import peersim.core.CommonState;
 

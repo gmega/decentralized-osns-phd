@@ -1,5 +1,6 @@
 package it.unitn.disi.sps;
 
+import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
@@ -27,7 +28,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class F2FOverlayCollector implements CDProtocol, Linkable {
+public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable {
 
 	private static final StaticVector<Integer> fIndexes = new StaticVector<Integer>();
 
@@ -142,11 +143,13 @@ public class F2FOverlayCollector implements CDProtocol, Linkable {
 		throw new IllegalArgumentException(fUtilityFunction.toString());
 	}
 
-	public void init(Node node) {
+	public void initialize(Node node) {
 		fNode = node;
 		Linkable statik = statik(node);
 		init(statik);
 	}
+	
+	public void reinitialize() { }
 
 	@Override
 	public void nextCycle(Node node, int protocolID) {

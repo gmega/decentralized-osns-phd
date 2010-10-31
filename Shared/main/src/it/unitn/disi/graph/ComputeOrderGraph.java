@@ -1,11 +1,12 @@
 package it.unitn.disi.graph;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.GraphEncoder;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 

@@ -12,6 +12,7 @@ import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.PeersimUtils;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -209,16 +210,16 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 				continue;
 			}
 
-			Node peer = selectPeer(ourNode, entry.selector.get(ourNode),
+			SNNode peer = selectPeer(ourNode, entry.selector.get(ourNode),
 					entry.filter);
 
-			performExchange(ourNode, peer, entry.strategy);
+			performExchange((SNNode) ourNode, peer, entry.strategy);
 		}
 	}
 
 	// ----------------------------------------------------------------------
 
-	private Node selectPeer(Node ourNode, IPeerSelector selector,
+	private SNNode selectPeer(Node ourNode, IPeerSelector selector,
 			BinaryCompositeFilter filter) {
 
 		// Selects a peer using the preconfigured filter.
@@ -230,12 +231,12 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			peer = selector.selectPeer(ourNode);
 		}
 		filter.clear();
-		return peer;
+		return (SNNode) peer;
 	}
 
 	// ----------------------------------------------------------------------
 
-	private void performExchange(Node ourNode, Node peer,
+	private void performExchange(SNNode ourNode, SNNode peer,
 			IContentExchangeStrategy strategy) {
 		// Null peer means no game.
 		if (peer == null) {
@@ -314,7 +315,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public boolean receiveTweet(Node sender, Node ours, Tweet tweet,
+	public boolean receiveTweet(SNNode sender, SNNode ours, Tweet tweet,
 			IEventObserver broadcaster) {
 
 		// This is kind of an ugly hack...
@@ -466,7 +467,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		/**
 		 * Registers the reception of a range of tweet events.
 		 */
-		public void eventDelivered(Node sending, Node receiving, Tweet tweet,
+		public void eventDelivered(SNNode sending, SNNode receiving, Tweet tweet,
 				boolean duplicate) {
 
 			// Sanity check.

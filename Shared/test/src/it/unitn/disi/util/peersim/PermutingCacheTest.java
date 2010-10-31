@@ -1,13 +1,14 @@
 package it.unitn.disi.util.peersim;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import junit.framework.Assert;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.PermutingCache;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;

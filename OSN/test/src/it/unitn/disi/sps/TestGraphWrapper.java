@@ -1,5 +1,7 @@
 package it.unitn.disi.sps;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import it.unitn.disi.graph.SubgraphDecorator;
 
 import java.util.ArrayList;
@@ -9,9 +11,6 @@ import org.junit.Test;
 
 import peersim.graph.BitMatrixGraph;
 import peersim.graph.Graph;
-
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 
 public class TestGraphWrapper{
 	@Test public void graphWrapper() throws Exception {

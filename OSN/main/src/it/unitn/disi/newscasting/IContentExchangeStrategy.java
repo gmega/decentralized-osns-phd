@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.utils.peersim.SNNode;
 import peersim.core.Node;
 
 /**
@@ -26,7 +27,7 @@ public interface IContentExchangeStrategy extends ICachingObject {
 	 *         connection.
 	 * 
 	 */
-	public boolean doExchange(Node source, Node peer);
+	public boolean doExchange(SNNode source, SNNode peer);
 	
 	/**
 	 * @return an optimization hint which might allow the caller to speed up
@@ -38,7 +39,7 @@ public interface IContentExchangeStrategy extends ICachingObject {
 	 *         If the implementor does not care about throttling, then it should
 	 *         return 1.
 	 */
-	public int throttling(Node node);
+	public int throttling(SNNode node);
 	
 	/**
 	 * @return the activity status for this protocol.

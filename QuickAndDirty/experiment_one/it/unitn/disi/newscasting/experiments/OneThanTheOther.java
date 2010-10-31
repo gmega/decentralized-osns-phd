@@ -4,6 +4,7 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.nio.channels.IllegalSelectorException;
 
@@ -83,7 +84,7 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	}
 
 	@Override
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		if (fTweet != null && tweet != fTweet) {
 			throw new IllegalSelectorException();

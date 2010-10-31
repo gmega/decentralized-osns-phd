@@ -1,11 +1,11 @@
 package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,7 +84,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	 * Performs a non-blind rumor monger exchange between sender and receiver.
 	 * This rumor monger object is assumed to be owned by the sender.
 	 */
-	public boolean doExchange(Node sender, Node receiver) {
+	public boolean doExchange(SNNode sender, SNNode receiver) {
 		// Receiver is null. Returns.
 		if (receiver == null) {
 			return false;
@@ -106,7 +106,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	// ----------------------------------------------------------------------
 	
-	private int receiveRumor(Node ours, Node sender, List<Tweet> outsideRumors,
+	private int receiveRumor(SNNode ours, SNNode sender, List<Tweet> outsideRumors,
 			ArrayList<Boolean> responseBuffer, int protocolID,
 			ICoreInterface application) {
 
@@ -167,7 +167,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	
 	// ----------------------------------------------------------------------
 	
-	public int throttling(Node node) {
+	public int throttling(SNNode node) {
 		return 1;
 	}
 	
@@ -189,7 +189,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	// ----------------------------------------------------------------------
 	
 	@Override
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		if (!duplicate) {
 			addTweet(tweet);

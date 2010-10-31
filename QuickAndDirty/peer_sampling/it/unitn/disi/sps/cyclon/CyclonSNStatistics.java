@@ -1,5 +1,7 @@
 package it.unitn.disi.sps.cyclon;
 
+import it.unitn.disi.cli.ITransformer;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -9,8 +11,6 @@ import java.util.Map;
 
 import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
-
-import it.unitn.disi.cli.ITransformer;
 
 @AutoConfig
 public class CyclonSNStatistics implements ITransformer{

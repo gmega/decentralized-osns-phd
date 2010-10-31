@@ -1,14 +1,14 @@
 package it.unitn.disi.graph;
 
-import java.io.ByteArrayInputStream;
-import java.util.NoSuchElementException;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
+
+import java.io.ByteArrayInputStream;
+import java.util.NoSuchElementException;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

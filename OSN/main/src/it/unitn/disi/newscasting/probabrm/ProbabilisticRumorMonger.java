@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.PeersimUtils;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -144,10 +145,10 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		fSendProbabilities.put(id, probability);
 	}
 
-	public boolean doExchange(Node source, Node peer) {
+	public boolean doExchange(SNNode source, SNNode peer) {
 		Iterator<ISend> it = fPendings.iterator();
 		ISend pending = null;
-		Node actualPeer = null;
+		SNNode actualPeer = null;
 		while (actualPeer == null && it.hasNext()) {
 			pending = it.next();
 			actualPeer = pending.next(fFilter);
@@ -167,7 +168,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		return true;
 	}
 	
-	public int throttling(Node node) {
+	public int throttling(SNNode node) {
 		while (!fPendings.isEmpty()) {
 			ISend op = fPendings.getFirst();
 			if (!op.done()) {
@@ -305,7 +306,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	}
 
 	@Override
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		// TODO Auto-generated method stub
 		
@@ -334,7 +335,7 @@ interface ISend {
 	 * @return the next node to which a message should be sent. Returns null if
 	 *         the node is down.
 	 */
-	public Node next(ISelectionFilter filter);
+	public SNNode next(ISelectionFilter filter);
 	
 	/**
 	 * @return the {@link Tweet} associated with this send operation.
@@ -407,7 +408,7 @@ class DynamicDissemination implements ISend {
 		fStaticNeighborhood.add(id);
 	}
 	
-	public Node next(ISelectionFilter filter) {
+	public SNNode next(ISelectionFilter filter) {
 		// Removes the garbage.
 		// XXX This is an important thing to mention I'm doing.
 		collectGarbage(fToSend);
@@ -426,7 +427,7 @@ class DynamicDissemination implements ISend {
 					fToSend[i] = null;
 					fRemaining--;
 					fCurrentSize = MiscUtils.compact(fToSend, fCurrentSize);
-					return filter.selected(toSend);	
+					return (SNNode) filter.selected(toSend);	
 				}
 			}
 		}

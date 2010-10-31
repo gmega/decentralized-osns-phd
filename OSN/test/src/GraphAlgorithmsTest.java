@@ -1,4 +1,12 @@
+import it.unitn.disi.analysis.PercolationThresholdEstimator;
+import it.unitn.disi.graph.GraphAlgorithms;
+import it.unitn.disi.graph.LightweightStaticGraph;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.test.framework.TestUtils;
+
 import java.io.InputStream;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -6,14 +14,6 @@ import peersim.config.ObjectCreator;
 import peersim.graph.BitMatrixGraph;
 import peersim.graph.Graph;
 import peersim.graph.NeighbourListGraph;
-
-import junit.framework.Assert;
-
-import it.unitn.disi.analysis.PercolationThresholdEstimator;
-import it.unitn.disi.graph.GraphAlgorithms;
-import it.unitn.disi.graph.LightweightStaticGraph;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.test.framework.TestUtils;
 
 
 public class GraphAlgorithmsTest {

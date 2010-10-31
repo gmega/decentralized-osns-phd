@@ -1,8 +1,7 @@
 package it.unitn.disi.sps.newscast;
 
-import static org.junit.Assert.*;
-import it.unitn.disi.sps.newscast.NewscastSN;
-import it.unitn.disi.sps.newscast.View;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.OrderingUtils;
@@ -14,7 +13,6 @@ import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 
-import junit.framework.TestCase;
 import peersim.core.Linkable;
 import peersim.core.Node;
 

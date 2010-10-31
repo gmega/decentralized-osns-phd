@@ -1,13 +1,13 @@
 package it.unitn.disi.graph;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.GraphDecoder;
 import it.unitn.disi.graph.codecs.TextEdgeListDecoder;
 import it.unitn.disi.utils.logging.CodecUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class ElText2Byte implements ITransformer {
 

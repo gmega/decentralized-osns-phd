@@ -1,8 +1,9 @@
 package it.unitn.disi.application;
 
+import it.unitn.disi.util.RouletteWheel;
+
 import java.util.Random;
 
-import it.unitn.disi.util.RouletteWheel;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;

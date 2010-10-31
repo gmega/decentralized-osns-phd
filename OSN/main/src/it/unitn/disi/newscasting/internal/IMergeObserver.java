@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.internal;
 
 
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ public interface IMergeObserver extends IEventObserver {
 		public void tweeted(Tweet tweet) { }
 		
 		@Override
-		public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+		public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 				boolean duplicate) { }
 		
 		@Override

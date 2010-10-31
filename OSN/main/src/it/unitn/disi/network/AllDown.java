@@ -1,11 +1,11 @@
 package it.unitn.disi.network;
 
-import java.io.IOException;
-
 import it.unitn.disi.SimulationEvents;
-import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;
+
+import java.io.IOException;
+
 import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;

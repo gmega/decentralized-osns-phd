@@ -6,7 +6,6 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.GraphDecoder;
 
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;

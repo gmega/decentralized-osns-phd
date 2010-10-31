@@ -5,6 +5,7 @@ import it.unitn.disi.newscasting.internal.IMergeObserver;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.List;
 import java.util.Random;
@@ -115,7 +116,7 @@ public class EventStorageTest {
 			final AtomicInteger o2 = new AtomicInteger();
 			
 			s1.merge(null, null, s2, new IMergeObserver() {
-				public void eventDelivered(Node sender, Node receiver,
+				public void eventDelivered(SNNode sender, SNNode receiver,
 						Tweet tweet, boolean duplicate) {
 					c1.incrementAndGet();
 					s1Clone.add(tweet.poster, tweet.sequenceNumber);
@@ -133,7 +134,7 @@ public class EventStorageTest {
 			}
 
 			s2.merge(null, null, s1, new IMergeObserver() {
-				public void eventDelivered(Node sender, Node receiver,
+				public void eventDelivered(SNNode sender, SNNode receiver,
 						Tweet tweet, boolean duplicate) {
 					c2.incrementAndGet();
 					s2Clone.add(tweet.poster, tweet.sequenceNumber);

@@ -1,10 +1,10 @@
 package it.unitn.disi.f2f;
 
-import java.util.BitSet;
-
 import it.unitn.disi.analysis.online.NodeStatistic;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
+
+import java.util.BitSet;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Linkable;

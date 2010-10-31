@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,7 @@ public class BroadcastBus implements IMergeObserver {
 		fCurrentBroadcaster = null;
 	}
 
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		for (IEventObserver observer : fDelegates) {
 			if (fCurrentBroadcaster != observer) {

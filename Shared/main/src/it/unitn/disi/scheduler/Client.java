@@ -32,6 +32,9 @@ public class Client {
 	@Option(name = "-o", aliases = { "--output" }, usage = "Output file to connect to the standard output. Defaults to none.", required = false)
 	private String fOutput = CommandDescriptor.NONE;
 
+	@Option(name = "m", aliases = { "--compress" }, usage = "Compresses output using GZIP.")
+	private boolean fCompress;
+
 	@Option(name = "-w", aliases = { "--pwd" }, usage = "Working directory for the command. Defaults to the current directory.", required = false)
 	private String fPwd = System.getenv("PWD");
 
@@ -40,14 +43,14 @@ public class Client {
 
 	private int _main(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
-		
+
 		try {
 			Actions action = parseArgument(args, parser);
 			if (action == null) {
 				printHelp(parser);
 				System.exit(1);
 			}
-			
+
 			ClientAPI api = new ClientAPI(fPort);
 			// Checks that the daemon is running, for actions that require it.
 			if (action != Actions.start && !checkRunning(api)) {
@@ -109,7 +112,7 @@ public class Client {
 	private Actions parseArgument(String[] args, CmdLineParser parser)
 			throws CmdLineException {
 		parser.parseArgument(args);
-		
+
 		Actions action;
 		try {
 			action = Actions.valueOf(fActionString.toLowerCase());
@@ -120,10 +123,11 @@ public class Client {
 		return action;
 	}
 
-	private void submit(ClientAPI api, String [] command) {
+	private void submit(ClientAPI api, String[] command) {
 		try {
 			api.resolveObject().submit(
-					new CommandDescriptor(command, fInput, fOutput, fPwd));
+					new CommandDescriptor(command, fInput, fOutput, fPwd,
+							fCompress));
 		} catch (RemoteException ex) {
 			defaultMessage("Submission", ex);
 		}
@@ -155,7 +159,7 @@ public class Client {
 			defaultMessage("List acquisition", ex);
 			return;
 		}
-		
+
 		if (entries.size() == 0) {
 			System.err.println("There are no running processes.");
 			return;
@@ -164,7 +168,8 @@ public class Client {
 		System.err.println("Running processes:");
 
 		for (ProcessDescriptor entry : entries) {
-			System.err.println("[" + entry.pid + "] - " + entry.command.commandString());
+			System.err.println("[" + entry.pid + "] - "
+					+ entry.command.commandString());
 		}
 	}
 

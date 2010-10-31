@@ -6,6 +6,7 @@ import static it.unitn.disi.newscasting.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
 import it.unitn.disi.utils.logging.EventCodec;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,7 +52,7 @@ public class LoggingObserver implements IMergeObserver {
 	
 	// ----------------------------------------------------------------------
 	
-	public void eventDelivered(Node sending, Node receiving, Tweet tweet,
+	public void eventDelivered(SNNode sending, SNNode receiving, Tweet tweet,
 			boolean duplicate) {
 		if (!duplicate) {
 			log(fBuffer, DELIVER_SINGLE_TWEET.magicNumber(),// event type

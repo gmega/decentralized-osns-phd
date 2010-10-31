@@ -1,5 +1,11 @@
 package it.unitn.disi.util;
 
+import it.unitn.disi.graph.GraphProtocol;
+import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.ArrayExchanger;
+import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
+import it.unitn.disi.utils.peersim.NodeRegistry;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -8,18 +14,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import com.google.common.collect.PeekingIterator;
-
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.graph.Graph;
-import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.collections.ArrayExchanger;
-import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
+
+import com.google.common.collect.PeekingIterator;
 
 /**
  * 
@@ -86,7 +88,7 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 		for (int i = 0; i <= allNodes.length; i++) {
 			if (i == allNodes.length || (graph.degree(allNodes[i]) != graph.degree(allNodes[classStart]))) {
 				int next = classStart + getRandom().nextInt(i - classStart);
-				schedule.add((Node) graph.getNode(allNodes[next]));
+				schedule.add(node(allNodes[next]));
 				classStart = i;
 			}
 		}
@@ -95,7 +97,7 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 		xchgr.setArray(allNodes);
 		OrderingUtils.permute(0, allNodes.length, xchgr, getRandom());
 		for (int i = 0; schedule.size() < sampleSize; i++) {
-			Node node = (Node) graph.getNode(allNodes[i]);
+			Node node = node(allNodes[i]);
 			if (!schedule.contains(node)) {
 				schedule.add(node);
 			}
@@ -140,5 +142,9 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 			}
 		}
 		return fRandom;
+	}
+	
+	private Node node(int id) {
+		return NodeRegistry.getInstance().getNode(id);
 	}
 }

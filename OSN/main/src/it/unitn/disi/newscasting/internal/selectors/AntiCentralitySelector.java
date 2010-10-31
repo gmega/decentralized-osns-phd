@@ -1,5 +1,14 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.graph.GraphUtils;
+import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.util.RouletteWheel;
+import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.MutableSimplePair;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.peersim.ProtocolReference;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,15 +19,6 @@ import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.core.Protocol;
-import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.graph.GraphUtils;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.util.RouletteWheel;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.MutableSimplePair;
-import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.peersim.ProtocolReference;
 
 /**
  * Anti-centrality privileges nodes with low centrality. As it is, the

@@ -1,14 +1,12 @@
 package it.unitn.disi.sps.newscast;
 
+import it.unitn.disi.test.framework.TestNetworkBuilder;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 import junit.framework.Assert;
-
-import it.unitn.disi.sps.newscast.QueueManager;
-import it.unitn.disi.sps.newscast.View;
-import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Before;
 import org.junit.Test;

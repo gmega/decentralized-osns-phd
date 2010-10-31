@@ -1,5 +1,8 @@
 package it.unitn.disi.util;
 
+import it.unitn.disi.test.framework.PeerSimTest;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,9 +12,6 @@ import org.junit.Test;
 
 import peersim.core.OverlayGraph;
 import peersim.graph.Graph;
-
-import it.unitn.disi.test.framework.PeerSimTest;
-import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 public class RandomSchedulerTest extends PeerSimTest{
 	

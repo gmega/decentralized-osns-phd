@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.newscasting.Tweet;
-import peersim.core.Node;
+import it.unitn.disi.utils.peersim.SNNode;
 
 /**
  * {@link IEventObserver} observer is an interface for communicating events that
@@ -30,6 +30,6 @@ public interface IEventObserver {
 	 *            <code>true</code> if the received message was a duplicate, or
 	 *            <code>false</code> otherwise.
 	 */
-	public void eventDelivered(Node sender, Node receiver, Tweet tweet,
+	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate);
 }

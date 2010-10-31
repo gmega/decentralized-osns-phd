@@ -1,7 +1,5 @@
 package it.unitn.disi.newscasting.internal;
 
-import java.io.IOException;
-
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.LoggingObserver;
@@ -13,6 +11,9 @@ import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.LogManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.io.IOException;
+
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Linkable;

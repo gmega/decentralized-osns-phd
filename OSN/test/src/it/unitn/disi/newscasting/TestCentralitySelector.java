@@ -1,6 +1,13 @@
 package it.unitn.disi.newscasting;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
+import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -10,12 +17,6 @@ import org.junit.Test;
 
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
-import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
-import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
-import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.peersim.ProtocolReference;
 
 public class TestCentralitySelector {
 	@Test public void selectPeer() throws Exception{

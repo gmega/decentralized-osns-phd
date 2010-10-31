@@ -18,10 +18,10 @@
 
 package peersim.edsim;
 
-import peersim.core.Node;
-import peersim.core.CommonState;
 import peersim.config.Configuration;
 import peersim.config.IllegalParameterException;
+import peersim.core.CommonState;
+import peersim.core.Node;
 
 /**
  * The Heap data structure used to maintain events "sorted" by scheduled time

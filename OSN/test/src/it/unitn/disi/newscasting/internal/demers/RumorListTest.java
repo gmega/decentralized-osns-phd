@@ -1,11 +1,9 @@
 package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.demers.RumorList;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import junit.framework.Assert;
