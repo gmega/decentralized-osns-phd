@@ -1,0 +1,132 @@
+# ----------------------------------------------------------------------
+# Constants.
+# ----------------------------------------------------------------------
+
+# Standard time constants.
+
+SECOND 1000
+MINUTE 60*SECOND
+HOUR 60*MINUTE
+DAY 24*HOUR
+
+# Other simulation constants.
+
+CYCLE SECOND
+CYCLES 500
+MINDELAY 20
+MAXDELAY 45
+SIZE 72303
+
+# ----------------------------------------------------------------------
+# PeerSim boilerplate.
+# ----------------------------------------------------------------------
+
+network.size SIZE
+it.unitn.disi.registry contiguous
+
+simulation.endtime CYCLE*CYCLES
+simulation.logtime CYCLE
+
+# ----------------------------------------------------------------------
+# One-hop and two-hop social networks.
+# ----------------------------------------------------------------------
+
+protocol.onehop GraphProtocol
+protocol.twohop GraphProtocol
+
+# ----------------------------------------------------------------------
+# CyclonSN
+# ----------------------------------------------------------------------
+
+protocol.peersampling CyclonSN 
+{
+	one_hop onehop
+	two_hop twohop
+}
+
+protocol.uniform UniformRandomTransport
+{
+	mindelay (CYCLE*MINDELAY)/100
+	maxdelay (CYCLE*MAXDELAY)/100
+}
+
+protocol.scheduler EDEpidemicManager 
+{
+	protocol peersampling
+	transport uniform
+	period CYCLE
+}
+
+# ----------------------------------------------------------------------
+# The Social Network reconstructor.
+# ----------------------------------------------------------------------
+
+protocol.approximator F2FOverlayCollector
+{
+	social_neighbourhood onehop
+	sps peersampling
+	step SECOND
+}
+
+# ----------------------------------------------------------------------
+# Initializers.
+# ----------------------------------------------------------------------
+
+# Node registry initializer (id to Node mapping service).
+
+init.registry NodeRegistryInit
+
+# One and two-hop initializers.
+
+init.onehopinit GraphProtocolInit
+{
+	protocol onehop
+	file /home/giuliano/Graphs/Facebook.al
+	representation array
+}
+
+init.twohopinit GraphProtocolInit
+{
+	protocol twohop
+	file /home/giuliano/Graphs/Facebook-2-hop.bin
+	decoder it.unitn.disi.graph.codecs.ByteGraphDecoder
+	representation bitmatrix
+	size SIZE
+}
+
+init.collectorinit GenericInitializer
+{
+	protocol approximator
+}
+
+init.cyclonbootstrap CyclonSNBootstrap
+{
+	protocol peersampling
+	neighborhood twohop
+	size 10
+}
+
+init.scheduler CDScheduler
+{
+	protocol approximator
+}
+
+include.init registry onehopinit twohopinit collectorinit cyclonbootstrap scheduler
+
+# ----------------------------------------------------------------------
+# Controls.
+# ---------------------------------------------------------------------
+
+control.approx ApproximationObserver
+{
+	social_neighbourhood onehop
+	protocol approximator
+	step SECOND*5
+}
+
+control.missing MissingList
+{
+	linkable onehop
+	collector approximator
+	step 495*SECOND
+}

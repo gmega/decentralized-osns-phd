@@ -35,7 +35,7 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 	@Attribute
 	private int linkable;
 	
-	@Attribute
+	@Attribute(defaultValue = "0")
 	private int sampleSize;
 	
 	@Attribute(defaultValue = "auto")

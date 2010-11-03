@@ -1,0 +1,90 @@
+# ----------------------------------------------------------------------
+# PeerSim boilerplate.
+# ----------------------------------------------------------------------
+
+network.size SIZE
+it.unitn.disi.registry contiguous
+simulation.cycles 500
+
+# ----------------------------------------------------------------------
+# One-hop and two-hop social networks.
+# ----------------------------------------------------------------------
+
+protocol.onehop GraphProtocol
+protocol.twohop GraphProtocol
+
+# ----------------------------------------------------------------------
+# CyclonSN
+# ----------------------------------------------------------------------
+
+protocol.peersampling CyclonSN 
+{
+	one_hop onehop
+	two_hop twohop
+}
+
+protocol.scheduler CDEpidemicManager 
+{
+	protocol peersampling
+}
+
+# ----------------------------------------------------------------------
+# The Social Network reconstructor.
+# ----------------------------------------------------------------------
+
+protocol.approximator F2FOverlayCollector
+{
+	social_neighbourhood onehop
+	sps peersampling
+}
+
+# ----------------------------------------------------------------------
+# Initializers.
+# ----------------------------------------------------------------------
+
+# Node registry initializer (id to Node mapping service).
+
+init.registry NodeRegistryInit
+
+# One and two-hop initializers.
+
+init.onehopinit GraphProtocolInit
+{
+	protocol onehop
+	file /home/giuliano/Graphs/Facebook.al
+	representation array
+}
+
+init.twohopinit GraphProtocolInit
+{
+	protocol twohop
+	file /home/giuliano/Graphs/Facebook-2-hop.bin
+	decoder it.unitn.disi.graph.codecs.ByteGraphDecoder
+	representation bitmatrix
+	size SIZE
+}
+
+init.collectorinit GenericInitializer
+{
+	protocol approximator
+}
+
+init.cyclonbootstrap CyclonSNBootstrap
+{
+	protocol peersampling
+	neighborhood twohop
+	size 10
+}
+
+include.init registry onehopinit twohopinit collectorinit cyclonbootstrap
+
+# ----------------------------------------------------------------------
+# Controls.
+# ---------------------------------------------------------------------
+
+control.approx ApproximationObserver
+{
+	social_neighbourhood onehop
+	protocol approximator
+	step 5
+}

@@ -48,8 +48,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 	public CyclonSN(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("two_hop") int twoHopPid,
-			@Attribute("view_size") double viewSize, 
-			@Attribute("l") int l) {
+			@Attribute("view_size") double viewSize, @Attribute("l") int l) {
 
 		// Shared protocol parameters.
 		if (fPars == null) {
@@ -63,14 +62,14 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 		fReplyMsg = new CyclonMessage(l);
 		fRequestMsg.setRequest(true);
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public void init(Node node) {
 		Linkable neighborhood = (Linkable) node.getProtocol(fPars.twoHopPid);
 		int actualSize = fPars.viewSize > 1.0 ? (int) fPars.viewSize
 				: (int) Math.ceil(fPars.viewSize * neighborhood.degree());
-		fView = new NodeDescriptor [actualSize];
+		fView = new NodeDescriptor[actualSize];
 	}
 
 	// ----------------------------------------------------------------------
@@ -118,9 +117,8 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 	@Override
 	public void merge(Node receiver, Node sender, Message msg) {
-
 		CyclonMessage received = (CyclonMessage) msg;
-		// Gets the message that "pairs" with this one.
+		// Gets the message that "pairs" with this one. 
 		CyclonMessage sent = msg.isRequest() ? fReplyMsg : fRequestMsg;
 
 		int index = 1;
@@ -156,8 +154,11 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 			}
 		}
 
-		// Releases the pair message.
-		sent.release();
+		// Only the requester can release the messages.
+		if(sent.isRequest()) {
+			sent.release();
+			received.release();
+		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -178,6 +179,10 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 
 		// 3. Fills the message with shared friends-of-friends.
 		fillPayload(message, twohop(receiver), false);
+		
+		// 4. Sets the fields.
+		message.setSender(sender);
+		
 		return message;
 	}
 
@@ -343,13 +348,13 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 				}
 			}
 			clone.fRequestMsg = CyclonMessage.cloneFrom(fRequestMsg);
-			clone.fRequestMsg = CyclonMessage.cloneFrom(fReplyMsg);
+			clone.fReplyMsg = CyclonMessage.cloneFrom(fReplyMsg);
 			return clone;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Convenience accessors.
 	// ----------------------------------------------------------------------
@@ -357,7 +362,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 	protected Linkable twohop(Node node) {
 		return (Linkable) node.getProtocol(fPars.twoHopPid);
 	}
-	
+
 	protected CyclonSN cyclon(Node node) {
 		return (CyclonSN) node.getProtocol(fPars.ownPid);
 	}
