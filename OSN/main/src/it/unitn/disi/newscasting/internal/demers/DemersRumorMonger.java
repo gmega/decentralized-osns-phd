@@ -35,12 +35,12 @@ public class DemersRumorMonger implements IContentExchangeStrategy, IEventObserv
 	/**
 	 * Probability with which a hot rumor will stop being transmitted.
 	 */
-	private static final String PAR_GIVEUP_PROBABILITY = "giveup_probability";
+	public static final String PAR_GIVEUP_PROBABILITY = "giveup_probability";
 	
 	/**
 	 * How many rumors at a time this protocol will transmit.
 	 */
-	private static final String PAR_TRANSMIT_SIZE = "chunk_size";
+	public static final String PAR_TRANSMIT_SIZE = "chunk_size";
 	
 	// ----------------------------------------------------------------------
 	// Parameter storage.

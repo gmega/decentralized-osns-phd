@@ -27,9 +27,8 @@ import org.apache.log4j.Logger;
 /**
  * The {@link SchedulerDaemon} can queue and dispatch jobs, redirecting their
  * stdin/stderr to a file, as well as reading another file to direct to the
- * standard input. The main point is that the number of simultaneous jobs is
- * configurable, so that as many cores as possible can be kept busy. <BR>
- * Note that this is the daemon component.
+ * standard input. The number of simultaneous jobs is configurable, so that as
+ * many cores as possible can be kept busy. <BR>
  * 
  * @author giuliano
  * @see ClientAPI
@@ -61,20 +60,47 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 	// State.
 	// --------------------------------------------------------------------------
 
+	/**
+	 * Table of running processes.
+	 */
 	private final ConcurrentHashMap<Integer, ProcessEntry> fProcessTable = new ConcurrentHashMap<Integer, ProcessEntry>();
 
+	/**
+	 * The dispatching component.
+	 */
 	private volatile ProcessDispatcher fDispatcher;
 
+	/**
+	 * The process reaper.
+	 */
 	private volatile GarbageCollector fCollector;
 
+	/**
+	 * Semaphore for controlling the maximum number of simultaneously running
+	 * processes.
+	 */
 	private final Semaphore fSemaphore;
 
+	/**
+	 * {@link CountDownLatch} used to implement the {@link #join()} operation.
+	 */
 	private final CountDownLatch fRunState;
 
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Constructs a new {@link SchedulerDaemon}.
+	 * 
+	 * @param cores
+	 *            the maximum number of processes that the scheduler should
+	 *            allow to run simultaneously.
+	 */
 	public SchedulerDaemon(int cores) {
 		fSemaphore = new Semaphore(cores);
 		fRunState = new CountDownLatch(1);
 	}
+
+	// --------------------------------------------------------------------------
 
 	/**
 	 * Blocks until the {@link SchedulerDaemon} is shut down.
@@ -85,6 +111,8 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 	public void join() throws InterruptedException {
 		fRunState.await();
 	}
+
+	// --------------------------------------------------------------------------
 
 	/**
 	 * Starts the server.
@@ -114,6 +142,10 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		});
 	}
 
+	// --------------------------------------------------------------------------
+	// IDaemon interface.
+	// --------------------------------------------------------------------------
+
 	@Override
 	public synchronized void shutdown() throws RemoteException {
 		// Server has already been shut down.
@@ -122,8 +154,8 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		}
 
 		fLogger.info("Initiate orderly shutdown.");
-		
-		// Waits for the dispatcher to finish. We do this to 
+
+		// Waits for the dispatcher to finish. We do this to
 		// ensure that no further jobs will be dispatched
 		// from this point on.
 		fDispatcher.interrupt();
@@ -153,23 +185,15 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		fLogger.info("Shutdown sequence complete.");
 		fRunState.countDown();
 	}
-	
-	private void noInterruptJoin(Thread t) {
-		while(true) {
-			try {
-				t.join();
-				break;
-			} catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
-				continue;
-			}
-		}
-	}
+
+	// --------------------------------------------------------------------------
 
 	@Override
 	public void submit(CommandDescriptor command) throws RemoteException {
 		fDispatcher.submit(command);
 	}
+
+	// --------------------------------------------------------------------------
 
 	@Override
 	public synchronized void kill(int pid) throws RemoteException {
@@ -180,12 +204,16 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		entry.process.destroy();
 	}
 
+	// --------------------------------------------------------------------------
+
 	@Override
 	public synchronized void killall() throws RemoteException {
 		for (ProcessEntry entry : fProcessTable.values()) {
 			entry.process.destroy();
 		}
 	}
+
+	// --------------------------------------------------------------------------
 
 	@Override
 	public synchronized List<ProcessDescriptor> list() throws RemoteException {
@@ -196,9 +224,27 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		return list;
 	}
 
+	// --------------------------------------------------------------------------
+
 	@Override
 	public Iterator<ProcessEntry> iterator() {
 		return fProcessTable.values().iterator();
+	}
+
+	// --------------------------------------------------------------------------
+	// Private helpers.
+	// --------------------------------------------------------------------------
+
+	private void noInterruptJoin(Thread t) {
+		while (true) {
+			try {
+				t.join();
+				break;
+			} catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				continue;
+			}
+		}
 	}
 
 	// --------------------------------------------------------------------------
@@ -209,18 +255,26 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		fSemaphore.acquire();
 	}
 
+	// --------------------------------------------------------------------------
+
 	public void releaseCore() {
 		fSemaphore.release();
 	}
+
+	// --------------------------------------------------------------------------
 
 	public void processStarted(ProcessEntry entry) {
 		fProcessTable.put(entry.descriptor.pid, entry);
 	}
 
+	// --------------------------------------------------------------------------
+
 	public void launchFailed(CommandDescriptor next, Exception ex) {
 		fLogger.error("Launch for " + next.command + " failed. Reason: "
 				+ ex.getMessage());
 	}
+
+	// --------------------------------------------------------------------------
 
 	public void processDone(ProcessEntry entry, int value, long time) {
 		fLogger.info("Process " + entry.descriptor.pid + ": terminated.");
@@ -251,16 +305,22 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 
 }
 
+/**
+ * The {@link ProcessDispatcher} is the component responsible for actually
+ * queueing commands and launching processes.
+ * 
+ * @author giuliano
+ */
 class ProcessDispatcher extends Thread {
 
 	private static final Logger logger = Logger
 			.getLogger(ProcessDispatcher.class);
 
-	private int fPidCounter = 0;
-
 	private final LinkedBlockingQueue<CommandDescriptor> fQueued = new LinkedBlockingQueue<CommandDescriptor>();
 
 	private final SchedulerDaemon fParent;
+
+	private int fPidCounter = 0;
 
 	public ProcessDispatcher(SchedulerDaemon parent) {
 		super("Process Dispatcher");
@@ -293,10 +353,9 @@ class ProcessDispatcher extends Thread {
 	}
 
 	private boolean launch(CommandDescriptor next) {
-
 		InputStream input = null;
 		OutputStream output = null;
-
+		
 		try {
 			// First tries to open inputs and outputs.
 			File pwd = checkPwd(next);
@@ -304,29 +363,14 @@ class ProcessDispatcher extends Thread {
 			output = openOStream(next);
 
 			// Executes the command.
-			ProcessBuilder builder = new ProcessBuilder(next.command);
-			builder.directory(pwd);
-			builder.redirectErrorStream(true);
-			Process process = builder.start();
+			Process process = startProcess(next, pwd);
 
 			int pid = fPidCounter++;
-			Thread in = null;
-			Thread out = null;
 
+			// Starts stream processors, and constructs the process entry.
 			ProcessEntry entry = new ProcessEntry(new ProcessDescriptor(next,
-					pid), process, in, out);
-
-			// Starts stream processors. Input is optional.
-			if (input != null) {
-				in = new Thread(new StreamPipe(input,
-						process.getOutputStream(), pid));
-				in.start();
-			}
-
-			// But output ain't.
-			out = new Thread(new StreamPipe(process.getInputStream(), output,
-					pid));
-			out.start();
+					pid), process, start(pipe(input, process.getOutputStream(),
+					pid)), start(pipe(process.getInputStream(), output, pid)));
 
 			// Notifies the parent.
 			fParent.processStarted(entry);
@@ -339,6 +383,29 @@ class ProcessDispatcher extends Thread {
 		}
 	}
 
+	private Thread pipe(InputStream input, OutputStream output, int pid) {
+		if (input == null) {
+			return null;
+		}
+		return new Thread(new StreamPipe(input, output, pid));
+	}
+
+	private Thread start(Thread thread) {
+		if (thread != null) {
+			thread.start();
+		}
+		return thread;
+	}
+
+	private Process startProcess(CommandDescriptor next, File pwd)
+			throws IOException {
+		ProcessBuilder builder = new ProcessBuilder(next.command);
+		builder.directory(pwd);
+		builder.redirectErrorStream(true);
+		Process process = builder.start();
+		return process;
+	}
+
 	private OutputStream openOStream(CommandDescriptor command)
 			throws FileNotFoundException, IOException {
 		String output = command.output;
@@ -346,9 +413,9 @@ class ProcessDispatcher extends Thread {
 		if (output.equals(CommandDescriptor.NONE)) {
 			return new NullOutputStream();
 		}
-		
+
 		OutputStream fOut = new FileOutputStream(new File(output));
-		
+
 		if (command.compressOutput) {
 			fOut = new GZIPOutputStream(fOut);
 		}

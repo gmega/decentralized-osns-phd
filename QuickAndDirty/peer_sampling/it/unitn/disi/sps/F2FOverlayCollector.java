@@ -21,6 +21,7 @@ import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
+import peersim.util.IncrementalStats;
 
 /**
  * Protocol which tries to reconstruct the F2F graph.
@@ -62,7 +63,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 	@Attribute(value = "log_hits", defaultValue = "false")
 	boolean fLogHits;
-
+	
 	private Layer fSelection;
 
 	private Layer fExchange;
@@ -70,6 +71,10 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	private ProactiveSelection fSelectionMode;
 
 	private UtilityFunction fUtilityFunction;
+	
+	private IncrementalStats fMessageStats = new IncrementalStats();
+	
+	private int fSentRounds = 0;
 
 	// ----------------------------------------------------------------------
 	// State.
@@ -194,22 +199,25 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 			return;
 		}
 
+		int received = 0;		
 		Linkable ourSn = statik(ourNode);
 		fIndexes.resize(ourSn.degree(), false);
-
 		// If he does, "contacts" the neighbor and queries for a useful IP.
 		// Exchange strategy depends on the mode.
 		switch (fExchange) {
 		case COLLECTOR:
-			collectorCollect(ourNode, neighbor, fIndexes);
+			received += collectorCollect(ourNode, neighbor, fIndexes);
 			markSeen(fIndexes, ourNode, ourSn);
 			fIndexes.clear();
 		
 		case PEERSAMPLING:
-			linkableCollect(ourSn, sampled(neighbor), fIndexes);
+			received += linkableCollect(ourSn, sampled(neighbor), fIndexes);
 			markSeen(fIndexes, ourNode, ourSn);
 			break;
 		}
+
+		fSentRounds++;
+		fMessageStats.add(received);
 	}
 
 	private void markSeen(StaticVector<Integer> indexes, Node ourNode,
@@ -348,6 +356,12 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 	public int proactiveHits() {
 		return fProactiveHits;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public IncrementalStats receivedStats() {
+		return fMessageStats;
 	}
 
 	// ----------------------------------------------------------------------

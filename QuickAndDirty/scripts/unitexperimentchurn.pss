@@ -104,7 +104,7 @@ control.governor DisseminationExperimentGovernor
 	#scheduler.idlist 16814,16814
 	scheduler DegreeClassScheduler
 	scheduler.linkable onehop
-	scheduler.sampleSize 1200
+	scheduler.includeNeighbors
 	
 	linkable onehop
 	social_newscasting snewscasting

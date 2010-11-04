@@ -88,3 +88,9 @@ control.approx ApproximationObserver
 	protocol approximator
 	step 5
 }
+
+control.coll CollectorMessageStatistics
+{
+	protocol approximator
+	step 495
+}

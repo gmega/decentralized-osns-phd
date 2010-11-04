@@ -51,7 +51,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator,
 	public static final String STAT_LOAD = "load";
 
 	enum SelectorType {
-		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CR
+		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CR, DEMERS
 	}
 
 	static class BFData {
