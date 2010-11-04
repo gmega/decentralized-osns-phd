@@ -122,9 +122,13 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		}
 
 		fLogger.info("Initiate orderly shutdown.");
-		fLogger.info("Halting process dispatcher.");
-		// Stops submitting.
+		
+		// Waits for the dispatcher to finish. We do this to 
+		// ensure that no further jobs will be dispatched
+		// from this point on.
 		fDispatcher.interrupt();
+		fLogger.info("Waiting for the process dispatcher.");
+		noInterruptJoin(fDispatcher);
 
 		// Kills all processes.
 		fLogger.info("Terminating all processes...");
@@ -137,22 +141,29 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 				// Don't care, it's my thread.
 			}
 		}
-
 		fLogger.info("done.");
 
-		// Stops the garbage collector thread.
+		// We know that the garbage collector is idle by now,
+		// so we can safely stop it.
 		fCollector.interrupt();
 		fLogger.info("Waiting for the garbage collector.");
-		// Waits for orderly shutdown.
-		try {
-			fDispatcher.join();
-			fCollector.join();
-		} catch (InterruptedException ex) {
-		}
+		noInterruptJoin(fCollector);
 
+		// Done. Releases everyone waiting on join.
 		fLogger.info("Shutdown sequence complete.");
-		// Releases everyone waiting on join.
 		fRunState.countDown();
+	}
+	
+	private void noInterruptJoin(Thread t) {
+		while(true) {
+			try {
+				t.join();
+				break;
+			} catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				continue;
+			}
+		}
 	}
 
 	@Override
