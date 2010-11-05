@@ -63,12 +63,11 @@ public class GenericDriver {
 				throw new CmdLineException("No processing class given.");
 			}
 			
-			IResolver [] resolver = { new HashMapResolver(parseProperties(fParameters)) };
 			System.err.println("Starting the Java generic driver.");
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
 
-			Object processor = create(fArguments.get(0), resolver);
+			Object processor = create(fArguments.get(0), new HashMapResolver(parseProperties(fParameters)) );
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);	
 			} else if (processor instanceof IMultiTransformer) {
@@ -186,7 +185,7 @@ public class GenericDriver {
 		}
 	}
 
-	private Object create(String string, IResolver [] resolvers) throws ClassNotFoundException,
+	private Object create(String string, IResolver resolver) throws ClassNotFoundException,
 			SecurityException, NoSuchMethodException, IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
@@ -198,7 +197,7 @@ public class GenericDriver {
 		@SuppressWarnings("unchecked")
 		Class <Object> klass = (Class<Object>) Class.forName(string);
 		
-		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass, resolvers);
+		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass, resolver);
 		return creator.create(null);
 	}
 
