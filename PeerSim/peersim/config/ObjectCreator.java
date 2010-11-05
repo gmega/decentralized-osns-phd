@@ -31,9 +31,9 @@ import peersim.config.resolvers.PeerSimResolver;
 public class ObjectCreator<T> implements IAttributeSource {
 
 	private final Class<T> fClass;
-	
+
 	private final IResolver fResolver;
-	
+
 	private Attribute fCurrent;
 
 	/**
@@ -46,7 +46,7 @@ public class ObjectCreator<T> implements IAttributeSource {
 	public ObjectCreator(Class<T> klass) {
 		this(klass, null);
 	}
-	
+
 	public ObjectCreator(Class<T> klass, IResolver resolver) {
 		fClass = klass;
 		if (resolver == null) {
@@ -115,12 +115,13 @@ public class ObjectCreator<T> implements IAttributeSource {
 	}
 
 	private T constructorInject(String prefix) throws InstantiationException,
-			InvocationTargetException, IllegalArgumentException, IllegalAccessException {
+			InvocationTargetException, IllegalArgumentException,
+			IllegalAccessException {
 
 		@SuppressWarnings("unchecked")
 		Constructor<T>[] constructors = (Constructor<T>[]) fClass
 				.getDeclaredConstructors();
-		
+
 		Constructor<T> constructor = null;
 		int longestMatch = -1;
 
@@ -141,7 +142,7 @@ public class ObjectCreator<T> implements IAttributeSource {
 		// Matches the parameters.
 		return constructor.newInstance(resolveParameters(constructor, prefix));
 	}
-	
+
 	private IllegalArgumentException noSuitableConstructor() {
 		return new IllegalArgumentException("Class " + fClass.getName()
 				+ " has no suitable constructors.");
@@ -176,8 +177,10 @@ public class ObjectCreator<T> implements IAttributeSource {
 		}
 
 		for (int i = 0; i < annotations.length; i++) {
-			if (resolveParameter(prefix, annotations[i].value(),
-					annotations[i], parameterTypes[i]) == null) {
+			try {
+				resolveParameter(prefix, annotations[i].value(),
+						annotations[i], parameterTypes[i]);
+			} catch (MissingParameterException ex) {
 				return -1;
 			}
 		}
@@ -233,13 +236,13 @@ public class ObjectCreator<T> implements IAttributeSource {
 				key = field.getName();
 			}
 
-			Object value = resolveParameter(prefix, key, attribute, field
-					.getType());
-			
+			Object value = resolveParameter(prefix, key, attribute,
+					field.getType());
+
 			if (value == null) {
 				throw new MissingParameterException(prefix + "." + key);
 			}
-			
+
 			try {
 				field.set(instance, value);
 			} catch (IllegalAccessException ex) {
@@ -285,14 +288,14 @@ public class ObjectCreator<T> implements IAttributeSource {
 		} else if (type == String.class) {
 			value = fResolver.getString(prefix, key);
 		}
-		currentAttribute(null);		
+		currentAttribute(null);
 		return value;
 	}
-	
+
 	private void currentAttribute(Attribute attribute) {
 		fCurrent = attribute;
 	}
-	
+
 	@Override
 	public Attribute attribute(String prefix, String key) {
 		return fCurrent;

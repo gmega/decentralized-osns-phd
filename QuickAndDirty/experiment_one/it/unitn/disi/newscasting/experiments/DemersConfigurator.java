@@ -13,6 +13,11 @@ import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
+/**
+ * Configuration for Demers Rumor mongering under the unit experiment framework.
+ * 
+ * @author giuliano
+ */
 public class DemersConfigurator implements IApplicationConfigurator {
 
 	@Override

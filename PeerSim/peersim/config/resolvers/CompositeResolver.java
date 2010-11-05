@@ -1,6 +1,7 @@
 package peersim.config.resolvers;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
@@ -34,17 +35,15 @@ public class CompositeResolver implements InvocationHandler {
 			try {
 				value = method.invoke(resolver, args);
 				return value;
-			} catch (MissingParameterException ex) {
-				// Swallows, and tries the next one.
+			} catch (InvocationTargetException ex) {
+				// If MissingParameterException, swallows and proceeds.
+				if (!(ex.getCause() instanceof MissingParameterException)) {
+					// Otherwise rethrows.
+					throw ex;
+				}
 			}
 		}
-
-		if (value == null) {
-			String key = (String) args[1];
-			throw new MissingParameterException(key);
-		}
-
-		return value;
+		throw new MissingParameterException((String) args[1]);
 	}
 
 }
