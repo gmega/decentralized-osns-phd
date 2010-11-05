@@ -36,12 +36,16 @@ protocol.snewscasting SocialNewscastingService
 	social_neighborhood onehop 
 	
 	# Configurator.
-	configurator DemersConfigurator
-		
-	linkable onehop
-	chunk_size 5
-	giveup_probability 0.8
+	configurator HistoryFwConfigurator
 	
+	# And configurator protocol parameters.
+	mode PURE_ANTICENTRALITY
+	bloom_false_positive 0.01
+	chunk_size 1
+	window_size 2
+	latency
+
+	linkable onehop	
 }
 
 protocol.executor ActionExecutor
@@ -82,13 +86,13 @@ control.cdactscheduler CDActionScheduler
 # Churn controller.
 # -----------------------------------------------------------------------------
 
-#control.churn FixedSizeNetwork
-#{
-#	dead_pool 0.4
-#	churn_rate 0.01
-#	one_hop onehop
-#	social_newscasting_service snewscasting
-#}
+control.churn FixedSizeNetwork
+{
+	dead_pool 0.4
+	churn_rate 0.01
+	one_hop onehop
+	social_newscasting_service snewscasting
+}
 
 # -----------------------------------------------------------------------------
 # Unit Experiment Governor.
@@ -96,17 +100,16 @@ control.cdactscheduler CDActionScheduler
 
 control.governor DisseminationExperimentGovernor
 {
-	scheduler IntervalScheduler
-	scheduler.idlist 16814,16814
-	#scheduler DegreeClassScheduler
-	#scheduler.linkable onehop
-	#scheduler.includeNeighbors
+	#scheduler IntervalScheduler
+	#scheduler.idlist 16814,16814
+	scheduler DegreeClassScheduler
+	scheduler.linkable onehop
+	scheduler.includeNeighbors
 	
 	linkable onehop
 	social_newscasting snewscasting
 	executor executor
 	repetitions 2
 	degreeCutoff 0
-	xchg_class it.unitn.disi.newscasting.internal.demers.DemersRumorMonger
 	verbose
 }

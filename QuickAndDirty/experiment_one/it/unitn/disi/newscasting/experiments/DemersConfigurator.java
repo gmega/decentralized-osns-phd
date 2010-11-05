@@ -1,89 +1,63 @@
 package it.unitn.disi.newscasting.experiments;
 
-import peersim.config.Configuration;
-import peersim.core.CommonState;
-import peersim.core.Linkable;
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
-import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import peersim.config.AutoConfig;
+import peersim.core.CommonState;
+import peersim.core.Linkable;
 
 /**
  * Configuration for Demers Rumor mongering under the unit experiment framework.
  * 
  * @author giuliano
  */
-public class DemersConfigurator implements IApplicationConfigurator {
+@AutoConfig
+public class DemersConfigurator extends AbstractUEConfigurator implements
+		IApplicationConfigurator {
+
+	// ----------------------------------------------------------------------
+
+	protected IContentExchangeStrategy strategy(String prefix, int protocolId,
+			int socialNetworkId) {
+		return new DemersRumorMonger(fResolver, prefix, protocolId,
+				new ProtocolReference<Linkable>(fResolver.getInt(prefix,
+						"linkable")), CommonState.r);
+	}
+
+	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(SocialNewscastingService app, String prefix,
-			int protocolId, int socialNetworkId) throws Exception {
-
-		app.setStorage(new SingleEventStorage());
-
-		DemersRumorMonger drm = getDRM(prefix, protocolId, socialNetworkId);
-		IReference<IPeerSelector> selector = selector(app, prefix, protocolId);
-
-		app.addStrategy(new Class[] { DemersRumorMonger.class }, drm, selector,
-				new FallThroughReference<ISelectionFilter>(
-						ISelectionFilter.ALWAYS_TRUE_FILTER), 1.0);
-
-		app.addSubscriber(drm);
-		app.addSubscriber(ExperimentStatisticsManager.getInstance());
-
-	}
-
-	// ----------------------------------------------------------------------
-
-	static class ProtocolData {
-		public final int linkable;
-		public final int transmitSize;
-		public final double p;
-
-		public ProtocolData(int linkable, int transmitSize, double p) {
-			this.p = p;
-			this.transmitSize = transmitSize;
-			this.linkable = linkable;
-		}
-	}
-
-	static ProtocolData data;
-
-	private static ProtocolData data(String prefix) {
-		if (data == null) {
-			data = new ProtocolData(Configuration.getInt(prefix + "."
-					+ DemersRumorMonger.PAR_TRANSMIT_SIZE),
-					Configuration.getInt(prefix + "."
-							+ DemersRumorMonger.PAR_GIVEUP_PROBABILITY),
-					Configuration.getPid(prefix + ".linkable"));
-		}
-
-		return data;
-	}
-
-	private DemersRumorMonger getDRM(String prefix, int protocolId,
+	protected IPeerSelector selector(String prefix, int protocolId,
 			int socialNetworkId) {
-		ProtocolData pd = data(prefix);
-		return new DemersRumorMonger(pd.p, pd.transmitSize, protocolId,
-				new ProtocolReference<Linkable>(pd.linkable), CommonState.r);
+		return new RandomSelectorOverLinkable(fResolver, prefix);
 	}
-
+	
 	// ----------------------------------------------------------------------
 
-	private IReference<IPeerSelector> selector(SocialNewscastingService app,
-			String prefix, int protocolId) {
-		ProtocolData pd = data(prefix);
-		return new FallThroughReference<IPeerSelector>(
-				new RandomSelectorOverLinkable(pd.linkable));
+	@Override
+	protected ISelectionFilter filter(String prefix, int protocolId,
+			int socialNetworkId) {
+		return ISelectionFilter.ALWAYS_TRUE_FILTER;
 	}
+	
+	// ----------------------------------------------------------------------
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected Class<? extends IContentExchangeStrategy>[] classes() {
+		return new Class[] { DemersRumorMonger.class };
+	}
+	
+	// ----------------------------------------------------------------------
 
 	public Object clone() {
 		return this;
 	}
-
+	
+	// ----------------------------------------------------------------------
 }

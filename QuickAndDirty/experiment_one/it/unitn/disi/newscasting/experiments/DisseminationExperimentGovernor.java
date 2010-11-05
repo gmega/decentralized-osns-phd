@@ -7,7 +7,7 @@ import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
-import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -91,6 +91,11 @@ public class DisseminationExperimentGovernor implements Control {
 	private int degreeCutoff;
 
 	/**
+	 * The {@link IContentExchangeStrategy} being unit experimented.
+	 */
+	private Class<? extends IContentExchangeStrategy> fClass;
+
+	/**
 	 * Whether or not to print assorted debugging and status information.
 	 */
 	@Attribute(defaultValue = "false")
@@ -110,9 +115,16 @@ public class DisseminationExperimentGovernor implements Control {
 
 	// ----------------------------------------------------------------------
 
+	@SuppressWarnings("unchecked")
 	public DisseminationExperimentGovernor(
-			@Attribute(Attribute.PREFIX) String prefix) {
+			@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute(value = "xchg_class", defaultValue = "it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding") String klass) {
 		fScheduler = createScheduler(prefix);
+		try {
+			fClass = (Class<? extends IContentExchangeStrategy>) Class.forName(klass);
+		} catch (Exception ex) {
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 		resetScheduler();
 		publishSingleton();
 	}
@@ -125,7 +137,7 @@ public class DisseminationExperimentGovernor implements Control {
 			// Runs post-unit-experiment code.
 			wrapUpExperiment();
 			// Schedules the next one, if any.
-			if(nextUnitExperiment()) {
+			if (nextUnitExperiment()) {
 				System.err.println("-- Unit experiment schedule done.");
 				return true;
 			}
@@ -245,8 +257,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void scheduleTweet(final Node nextNode) {
-		ReschedulingAction action = new ReschedulingAction(
-				ActionExecutor.TWEET);
+		ReschedulingAction action = new ReschedulingAction(ActionExecutor.TWEET);
 		action.schedule(nextNode);
 	}
 
@@ -314,10 +325,9 @@ public class DisseminationExperimentGovernor implements Control {
 			System.out.println("-- Scheduled node " + node.getID() + " (deg. "
 					+ degree + ").");
 		}
-		
+
 		fCurrent = node;
 	}
-
 
 	private void clearNeighborhoodState(SNNode node) {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
@@ -341,7 +351,7 @@ public class DisseminationExperimentGovernor implements Control {
 	private boolean isQuiescent(Node node) {
 		ICoreInterface intf = (ICoreInterface) node.getProtocol(sns);
 		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf
-				.getStrategy(HistoryForwarding.class);
+				.getStrategy(fClass);
 		if (strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT) {
 			return false;
 		}
@@ -358,7 +368,7 @@ public class DisseminationExperimentGovernor implements Control {
 	private Node currentNode() {
 		return fCurrent;
 	}
-	
+
 	class ReschedulingAction implements IAction {
 
 		private final IAction fDelegate;
@@ -370,8 +380,7 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 
 		public void schedule(Node node) {
-			ActionExecutor exec = (ActionExecutor) node
-					.getProtocol(executor);
+			ActionExecutor exec = (ActionExecutor) node.getProtocol(executor);
 			exec.add(1, node, this);
 		}
 
@@ -390,7 +399,7 @@ public class DisseminationExperimentGovernor implements Control {
 				fDelegate.execute(node);
 			}
 		}
-		
+
 		private void resetNeighborhoodUptimes(SNNode node) {
 			Linkable lnk = (Linkable) node.getProtocol(linkable);
 			int degree = lnk.degree();
@@ -404,4 +413,3 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 	}
 }
-

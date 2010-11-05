@@ -12,7 +12,7 @@ public class CompositeResolver implements InvocationHandler {
 	
 	// ----------------------------------------------------------------------
 
-	public static IResolver compositeResolver(IResolver[] delegates) {
+	public static IResolver compositeResolver(IResolver...delegates) {
 		InvocationHandler composite = new CompositeResolver(delegates);
 		return (IResolver) Proxy.newProxyInstance(
 				CompositeResolver.class.getClassLoader(),
@@ -23,7 +23,7 @@ public class CompositeResolver implements InvocationHandler {
 
 	private final IResolver[] fResolvers;
 
-	private CompositeResolver(IResolver[] resolvers) {
+	public CompositeResolver(IResolver...resolvers) {
 		fResolvers = resolvers;
 	}
 
