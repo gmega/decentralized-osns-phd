@@ -25,7 +25,8 @@ import com.google.common.collect.PeekingIterator;
 
 /**
  * {@link DisseminationExperimentGovernor} will schedule one node after the
- * other for dissemination on the network.
+ * other for dissemination on the network. It is the most important component in
+ * the unit experiment framework.
  * 
  * NOTE: this code is quick and dirty, and as it is it's throw away code.
  * 
@@ -121,13 +122,16 @@ public class DisseminationExperimentGovernor implements Control {
 			@Attribute(value = "xchg_class", defaultValue = "it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding") String klass) {
 		fScheduler = createScheduler(prefix);
 		try {
-			fClass = (Class<? extends IContentExchangeStrategy>) Class.forName(klass);
+			fClass = (Class<? extends IContentExchangeStrategy>) Class
+					.forName(klass);
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 		resetScheduler();
 		publishSingleton();
 	}
+
+	// ----------------------------------------------------------------------
 
 	@Override
 	public boolean execute() {
@@ -147,6 +151,8 @@ public class DisseminationExperimentGovernor implements Control {
 
 		return false;
 	}
+
+	// ----------------------------------------------------------------------
 
 	/**
 	 * Schedules the next unit experiment, if any.
@@ -184,6 +190,8 @@ public class DisseminationExperimentGovernor implements Control {
 		// Simulation should go on.
 		return false;
 	}
+
+	// ----------------------------------------------------------------------
 
 	/**
 	 * @return <code>true</code> if there is an experiment currently running, or

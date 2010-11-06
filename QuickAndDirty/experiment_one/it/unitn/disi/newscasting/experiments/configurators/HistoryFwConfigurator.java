@@ -1,7 +1,12 @@
-package it.unitn.disi.newscasting.experiments;
+package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
+import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
+import it.unitn.disi.newscasting.experiments.IExperimentObserver;
+import it.unitn.disi.newscasting.experiments.OneThanTheOther;
+import it.unitn.disi.newscasting.experiments.SingleEventStorage;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
@@ -344,7 +349,7 @@ public class HistoryFwConfigurator implements IApplicationConfigurator,
 }
 
 interface Updater<K> {
-	public void update(K selector, TableReader reader);
+	public void update(K updatee, TableReader reader);
 }
 
 class CentralityUpdater implements Updater<IPeerSelector> {
