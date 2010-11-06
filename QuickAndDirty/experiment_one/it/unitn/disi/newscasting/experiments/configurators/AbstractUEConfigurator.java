@@ -103,14 +103,16 @@ public abstract class AbstractUEConfigurator implements
 		app.setStorage(storage(prefix, protocolId, socialNetworkId));
 
 		// Unit experiment exchange strategy.
-		IContentExchangeStrategy strategy = strategy(prefix, protocolId,
+		IContentExchangeStrategy strategy = strategy(app, prefix, protocolId,
 				socialNetworkId);
 
 		// The peer selector.
-		IPeerSelector selector = selector(prefix, protocolId, socialNetworkId);
+		IPeerSelector selector = selector(app, prefix, protocolId,
+				socialNetworkId);
 
 		// And the selection filter.
-		ISelectionFilter filter = filter(prefix, protocolId, socialNetworkId);
+		ISelectionFilter filter = filter(app, prefix, protocolId,
+				socialNetworkId);
 
 		app.addStrategy(classes(), strategy,
 				new FallThroughReference<IPeerSelector>(selector),
@@ -147,18 +149,38 @@ public abstract class AbstractUEConfigurator implements
 
 	// ----------------------------------------------------------------------
 
-	protected void registerUpdaters(TableReader reader) { }
-
-	protected abstract IPeerSelector selector(String prefix, int protocolId,
+	/**
+	 * @return an {@link IContentExchangeStrategy}, which is to be used with the
+	 *         unit experiments.
+	 */
+	protected abstract IContentExchangeStrategy strategy(
+			SocialNewscastingService app, String prefix, int protocolId,
 			int socialNetworkId);
 
-	protected abstract ISelectionFilter filter(String prefix, int protocolId,
-			int socialNetworkId);
-
-	protected abstract IContentExchangeStrategy strategy(String prefix,
-			int protocolId, int socialNetworkId);
-	
+	/**
+	 * @return the {@link Class}es under which to register the
+	 *         {@link IContentExchangeStrategy}.
+	 */
 	protected abstract Class<? extends IContentExchangeStrategy>[] classes();
+
+	/**
+	 * @return the {@link IPeerSelector} to be used with the exchange strategy.
+	 */
+	protected abstract IPeerSelector selector(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId);
+
+	/**
+	 * @return the {@link ISelectionFilter} to be used with the exchange
+	 *         strategy.
+	 */
+	protected abstract ISelectionFilter filter(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId);
+
+	/**
+	 * Hook for registering updaters.
+	 */
+	protected void registerUpdaters(TableReader reader) {
+	}
 
 	// ----------------------------------------------------------------------
 

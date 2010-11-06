@@ -4,6 +4,7 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
+import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.peersim.ProtocolReference;
@@ -29,8 +30,9 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 
 	// ----------------------------------------------------------------------
 
-	protected IContentExchangeStrategy strategy(String prefix, int protocolId,
-			int socialNetworkId) {
+	@Override
+	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
 		return new DemersRumorMonger(fResolver, prefix, protocolId,
 				new ProtocolReference<Linkable>(fResolver.getInt(prefix,
 						"linkable")), CommonState.r);
@@ -39,16 +41,16 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected IPeerSelector selector(String prefix, int protocolId,
-			int socialNetworkId) {
+	protected IPeerSelector selector(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
 		return new RandomSelectorOverLinkable(fResolver, prefix);
 	}
 
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected ISelectionFilter filter(String prefix, int protocolId,
-			int socialNetworkId) {
+	protected ISelectionFilter filter(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
 		return ISelectionFilter.ALWAYS_TRUE_FILTER;
 	}
 

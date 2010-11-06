@@ -1,13 +1,11 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
-import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 import it.unitn.disi.newscasting.experiments.OneThanTheOther;
-import it.unitn.disi.newscasting.experiments.SingleEventStorage;
-import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
@@ -18,16 +16,12 @@ import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
-import peersim.config.Configuration;
-import peersim.core.CommonState;
+import peersim.config.ObjectCreator;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -38,149 +32,101 @@ import peersim.core.Node;
  * 
  * It is also a mess, but the idea is to try to confine the mess here.
  * 
- * XXX This is becoming <b>too</b> messy.
- * 
  * @author giuliano
  */
-public class HistoryFwConfigurator implements IApplicationConfigurator,
-		IExperimentObserver {
+public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
-	public static final String PAR_LINKABLE = "social_neighborhood";
+	// ----------------------------------------------------------------------
+	// Parameter keys.
+	// ----------------------------------------------------------------------
 
 	public static final String PAR_MODE = "mode";
-
-	public static final String PARAMETER_FILE = "parameters";
-
-	public static final String STAT_LATENCY = "latency";
-
-	public static final String STAT_LOAD = "load";
 
 	enum SelectorType {
 		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CR, DEMERS
 	}
 
-	static class BFData {
-		int windowSize;
-		int chunkSize;
-		int linkable;
-		double falsePositive;
+	// ----------------------------------------------------------------------
+	// Instance-shared storage.
+	// ----------------------------------------------------------------------
 
-		BFData(String prefix) {
-			windowSize = Configuration.getInt(prefix + "."
-					+ BloomFilterHistoryFw.PAR_WINDOW_SIZE);
-			falsePositive = Configuration.getDouble(prefix + "."
-					+ BloomFilterHistoryFw.PAR_BLOOM_FALSE_POSITIVE);
-			chunkSize = Configuration.getInt(prefix + "."
-					+ HistoryForwarding.PAR_CHUNK_SIZE);
-			linkable = Configuration.getPid(prefix + "." + PAR_LINKABLE);
-		}
-	}
+	private static IReference<Linkable> fLinkable;
 
-	static BFData bfdata;
+	private static IReference<ICoreInterface> fApplication;
 
-	static TableReader fReader;
+	// ----------------------------------------------------------------------
+	// State and per-instance parameters.
+	// ----------------------------------------------------------------------
 
-	static String fPrefix;
+	private BloomFilterHistoryFw fStrategy;
 
-	static IReference<Linkable> fLinkable;
+	private SelectorType fType;
 
-	static IReference<ICoreInterface> fApplication;
-
-	static Updater<IPeerSelector> fUpdater;
-
-	static boolean fLoad, fLatency;
+	// ----------------------------------------------------------------------
 
 	public HistoryFwConfigurator(String prefix) {
-
+		super(prefix);
 	}
 
-	private void oneShotConfig(String prefix) {
-		fPrefix = prefix;
+	// ----------------------------------------------------------------------
+	// AbstractUEConfigurator hooks.
+	// ----------------------------------------------------------------------
 
-		String fileName = Configuration.getString(
-				prefix + "." + PARAMETER_FILE, null);
-		if (fileName != null) {
-			try {
-				fReader = new TableReader(new FileInputStream(
-						new File(fileName)));
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		fLinkable = new ProtocolReference<Linkable>(Configuration.getPid(prefix
-				+ "." + PAR_LINKABLE));
-
-		DisseminationExperimentGovernor.addExperimentObserver(this);
-		DisseminationExperimentGovernor
-				.addExperimentObserver(ExperimentStatisticsManager
-						.getInstance());
-
-		fLoad = Configuration.contains(prefix + "." + STAT_LOAD);
-		fLatency = Configuration.contains(prefix + "." + STAT_LATENCY);
-	}
-
-	@SuppressWarnings("unchecked")
+	@Override
 	public void configure(SocialNewscastingService app, String prefix,
-			int protocolId, int socialNetworkId) {
-
-		// One-shot initializations.
-		// I know this is horrible, but fixing peersim is beyond the scope of my
-		// research. :-P
-		if (fPrefix == null) {
-			oneShotConfig(prefix);
-		}
-
-		app.setStorage(new SingleEventStorage());
-		BloomFilterHistoryFw fw = getBFW(protocolId, socialNetworkId, prefix);
-		IReference<IPeerSelector> selector = selector(app, prefix, protocolId);
-
-		app.addStrategy(new Class[] { BloomFilterHistoryFw.class,
-				HistoryForwarding.class }, fw, selector,
-				new FallThroughReference<ISelectionFilter>(fw), 1.0);
-		app.addSubscriber(fw);
-		app.addSubscriber(ExperimentStatisticsManager.getInstance());
+			int protocolId, int socialNetworkId) throws Exception {
 		setApplicationReference(protocolId);
+		setSocialNetworkReference(socialNetworkId);
+		super.configure(app, prefix, protocolId, socialNetworkId);
 	}
 
-	private BloomFilterHistoryFw getBFW(int pid, int snid, String prefix) {
-		if (bfdata == null) {
-			bfdata = new BFData(prefix);
-		}
+	// ----------------------------------------------------------------------
 
-		return new BloomFilterHistoryFw(pid, snid, bfdata.chunkSize,
-				bfdata.windowSize, bfdata.falsePositive);
+	@Override
+	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
+		fStrategy = new BloomFilterHistoryFw(protocolId, socialNetworkId,
+				fResolver, prefix);
+		return fStrategy;
 	}
 
-	private void setApplicationReference(int protocolId) {
-		if (fApplication == null) {
-			fApplication = new ProtocolReference<ICoreInterface>(protocolId);
-		}
+	// ----------------------------------------------------------------------
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected Class<? extends IContentExchangeStrategy>[] classes() {
+		return new Class[] { BloomFilterHistoryFw.class,
+				HistoryForwarding.class };
 	}
+
+	// ----------------------------------------------------------------------
+
+	@Override
+	protected ISelectionFilter filter(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
+		return fStrategy;
+	}
+
+	// ----------------------------------------------------------------------
 
 	@SuppressWarnings("unchecked")
-	private IReference<IPeerSelector> selector(ICoreInterface app,
-			String prefix, int pid) {
-		SelectorType type = SelectorType.valueOf(Configuration.getString(prefix
-				+ "." + PAR_MODE));
+	protected IPeerSelector selector(SocialNewscastingService app,
+			String prefix, int protocolId, int socialNetworkId) {
+		fType = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
 
 		IPeerSelector selector;
-
-		switch (type) {
+		switch (fType) {
 
 		case PURE_ANTICENTRALITY:
 			selector = anticentrality(prefix);
-			fUpdater = new NullUpdater();
 			break;
 
 		case PURE_RANDOM:
 			selector = new RandomSelectorOverLinkable(prefix);
-			fUpdater = new NullUpdater();
 			break;
 
 		case PURE_CENTRALITY:
 			selector = centrality(prefix);
-			fUpdater = new CentralityUpdater();
 			break;
 
 		case ALTERNATING_CA:
@@ -191,7 +137,6 @@ public class HistoryFwConfigurator implements IApplicationConfigurator,
 							new FallThroughReference<Object>(centrality(prefix)),
 							new FallThroughReference<Object>(
 									anticentrality(prefix)) });
-			fUpdater = new NullUpdater();
 			break;
 
 		case ALTERNATING_CR:
@@ -202,174 +147,176 @@ public class HistoryFwConfigurator implements IApplicationConfigurator,
 							new FallThroughReference<Object>(centrality(prefix)),
 							new FallThroughReference<Object>(
 									new RandomSelectorOverLinkable(prefix)) });
-			fUpdater = new NullUpdater();
 			break;
 
 		case ONE_OTHER_CA:
 			selector = oneThanTheOther(centrality(prefix),
 					anticentrality(prefix), prefix);
 			app.addSubscriber((IEventObserver) selector);
-			fUpdater = (fReader == null) ? new NullUpdater()
-					: new OneThanTheOtherUpdater(new CentralityUpdater(),
-							new NullUpdater());
 			break;
 
 		case ONE_OTHER_CR:
 			selector = oneThanTheOther(centrality(prefix),
 					new RandomSelectorOverLinkable(prefix), prefix);
 			app.addSubscriber((IEventObserver) selector);
-			fUpdater = (fReader == null) ? new NullUpdater()
-					: new OneThanTheOtherUpdater(new CentralityUpdater(),
-							new NullUpdater());
 			break;
 
 		default:
-			throw new IllegalArgumentException(type.toString());
+			throw new IllegalArgumentException(fType.toString());
 		}
 
-		return new FallThroughReference<IPeerSelector>(selector);
+		return selector;
 	}
+
+	// ----------------------------------------------------------------------
+
+	@Override
+	protected void registerUpdaters(TableReader reader) {
+		IExperimentObserver updater = null;
+		switch (fType) {
+
+		case PURE_ANTICENTRALITY:
+		case PURE_RANDOM:
+			break;
+
+		case PURE_CENTRALITY:
+			updater = new CentralityUpdater(fApplication, fLinkable, reader);
+			break;
+
+		case ONE_OTHER_CA:
+		case ONE_OTHER_CR:
+			updater = new OneThanTheOtherUpdater(fApplication, fLinkable,
+					reader, new CentralityUpdater(fApplication, fLinkable,
+							reader), null);
+			break;
+
+		default:
+			throw new IllegalArgumentException(fType.toString());
+		}
+
+		if (updater != null) {
+			DisseminationExperimentGovernor.addExperimentObserver(updater);
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	// Private helpers.
+	// ----------------------------------------------------------------------
+
+	private void setApplicationReference(int id) {
+		if (fApplication == null) {
+			fApplication = new ProtocolReference<ICoreInterface>(id);
+		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void setSocialNetworkReference(int id) {
+		if (fLinkable == null) {
+			fLinkable = new ProtocolReference<Linkable>(id);
+		}
+	}
+
+	// ----------------------------------------------------------------------
 
 	private OneThanTheOther oneThanTheOther(IPeerSelector s1, IPeerSelector s2,
 			String prefix) {
-		if (ooc == null) {
-			ooc = new OneThanTheOtherConfig();
-			ooc.n0 = Configuration.getInt(prefix + ".n0");
-		}
-		
-		return new OneThanTheOther(s1, s2, ooc.n0);
+		return new OneThanTheOther(s1, s2, fResolver, prefix);
 	}
+
+	// ----------------------------------------------------------------------
 
 	private AntiCentralitySelector anticentrality(String prefix) {
-		if (ac == null) {
-			ac = new AnticentralityConfig();
-			ac.cLinkable = Configuration.getPid(prefix + ".linkable");
-		}
-		return new AntiCentralitySelector(new ProtocolReference<Linkable>(
-				ac.cLinkable), CommonState.r);
+		return genericCreate(AntiCentralitySelector.class, prefix);
 	}
+
+	// ----------------------------------------------------------------------
 
 	private CentralitySelector centrality(String prefix) {
-		if (cc == null) {
-			cc = new CentralityConfig();
-			cc.cLinkable = Configuration.getPid(prefix + ".linkable");
-			cc.cRanking = Configuration.getPid(prefix + ".ranking");
-			cc.cPsi = Configuration.getDouble(prefix + ".psi");
-		}
-
-		return new CentralitySelector(cc.cLinkable, cc.cRanking, cc.cPsi);
+		return genericCreate(CentralitySelector.class, prefix);
 	}
 
-	@Override
-	public void experimentStart(Node root) {
+	// ----------------------------------------------------------------------
 
-		if (fReader == null) {
-			return;
-		}
-
-		long id = Long.parseLong(fReader.get("id"));
-
-		// Check that the file is properly ordered.
-		if (id != root.getID()) {
-			throw new IllegalStateException(
-					"Parameter file is not properly ordered. "
-							+ "It must be ordered as in the schedule (" + id
-							+ " != " + root.getID() + ")");
-		}
-
-		fUpdater.update(getSelector(root), fReader);
-		Linkable neighborhood = fLinkable.get(root);
-		int degree = neighborhood.degree();
-
-		for (int i = 0; i < degree; i++) {
-			Node neighbor = neighborhood.getNeighbor(i);
-			fUpdater.update(getSelector(neighbor), fReader);
-		}
-	}
-
-	@Override
-	public void experimentCycled(Node root) {
-		// Prints the load statistics.
-		if (fLoad) {
-			ExperimentStatisticsManager.getInstance().printLoadStatistics(
-					System.out);
-		}
-	}
-
-	@Override
-	public void experimentEnd(Node root) {
-		ExperimentStatisticsManager manager = ExperimentStatisticsManager
-				.getInstance();
-		if (fLoad) {
-			manager.printLoadStatistics(System.out);
-		}
-		if (fLatency) {
-			manager.printLatencyStatistics(System.out);
-		}
+	private <T> T genericCreate(Class<T> klass, String prefix) {
+		ObjectCreator<T> creator = new ObjectCreator<T>(klass, fResolver);
 		try {
-			if (fReader != null) {
-				fReader.next();
-			}
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
+			return creator.create(prefix);
+		} catch (Exception ex) {
+			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
 
-	private IPeerSelector getSelector(Node neighbor) {
-		ICoreInterface intf = fApplication.get(neighbor);
-		return intf.getSelector(HistoryForwarding.class).get(neighbor);
-	}
-
+	// ----------------------------------------------------------------------
+	// Cloneable requirements.
+	// ----------------------------------------------------------------------
 	public Object clone() {
 		return this;
 	}
-
-	// Config cache classes, otherwise we cannot use the debugger.
-
-	static class CentralityConfig {
-		public int cLinkable;
-		public int cRanking;
-		public double cPsi;
-	}
-
-	static class AnticentralityConfig {
-		public int cLinkable;
-	}
-
-	static class OneThanTheOtherConfig {
-		public int n0;
-	}
-
-	static CentralityConfig cc;
-
-	static AnticentralityConfig ac;
-
-	static OneThanTheOtherConfig ooc;
-
 }
 
-interface Updater<K> {
-	public void update(K updatee, TableReader reader);
+/**
+ * {@link ParameterUpdater} subclass specialized for {@link IPeerSelector}s.
+ */
+abstract class SelectorUpdater extends ParameterUpdater {
+	private IReference<ICoreInterface> fAppRef;
+
+	public SelectorUpdater(IReference<ICoreInterface> appRef,
+			IReference<Linkable> neighborhood, TableReader reader) {
+		super(neighborhood, reader);
+		fAppRef = appRef;
+	}
+
+	protected IPeerSelector getSelector(Node node) {
+		ICoreInterface intf = fAppRef.get(node);
+		return (IPeerSelector) intf.getSelector(HistoryForwarding.class).get(
+				node);
+	}
+
+	@Override
+	public void update(Node node, TableReader reader) {
+		this.update(getSelector(node), reader);
+	}
+
+	public abstract void update(IPeerSelector selector, TableReader reader);
 }
 
-class CentralityUpdater implements Updater<IPeerSelector> {
+/**
+ * {@link CentralityUpdater} knows how to update the parameters of a
+ * {@link CentralitySelector}.
+ * 
+ * @author giuliano
+ */
+class CentralityUpdater extends SelectorUpdater {
+
+	public CentralityUpdater(IReference<ICoreInterface> appRef,
+			IReference<Linkable> neighborhood, TableReader reader) {
+		super(appRef, neighborhood, reader);
+	}
 
 	@Override
 	public void update(IPeerSelector selector, TableReader reader) {
 		double psi = Double.parseDouble(reader.get("psi"));
-		CentralitySelector centrality = (CentralitySelector) selector;
-		centrality.setPSI(psi);
+		((CentralitySelector) selector).setPSI(psi);
 	}
 }
 
-class OneThanTheOtherUpdater implements Updater<IPeerSelector> {
+/**
+ * {@link OneThanTheOtherUpdater} knows how to update the parameters of a
+ * {@link OneThanTheOther} selector.
+ * 
+ * @author giuliano
+ */
+class OneThanTheOtherUpdater extends SelectorUpdater {
 
-	private final Updater<IPeerSelector> fFirst;
+	private final SelectorUpdater fFirst;
 
-	private final Updater<IPeerSelector> fSecond;
+	private final SelectorUpdater fSecond;
 
-	public OneThanTheOtherUpdater(Updater<IPeerSelector> first,
-			Updater<IPeerSelector> second) {
+	public OneThanTheOtherUpdater(IReference<ICoreInterface> appRef,
+			IReference<Linkable> neighborhood, TableReader reader,
+			SelectorUpdater first, SelectorUpdater second) {
+		super(appRef, neighborhood, reader);
 		fFirst = first;
 		fSecond = second;
 	}
@@ -377,16 +324,13 @@ class OneThanTheOtherUpdater implements Updater<IPeerSelector> {
 	@Override
 	public void update(IPeerSelector selector, TableReader reader) {
 		int n0 = Integer.parseInt(reader.get("nzero"));
-
 		OneThanTheOther otto = (OneThanTheOther) selector;
 		otto.setN0(n0);
-		fFirst.update(otto.first(), reader);
-		fSecond.update(otto.second(), reader);
-	}
-}
-
-class NullUpdater implements Updater<IPeerSelector> {
-	@Override
-	public void update(IPeerSelector selector, TableReader reader) {
+		if (fFirst != null) {
+			fFirst.update(otto.first(), reader);
+		}
+		if (fSecond != null) {
+			fSecond.update(otto.second(), reader);
+		}
 	}
 }

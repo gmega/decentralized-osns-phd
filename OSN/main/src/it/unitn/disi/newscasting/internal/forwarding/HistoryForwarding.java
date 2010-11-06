@@ -10,7 +10,7 @@ import it.unitn.disi.utils.peersim.SNNode;
 import java.util.Iterator;
 import java.util.Set;
 
-import peersim.config.Configuration;
+import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -62,9 +62,10 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 */
 	private HashMultimap<Node, Tweet> fPending = HashMultimap.create();
 
-	public HistoryForwarding(int adaptableId, int socialNetworkId, String prefix) {
-		this(adaptableId, socialNetworkId, Configuration.getInt(prefix + "."
-				+ PAR_CHUNK_SIZE));
+	public HistoryForwarding(int adaptableId, int socialNetworkId,
+			IResolver resolver, String prefix) {
+		this(adaptableId, socialNetworkId, resolver.getInt(prefix,
+				PAR_CHUNK_SIZE));
 	}
 
 	public HistoryForwarding(int adaptableId, int socialNetworkId, int chunkSize) {

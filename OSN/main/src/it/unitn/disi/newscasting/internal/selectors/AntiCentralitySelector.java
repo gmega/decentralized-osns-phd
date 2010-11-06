@@ -14,7 +14,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 
-import peersim.config.Configuration;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
@@ -27,17 +28,15 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class AntiCentralitySelector implements IPeerSelector, Protocol {
-	
-	private static final String PAR_LINKABLE = "linkable";
 	
 	private IReference<Linkable> fLinkable;
 	
 	private final Random fRandom;
 	
-	public AntiCentralitySelector(String prefix) {
-		this(new ProtocolReference<Linkable>(Configuration.getPid(prefix + "."
-				+ PAR_LINKABLE)), CommonState.r);
+	public AntiCentralitySelector(@Attribute("linkable") int linkable) {
+		this(new ProtocolReference<Linkable>(linkable), CommonState.r);
 	}
 	
 	public AntiCentralitySelector(IReference<Linkable> linkableRef, Random random) {

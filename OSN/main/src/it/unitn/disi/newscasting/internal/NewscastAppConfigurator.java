@@ -15,6 +15,7 @@ import it.unitn.disi.utils.peersim.ProtocolReference;
 import java.io.IOException;
 
 import peersim.config.Configuration;
+import peersim.config.resolvers.PeerSimResolver;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 
@@ -117,11 +118,12 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 			String prefix, int protocolId, int socialNetworkId, boolean histories) {
 		HistoryForwarding gd;
 		Class [] keys;
+		PeerSimResolver resolver = new PeerSimResolver();
 		if (histories) {
-			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, prefix + "." + PAR_RUMOR_MONGER);
+			gd = new BloomFilterHistoryFw(protocolId, socialNetworkId, resolver, prefix + "." + PAR_RUMOR_MONGER);
 			keys = new Class[] { HistoryForwarding.class, BloomFilterHistoryFw.class };
 		} else {
-			gd = new HistoryForwarding(protocolId, socialNetworkId, prefix + "." + PAR_RUMOR_MONGER);
+			gd = new HistoryForwarding(protocolId, socialNetworkId, resolver, prefix + "." + PAR_RUMOR_MONGER);
 			keys = new Class[] { HistoryForwarding.class };
 		}
 		

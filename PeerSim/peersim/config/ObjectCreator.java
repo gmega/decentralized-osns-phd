@@ -300,6 +300,32 @@ public class ObjectCreator<T> implements IAttributeSource {
 	public Attribute attribute(String prefix, String key) {
 		return fCurrent;
 	}
+	
+
+	/**
+	 * Convenience shortcut method for creating an instance.
+	 * 
+	 * @param klass
+	 *            the class for which an instance is to be created.
+	 * @return a new instance of the specified class.
+	 * @throws RuntimeException
+	 *             if an exception is thrown by
+	 *             {@link ObjectCreator#create(String)}. The underlying
+	 *             exception can be recovered by calling
+	 *             {@link RuntimeException#getCause()}.
+	 */
+	public static <K> K createInstance(Class<K> klass, String prefix) {
+		ObjectCreator<K> creator = new ObjectCreator<K>(klass);
+		try {
+			return creator.create(prefix);
+		} catch (Exception ex) {
+			if (!(ex instanceof RuntimeException)) {
+				throw new RuntimeException(ex);
+			} else {
+				throw (RuntimeException) ex;
+			}
+		}
+	}
 }
 
 class SpecialValueResolver implements IResolver {
@@ -337,5 +363,4 @@ class SpecialValueResolver implements IResolver {
 
 		throw new MissingParameterException(null);
 	}
-
 }
