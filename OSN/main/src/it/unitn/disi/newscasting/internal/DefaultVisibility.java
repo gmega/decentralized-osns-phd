@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.Tweet;
+import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -15,8 +16,14 @@ import peersim.core.Node;
  */
 public class DefaultVisibility implements IMessageVisibility {
 
+	public static final String PAR_VISIBILITY_LINKABLE = "visibility_linkable";
+
 	private final int fSnId;
 
+	public DefaultVisibility(String prefix, IResolver resolver) {
+		fSnId = resolver.getInt(prefix, PAR_VISIBILITY_LINKABLE);
+	}
+	
 	public DefaultVisibility(int snId) {
 		fSnId = snId;
 	}

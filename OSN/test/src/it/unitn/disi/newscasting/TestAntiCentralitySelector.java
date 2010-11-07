@@ -53,7 +53,7 @@ public class TestAntiCentralitySelector {
 		for (int i = 0; i < 10; i++) {
 			Node neighbor = lnk.getNeighbor(i);
 			Assert.assertEquals(i + 1, neighbor.getID());
-			int selections = counter.hist(neighbor);
+			int selections = counter.count(neighbor);
 			Assert.assertTrue(selections > last);
 			last = selections;
 			System.out.print(last + " ");

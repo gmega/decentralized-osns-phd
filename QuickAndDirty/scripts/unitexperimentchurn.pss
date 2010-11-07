@@ -40,8 +40,8 @@ protocol.snewscasting SocialNewscastingService
 		
 	linkable onehop
 	chunk_size 5
-	giveup_probability 0.8
-	
+	giveup_probability 1.0
+	latency
 }
 
 protocol.executor ActionExecutor
@@ -97,15 +97,15 @@ control.cdactscheduler CDActionScheduler
 control.governor DisseminationExperimentGovernor
 {
 	scheduler IntervalScheduler
-	scheduler.idlist 16814,16814
-	#scheduler DegreeClassScheduler
-	#scheduler.linkable onehop
-	#scheduler.includeNeighbors
+	scheduler.idlist 3270,3270
+#	scheduler DegreeClassScheduler
+#	scheduler.linkable onehop
+#	scheduler.includeNeighbors
 	
 	linkable onehop
 	social_newscasting snewscasting
 	executor executor
-	repetitions 2
+	repetitions 20
 	degreeCutoff 0
 	xchg_class it.unitn.disi.newscasting.internal.demers.DemersRumorMonger
 	verbose

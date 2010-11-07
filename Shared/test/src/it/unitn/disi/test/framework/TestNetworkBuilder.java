@@ -132,7 +132,7 @@ public class TestNetworkBuilder implements Iterable<Node> {
 		}
 
 		public Node getNeighbor(int i) {
-			throw new UnsupportedOperationException();
+			return fOrderedNodes.get(i);
 		}
 
 		public boolean addNeighbor(Node neighbour) {

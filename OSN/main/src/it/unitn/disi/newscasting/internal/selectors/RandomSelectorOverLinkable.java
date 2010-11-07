@@ -3,7 +3,6 @@ package it.unitn.disi.newscasting.internal.selectors;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.peersim.PermutingCache;
-import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.resolvers.PeerSimResolver;
 import peersim.core.Linkable;
@@ -64,7 +63,7 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 	// ----------------------------------------------------------------------
 	
 	public Node selectPeer(Node source, ISelectionFilter filter) {
-		fCache.populate(source);
+		fCache.populate(source, filter);
 		fCache.shuffle();
 		// Performs the selection.
 		for (int i = 0; i < fCache.size(); i++) {

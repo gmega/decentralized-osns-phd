@@ -74,7 +74,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	
 	public void configure(SocialNewscastingService app, String prefix,
 			int protocolId, int socialNetworkId) throws Exception {
-		configureStorage(app, prefix);
+		configureStorage(app, prefix, socialNetworkId);
 		configureLogging(app, prefix);
 		configureAntiEntropy(app, prefix, protocolId, socialNetworkId);
 		configureRumorMongering(app, prefix,protocolId, socialNetworkId);
@@ -147,12 +147,12 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		app.addSubscriber(demersRm);
 	}
 	
-	private void configureStorage(SocialNewscastingService service, String prefix) {
+	private void configureStorage(SocialNewscastingService service, String prefix, int snId) {
 		String type = Configuration.getString(prefix + "." + PAR_STORAGE, VAL_SIMPLE);
 		
 		IWritableEventStorage storage;
 		if (type.equals(VAL_COMPACT)) {
-			storage = new CompactEventStorage();
+			storage = new CompactEventStorage(new DefaultVisibility(snId));
 		} else if (type.equals(VAL_SIMPLE)) {
 			storage = new SimpleEventStorage();
 		} else {

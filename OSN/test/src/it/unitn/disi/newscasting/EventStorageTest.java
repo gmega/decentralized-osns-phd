@@ -1,7 +1,9 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
+import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
@@ -18,7 +20,7 @@ import org.junit.Test;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
-public class EventStorageTest {
+public class EventStorageTest extends PeerSimTest{
 	
 	TestNetworkBuilder builder;
 	
@@ -32,6 +34,9 @@ public class EventStorageTest {
 		final int[] a = new int[1000];
 		
 		Node node = builder.baseNode();
+		int pid = builder.assignCompleteLinkable();
+		DefaultVisibility vis = new DefaultVisibility(pid);
+		
 		builder.replayAll();
 
 		for (int i = 0; i < 1000; i++) {
@@ -47,7 +52,7 @@ public class EventStorageTest {
 			}
 		}, new Random());
 
-		CompactEventStorage st = new CompactEventStorage();
+		CompactEventStorage st = new CompactEventStorage(vis);
 		for (int i = 0; i < 1000; i++) {
 			st.add(node, a[i]);
 		}
@@ -60,8 +65,11 @@ public class EventStorageTest {
 	@Test
 	public void sameSizeLists() {
 		Node node = builder.baseNode();
-		CompactEventStorage s1 = new CompactEventStorage();
-		CompactEventStorage s2 = new CompactEventStorage();
+		int pid = builder.assignCompleteLinkable();
+		DefaultVisibility vis = new DefaultVisibility(pid);
+		
+		CompactEventStorage s1 = new CompactEventStorage(vis);
+		CompactEventStorage s2 = new CompactEventStorage(vis);
 
 		addInterval(s1, node, 0, 9); // [0, 9]
 		addInterval(s2, node, 2, 5); // [2, 5]
@@ -70,7 +78,6 @@ public class EventStorageTest {
 		addInterval(s2, node, 15, 25); // [15, 25]
 		addInterval(s1, node, 28, 30); // [28, 30]
 		
-		int pid = builder.assignCompleteLinkable();
 		builder.replayAll();
 		Linkable sn = (Linkable) node.getProtocol(pid);
 
@@ -82,10 +89,12 @@ public class EventStorageTest {
 	@Test
 	public void testObserver() {
 		Node[] array = builder.mkNodeArray(10);
-		final CompactEventStorage s1 = new CompactEventStorage();
-		final CompactEventStorage s2 = new CompactEventStorage();
-		
 		int pid = builder.assignCompleteLinkable();
+		DefaultVisibility vis = new DefaultVisibility(pid);
+
+		final CompactEventStorage s1 = new CompactEventStorage(vis);
+		final CompactEventStorage s2 = new CompactEventStorage(vis);
+		
 		builder.replayAll();
 		Linkable sn = (Linkable) array[0].getProtocol(pid);
 

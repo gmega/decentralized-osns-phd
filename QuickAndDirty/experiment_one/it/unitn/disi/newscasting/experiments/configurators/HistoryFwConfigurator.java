@@ -21,6 +21,7 @@ import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
+import peersim.config.AutoConfig;
 import peersim.config.ObjectCreator;
 import peersim.core.Linkable;
 import peersim.core.Node;
@@ -34,6 +35,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
@@ -64,8 +66,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
 
-	public HistoryFwConfigurator(String prefix) {
-		super(prefix);
+	public HistoryFwConfigurator() {
 	}
 
 	// ----------------------------------------------------------------------

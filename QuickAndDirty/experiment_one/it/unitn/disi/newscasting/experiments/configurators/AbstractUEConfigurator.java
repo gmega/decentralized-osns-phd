@@ -63,8 +63,7 @@ public abstract class AbstractUEConfigurator implements
 
 	// ----------------------------------------------------------------------
 
-	public AbstractUEConfigurator(@Attribute(Attribute.PREFIX) String prefix) {
-		oneShotConfig(prefix);
+	public AbstractUEConfigurator() {
 	}
 
 	// ----------------------------------------------------------------------
@@ -74,15 +73,17 @@ public abstract class AbstractUEConfigurator implements
 			return;
 		}
 
-		// Registers the statistics manager.
-		DisseminationExperimentGovernor
-				.addExperimentObserver(ExperimentStatisticsManager
-						.getInstance());
-
 		// And the statistics printer.
 		StatisticsPrinter printer = ObjectCreator.createInstance(
 				StatisticsPrinter.class, prefix);
 		DisseminationExperimentGovernor.addExperimentObserver(printer);
+
+		// And the statistics manager. The printer has to come BEFORE
+		// the manager, or the experiment data will be wiped out by the
+		// time we have the opportunity to print something.
+		DisseminationExperimentGovernor
+				.addExperimentObserver(ExperimentStatisticsManager
+						.getInstance());
 
 		// And the parameter updaters, if any.
 		TableReader reader = tableReader(prefix);
@@ -98,6 +99,8 @@ public abstract class AbstractUEConfigurator implements
 	@Override
 	public void configure(SocialNewscastingService app, String prefix,
 			int protocolId, int socialNetworkId) throws Exception {
+
+		oneShotConfig(prefix);
 
 		// Application storage.
 		app.setStorage(storage(prefix, protocolId, socialNetworkId));

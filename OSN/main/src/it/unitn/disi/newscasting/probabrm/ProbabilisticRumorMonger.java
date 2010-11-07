@@ -6,6 +6,7 @@ import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.MiscUtils;
@@ -25,18 +26,19 @@ import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
-public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEventObserver {
+public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
+		IEventObserver {
 
 	/**
-	 * ID of the protocol that uses this protocol. 
+	 * ID of the protocol that uses this protocol.
 	 */
 	private final int fParentProtocolId;
-	
+
 	/**
 	 * ID of the (possibly dynamic) neighborhood {@link Linkable}.
 	 */
 	private final int fNeighborhoodId;
-	
+
 	/**
 	 * ID of the (static or slowly changing) social network {@link Linkable}.
 	 */
@@ -54,19 +56,19 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	 * case initialization is not performed properly.
 	 */
 	private Long fNodeId;
-	
+
 	/**
 	 * If set to true, assumes that the {@link #fNeighborhoodId} points to a
-	 * static neighborhood, and changes the sampling strategy to an eager 
+	 * static neighborhood, and changes the sampling strategy to an eager
 	 * sampling strategy.
 	 */
 	private boolean fStatic;
-	
+
 	/**
 	 * If set to true, overrides probability parameters with 1.0.
 	 */
 	private final boolean fFlood;
-	
+
 	/**
 	 * Random number generator.
 	 */
@@ -86,12 +88,12 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	 * Storage for the forwarding dissemination probabilities.
 	 */
 	private HashMap<Long, Double> fForwardProbabilities = new HashMap<Long, Double>();
-	
+
 	/**
 	 * Queue containing pending operations.
 	 */
 	private LinkedList<ISend> fPendings = new LinkedList<ISend>();
-	
+
 	public ProbabilisticRumorMonger(int parentProtocolId, int snId, int ccsId,
 			int neighborhoodId, ISelectionFilter filter, boolean flood,
 			boolean statik, Random random) {
@@ -133,7 +135,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	public void setForwardProbability(Long id, Double probability) {
 		fForwardProbabilities.put(id, probability);
 	}
-	
+
 	/**
 	 * Tells the probability with which this node should send messages to the
 	 * component enclosing the receiving node, when this node is tweeting.
@@ -164,35 +166,37 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 
 		ICoreInterface peerAdaptable = (ICoreInterface) actualPeer
 				.getProtocol(fParentProtocolId);
-		peerAdaptable.receiveTweet(source, actualPeer, pending.getTweet(), this);
+		peerAdaptable
+				.receiveTweet(source, actualPeer, pending.getTweet(), this);
 		return true;
 	}
-	
+
 	public int throttling(SNNode node) {
 		while (!fPendings.isEmpty()) {
 			ISend op = fPendings.getFirst();
 			if (!op.done()) {
 				return op.getMinRounds();
 			}
-			
+
 			fPendings.remove();
 		}
-		
+
 		return 0;
 	}
-	
+
 	public void tweeted(Node owner, int sequenceNumber) {
 		// Queue one forwarding op per component.
 		ComponentComputationService css = (ComponentComputationService) owner
 				.getProtocol(fCCSId);
-		Tweet msg = new Tweet(owner, sequenceNumber);
+		Tweet msg = new Tweet(owner, sequenceNumber, new DefaultVisibility(
+				fNeighborhoodId));
 		for (int i = 0; i < css.components(owner); i++) {
 			// The send probabilities are the same for connected components,
 			// so we just pick the parameter computed for an arbitrary
 			// member.
 			List<Integer> members = css.members(owner, i);
-			double probability = fFlood ? 1.0 : fSendProbabilities
-					.get(members.get(0).longValue());
+			double probability = fFlood ? 1.0 : fSendProbabilities.get(members
+					.get(0).longValue());
 			fPendings.add(makeStrategy(owner, msg, fParentProtocolId,
 					fNeighborhoodId, probability, members));
 		}
@@ -207,10 +211,10 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 		}
 
 		/** We are forwarding. **/
-		Linkable ourNeighborhood = (Linkable) PeersimUtils.getLinkable(receiver,
-				fParentProtocolId, fSocialNetworkId);
-		Linkable senderNeighborhood = (Linkable) PeersimUtils.getLinkable(owner,
-				fParentProtocolId, fSocialNetworkId);
+		Linkable ourNeighborhood = (Linkable) PeersimUtils.getLinkable(
+				receiver, fParentProtocolId, fSocialNetworkId);
+		Linkable senderNeighborhood = (Linkable) PeersimUtils.getLinkable(
+				owner, fParentProtocolId, fSocialNetworkId);
 		ArrayList<Object> intersection = new ArrayList<Object>();
 
 		// Picks the intersection.
@@ -221,12 +225,13 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 
 		int i = (start == -1) ? end : start;
 		for (; i <= end; i++) {
-			Tweet msg = new Tweet(owner, i);
+			Tweet msg = new Tweet(owner, i, new DefaultVisibility(
+					fNeighborhoodId));
 			fPendings.add(makeStrategy(receiver, msg, fParentProtocolId,
 					fNeighborhoodId, probability, intersection));
 		}
 	}
-	
+
 	private DynamicDissemination makeStrategy(Node forwarder, Tweet tweet,
 			int protocolId, int neighborhoodId, double probability,
 			List<? extends Object> ids) {
@@ -238,39 +243,40 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 					fNeighborhoodId, probability, ids);
 		}
 	}
-	
+
 	private DynamicDissemination eagerStrategy(Node forwarder, Tweet tweet,
 			int protocolId, int neighborhoodId, double probability,
 			List<? extends Object> ids) {
 		ArrayList<Long> selected = new ArrayList<Long>();
 		for (Object id : ids) {
 			if (fRandom.nextDouble() < probability) {
-				selected.add(((Number)id).longValue());
+				selected.add(((Number) id).longValue());
 			}
 		}
 		// Eagerly picks the neighbors according to the probability parameter.
-		DynamicDissemination dd = new DynamicDissemination(tweet, forwarder, protocolId, neighborhoodId, selected.size());
+		DynamicDissemination dd = new DynamicDissemination(tweet, forwarder,
+				protocolId, neighborhoodId, selected.size());
 		for (Long id : selected) {
 			dd.addNeighbor(id.longValue());
 		}
-		
+
 		return dd;
 	}
-	
+
 	private DynamicDissemination dynamicStrategy(Node forwarder, Tweet tweet,
 			int protocolId, int neighborhoodId, double probability,
 			List<? extends Object> ids) {
 		int sampleSize = (int) Math.ceil(probability * ids.size());
 		DynamicDissemination dd = new DynamicDissemination(tweet, forwarder,
 				protocolId, neighborhoodId, sampleSize);
-		
+
 		for (Object id : ids) {
-			dd.addNeighbor(((Number)id).longValue());
+			dd.addNeighbor(((Number) id).longValue());
 		}
-		
+
 		return dd;
 	}
-	
+
 	public void duplicateReceived(Node sender, Node receiver, Node owner,
 			int start, int end) {
 		// XXX see if I should retransmit duplicates as well.
@@ -279,17 +285,17 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	public int queueLength() {
 		return fPendings.size();
 	}
-	
-	public int pendingRounds(){
+
+	public int pendingRounds() {
 		int minRounds = 0;
 		for (ISend send : fPendings) {
 			minRounds += send.getMinRounds();
 		}
-		
-		if (minRounds < 0 ) {
+
+		if (minRounds < 0) {
 			throw new IllegalStateException();
 		}
-		
+
 		return minRounds;
 	}
 
@@ -309,19 +315,19 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy, IEven
 	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void tweeted(Tweet tweet) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void clear(Node source) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }
 
@@ -336,18 +342,18 @@ interface ISend {
 	 *         the node is down.
 	 */
 	public SNNode next(ISelectionFilter filter);
-	
+
 	/**
 	 * @return the {@link Tweet} associated with this send operation.
 	 */
 	public Tweet getTweet();
-	
+
 	/**
 	 * @return an estimate saying the minimal number of rounds this operation
 	 *         will take to complete.
 	 */
 	public int getMinRounds();
-	
+
 	/**
 	 * @return <code>true</code> if this send operation is done, or
 	 *         <code>false</code> otherwise. When a send operation is node, all
@@ -364,34 +370,37 @@ interface ISend {
  * @author giuliano
  */
 class DynamicDissemination implements ISend {
-	
+
 	// ----------------------------------------------------------------------
 	private final int fProtocolId;
-	
+
 	private final int fSampledNeighborhood;
 	// ----------------------------------------------------------------------
 
-	/** Members of the static neighborhood over which our samples should come from. */
+	/**
+	 * Members of the static neighborhood over which our samples should come
+	 * from.
+	 */
 	private final Set<Long> fStaticNeighborhood = new HashSet<Long>();
 
 	/** The node "forwarding" the message (sender). */
 	private final Node fForwarder;
-	
+
 	/** The message being forwarded. */
 	private final Tweet fTweet;
-	
+
 	/** Send cache. */
 	private Node[] fToSend;
-	
+
 	/** Number of nodes we have in our sample. */
 	private int fCurrentSize = 0;
-	
+
 	/** Number of nodes which we still need to contact. **/
 	private int fRemaining;
-	
+
 	/** Timestamp of the last sample. **/
 	private int fTimestamp = -1;
-	
+
 	// ----------------------------------------------------------------------
 
 	public DynamicDissemination(Tweet tweet, Node forwarder, int protocolId,
@@ -403,16 +412,16 @@ class DynamicDissemination implements ISend {
 		fRemaining = sampleSize;
 		fToSend = new Node[sampleSize];
 	}
-	
+
 	public void addNeighbor(long id) {
 		fStaticNeighborhood.add(id);
 	}
-	
+
 	public SNNode next(ISelectionFilter filter) {
 		// Removes the garbage.
 		// XXX This is an important thing to mention I'm doing.
 		collectGarbage(fToSend);
-		
+
 		// Resamples to fill in the cache, if required.
 		resample(fToSend, fProtocolId);
 
@@ -421,21 +430,23 @@ class DynamicDissemination implements ISend {
 			if (fToSend[i] != null) {
 				Node toSend = fToSend[i];
 				if (filter.canSelect(toSend)) {
-					/** This operation works like a Taboo list. Previously
-					 * sampled nodes won't be re-considered. */
+					/**
+					 * This operation works like a Taboo list. Previously
+					 * sampled nodes won't be re-considered.
+					 */
 					fStaticNeighborhood.remove(fToSend[i].getID());
 					fToSend[i] = null;
 					fRemaining--;
 					fCurrentSize = MiscUtils.compact(fToSend, fCurrentSize);
-					return (SNNode) filter.selected(toSend);	
+					return (SNNode) filter.selected(toSend);
 				}
 			}
 		}
 
 		return null;
 	}
-	
-	private void collectGarbage(Node [] nodes) {
+
+	private void collectGarbage(Node[] nodes) {
 		// Expunge dead nodes.
 		for (int i = 0; i < fCurrentSize; i++) {
 			if (!nodes[i].isUp()) {
@@ -444,41 +455,41 @@ class DynamicDissemination implements ISend {
 		}
 		MiscUtils.compact(nodes, fCurrentSize);
 	}
-	
-	private void resample(Node [] nodes, int protocolID) {
+
+	private void resample(Node[] nodes, int protocolID) {
 		Linkable neighborhood = (Linkable) PeersimUtils.getLinkable(fForwarder,
 				protocolID, fSampledNeighborhood);
-		
+
 		if ((neighborhood instanceof IDynamicLinkable)) {
-			if (!((IDynamicLinkable)neighborhood).hasChanged(fTimestamp)){
+			if (!((IDynamicLinkable) neighborhood).hasChanged(fTimestamp)) {
 				return;
 			}
 		}
-		
+
 		// The neighborhood is assumed to be represent a non-biased sample.
 		for (int i = 0; i < neighborhood.degree(); i++) {
 			if (fCurrentSize == fRemaining) {
 				break;
 			}
-			
+
 			Node node = neighborhood.getNeighbor(i);
 			if (fStaticNeighborhood.contains(node.getID())) {
 				nodes[fCurrentSize++] = node;
 			}
 		}
-		
+
 		fTimestamp = CommonState.getIntTime();
 	}
 
 	public Tweet getTweet() {
 		return fTweet;
 	}
-	
+
 	public int getMinRounds() {
 		if (fRemaining < 0) {
 			throw new IllegalStateException();
 		}
-		
+
 		return fRemaining;
 	}
 

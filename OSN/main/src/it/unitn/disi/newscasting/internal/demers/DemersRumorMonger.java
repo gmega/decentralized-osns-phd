@@ -1,10 +1,12 @@
 package it.unitn.disi.newscasting.internal.demers;
 
+import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.MultiCounter;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -14,7 +16,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 
-import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.resolvers.PeerSimResolver;
 import peersim.core.Linkable;
@@ -29,7 +30,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 public class DemersRumorMonger implements IContentExchangeStrategy,
-		IEventObserver {
+		IEventObserver, ISelectionFilter {
 
 	// ----------------------------------------------------------------------
 	// Parameter keys.
@@ -157,7 +158,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 				// Was it a duplicate?
 				if (wasNew) {
 					// Nope. Make it a hot rumor.
-					fRumorList.add(tweet);
+					fRumorList.add(sn, tweet);
 				}
 				total++;
 			}
@@ -174,8 +175,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-	private void addTweet(Tweet tweet) {
-		fRumorList.add(tweet);
+	private void addTweet(Node ours, Tweet tweet) {
+		fRumorList.add((Linkable) ours.getProtocol(fProtocolId), tweet);
 	}
 
 	// ----------------------------------------------------------------------
@@ -192,6 +193,24 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	}
 
 	// ----------------------------------------------------------------------
+	// ISelectionFilter interface.
+	// ----------------------------------------------------------------------
+
+	@Override
+	public boolean canSelect(Node node) {
+		return fRumorList.messagesFor(node) != 0;
+	}
+
+	// ----------------------------------------------------------------------
+
+	public Node selected(Node node) {
+		// Don't care.
+		return node;
+	}
+
+	// ----------------------------------------------------------------------
+	// ICachingObject interface.
+	// ----------------------------------------------------------------------
 
 	@Override
 	public void clear(Node source) {
@@ -206,7 +225,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
 		if (!duplicate) {
-			addTweet(tweet);
+			addTweet(receiver, tweet);
 		}
 	}
 
@@ -214,7 +233,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	@Override
 	public void tweeted(Tweet tweet) {
-		addTweet(tweet);
+		addTweet(tweet.poster, tweet);
 	}
 
 	// ----------------------------------------------------------------------
@@ -234,6 +253,11 @@ class RumorList implements Cloneable {
 	 */
 	private LinkedList<Tweet> fHotRumors = new LinkedList<Tweet>();
 	private List<Tweet> fRoHotRumors = Collections.unmodifiableList(fHotRumors);
+
+	/**
+	 * Keeps track of destinations for messages.
+	 */
+	private MultiCounter<Long> fDestinations = new MultiCounter<Long>();
 
 	/**
 	 * See {@link DemersRumorMonger#PAR_GIVEUP_PROBABILITY}.
@@ -259,11 +283,16 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public void add(Tweet evt) {
+	public void add(Linkable ourSn, Tweet evt) {
+		if (addDestinations(ourSn, evt) == 0) {
+			return;
+		}
+
 		// Hottest rumors are at the END of the list.
 		fHotRumors.addLast(evt);
 		if (fMaxSize > 0 && fHotRumors.size() > fMaxSize) {
-			fHotRumors.removeFirst();
+			Tweet discarded = fHotRumors.removeFirst();
+			removeDestinations(discarded);
 		}
 	}
 
@@ -289,8 +318,9 @@ class RumorList implements Cloneable {
 			if (!mask.get(i)) {
 				// Either discards ...
 				if (fRandom.nextDouble() < fGiveupProbability) {
-					it.next();
+					Tweet discarded = it.next();
 					it.remove();
+					removeDestinations(discarded);
 				}
 				// .. or demotes the Tweet.
 				else if (it.hasPrevious()) {
@@ -320,6 +350,37 @@ class RumorList implements Cloneable {
 
 	private int start(int size) {
 		return Math.max(0, fHotRumors.size() - size);
+	}
+
+	// ----------------------------------------------------------------------
+
+	private int addDestinations(Linkable ourNeighborhood, Tweet tweet) {
+		int size = tweet.destinations();
+		int actual = 0;
+		for (int i = 0; i < size; i++) {
+			Node destination = tweet.destination(i);
+			if (ourNeighborhood.contains(destination)) {
+				fDestinations.increment(destination.getID());
+				actual++;
+			}
+		}
+		return actual;
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void removeDestinations(Tweet tweet) {
+		int size = tweet.destinations();
+		for (int i = 0; i < size; i++) {
+			Long destination = tweet.destination(i).getID();
+			fDestinations.decrement(destination);
+		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	public int messagesFor(Node node) {
+		return fDestinations.count(node.getID());
 	}
 
 	// ----------------------------------------------------------------------

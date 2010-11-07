@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Assert;
@@ -14,14 +15,16 @@ public class TestTweet {
 		Node A = builder.baseNode();
 		Node B = builder.baseNode();
 		
+		int pid = builder.assignCompleteLinkable();
+		DefaultVisibility vis = new DefaultVisibility(pid);
 		builder.replayAll();
 		
-		Tweet root = new Tweet(A, 1);
+		Tweet root = new Tweet(A, 1, vis);
 		// Note that this is actually illegal as two different events
 		// cannot have the same sequence number, but we're testing.
-		Tweet reply = new Tweet(B, 1, root);
-		Tweet replyClone = new Tweet(B, 1, root);
-		Tweet noreply = new Tweet(B, 1);
+		Tweet reply = new Tweet(B, 1, vis, root);
+		Tweet replyClone = new Tweet(B, 1, vis, root);
+		Tweet noreply = new Tweet(B, 1, vis);
 		
 		Assert.assertTrue(reply.equals(replyClone));
 		Assert.assertTrue(replyClone.equals(reply));

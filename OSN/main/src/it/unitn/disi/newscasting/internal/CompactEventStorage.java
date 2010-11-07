@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -28,9 +29,12 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 
 	private Map<Node, LinkedList<Integer>> fIntervals = new HashMap<Node, LinkedList<Integer>>();
 
+	private IMessageVisibility fVisibility;
+
 	// ----------------------------------------------------------------------
 
-	public CompactEventStorage() {
+	public CompactEventStorage(IMessageVisibility visibility) {
+		fVisibility = visibility;
 	}
 
 	// ----------------------------------------------------------------------
@@ -226,9 +230,9 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			observer.sendDigest(sender, receiver, key, eventsFor(key));
 
 			// Performs the actual merge.
-			fIntervals.put(key, this.mergeIntervals(sender, receiver, key, this
-					.getList(key, false), other.getList(key, false), observer,
-					neighborhood));
+			fIntervals.put(key, this.mergeIntervals(sender, receiver, key,
+					this.getList(key, false), other.getList(key, false),
+					observer, neighborhood));
 		}
 
 		this.deltaAdd(sender, receiver, other, observer, neighborhood);
@@ -376,7 +380,7 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 
 		for (int i = start; i <= end; i++) {
 			observer.eventDelivered((SNNode) sender, (SNNode) receiver,
-					new Tweet(key, i), false);
+					new Tweet(key, i, fVisibility), false);
 		}
 	}
 
@@ -400,9 +404,9 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			}
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	@Override
 	public Iterator<Tweet> tweetsFor(Node node) {
 		return new TweetIterator(node);
@@ -414,73 +418,73 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 	public boolean add(Tweet tweet) {
 		return this.add(tweet.poster, tweet.sequenceNumber);
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public int distinctNodes() {
 		return fIntervals.size();
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	@Override
 	public Set<Node> nodes() {
 		return Collections.unmodifiableSet(fIntervals.keySet());
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	@Override
 	public void clear() {
 		fIntervals.clear();
 	}
 
 	// ----------------------------------------------------------------------
-	
+
 	public int elements() {
 		int total = 0;
 		for (LinkedList<Integer> list : fIntervals.values()) {
 			total += list.size();
 		}
-	
+
 		return total;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public Object clone() {
 		try {
 			CompactEventStorage cloned = (CompactEventStorage) super.clone();
 			cloned.fIntervals = new HashMap<Node, LinkedList<Integer>>();
-	
+
 			for (Node key : fIntervals.keySet()) {
-				cloned.fIntervals.put(key, new LinkedList<Integer>(fIntervals
-						.get(key)));
+				cloned.fIntervals.put(key,
+						new LinkedList<Integer>(fIntervals.get(key)));
 			}
-	
+
 			return cloned;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	private class TweetIterator implements Iterator<Tweet> {
-		
+
 		private Node fNode;
-		
+
 		private Iterator<Integer> fIntervalIterator;
-		
+
 		private int fCurrent = 0;
-		
+
 		private int fNext = -1;
-		
+
 		public TweetIterator(Node node) {
 			if (node == null) {
 				return;
 			}
-			
+
 			fIntervalIterator = fIntervals.get(node).iterator();
 			nextInterval();
 		}
@@ -495,7 +499,7 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			if (!hasNext()) {
 				throw new NoSuchElementException();
 			}
-			Tweet next = new Tweet(fNode, fCurrent++);
+			Tweet next = new Tweet(fNode, fCurrent++, fVisibility);
 			if (fCurrent == fNext) {
 				nextInterval();
 			}
@@ -506,13 +510,13 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
-		
+
 		private void nextInterval() {
-			if(fIntervalIterator.hasNext()) {
+			if (fIntervalIterator.hasNext()) {
 				fCurrent = fIntervalIterator.next();
 				fNext = fIntervalIterator.next();
 			}
 		}
-		
+
 	}
 }

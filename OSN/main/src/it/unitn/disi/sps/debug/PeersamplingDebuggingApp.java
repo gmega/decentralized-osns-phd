@@ -113,7 +113,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 
 		int max = Integer.MAX_VALUE;
 		for (Node key : fCounter) {
-			max = Math.min(max, fCounter.hist(key));
+			max = Math.min(max, fCounter.count(key));
 		}
 
 		fSeen = max;

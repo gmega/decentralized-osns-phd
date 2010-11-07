@@ -48,7 +48,7 @@ public class SampleTracker implements Control {
 		// Performs a dump at the last round.
 		if (CommonState.getTime() == (CommonState.getEndTime() - 1)) {
 			for (Node key : fCounter) {
-				System.out.println(key.getID() + " " + fCounter.hist(key));
+				System.out.println(key.getID() + " " + fCounter.count(key));
 			}
 		}
 		

@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -58,7 +59,8 @@ public class HistoryForwardingTest extends PeerSimTest {
 
 		// Creates a root tweet which will be known by everyone.
 		Node profileOwner = nodes.get(0);
-		Tweet root = new Tweet(profileOwner, 0);
+		IMessageVisibility vis = new DefaultVisibility(SOCIAL_NETWORK_ID);
+		Tweet root = new Tweet(profileOwner, 0, vis);
 		
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {

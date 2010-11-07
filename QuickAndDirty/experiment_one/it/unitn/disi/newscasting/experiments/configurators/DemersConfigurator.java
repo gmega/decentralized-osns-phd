@@ -8,7 +8,6 @@ import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.peersim.ProtocolReference;
-import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
@@ -22,10 +21,11 @@ import peersim.core.Linkable;
 public class DemersConfigurator extends AbstractUEConfigurator implements
 		IApplicationConfigurator {
 
+	private DemersRumorMonger fStrategy;
+
 	// ----------------------------------------------------------------------
 
-	public DemersConfigurator(@Attribute(Attribute.PREFIX) String prefix) {
-		super(prefix);
+	public DemersConfigurator() {
 	}
 
 	// ----------------------------------------------------------------------
@@ -33,9 +33,11 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	@Override
 	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		return new DemersRumorMonger(fResolver, prefix, protocolId,
+		fStrategy = new DemersRumorMonger(fResolver, prefix, protocolId,
 				new ProtocolReference<Linkable>(fResolver.getInt(prefix,
 						"linkable")), CommonState.r);
+
+		return fStrategy;
 	}
 
 	// ----------------------------------------------------------------------
@@ -51,7 +53,7 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	@Override
 	protected ISelectionFilter filter(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		return ISelectionFilter.ALWAYS_TRUE_FILTER;
+		return (ISelectionFilter) fStrategy;
 	}
 
 	// ----------------------------------------------------------------------

@@ -1,6 +1,5 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import peersim.core.Node;
 
 //----------------------------------------------------------------------
@@ -37,25 +36,6 @@ public class Tweet {
 	 * The computed hash code.
 	 */
 	private final int fHashCode;
-
-	/**
-	 * Convenience constructor. Equivalent to:
-	 * 
-	 * <code> Tweet(originator, sequenceNumber, new DefaultVisibility(sequenceNumber), null);  </code>
-	 */
-	public Tweet(Node poster, int sequenceNumber) {
-		this(poster, sequenceNumber, (Tweet) null);
-	}
-
-	/**
-	 * Convenience constructor. Equivalent to:
-	 * 
-	 * <code> Tweet(originator, sequenceNumber, new DefaultVisibility(sequenceNumber), original);  </code>
-	 */
-	public Tweet(Node poster, int sequenceNumber, Tweet original) {
-		this(poster, sequenceNumber, new DefaultVisibility(sequenceNumber),
-				original);
-	}
 
 	/**
 	 * Convenience constructor. Equivalent to:
@@ -162,7 +142,7 @@ public class Tweet {
 			buffer.append("]");
 		}
 		buffer.append(")");
-		
+
 		return buffer.toString();
 	}
 
