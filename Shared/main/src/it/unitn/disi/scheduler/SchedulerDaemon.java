@@ -293,8 +293,8 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 			// threads.
 		}
 		fLogger.info("Process " + entry.descriptor.pid
-				+ ": pipe streams terminated. Completion time:" + time
-				+ " (approximately).");
+				+ ": pipe streams terminated. Completion time: " + time
+				+ "ms (approximately).");
 
 		// Removes process from process table.
 		fProcessTable.remove(entry.descriptor.pid);
@@ -302,7 +302,6 @@ public class SchedulerDaemon implements IDaemon, Iterable<ProcessEntry> {
 		// Clears the way for the next process to be launched.
 		releaseCore();
 	}
-
 }
 
 /**
@@ -355,7 +354,7 @@ class ProcessDispatcher extends Thread {
 	private boolean launch(CommandDescriptor next) {
 		InputStream input = null;
 		OutputStream output = null;
-		
+
 		try {
 			// First tries to open inputs and outputs.
 			File pwd = checkPwd(next);
@@ -455,6 +454,12 @@ class ProcessDispatcher extends Thread {
 	}
 }
 
+/**
+ * The {@link GarbageCollector} reaps and emmit notifications for dead processes
+ * by periodically polling them.
+ * 
+ * @author giuliano
+ */
 class GarbageCollector extends Thread {
 
 	private final int fPollingInterval;
@@ -492,6 +497,11 @@ class GarbageCollector extends Thread {
 	}
 }
 
+/**
+ * {@link StreamPipe} pipes one {@link InputStream} to an {@link OutputStream}.
+ * 
+ * @author giuliano
+ */
 class StreamPipe implements Runnable {
 
 	private static final Logger logger = Logger.getLogger(StreamPipe.class);
@@ -544,10 +554,15 @@ class StreamPipe implements Runnable {
 			}
 		}
 	}
-
 }
 
+/**
+ * Internal struct for keeping track of data on running processes.
+ * 
+ * @author giuliano
+ */
 class ProcessEntry {
+
 	public final ProcessDescriptor descriptor;
 
 	public final Process process;

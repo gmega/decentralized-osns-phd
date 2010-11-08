@@ -176,7 +176,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	private void addTweet(Node ours, Tweet tweet) {
-		fRumorList.add((Linkable) ours.getProtocol(fProtocolId), tweet);
+		fRumorList.add(fConstraintLinkable.get(ours), tweet);
 	}
 
 	// ----------------------------------------------------------------------

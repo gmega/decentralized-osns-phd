@@ -48,6 +48,8 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CR, DEMERS
 	}
 
+	public static final String PAR_HISTORYLESS = "historyless";
+
 	// ----------------------------------------------------------------------
 	// Instance-shared storage.
 	// ----------------------------------------------------------------------
@@ -60,7 +62,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// State and per-instance parameters.
 	// ----------------------------------------------------------------------
 
-	private BloomFilterHistoryFw fStrategy;
+	private HistoryForwarding fStrategy;
 
 	private SelectorType fType;
 
@@ -86,8 +88,13 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@Override
 	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		fStrategy = new BloomFilterHistoryFw(protocolId, socialNetworkId,
-				fResolver, prefix);
+		if (fResolver.getBoolean(prefix, PAR_HISTORYLESS)) {
+			fStrategy = new HistoryForwarding(protocolId, socialNetworkId,
+					fResolver.getInt(prefix, HistoryForwarding.PAR_CHUNK_SIZE));
+		} else {
+			fStrategy = new BloomFilterHistoryFw(protocolId, socialNetworkId,
+					fResolver, prefix);
+		}
 		return fStrategy;
 	}
 
@@ -96,8 +103,9 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected Class<? extends IContentExchangeStrategy>[] classes() {
-		return new Class[] { BloomFilterHistoryFw.class,
-				HistoryForwarding.class };
+		return (fStrategy instanceof BloomFilterHistoryFw) ? new Class[] {
+				BloomFilterHistoryFw.class, HistoryForwarding.class }
+				: new Class[] { HistoryForwarding.class };
 	}
 
 	// ----------------------------------------------------------------------

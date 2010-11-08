@@ -2,10 +2,10 @@
 # Constants.
 # -----------------------------------------------------------------------------
 
-range.0 GIVEUP;0.05,0.1,0.2,0.3,0.4
-
 network.node SNNodeImpl
+random.seed -1119980560846483977
 simulation.cycles 90000000
+range.0=CHURN;0.00,0.01,0.05,0.1,0.2,0.4,0.5,0.7
 
 SIZE 72303
 
@@ -36,13 +36,15 @@ protocol.snewscasting SocialNewscastingService
 	social_neighborhood onehop 
 	
 	# Configurator.
-	configurator DemersConfigurator
-		
-	linkable onehop
-	chunk_size 100000 
-	giveup_probability GIVEUP
+	configurator HistoryFwConfigurator
+	
+	# And configurator protocol parameters.
+	historyless
+	mode PURE_ANTICENTRALITY
+	chunk_size 1
 	latency
-	load
+
+	linkable onehop	
 }
 
 protocol.executor ActionExecutor
@@ -80,18 +82,29 @@ control.cdactscheduler CDActionScheduler
 }
 
 # -----------------------------------------------------------------------------
+# Churn controller.
+# -----------------------------------------------------------------------------
+
+#control.churn FixedSizeNetwork
+#{
+#	dead_pool 0.4
+#	churn_rate 0.01
+#	one_hop onehop
+#	social_newscasting_service snewscasting
+#}
+
+# -----------------------------------------------------------------------------
 # Unit Experiment Governor.
 # -----------------------------------------------------------------------------
 
 control.governor DisseminationExperimentGovernor
 {
 	scheduler FullNetworkScheduler
-
+	
 	linkable onehop
 	social_newscasting snewscasting
 	executor executor
-	repetitions 20
+	repetitions 1
 	degreeCutoff 0
-	xchg_class it.unitn.disi.newscasting.internal.demers.DemersRumorMonger
 	verbose
 }

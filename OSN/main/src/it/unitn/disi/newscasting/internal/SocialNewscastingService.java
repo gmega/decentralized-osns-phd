@@ -26,7 +26,6 @@ import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
-import peersim.config.resolvers.PeerSimResolver;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
@@ -200,9 +199,6 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	public void nextCycle(Node ourNode, int protocolID) {
-		if (ourNode.getID() == 45068) {
-			System.out.println("");
-		}
 		/**
 		 * Runs the configured exchange strategies, with the configured peer
 		 * selectors.
