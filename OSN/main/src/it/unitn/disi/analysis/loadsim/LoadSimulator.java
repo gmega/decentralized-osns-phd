@@ -8,17 +8,17 @@ import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.collections.Pair;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.resolvers.DefaultValueResolver;
 import peersim.graph.Graph;
 import peersim.util.IncrementalStats;
 
@@ -45,11 +44,6 @@ import peersim.util.IncrementalStats;
 public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	/**
-	 * Field separator char.
-	 */
-	private static final String FS = " ";
-
-	/**
 	 * {@link StreamProvider} input keys.
 	 */
 	public static enum Inputs {
@@ -59,9 +53,22 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	/**
 	 * {@link StreamProvider} output keys.
 	 */
-	public static enum Ouputs {
+	public static enum Outputs {
 		load;
 	}
+
+	public static enum PrintMode {
+		all, root
+	}
+
+	/**
+	 * Unit experiment row keys for {@link TableReader}.
+	 */
+	private static final String EXPERIMENT_ID = "root_id";
+	private static final String NODE_ID = "neighbor_id";
+	private static final String SENT = "sent";
+	private static final String RECEIVED = "received";
+	private static final String DUPLICATES = "duplicates";
 
 	// ----------------------------------------------------------------------
 	// State.
@@ -74,6 +81,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	private volatile IndexedNeighborGraph fGraph;
 
 	private String fDecoder;
+
+	private final PrintMode fPrintMode;
 
 	/**
 	 * The percentage of the neighborhood to keep active during the what-if
@@ -109,6 +118,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// ----------------------------------------------------------------------
 
 	public LoadSimulator(
+			@Attribute(value = "print_mode", defaultValue = "root") String printMode,
 			@Attribute("percentage") double percentage,
 			@Attribute("cores") int cores,
 			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder) {
@@ -116,7 +126,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		fExecutor = new CallbackThreadPoolExecutor(cores, this);
 		fSema = new Semaphore(cores);
 		fPercentage = percentage;
-		fRandom = new Random();
+		fRandom = new Random(42);
+		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
 		fDecoder = decoder;
 	}
 
@@ -133,7 +144,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		fExperiments = loadUnitExperiments(fGraph, p.input(Inputs.experiments));
 
 		// Sets up the output stream.
-		fStream = new PrintStream(p.output(Ouputs.load));
+		fStream = new PrintStream(p.output(Outputs.load));
 
 		// Runs the experiments
 		try {
@@ -153,14 +164,17 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 				+ fExecutor.getCorePoolSize() + "] threads.");
 
 		Iterator<UnitExperiment> it = fExperiments.values().iterator();
-		while (it.hasNext() && !fExecutor.isTerminating()) {
+		while (it.hasNext()) {
+			acquireCore();
+			if (fExecutor.isTerminating()) {
+				break;
+			}
 			UnitExperiment experiment = it.next();
 			PercentageRandomScheduler scheduler = new PercentageRandomScheduler(
 					this, experiment.id(), fPercentage, fRandom);
-			ExperimentRunner runner = new ExperimentRunner(experiment.id(),
+			ExperimentRunner runner = new ExperimentRunner(experiment,
 					scheduler, this);
 			fExecutor.submit(runner);
-			acquireCore();
 		}
 
 		System.err.print("Done. Shut down... ");
@@ -203,24 +217,22 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		Map<Integer, UnitExperiment> experiments = new HashMap<Integer, UnitExperiment>();
 
 		// Now loads the actual data.
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineParts = line.split(FS);
-			// Reads the fields.
-			int id = Integer.parseInt(lineParts[0]);
-			int nodeId = Integer.parseInt(lineParts[1]);
-			int sent = Integer.parseInt(lineParts[2]);
-			int received = Integer.parseInt(lineParts[3]);
+		TableReader reader = new TableReader(input);
+		while (reader.hasNext()) {
+			int id = Integer.parseInt(reader.get(EXPERIMENT_ID));
+			int nodeId = Integer.parseInt(reader.get(NODE_ID));
+			int sent = Integer.parseInt(reader.get(SENT));
+			int received = Integer.parseInt(reader.get(RECEIVED));
+			int dups = Integer.parseInt(reader.get(DUPLICATES));
 
 			UnitExperiment experiment = experiments.get(id);
 			if (experiment == null) {
-				experiment = new UnitExperiment(id, graph.degree(id));
+				experiment = new UnitExperiment(id, graph.degree(id), true);
 				experiments.put(id, experiment);
 			}
 
-			experiment.addData(nodeId, sent, received);
+			experiment.addData(nodeId, sent, received + dups);
+			reader.next();
 		}
 
 		// Wraps up the experiments.
@@ -236,9 +248,12 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// Callbacks.
 	// ----------------------------------------------------------------------
 
-	public synchronized void synchronizedPrint(int root,
+	public void printSummary(int root,
 			Collection<? extends MessageStatistics> collection) {
 		for (MessageStatistics statistic : collection) {
+			if (!shouldPrintData(root, statistic.id)) {
+				continue;
+			}
 			StringBuffer buffer = new StringBuffer();
 			buffer.append(root);
 			buffer.append(" ");
@@ -252,10 +267,10 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			buffer.append(" ");
 			appendStatistic(statistic.receiveBandwidth, buffer);
 
-			fStream.println(buffer.toString());
+			synchronizedPrint(buffer.toString());
 		}
 	}
-
+	
 	// ----------------------------------------------------------------------
 
 	public void acquireCore() throws InterruptedException {
@@ -267,13 +282,27 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public void releaseCore() {
 		fSema.release();
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// ILoadSim interface.
 	// ----------------------------------------------------------------------
+	
+	public boolean shouldPrintData(int root, int node) {
+		switch(fPrintMode) {
+		case all:
+			return true;
+		case root:
+			return root == node;
+		}
+		
+		// Shouldn't get here.
+		throw new IllegalStateException("Internal error.");
+	}
 
+	// ----------------------------------------------------------------------
+	
 	@Override
-	public void synchronizedPrint(String data) {
+	public synchronized void synchronizedPrint(String data) {
 		fStream.println(data.toString());
 	}
 
@@ -283,9 +312,10 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public UnitExperiment unitExperiment(int index) {
 		if (!fExperiments.containsKey(index)) {
 			fExecutor.shutdown();
-			System.err.println("ERROR: Missing unit experiment data " + index
-					+ ".");
+			throw new NoSuchElementException(
+					"ERROR: Missing unit experiment data " + index + ".");
 		}
+
 		return fExperiments.get(index);
 	}
 
@@ -326,12 +356,13 @@ class CallbackThreadPoolExecutor extends ThreadPoolExecutor {
 			System.err.println("Error while running task.");
 			ex.printStackTrace();
 			this.shutdown();
+			return;
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 		} finally {
 			fLoadSim.releaseCore();
 		}
 
-		fLoadSim.synchronizedPrint(statistics.a, statistics.b);
+		fLoadSim.printSummary(statistics.a, statistics.b);
 	}
 }

@@ -3,7 +3,9 @@ package it.unitn.disi.test.framework;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.Adj2ByteGraph;
 import it.unitn.disi.graph.GraphWriter;
+import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.Undirect;
+import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,6 +45,15 @@ public class TestUtils {
 	
 	public static ByteArrayInputStream undirect(ByteArrayInputStream input) {
 		return runTransformer(new Undirect(), input);
+	}
+	
+	public static LightweightStaticGraph graph(String adjList) {
+		try {
+			AdjListGraphDecoder decoder = new AdjListGraphDecoder(new ByteArrayInputStream(adjList.getBytes()));
+			return LightweightStaticGraph.load(decoder);
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 		
 	public static ByteArrayInputStream runTransformer(ITransformer transformer, ByteArrayInputStream input) {

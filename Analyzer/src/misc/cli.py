@@ -156,23 +156,29 @@ class Subst:
         substituted by the provided value. 
     """
     
-    def __init__ (self, substitute, allow_missing="False"):
+    def __init__ (self, substitute=None, env="True", allow_missing=""):
         """ @param substitute: a string of variables. Variables 
                 are of the form key1+value1@key2+value2@...@keyn+valuen.
         """
         
         self._allow_missing=bool(allow_missing)
-        self._vars = {}
+        self._env = bool(env)
+        self._vars = self.__parse_vars__(substitute)
         
-        for pair in substitute.split("+"):
-            key, val = pair.split("@")
-            self._vars[key] = val 
-        
-    
+  
     def execute(self):
         for line in sys.stdin.readlines():
             print self.__replace_vars__(line),
 
+
+    def __parse_vars__(self, varstr):
+        vars = {}
+        if not varstr is None:
+            for pair in varstr.split("+"):
+                key, val = pair.split("@")
+                self._vars[key] = val
+        return vars 
+        
     
     def __replace_vars__(self, val):
         p = re.compile("\${(\w+)}")
@@ -181,11 +187,18 @@ class Subst:
     
     def __lookup__(self, match):
         key = match.group(1)
+        val = None
 
-        if self._allow_missing and not (key in self._vars):
-            return "${" + key + "}"
+        if key in self._vars:
+            val = self._vars[key]
+        elif self._env and key in os.environ:
+            val = os.environ[key]
+        elif self._allow_missing:
+            val = "${" + key + "}"
+        else: 
+            raise Exception("Could not find " + key + ".")
         
-        return self._vars[key]
+        return val
         
 
 #===============================================================================

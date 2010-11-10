@@ -47,8 +47,8 @@ class GraphLoader(object):
         edge_list = []       # List of edges
         weight_list = []     # List of edge weights
         
-        with self.__open__() as file:
 
+        with self.__open__() as file:
             progress_tracker = FileProgressTracker("reading graph", file)
             progress_tracker.start_task()
             
@@ -76,6 +76,10 @@ class GraphLoader(object):
                 self._id_map = id_table
             
             progress_tracker.done()
+            
+            self._logger.info("Graph has " + str(len(graph.vs)) + " vertices, " +\
+                              str(len(graph.es)) + " edges, " + str(len(black_set)) +\
+                              " vertices in black set.")
             return graph
        
 
@@ -253,11 +257,11 @@ class EdgeListEncoder():
             
     def encode(self, g):
         weights = False
-        if len(self.graph.es) > 0:
-            weights = self.graph.es[0].attributes().has_key(WEIGHT)
+        if len(g.es) > 0:
+            weights = g.es[0].attributes().has_key(WEIGHT)
         
-        for edge in self.graph.es:
-            line = __map__(self._remap_attribute, g, edge.source) + " " + __map__(self._remap_attribute, g, edge.target)
+        for edge in g.es:
+            line = __map__(g, edge.source, self._remap_attribute) + " " + __map__(g, edge.target, self._remap_attribute)
             if weights: 
                 line = line + " " + str(edge[WEIGHT])
             print >> self._file, line

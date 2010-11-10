@@ -28,6 +28,7 @@ EDGE_COLOR = "edge_color"
 WEIGHT = "weight"
 
 BLACK = "black"
+WHITE = "white"
 
 #===============================================================================
 # Internal constants.

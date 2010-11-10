@@ -31,14 +31,14 @@ public class GenericDriver {
 
 	@Option(name = "-o", usage = "colon (:) separated list of output files (stdout if ommitted)", required = false)
 	private String fOutputs;
-	
+
 	@Option(name = "-p", usage = "colon (:) separated list of key=value pairs (transformer-specific)", required = false)
 	private String fParameters = "";
-	
-	@Option(name = "-v", aliases = {"--verbose"}, usage = "verbose (print status information)", required = false)
+
+	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
 	private boolean fVerbose;
-	
-	@Option(name = "-h", aliases = {"--help"}, usage="prints this help message", required = false)
+
+	@Option(name = "-h", aliases = { "--help" }, usage = "prints this help message", required = false)
 	private boolean fHelpOnly;
 
 	@Argument
@@ -53,7 +53,7 @@ public class GenericDriver {
 
 		try {
 			parser.parseArgument(args);
-			
+
 			if (fHelpOnly) {
 				printHelp(parser);
 				return;
@@ -62,23 +62,24 @@ public class GenericDriver {
 			if (fArguments.isEmpty()) {
 				throw new CmdLineException("No processing class given.");
 			}
-			
+
 			System.err.println("Starting the Java generic driver.");
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
 
-			Object processor = create(fArguments.get(0), new HashMapResolver(parseProperties(fParameters)) );
+			Object processor = create(fArguments.get(0), new HashMapResolver(
+					parseProperties(fParameters)));
 			if (processor instanceof ITransformer) {
-				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);	
+				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
 				StreamProvider provider = new StreamProvider(fIStreams,
 						fOStreams, processor.getClass());
-				((IMultiTransformer) processor).execute(provider);				
+				((IMultiTransformer) processor).execute(provider);
 			} else {
 				System.err.println("Class " + processor.getClass().getName()
 						+ " is not a valid processor.");
 			}
-			
+
 		} catch (CmdLineException ex) {
 			System.err.println(ex.getMessage());
 			printHelp(parser);
@@ -89,39 +90,42 @@ public class GenericDriver {
 	}
 
 	private void printHelp(CmdLineParser parser) {
-		System.err.println(this.getClass().getSimpleName() + " [options...] processing_class");
+		System.err.println(this.getClass().getSimpleName()
+				+ " [options...] processing_class");
 		parser.printUsage(System.err);
 		System.err.println();
 	}
-	
+
 	private Map<String, String> parseProperties(String params) {
 		Map<String, String> props = new HashMap<String, String>();
-		String [] pairs = params.split(":");
-		for(String pair : pairs) {
-			String [] kvPair = pair.split("=");
+		String[] pairs = params.split(":");
+		for (String pair : pairs) {
+			String[] kvPair = pair.split("=");
 			if (kvPair.length != 2) {
 				continue;
 			}
 			props.put(kvPair[0], kvPair[1]);
 		}
-		
+
 		return props;
 	}
 
 	private OutputStream[] openOutputs(String outputString) throws IOException {
-		
+
 		if (outputString == null) {
-			System.err.println("-- No outputs specified. Will write to stdout.");
-			return new OutputStream [] { System.out };
+			System.err
+					.println("-- No outputs specified. Will write to stdout.");
+			return new OutputStream[] { System.out };
 		}
-		
+
 		boolean stdoutUsed = false;
-		String [] outputs = outputString.split(":");
+		String[] outputs = outputString.split(":");
 		OutputStream[] oStreams = new OutputStream[outputs.length];
 		for (int i = 0; i < outputs.length; i++) {
-			if (outputs[i].equals("stdout")){
+			if (outputs[i].equals("stdout")) {
 				if (stdoutUsed) {
-					throw new IllegalArgumentException("stdout cannot be assigned twice.");
+					throw new IllegalArgumentException(
+							"stdout cannot be assigned twice.");
 				}
 				System.err.println("Output " + i + " is standard output.");
 				oStreams[i] = System.out;
@@ -132,46 +136,47 @@ public class GenericDriver {
 			oStreams[i] = new BufferedOutputStream(new FileOutputStream(
 					new File(outputs[i])));
 		}
-		
+
 		return oStreams;
 	}
 
 	private InputStream[] openInputs(String inputString) throws IOException {
-		
+
 		if (inputString == null) {
 			System.err.println("-- No inputs specified. Will read from stdin.");
-			return new InputStream [] { System.in };
+			return new InputStream[] { System.in };
 		}
-		
+
 		boolean stdinUsed = false;
-		String [] inputs = inputString.split(":");
+		String[] inputs = inputString.split(":");
 		InputStream[] iStreams = new InputStream[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
 			if (fVerbose) {
 				System.err.println("Opening input stream " + inputs[i] + ".");
 			}
-			
-			if (inputs[i].equals("stdin")){
+
+			if (inputs[i].equals("stdin")) {
 				if (stdinUsed) {
-					throw new IllegalArgumentException("stdin cannot be assigned twice.");
+					throw new IllegalArgumentException(
+							"stdin cannot be assigned twice.");
 				}
 				System.err.println("Input " + i + " is standard input.");
 				iStreams[i] = System.in;
 				stdinUsed = true;
 				continue;
 			}
-			
+
 			iStreams[i] = new ResettableFileInputStream(new File(inputs[i]));
 		}
-		
+
 		return iStreams;
 	}
-	
+
 	private void close(Closeable[] closeables) {
 		if (closeables == null) {
-			return; 
+			return;
 		}
-		
+
 		for (Closeable closeable : closeables) {
 			try {
 				if (fVerbose) {
@@ -185,19 +190,21 @@ public class GenericDriver {
 		}
 	}
 
-	private Object create(String string, IResolver resolver) throws ClassNotFoundException,
-			SecurityException, NoSuchMethodException, IllegalArgumentException,
+	private Object create(String string, IResolver resolver)
+			throws ClassNotFoundException, SecurityException,
+			NoSuchMethodException, IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
-		
+
 		if (fVerbose) {
 			System.err.println("Loading processor class " + string + ".");
 		}
-		
+
 		@SuppressWarnings("unchecked")
-		Class <Object> klass = (Class<Object>) Class.forName(string);
-		
-		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass, resolver);
+		Class<Object> klass = (Class<Object>) Class.forName(string);
+
+		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass,
+				resolver);
 		return creator.create(null);
 	}
 
@@ -211,4 +218,3 @@ public class GenericDriver {
 		}
 	}
 }
-

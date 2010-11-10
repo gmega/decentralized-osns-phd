@@ -5,9 +5,12 @@ Created on Sep 7, 2010
 '''
 import sys
 from misc.util import Multicounter
-from graph.codecs import AdjacencyListDecoder, GraphLoader
+from graph.codecs import AdjacencyListDecoder, GraphLoader, EdgeListDecoder, \
+    EdgeListEncoder
 from graph.util import igraph_neighbors
-from resources import ORIGINAL_ID
+from resources import ORIGINAL_ID, BLACK
+import igraph
+from graph.transformers import strip_unmarked_vertices
 
 # =============================================================================
 
@@ -16,6 +19,9 @@ class BestPars:
     yields the best average dissemination latency. Reads the logs from the standard
     input. Assumes parameter combinations appear prefixing each record. Currently,
     is hardwired to find the combination that optimizes the dissemination latency. 
+    
+    CAREFUL: if your protocol loses messages, best average latency doesn't mean 
+    best results.
     
     """
     
@@ -32,7 +38,7 @@ class BestPars:
 
         print "id degree", " ".join([str(i) for i in self._keys]), "t_avg t_max t_var latency_sum max_latency_sum delivered experiments"
         
-        scoring = lambda x,y: x.latency_sum < y.latency_sum
+        scoring = lambda x, y: x.latency_sum < y.latency_sum
                 
         for stat in self._stats.values():
             parameters, best = stat.best(scoring)
@@ -42,10 +48,9 @@ class BestPars:
             
             t_max_sum = best.t_max
             latency_sum = best.latency_sum
-            t_max = t_max_sum/experiments
-            t_avg = latency_sum/n
-            
-            t_var = (best.sqr_sum/n) - (t_avg*t_avg)
+            t_max = self.__checked_divide__(t_max_sum, experiments, 0)
+            t_avg = self.__checked_divide__(latency_sum, n, 0)
+            t_var = self.__checked_divide__(best.sqr_sum, n, 0) - (t_avg * t_avg)
             
             print int(stat.id), int(stat.degree), " ".join([str(i) for i in parameters]), t_avg, t_max, t_var, latency_sum, t_max_sum, n, experiments 
             
@@ -56,15 +61,17 @@ class BestPars:
             all_parts = line.split(" ")
             
             parameters = all_parts[0:len(self._keys)]
-            data = all_parts[len(self._keys):] 
+            data = all_parts[len(self._keys):]
+            if (len(data) < 6):
+                raise Exception(data)
             id, degree, t_max, t_avg, t_var, undelivered = [float(i.lstrip().rstrip()) for i in data]
             
             delivered = degree - undelivered
             sum = delivered * t_avg
-            sqr_sum = delivered*(t_var + t_avg*t_avg)
-            
-            yield(tuple(parameters), id, degree, {"t_max":t_max, "sqr_sum":sqr_sum, 
-                            "latency_sum":sum, "delivered":delivered, 
+            sqr_sum = delivered * (t_var + t_avg * t_avg)
+                       
+            yield(tuple(parameters), id, degree, {"t_max":t_max, "sqr_sum":sqr_sum,
+                            "latency_sum":sum, "delivered":delivered,
                             "undelivered":undelivered})
             
             
@@ -73,6 +80,13 @@ class BestPars:
         if not (id in self._stats):
             self._stats[id] = Stat(id, degree)
         return self._stats[id]
+    
+    
+    def __checked_divide__(self, numerator, denominator, zero_by_zero):
+        if denominator == 0 and numerator == 0:
+            return zero_by_zero
+
+        return numerator / float(denominator)
             
     
 class Stat:
@@ -87,25 +101,35 @@ class Stat:
         self.__add_parameter_data__(parameters, data)
 
     def __add_parameter_data__(self, parameters, data):
-        
+        # If we do not have an entry for this particular
+        # parameter combination, creates one.
         if not (parameters in self._data):
             fields = {"n":1}
             fields.update(data)            
-            self._data[parameters] = Multicounter(fields)
-            return
+            parameter_data = Multicounter(fields)
+            self._data[parameters] = parameter_data
+
+        # Otherwise, increments what we already had.
+        else:
+            parameter_data = self._data[parameters]
+            parameter_data.n += 1
+            for key, increment in data.items():
+                value = getattr(parameter_data, key)
+                setattr(parameter_data, key, value + increment)
+                
+        if parameter_data.latency_sum > 0:
+            assert parameter_data.delivered > 0
+                
         
-        parameter_data = self._data[parameters]
-        parameter_data.n += 1
-        for key, increment in data.items():
-            value = getattr(parameter_data, key)
-            setattr(parameter_data, key, value + increment)
+                
+        return parameter_data
         
     def best(self, is_better):
         best = None
         
         for key, item in self._data.items():
             if best is None:
-                best = (key,item)
+                best = (key, item)
             elif (is_better(item, best[1])):
                 best = (key, item)
 
@@ -167,9 +191,9 @@ class EstimateIdeals(object):
             counter = self.__get__(mapped_id)
             # Computes the worst-case sends.
             degree = g.degree(mapped_id)
-            counter.worst_sends += degree*tweets          
+            counter.worst_sends += degree * tweets          
             # Worst case latency sum.
-            counter.worst_t_avg_sum += ((degree + 1)/2.0)*tweets
+            counter.worst_t_avg_sum += ((degree + 1) / 2.0) * tweets
             counter.worst_t_max_sum += degree
             # Computes intended receives.
             seen = set()
@@ -183,7 +207,7 @@ class EstimateIdeals(object):
             
         print "id wsent wreceived wlatency_sum wmax_latency_sum"    
         for id, counter in self._estimates.items():
-            print g.vs[id][ORIGINAL_ID],counter.worst_sends,counter.intended_receives,counter.worst_t_avg_sum,counter.worst_t_max_sum
+            print g.vs[id][ORIGINAL_ID], counter.worst_sends, counter.intended_receives, counter.worst_t_avg_sum, counter.worst_t_max_sum
 
             
     def __line__(self):
@@ -201,5 +225,31 @@ class EstimateIdeals(object):
     
 # =============================================================================
 
+class PrintDegrees:
+    
+    def __init__(self, filename):
+        self._filename = filename
         
+    def execute(self):
+        loader = GraphLoader(self._filename, EdgeListDecoder, retain_id_map=False)
+        g = loader.load_graph()
+        degrees = g.degree()
+        for degree in degrees:
+            print degree
+
         
+# =============================================================================
+
+class Clean(object):
+    def __init__(self, filename, output):
+        self._filename = filename
+        self._output = output
+        
+    def execute(self):
+        loader = GraphLoader(self._filename, EdgeListDecoder, retain_id_map=False)
+        g = loader.load_graph()
+        g = strip_unmarked_vertices(g, BLACK)
+        
+        with open(self._output, "w") as output:
+            enc = EdgeListEncoder(output)
+            enc.encode(g)

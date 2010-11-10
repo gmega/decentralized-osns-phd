@@ -26,7 +26,7 @@ class ProgressTracker(object):
     
     def __init__(self, task_title, total_ticks, update_interval=0):
         self.total_ticks = float(total_ticks)
-        self.update_interval = max(1, total_ticks/100)
+        self.update_interval = max(1, total_ticks / 100)
         self.task_title = task_title
         self.ticks = 0
         self.until_update = 0
@@ -58,7 +58,7 @@ class ProgressTracker(object):
         if (self.until_update < 0):
             if ProgressTracker.mode == FULL:
                 logger.info("[" + self.task_title + "]: " 
-                            + str(round((float(self.ticks)/self.total_ticks)*100.0, 2)) + " % complete.")
+                            + str(round((float(self.ticks) / self.total_ticks) * 100.0, 2)) + " % complete.")
             self.until_update = self.update_interval
 
 
@@ -141,6 +141,9 @@ class FileWrapper(object):
 
 
 class Multicounter(object):
+    """ A Multicounter is an object which sets its fields to 
+    be the values of a dictionary.
+    """ 
     def __init__(self, fields):
         for key, value in fields.items():
             setattr(self, key, value)
@@ -200,7 +203,7 @@ def write_tuple_list(fileName, list):
     f = open(fileName, "w")
     
     for tuple in list:
-        print >>f, ''.join([str(x) + " " for x in tuple])
+        print >> f, ''.join([str(x) + " " for x in tuple])
         
     f.close()
 
@@ -211,7 +214,7 @@ def grid_coordinates_2d(dim, spacing):
     
     for i in range(0, y_dim):
         for j in range(0, x_dim):
-            yield (j*x_spacing, i*y_spacing)
+            yield (j * x_spacing, i * y_spacing)
         
 #===============================================================================
 # Scripting aids (for use with PSS scripts).

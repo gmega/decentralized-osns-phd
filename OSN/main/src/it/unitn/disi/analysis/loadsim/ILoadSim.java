@@ -25,6 +25,18 @@ public interface ILoadSim {
 	public abstract IndexedNeighborGraph getGraph();
 
 	/**
+	 * @return whether data about a given participant of a unit experiment
+	 *         should be printed or not. This can be used by other participants
+	 *         to, say, discard data regarding unimportant participants.
+	 * 
+	 * @param experimentId
+	 *            the id of a {@link UnitExperiment}.
+	 * @param participantId
+	 *            the id of the participant node.
+	 */
+	public boolean shouldPrintData(int experimentId, int participantId);
+
+	/**
 	 * @param data
 	 *            prints something to the output, ensuring mutually exclusive
 	 *            access to the underlying stream (so that the output doesn't

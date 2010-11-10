@@ -5,6 +5,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 public class PercentageRandomScheduler implements IScheduler {
@@ -32,6 +33,10 @@ public class PercentageRandomScheduler implements IScheduler {
 	@Override
 	@SuppressWarnings("unchecked")
 	public List<UnitExperiment> atTime(int round) {
+		if (isOver()) {
+			throw new NoSuchElementException();
+		}
+		
 		if(fCurrent == fTarget) {
 			return Collections.EMPTY_LIST;
 		}
@@ -43,10 +48,10 @@ public class PercentageRandomScheduler implements IScheduler {
 			fCurrent++;
 		}
 		
-		for (; fCurrent <= fTarget; fCurrent++) {
+		while(fCurrent < fTarget) {
 			toAdd.add(fParent.unitExperiment(randomNeighbor()));
+			fCurrent++;
 		}
-		fCurrent--;
 		return toAdd;
 	}
 
@@ -61,7 +66,7 @@ public class PercentageRandomScheduler implements IScheduler {
 
 	@Override
 	public boolean isOver() {
-		return fCurrent == -1;
+		return fCurrent < 0;
 	}
 
 	private int randomNeighbor() {

@@ -15,12 +15,12 @@ import org.junit.Test;
 public class ExperimentRunnerTest {
 	@Test
 	public void testRunner() throws Exception {
-		
-		UnitExperiment u1 = new UnitExperiment(0, 2);
-		UnitExperiment u2 = new UnitExperiment(1, 1);
-		UnitExperiment u3 = new UnitExperiment(2, 1);
-		UnitExperiment u4 = new UnitExperiment(3, 1);
-		
+
+		UnitExperiment u1 = new UnitExperiment(0, 2, false);
+		UnitExperiment u2 = new UnitExperiment(1, 1, false);
+		UnitExperiment u3 = new UnitExperiment(2, 1, false);
+		UnitExperiment u4 = new UnitExperiment(3, 1, false);
+
 		for (int i = 0; i < 5; i++) {
 			u1.addData(0, 1, 1);
 			u1.addData(1, 1, 1);
@@ -28,33 +28,35 @@ public class ExperimentRunnerTest {
 			u3.addData(0, 1, 1);
 			u3.addData(1, 1, 1);
 		}
-		
+
 		u2.addData(0, 1, 1);
 		u2.addData(2, 1, 1);
 		u2.addData(0, 1, 1);
 		u2.addData(2, 1, 1);
 
 		SimpleScheduler scheduler = new SimpleScheduler(u1,
-				new UnitExperiment[][] { { u1 }, { u4 }, { u2 }, { u3 }, { } });
-		
-		ExperimentRunner runner = new ExperimentRunner(0, scheduler, new SimStub());
-		Pair <Integer, Collection<? extends MessageStatistics>> a = runner.call();
-		
+				new UnitExperiment[][] { { u1 }, { u4 }, { u2 }, { u3 }, {} });
+
+		ExperimentRunner runner = new ExperimentRunner(u1, scheduler,
+				new SimStub(u1, u2, u3, u4));
+		Pair<Integer, Collection<? extends MessageStatistics>> a = runner
+				.call();
+
 		Assert.assertEquals((int) a.a, 0);
-		
-		MessageStatistics [] s = new MessageStatistics[3];
+
+		MessageStatistics[] s = new MessageStatistics[3];
 		for (MessageStatistics stats : a.b) {
 			s[stats.id] = stats;
 		}
-		
+
 		Assert.assertEquals(s[1].id, 1);
 		Assert.assertEquals(7, s[1].received);
 		Assert.assertEquals(7, s[1].sent);
-		
+
 		Assert.assertEquals(s[2].id, 2);
 		Assert.assertEquals(7, s[2].received);
 		Assert.assertEquals(7, s[2].sent);
-		
+
 		Assert.assertEquals(s[0].id, 0);
 		Assert.assertEquals(9, s[0].sent);
 		Assert.assertEquals(9, s[0].received);
@@ -63,9 +65,15 @@ public class ExperimentRunnerTest {
 
 class SimStub implements ILoadSim {
 
+	private UnitExperiment[] fExperiments;
+
+	public SimStub(UnitExperiment... experiments) {
+		fExperiments = experiments;
+	}
+
 	@Override
 	public IndexedNeighborGraph getGraph() {
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -75,18 +83,23 @@ class SimStub implements ILoadSim {
 
 	@Override
 	public UnitExperiment unitExperiment(int nodeId) {
-		return null;
+		return fExperiments[nodeId];
 	}
-	
+
+	@Override
+	public boolean shouldPrintData(int experimentId, int participantId) {
+		return true;
+	}
+
 }
 
 class SimpleScheduler implements IScheduler {
-	
-	private UnitExperiment [][] fExperiments;
-	
+
+	private UnitExperiment[][] fExperiments;
+
 	private UnitExperiment fRoot;
-	
-	public SimpleScheduler(UnitExperiment root, UnitExperiment [][] schedule) {
+
+	public SimpleScheduler(UnitExperiment root, UnitExperiment[][] schedule) {
 		fExperiments = schedule;
 		fRoot = root;
 	}
@@ -94,12 +107,12 @@ class SimpleScheduler implements IScheduler {
 	@Override
 	@SuppressWarnings("unchecked")
 	public List<UnitExperiment> atTime(int round) {
-		UnitExperiment [] toSchedule = fExperiments[round];
+		UnitExperiment[] toSchedule = fExperiments[round];
 		if (toSchedule.length == 0) {
 			return Collections.EMPTY_LIST;
 		}
-		
-		ArrayList <UnitExperiment> list = new ArrayList<UnitExperiment>();
+
+		ArrayList<UnitExperiment> list = new ArrayList<UnitExperiment>();
 		for (UnitExperiment experiment : toSchedule) {
 			list.add(experiment);
 		}
@@ -119,5 +132,5 @@ class SimpleScheduler implements IScheduler {
 	public boolean isOver() {
 		return fRoot == null;
 	}
-	                                                      
+
 }
