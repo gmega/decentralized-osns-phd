@@ -8,8 +8,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import peersim.config.AutoConfig;
 import peersim.graph.Graph;
 
+@AutoConfig
 public class PrintDegrees implements ITransformer {
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {

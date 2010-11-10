@@ -5,6 +5,9 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.io.BufferedReader;
@@ -18,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -26,83 +30,107 @@ import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.resolvers.DefaultValueResolver;
 import peersim.graph.Graph;
 import peersim.util.IncrementalStats;
 
+/**
+ * {@link LoadSimulator} is a "what if" simulator able to replay load data
+ * belonging to previously ran unit experiments, and compute what the bandwidth
+ * requirements under those circumstances would be.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
+	/**
+	 * Field separator char.
+	 */
 	private static final String FS = " ";
 
+	/**
+	 * {@link StreamProvider} input keys.
+	 */
 	public static enum Inputs {
 		graph, experiments;
 	}
-	
+
+	/**
+	 * {@link StreamProvider} output keys.
+	 */
 	public static enum Ouputs {
 		load;
 	}
-		
-	private final Semaphore fSema;
 
-	private final ThreadPoolExecutor fExecutor;
+	// ----------------------------------------------------------------------
+	// State.
+	// ----------------------------------------------------------------------
 
-	private volatile Map<Integer, UnitExperiment> fExperiments;
-
+	/**
+	 * The {@link IndexedNeighborGraph} containing the neighbor dependencies
+	 * between the unit experiments.
+	 */
 	private volatile IndexedNeighborGraph fGraph;
 
+	private String fDecoder;
+
+	/**
+	 * The percentage of the neighborhood to keep active during the what-if
+	 * analysis.
+	 */
 	private final double fPercentage;
 
+	/**
+	 * {@link Executor} used to run the experiments.
+	 */
+	private final ThreadPoolExecutor fExecutor;
+
+	/**
+	 * Unit experiment data. Currently, it is pre-loaded into memory.
+	 */
+	private volatile Map<Integer, UnitExperiment> fExperiments;
+
+	/**
+	 * {@link Semaphore} for governing access to the cores.
+	 */
+	private final Semaphore fSema;
+
+	/**
+	 * Random number generator for the {@link PercentageRandomScheduler}.
+	 */
 	private final Random fRandom;
 
+	/**
+	 * Output {@link PrintStream}.
+	 */
 	private PrintStream fStream;
 
-	public LoadSimulator(
-			@Attribute("percentage") double percentage, 
-			@Attribute("cores") int cores ) {
+	// ----------------------------------------------------------------------
 
+	public LoadSimulator(
+			@Attribute("percentage") double percentage,
+			@Attribute("cores") int cores,
+			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder) {
+
+		fExecutor = new CallbackThreadPoolExecutor(cores, this);
+		fSema = new Semaphore(cores);
 		fPercentage = percentage;
 		fRandom = new Random();
-		fSema = new Semaphore(cores);
-		fExecutor = new ThreadPoolExecutor(cores, cores, 0L,
-				TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()) {
-
-			@Override
-			@SuppressWarnings("unchecked")
-			public void afterExecute(Runnable r, Throwable t) {
-				Future<Pair<Integer, Collection<? extends MessageStatistics>>> future = 
-					(Future<Pair<Integer, Collection<? extends MessageStatistics>>>) r;
-				
-				Pair<Integer, Collection<? extends MessageStatistics>> statistics = null;
-
-				try {
-					statistics = future.get();
-				} catch (ExecutionException ex) {
-					System.err.println("Error while running task.");
-					ex.printStackTrace();
-					fExecutor.shutdown();
-				} catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
-				} finally {
-					fSema.release();
-				}
-				
-				LoadSimulator.this
-						.synchronizedPrint(statistics.a, statistics.b);
-			}
-		};
+		fDecoder = decoder;
 	}
 
-	@Override
-	public void execute(StreamProvider p)
-			throws IOException {
+	// ----------------------------------------------------------------------
+	// IMultiTransformer interface.
+	// ----------------------------------------------------------------------
 
+	@Override
+	public void execute(StreamProvider p) throws IOException {
 		// Loads the graph.
-		fGraph = LightweightStaticGraph.load(new AdjListGraphDecoder(
-				p.input(Inputs.graph)));
+		fGraph = LightweightStaticGraph.load(decoder(p.input(Inputs.graph)));
 
 		// Loads the unit experiments.
-		fExperiments = loadUnitExperiments(fGraph,
-				p.input(Inputs.experiments));
+		fExperiments = loadUnitExperiments(fGraph, p.input(Inputs.experiments));
 
 		// Sets up the output stream.
 		fStream = new PrintStream(p.output(Ouputs.load));
@@ -116,28 +144,60 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		}
 	}
 
+	// ----------------------------------------------------------------------
+	// Private helpers.
+	// ----------------------------------------------------------------------
+
 	private void runExperiments() throws InterruptedException {
 		System.err.println("Now running simulations using ["
 				+ fExecutor.getCorePoolSize() + "] threads.");
-		
+
 		Iterator<UnitExperiment> it = fExperiments.values().iterator();
-		while(it.hasNext() && !fExecutor.isTerminating()) {
+		while (it.hasNext() && !fExecutor.isTerminating()) {
 			UnitExperiment experiment = it.next();
 			PercentageRandomScheduler scheduler = new PercentageRandomScheduler(
 					this, experiment.id(), fPercentage, fRandom);
-			ExperimentRunner runner = new ExperimentRunner(experiment.id(), scheduler, this);
+			ExperimentRunner runner = new ExperimentRunner(experiment.id(),
+					scheduler, this);
 			fExecutor.submit(runner);
-			fSema.acquire();
+			acquireCore();
 		}
-		
+
 		System.err.print("Done. Shut down... ");
 		fExecutor.shutdown();
 		System.err.println("[OK]");
 	}
 
-	private Map<Integer, UnitExperiment> loadUnitExperiments(Graph graph, InputStream input)
-			throws IOException {
-		
+	// ----------------------------------------------------------------------
+
+	private ResettableGraphDecoder decoder(InputStream stream) {
+		String decoder = (fDecoder == null) ? AdjListGraphDecoder.class
+				.getName() : fDecoder;
+		try {
+			return GraphCodecHelper.createDecoder(stream, decoder);
+		} catch (Exception ex) {
+			throw MiscUtils.nestRuntimeException(ex);
+		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private synchronized void appendStatistic(IncrementalStats stats,
+			StringBuffer buffer) {
+		buffer.append(stats.getMin());
+		buffer.append(" ");
+		buffer.append(stats.getMax());
+		buffer.append(" ");
+		buffer.append(stats.getAverage());
+		buffer.append(" ");
+		buffer.append(stats.getVar());
+	}
+
+	// ----------------------------------------------------------------------
+
+	private Map<Integer, UnitExperiment> loadUnitExperiments(Graph graph,
+			InputStream input) throws IOException {
+
 		System.err.print("Reading unit experiment data ... ");
 
 		Map<Integer, UnitExperiment> experiments = new HashMap<Integer, UnitExperiment>();
@@ -159,20 +219,25 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 				experiment = new UnitExperiment(id, graph.degree(id));
 				experiments.put(id, experiment);
 			}
-			
+
 			experiment.addData(nodeId, sent, received);
 		}
-		
+
 		// Wraps up the experiments.
-		for(UnitExperiment experiment : experiments.values()) {
+		for (UnitExperiment experiment : experiments.values()) {
 			experiment.done();
 		}
-		
+
 		System.err.println("[OK]");
 		return experiments;
 	}
 
-	public synchronized void synchronizedPrint(int root, Collection<? extends MessageStatistics> collection) {
+	// ----------------------------------------------------------------------
+	// Callbacks.
+	// ----------------------------------------------------------------------
+
+	public synchronized void synchronizedPrint(int root,
+			Collection<? extends MessageStatistics> collection) {
 		for (MessageStatistics statistic : collection) {
 			StringBuffer buffer = new StringBuffer();
 			buffer.append(root);
@@ -191,39 +256,82 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		}
 	}
 
-	private synchronized void appendStatistic(IncrementalStats stats,
-			StringBuffer buffer) {
-		buffer.append(stats.getMin());
-		buffer.append(" ");
-		buffer.append(stats.getMax());
-		buffer.append(" ");
-		buffer.append(stats.getAverage());
-		buffer.append(" ");
-		buffer.append(stats.getVar());
+	// ----------------------------------------------------------------------
+
+	public void acquireCore() throws InterruptedException {
+		fSema.acquire();
 	}
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#synchronizedPrint(java.lang.String)
-	 */
+	// ----------------------------------------------------------------------
+
+	public void releaseCore() {
+		fSema.release();
+	}
+	
+	// ----------------------------------------------------------------------
+	// ILoadSim interface.
+	// ----------------------------------------------------------------------
+
+	@Override
 	public void synchronizedPrint(String data) {
 		fStream.println(data.toString());
 	}
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#unitExperiment(int)
-	 */
+	// ----------------------------------------------------------------------
+
+	@Override
 	public UnitExperiment unitExperiment(int index) {
 		if (!fExperiments.containsKey(index)) {
 			fExecutor.shutdown();
-			System.err.println("ERROR: Missing unit experiment data " + index + ".");			
+			System.err.println("ERROR: Missing unit experiment data " + index
+					+ ".");
 		}
 		return fExperiments.get(index);
 	}
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.analysis.loadsim.ILoadSim#getGraph()
-	 */
+	// ----------------------------------------------------------------------
+
+	@Override
 	public IndexedNeighborGraph getGraph() {
 		return fGraph;
+	}
+}
+
+/**
+ * {@link ThreadPoolExecutor} subclass which calls back the {@link ILoadSim}
+ * when an experiment completes.
+ * 
+ * @author giuliano
+ */
+class CallbackThreadPoolExecutor extends ThreadPoolExecutor {
+
+	private final LoadSimulator fLoadSim;
+
+	public CallbackThreadPoolExecutor(int cores, LoadSimulator loadSim) {
+		super(cores, cores, 0L, TimeUnit.MILLISECONDS,
+				new LinkedBlockingQueue<Runnable>());
+		fLoadSim = loadSim;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public void afterExecute(Runnable r, Throwable t) {
+		Future<Pair<Integer, Collection<? extends MessageStatistics>>> future = (Future<Pair<Integer, Collection<? extends MessageStatistics>>>) r;
+
+		Pair<Integer, Collection<? extends MessageStatistics>> statistics = null;
+
+		try {
+			statistics = future.get();
+		} catch (ExecutionException ex) {
+			System.err.println("Error while running task.");
+			ex.printStackTrace();
+			this.shutdown();
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		} finally {
+			fLoadSim.releaseCore();
+		}
+
+		fLoadSim.synchronizedPrint(statistics.a, statistics.b);
 	}
 }

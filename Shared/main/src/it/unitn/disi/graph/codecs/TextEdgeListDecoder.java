@@ -19,7 +19,7 @@ public class TextEdgeListDecoder extends AbstractEdgeListDecoder{
 	@Override
 	protected int readInt(boolean eofAllowed) throws IOException {
 		int val = 0;
-		
+		boolean started = false;
 		while(true) {
 			int next = fReader.read();
 			if (next == -1) {
@@ -34,7 +34,8 @@ public class TextEdgeListDecoder extends AbstractEdgeListDecoder{
 			
 			if(Character.isDigit(next_char)) {
 				val = val*10 + Character.digit(next_char, 10);
-			} else {
+				started = true;
+			} else if (started) {
 				break;
 			}
 		}

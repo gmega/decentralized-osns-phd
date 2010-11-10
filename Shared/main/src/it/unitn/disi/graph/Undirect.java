@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import peersim.config.AutoConfig;
 import peersim.graph.NeighbourListGraph;
 
+@AutoConfig
 public class Undirect implements ITransformer {
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {

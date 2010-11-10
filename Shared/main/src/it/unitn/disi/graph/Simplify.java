@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 
 /**
  * Command-line utility for simplifying a graph. Assumes binary format. Written
@@ -21,12 +22,13 @@ import peersim.config.Attribute;
  * @author giuliano
  */
 @CommandAlias("simplify")
+@AutoConfig
 public class Simplify implements ITransformer {
 	
 	@Attribute("directed")
 	private boolean fDirected;
 
-	@Attribute(value = "discart_interval", defaultValue = "-1")
+	@Attribute(value = "discard_interval", defaultValue = "-1")
 	private int fDiscard;
 
 	public void execute(InputStream is, OutputStream oup) throws IOException {

@@ -17,11 +17,11 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class GraphRemap implements IMultiTransformer {
 	
-	static enum Inputs {
+	public static enum Inputs {
 		GRAPH;
 	}
 	
-	static enum Outputs {
+	public static enum Outputs {
 		GRAPH, MAPFILE;
 	}
 
@@ -40,7 +40,7 @@ public class GraphRemap implements IMultiTransformer {
 
 	public void execute(StreamProvider p)
 			throws Exception {
-
+		int edges = 0;
 		GraphDecoder dec = GraphCodecHelper.createDecoder(p.input(Inputs.GRAPH), fDecoder);
 		OutputStream graph = p.output(Outputs.GRAPH); 
 		PrintStream mapfile = new PrintStream(p.output(Outputs.MAPFILE));
@@ -48,10 +48,13 @@ public class GraphRemap implements IMultiTransformer {
 		while (dec.hasNext()) {
 			Integer source = dec.getSource();
 			Integer target = dec.next();
+			edges++;
 
 			graph.write(encode(map(source, mapfile), fBuf));
 			graph.write(encode(map(target, mapfile), fBuf));
 		}
+		
+		System.err.println("Remapped " + fMapped.size() + " vertices, " + edges + " edges.");
 	}
 
 	private Integer map(Integer integer, PrintStream mapfile) {

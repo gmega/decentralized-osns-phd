@@ -80,6 +80,12 @@ public @interface Attribute {
 	 * has no default value.
 	 */
 	public static final String VALUE_NONE = "__NONE__";
+
+	/**
+	 * Special value used to tell the configurator that the attribute should be 
+	 * assigned a null value if absent.
+	 */
+	public static final String VALUE_NULL = "__NULL__";
 	
 	/**
 	 * Default value for a configuration attribute.

@@ -21,18 +21,19 @@ public class ByteGraph2Adj implements ITransformer {
 		ByteGraphDecoder dec = new ByteGraphDecoder(is);
 		Map<Integer, ArrayList<Integer>> adjacencies = new LinkedHashMap<Integer, ArrayList<Integer>>();
 
+		int edges = 0;
 		while (dec.hasNext()) {
 			Integer source = dec.getSource();
 			Integer target = dec.next();
+			edges++;
 
-			ArrayList<Integer> neighbors = adjacencies.get(source);
-			if (neighbors == null) {
-				neighbors = new ArrayList<Integer>();
-				adjacencies.put(source, neighbors);
-			}
+			ArrayList<Integer> neighbors = getCreate(adjacencies, source);
+			getCreate(adjacencies, target);
 
 			neighbors.add(target);
 		}
+		
+		System.err.println("Read: " + adjacencies.size() + " vertices, " + edges + " edges.");
 
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(oup));
 		try {
@@ -52,5 +53,15 @@ public class ByteGraph2Adj implements ITransformer {
 		} finally {
 			writer.close();
 		}
+	}
+
+	private ArrayList<Integer> getCreate(
+			Map<Integer, ArrayList<Integer>> adjacencies, Integer source) {
+		ArrayList<Integer> neighbors = adjacencies.get(source);
+		if (neighbors == null) {
+			neighbors = new ArrayList<Integer>();
+			adjacencies.put(source, neighbors);
+		}
+		return neighbors;
 	}
 }
