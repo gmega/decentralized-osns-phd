@@ -14,6 +14,8 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 
 	private TableReader fReader;
 
+	private boolean fFirst = true;
+
 	public ParameterUpdater(IReference<Linkable> neighborhood,
 			TableReader reader) {
 		fNeighborhood = neighborhood;
@@ -22,7 +24,7 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 
 	@Override
 	public void experimentStart(Node root) {
-		
+		nextParameterSet();		
 		long id = Long.parseLong(fReader.get("id"));
 
 		// Check that the file is properly ordered.
@@ -32,7 +34,7 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 							+ "It must be ordered as in the schedule (" + id
 							+ " != " + root.getID() + ")");
 		}
-		
+
 		update(root, fReader);
 		Linkable neighborhood = fNeighborhood.get(root);
 		int degree = neighborhood.degree();
@@ -45,11 +47,6 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 
 	@Override
 	public void experimentEnd(Node root) {
-		try {
-			fReader.next();
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
 	}
 
 	@Override
@@ -57,4 +54,21 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 	}
 
 	protected abstract void update(Node node, TableReader reader);
+
+	private void nextParameterSet() {
+		// If it's the first time the method is called,
+		// no need to call next as the table reader already
+		// has a set of parameters to return.
+		if (fFirst) {
+			fFirst = false;
+			return;
+		}
+
+		// Next parameter.
+		try {
+			fReader.next();
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
 }

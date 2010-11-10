@@ -17,7 +17,6 @@ import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.CachingResolver;
 import it.unitn.disi.utils.peersim.FallThroughReference;
-import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
@@ -88,7 +87,9 @@ public abstract class AbstractUEConfigurator implements
 		// And the parameter updaters, if any.
 		TableReader reader = tableReader(prefix);
 		if (reader != null) {
-			registerUpdaters(reader);
+			registerUpdaters(prefix, reader);
+		} else {
+			System.err.println("No parameter files specified.");
 		}
 
 		fConfigured = true;
@@ -132,8 +133,10 @@ public abstract class AbstractUEConfigurator implements
 
 	private TableReader tableReader(String prefix) {
 		try {
-			return new TableReader(new FileInputStream(new File(
-					fResolver.getString(prefix, PARAMETER_FILE))));
+			String filepath = fResolver.getString(prefix, PARAMETER_FILE);
+			System.err.println(AbstractUEConfigurator.class.getName()
+					+ ": using parameter file " + filepath);
+			return new TableReader(new FileInputStream(new File(filepath)));
 		} catch (MissingParameterException ex) {
 			return null;
 		} catch (IOException ex) {
@@ -182,7 +185,7 @@ public abstract class AbstractUEConfigurator implements
 	/**
 	 * Hook for registering updaters.
 	 */
-	protected void registerUpdaters(TableReader reader) {
+	protected void registerUpdaters(String prefix, TableReader reader) {
 	}
 
 	// ----------------------------------------------------------------------

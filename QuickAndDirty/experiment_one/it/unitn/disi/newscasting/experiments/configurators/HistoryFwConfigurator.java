@@ -64,8 +64,6 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	private HistoryForwarding fStrategy;
 
-	private SelectorType fType;
-
 	// ----------------------------------------------------------------------
 
 	public HistoryFwConfigurator() {
@@ -121,10 +119,10 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@SuppressWarnings("unchecked")
 	protected IPeerSelector selector(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		fType = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
+		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
 
 		IPeerSelector selector;
-		switch (fType) {
+		switch (type) {
 
 		case PURE_ANTICENTRALITY:
 			selector = anticentrality(prefix);
@@ -171,7 +169,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			break;
 
 		default:
-			throw new IllegalArgumentException(fType.toString());
+			throw new IllegalArgumentException(type.toString());
 		}
 
 		return selector;
@@ -180,9 +178,10 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected void registerUpdaters(TableReader reader) {
+	protected void registerUpdaters(String prefix, TableReader reader) {
+		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
 		IExperimentObserver updater = null;
-		switch (fType) {
+		switch (type) {
 
 		case PURE_ANTICENTRALITY:
 		case PURE_RANDOM:
@@ -200,7 +199,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			break;
 
 		default:
-			throw new IllegalArgumentException(fType.toString());
+			throw new IllegalArgumentException(type.toString());
 		}
 
 		if (updater != null) {
