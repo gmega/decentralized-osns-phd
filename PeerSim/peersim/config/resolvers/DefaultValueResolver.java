@@ -21,6 +21,8 @@ public class DefaultValueResolver extends StringValueResolver {
 		Attribute attribute = fSource.attribute(prefix, key);
 		if (attribute.defaultValue().equals(Attribute.VALUE_NONE)) {
 			throw new MissingParameterException(null);
+		} else if (attribute.defaultValue().equals(Attribute.VALUE_NULL)) {
+			return null;
 		}
 		return attribute.defaultValue();
 	}
