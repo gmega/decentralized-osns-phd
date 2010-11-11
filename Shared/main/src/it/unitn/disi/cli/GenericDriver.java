@@ -96,8 +96,8 @@ public class GenericDriver {
 		System.err.println();
 	}
 
-	private Map<String, String> parseProperties(String params) {
-		Map<String, String> props = new HashMap<String, String>();
+	private Map<String, Object> parseProperties(String params) {
+		Map<String, Object> props = new HashMap<String, Object>();
 		String[] pairs = params.split(":");
 		for (String pair : pairs) {
 			String[] kvPair = pair.split("=");

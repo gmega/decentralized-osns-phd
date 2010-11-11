@@ -110,7 +110,8 @@ public class ObjectCreator<T> implements IAttributeSource {
 			Constructor<T> ctor = fClass.getConstructor(String.class);
 			return ctor.newInstance(prefix);
 		} catch (NoSuchMethodException ex) {
-			throw noSuitableConstructor();
+			throw noSuitableConstructor("Missing constructor taking a String as parameter " +
+					"(have you forgotten the AutoConfig tag?)");
 		}
 	}
 
@@ -125,8 +126,9 @@ public class ObjectCreator<T> implements IAttributeSource {
 		Constructor<T> constructor = null;
 		int longestMatch = -1;
 
+		StringBuffer error = new StringBuffer();
 		for (Constructor<T> candidate : constructors) {
-			int match = testEligibility(candidate, prefix);
+			int match = testEligibility(candidate, prefix, error);
 			if (match > longestMatch) {
 				constructor = candidate;
 				longestMatch = match;
@@ -136,16 +138,17 @@ public class ObjectCreator<T> implements IAttributeSource {
 		// Actually performs the injection, if a suitable
 		// constructor is found.
 		if (constructor == null) {
-			throw noSuitableConstructor();
+			throw noSuitableConstructor(error.toString());
 		}
 
 		// Matches the parameters.
 		return constructor.newInstance(resolveParameters(constructor, prefix));
 	}
 
-	private IllegalArgumentException noSuitableConstructor() {
+	private IllegalArgumentException noSuitableConstructor(String msg) {
 		return new IllegalArgumentException("Class " + fClass.getName()
-				+ " has no suitable constructors.");
+				+ " has no suitable constructors. Further information: \n"
+				+ msg);
 	}
 
 	/**
@@ -168,19 +171,33 @@ public class ObjectCreator<T> implements IAttributeSource {
 	 * @return the number of parameters in the constructor, or -1 if it is not
 	 *         eligible.
 	 */
-	private int testEligibility(Constructor<T> candidate, String prefix) {
+	private int testEligibility(Constructor<T> candidate, String prefix,
+			StringBuffer data) {
 		Attribute[] annotations = getAnnotations(candidate);
 		Class<?>[] parameterTypes = candidate.getParameterTypes();
+
+		data.append("Constructor signature:\n ");
+		data.append(candidate.toGenericString());
+		data.append("\n Non-matched parameter(s):\n");
 
 		if (annotations == null) {
 			return -1;
 		}
 
 		for (int i = 0; i < annotations.length; i++) {
+			String key = annotations[i].value();
 			try {
-				resolveParameter(prefix, annotations[i].value(),
-						annotations[i], parameterTypes[i]);
+				resolveParameter(prefix, key, annotations[i], parameterTypes[i]);
 			} catch (MissingParameterException ex) {
+				data.append(" - ");
+				if (prefix == null || prefix.equals("")) {
+					data.append("<<no prefix>>");
+				} else {
+					data.append(prefix);
+				}
+				data.append(", ");
+				data.append(key);
+				data.append("\n");
 				return -1;
 			}
 		}
@@ -287,7 +304,12 @@ public class ObjectCreator<T> implements IAttributeSource {
 			value = fResolver.getInt(prefix, key);
 		} else if (type == String.class) {
 			value = fResolver.getString(prefix, key);
+		} else if (type.isAssignableFrom(IResolver.class)) {
+			value = fResolver;
+		} else {
+			value = fResolver.getObject(prefix, key);
 		}
+
 		currentAttribute(null);
 		return value;
 	}
@@ -300,7 +322,6 @@ public class ObjectCreator<T> implements IAttributeSource {
 	public Attribute attribute(String prefix, String key) {
 		return fCurrent;
 	}
-	
 
 	/**
 	 * Convenience shortcut method for creating an instance.
@@ -362,5 +383,10 @@ class SpecialValueResolver implements IResolver {
 		}
 
 		throw new MissingParameterException(null);
+	}
+
+	@Override
+	public Object getObject(String prefix, String key) {
+		throw new MissingParameterException(key);
 	}
 }

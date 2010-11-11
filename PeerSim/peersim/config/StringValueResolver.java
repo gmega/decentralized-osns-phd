@@ -35,5 +35,10 @@ public abstract class StringValueResolver implements IResolver {
 	public Boolean getBoolean(String prefix, String key) {
 		return Boolean.parseBoolean(getString(prefix, key));
 	}
+	
+	@Override
+	public Object getObject(String prefix, String key) {
+		throw new MissingParameterException(key);
+	}
 
 }

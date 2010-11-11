@@ -7,6 +7,7 @@ import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
+import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.collections.Pair;
@@ -30,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
+import peersim.config.resolvers.CompositeResolver;
 import peersim.graph.Graph;
 import peersim.util.IncrementalStats;
 
@@ -57,8 +61,12 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		load;
 	}
 
-	public static enum PrintMode {
+	public static enum SimulationMode {
 		all, root
+	}
+	
+	public static enum PrintMode {
+		all, summary_only
 	}
 
 	/**
@@ -82,13 +90,11 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	private String fDecoder;
 
-	private final PrintMode fPrintMode;
+	private String fScheduler;
 
-	/**
-	 * The percentage of the neighborhood to keep active during the what-if
-	 * analysis.
-	 */
-	private final double fPercentage;
+	private final SimulationMode fSimMode;
+	
+	private final PrintMode fPrintMode;
 
 	/**
 	 * {@link Executor} used to run the experiments.
@@ -106,7 +112,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	private final Semaphore fSema;
 
 	/**
-	 * Random number generator for the {@link PercentageRandomScheduler}.
+	 * Random number generator for the {@link ContinuousRandomScheduler}.
 	 */
 	private final Random fRandom;
 
@@ -115,20 +121,26 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	 */
 	private PrintStream fStream;
 
+	private final IResolver fResolver;
+
 	// ----------------------------------------------------------------------
 
 	public LoadSimulator(
-			@Attribute(value = "print_mode", defaultValue = "root") String printMode,
-			@Attribute("percentage") double percentage,
+			@Attribute IResolver resolver,
+			@Attribute("scheduler") String scheduler,
+			@Attribute(value = "print_mode", defaultValue = "summary_only") String printMode,
+			@Attribute(value = "sim_mode", defaultValue = "root") String simMode,
 			@Attribute("cores") int cores,
 			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder) {
 
+		fSimMode = SimulationMode.valueOf(simMode.toLowerCase());
+		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
 		fExecutor = new CallbackThreadPoolExecutor(cores, this);
 		fSema = new Semaphore(cores);
-		fPercentage = percentage;
 		fRandom = new Random(42);
-		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
+		fResolver = resolver;
 		fDecoder = decoder;
+		fScheduler = scheduler;
 	}
 
 	// ----------------------------------------------------------------------
@@ -170,16 +182,35 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 				break;
 			}
 			UnitExperiment experiment = it.next();
-			PercentageRandomScheduler scheduler = new PercentageRandomScheduler(
-					this, experiment.id(), fPercentage, fRandom);
+			IScheduler scheduler = createScheduler(experiment);
 			ExperimentRunner runner = new ExperimentRunner(experiment,
-					scheduler, this);
+					scheduler, this, fPrintMode == PrintMode.all);
 			fExecutor.submit(runner);
 		}
 
 		System.err.print("Done. Shut down... ");
 		fExecutor.shutdown();
 		System.err.println("[OK]");
+	}
+
+	// ----------------------------------------------------------------------
+
+	private IScheduler createScheduler(UnitExperiment experiment) {
+		HashMap<String, Object> config = new HashMap<String, Object>();
+		config.put(IScheduler.ROOT, experiment);
+		config.put(IScheduler.RANDOM, fRandom);
+		config.put(IScheduler.PARENT, this);
+
+		try {
+			@SuppressWarnings("unchecked")
+			ObjectCreator<IScheduler> creator = new ObjectCreator<IScheduler>(
+					(Class<IScheduler>) Class.forName(fScheduler),
+					CompositeResolver.compositeResolver(new HashMapResolver(
+							config), fResolver));
+			return creator.create("");
+		} catch (Exception ex) {
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -270,7 +301,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			synchronizedPrint(buffer.toString());
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public void acquireCore() throws InterruptedException {
@@ -286,21 +317,21 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// ----------------------------------------------------------------------
 	// ILoadSim interface.
 	// ----------------------------------------------------------------------
-	
+
 	public boolean shouldPrintData(int root, int node) {
-		switch(fPrintMode) {
+		switch (fSimMode) {
 		case all:
 			return true;
 		case root:
 			return root == node;
 		}
-		
+
 		// Shouldn't get here.
 		throw new IllegalStateException("Internal error.");
 	}
 
 	// ----------------------------------------------------------------------
-	
+
 	@Override
 	public synchronized void synchronizedPrint(String data) {
 		fStream.println(data.toString());

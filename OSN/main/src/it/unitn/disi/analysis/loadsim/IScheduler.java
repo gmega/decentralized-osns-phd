@@ -4,6 +4,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public interface IScheduler {
+	
+	public static final String ROOT = "root";
+	public static final String RANDOM = "random";
+	public static final String PARENT = "parent";
+	
 	/**
 	 * @param round
 	 *            the round for which the schedule is to return experiments.

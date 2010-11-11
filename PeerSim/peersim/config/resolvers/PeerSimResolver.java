@@ -2,6 +2,7 @@ package peersim.config.resolvers;
 
 import peersim.config.Configuration;
 import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
 
 /**
  * {@link IResolver} implementation backed by PeerSim's {@link Configuration}
@@ -60,6 +61,11 @@ public class PeerSimResolver implements IResolver {
 	@Override
 	public String getString(String prefix, String key) {
 		return Configuration.getString(key(prefix, key));
+	}
+	
+	@Override
+	public Object getObject(String prefix, String key) {
+		throw new MissingParameterException(key);
 	}
 
 	private String key(String prefix, String key) {

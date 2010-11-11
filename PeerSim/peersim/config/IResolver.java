@@ -20,4 +20,6 @@ public interface IResolver {
 	public Boolean getBoolean(String prefix, String key);
 
 	public String getString(String prefix, String key);
+	
+	public Object getObject(String prefix, String key);
 }

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class PercentageRandomScheduler implements IScheduler {
+public class ContinuousRandomScheduler implements IScheduler {
 
 	private final ILoadSim fParent;
 	
@@ -20,7 +20,7 @@ public class PercentageRandomScheduler implements IScheduler {
 	
 	private int fCurrent;
 
-	public PercentageRandomScheduler(ILoadSim parent, int unitRoot,
+	public ContinuousRandomScheduler(ILoadSim parent, int unitRoot,
 			double percentage, Random random) {
 		fParent = parent;
 		fUnitRoot = unitRoot;
