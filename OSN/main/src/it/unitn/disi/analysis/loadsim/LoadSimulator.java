@@ -11,6 +11,8 @@ import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,7 +66,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public static enum SimulationMode {
 		all, root
 	}
-	
+
 	public static enum PrintMode {
 		all, summary_only
 	}
@@ -93,7 +95,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	private String fScheduler;
 
 	private final SimulationMode fSimMode;
-	
+
 	private final PrintMode fPrintMode;
 
 	/**
@@ -172,9 +174,12 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// ----------------------------------------------------------------------
 
 	private void runExperiments() throws InterruptedException {
-		System.err.println("Now running simulations using ["
+		System.err.println("Load simulator will use ["
 				+ fExecutor.getCorePoolSize() + "] threads.");
 
+		ProgressTracker tracker = Progress.newTracker(
+				"Running load simulations", fExperiments.values().size());
+		tracker.startTask();
 		Iterator<UnitExperiment> it = fExperiments.values().iterator();
 		while (it.hasNext()) {
 			acquireCore();
@@ -186,6 +191,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			ExperimentRunner runner = new ExperimentRunner(experiment,
 					scheduler, this, fPrintMode == PrintMode.all);
 			fExecutor.submit(runner);
+			// Well, submitting is not really progress, but it's ok.
+			tracker.tick();
 		}
 
 		System.err.print("Done. Shut down... ");
