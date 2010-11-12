@@ -132,6 +132,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			@Attribute("scheduler") String scheduler,
 			@Attribute(value = "print_mode", defaultValue = "summary_only") String printMode,
 			@Attribute(value = "sim_mode", defaultValue = "root") String simMode,
+			@Attribute(value = "seed", defaultValue = Attribute.VALUE_NONE) String randomSeed,
 			@Attribute("cores") int cores,
 			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder) {
 
@@ -139,10 +140,15 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
 		fExecutor = new CallbackThreadPoolExecutor(cores, this);
 		fSema = new Semaphore(cores);
-		fRandom = new Random(42);
 		fResolver = resolver;
 		fDecoder = decoder;
 		fScheduler = scheduler;
+		
+		if (randomSeed.equals(Attribute.VALUE_NONE)) {
+			fRandom = new Random();
+		} else {
+			fRandom = new Random(Long.parseLong(randomSeed));
+		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -177,6 +183,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		System.err.println("Load simulator will use ["
 				+ fExecutor.getCorePoolSize() + "] threads.");
 
+		emmitHeader();
+		
 		ProgressTracker tracker = Progress.newTracker(
 				"Running load simulations", fExperiments.values().size());
 		tracker.startTask();
@@ -231,7 +239,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-
+	
 	// ----------------------------------------------------------------------
 
 	private synchronized void appendStatistic(IncrementalStats stats,
@@ -307,6 +315,14 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 			synchronizedPrint(buffer.toString());
 		}
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private void emmitHeader() {
+		System.out.println("experiment_id node_id tx_tot rx_tot" +
+				" tx_min tx_max tx_avg tx_var" + 
+				" rx_min rx_max rx_avg rx_var");
 	}
 
 	// ----------------------------------------------------------------------

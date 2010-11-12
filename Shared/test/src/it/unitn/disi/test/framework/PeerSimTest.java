@@ -3,6 +3,7 @@ package it.unitn.disi.test.framework;
 import java.io.File;
 import java.net.URL;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 import peersim.config.Configuration;
@@ -24,6 +25,11 @@ public class PeerSimTest {
 				throw ex;
 			}
 		}
+	}
+	
+	@Before
+	public void setUp() {
+		CommonState.setTime(0);
 	}
 	
 }

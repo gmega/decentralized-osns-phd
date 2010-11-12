@@ -157,6 +157,14 @@ public class BloomFilterHistoryFw extends HistoryForwarding {
 		clone.merge(otherHistory);
 		return cache(tweet, clone);
 	}
+	
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public void clear(Node source) {
+		super.clear(source);
+		fWindow.clear();
+	}
 
 	// ----------------------------------------------------------------------
 	// Private helpers.

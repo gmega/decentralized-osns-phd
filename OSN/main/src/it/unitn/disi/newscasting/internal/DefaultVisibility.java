@@ -23,7 +23,7 @@ public class DefaultVisibility implements IMessageVisibility {
 	public DefaultVisibility(String prefix, IResolver resolver) {
 		fSnId = resolver.getInt(prefix, PAR_VISIBILITY_LINKABLE);
 	}
-	
+
 	public DefaultVisibility(int snId) {
 		fSnId = snId;
 	}
@@ -35,7 +35,8 @@ public class DefaultVisibility implements IMessageVisibility {
 
 	@Override
 	public boolean isDestination(Tweet tweet, Node node) {
-		return socialNetwork(tweet).contains(node);
+		return node.equals(tweet.profile())
+				|| socialNetwork(tweet).contains(node);
 	}
 
 	@Override

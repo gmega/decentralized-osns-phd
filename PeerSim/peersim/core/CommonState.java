@@ -199,7 +199,7 @@ public static long getEndTime()
  */
 public static void setEndTime(long t)
 {
-	if( endtime >= 0 )
+	if( endtime >= 0 && !Configuration.contains("peersim.test.mode"))
 		throw new RuntimeException("You can set endtime only once");
 	if( t < 0 )
 		throw new RuntimeException("No negative values are allowed");

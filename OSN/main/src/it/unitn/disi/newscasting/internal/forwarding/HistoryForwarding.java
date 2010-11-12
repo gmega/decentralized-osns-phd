@@ -85,12 +85,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 
 		/** Picks a message to send to the peer. **/
 		Tweet message = removeAny(peer);
-		Object history = historyGet(message);
-		if (history == null) {
-			history = historyCreate(message);
-			/** Adds ourselves to the history. **/
-			historyAdd(history, source);
-		}
+		Object history = historyGetCreate(source, message);
 
 		/** Sends message + history to the peer. **/
 		Object feedback = diffusionObject(peer).receiveMessage(source, peer,
@@ -106,8 +101,6 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 
 		return true;
 	}
-
-	// ----------------------------------------------------------------------
 
 	public int throttling(SNNode target) {
 		Set<Tweet> pendings = fPending.get(target);
@@ -128,7 +121,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public void clear(Node source) {
-
+		fPending.clear();
 	}
 
 	// ----------------------------------------------------------------------
@@ -136,37 +129,37 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	/**
-	 * An event has been delivered to the application by another update exchange
-	 * strategy. We need to add those to our forwarding queues.
+	 * An event has been delivered to the application <b>by another update
+	 * exchange strategy</b>. We need to add those to our forwarding queues.
 	 */
 	@Override
 	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
 			boolean duplicate) {
-		// If it's a duplicate, don't even bother.
-		if (duplicate) {
-			return;
+
+		// Not duplicate, we forward it.
+		if (!duplicate) {
+			this.addPending(sender, receiver, tweet, null);
 		}
 
-		this.addPending(receiver, tweet, null);
+		// Otherwise tries to merge the history object "piggybacked" with the
+		// message, if any.
+		else {
+			Object history = diffusionObject(sender).historyGet(tweet);
+			// If it's null, nevermind.
+			if (history != null) {
+				Object ourHistory = diffusionObject(receiver).historyGetCreate(
+						receiver, tweet);
+				this.mergeHistories(receiver, sender, tweet, ourHistory,
+						history);
+			}
+		}
 	}
 
 	// ----------------------------------------------------------------------
 
-	public int queueSize() {
-		return fPending.size();
-	}
-
-	// ----------------------------------------------------------------------
-
+	@Override
 	public void tweeted(Tweet tweet) {
-		addPending(tweet.poster, tweet, null);
-	}
-
-	// ----------------------------------------------------------------------
-
-	public void duplicateReceived(Node sender, Node receiver, Node owner,
-			int start, int end) {
-		// Do nothing.
+		addPending(tweet.poster, tweet.poster, tweet, null);
 	}
 
 	// ----------------------------------------------------------------------
@@ -197,17 +190,18 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * {@link #addPending(Node, Node, Tweet, Object)}.
 	 */
 	private void mergeHistories(Node ourNode, Node feedbackNode, Tweet tweet,
-			Object ourHistory, Object feedbackHistory) {
+			Object ourHistory, Object foreignHistory) {
 		Linkable ourSn = (Linkable) ourNode.getProtocol(fSocialNetworkId);
 
 		// First, merges the neighbor's history into ours.
-		historyMerge(ourHistory, feedbackHistory);
+		historyMerge(ourHistory, foreignHistory);
 
 		/**
-		 * Now, we need to: 1 - determine, from the new information received,
-		 * which neighbors are known to have already received the message; 2 -
-		 * cancel previously scheduled forwardings of these messages to these
-		 * neighbors (if there were any scheduled).
+		 * Now, we need to: <BR>
+		 * 1 - determine, from the new information received, which neighbors are
+		 * known to have already received the message; <BR>
+		 * 2 - cancel previously scheduled forwardings of these messages to
+		 * these neighbors (if there were any scheduled).
 		 */
 		for (int i = 0; i < ourSn.degree(); i++) {
 			Node neighbor = ourSn.getNeighbor(i);
@@ -246,23 +240,18 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 		 * a duplicate, we need to forward it as well.
 		 */
 		if (app.receiveTweet(sender, receiver, tweet, this)) {
-			addPending(receiver, tweet, history);
+			addPending(sender, receiver, tweet, history);
 		}
-		/** Message is a duplicate. Tries to return something useful. */
+		/**
+		 * Message is a duplicate. Tries to return or learn something useful.
+		 */
 		else {
-			ourHistory = historyGet(tweet);
-			// Incorporates the history we received into ours.
-			if (ourHistory != null) {
-				historyMerge(ourHistory, history);
-			}
-			// If the message was a duplicate AND we have no history of it,
-			// it means the underlying history tracker has disposed of it
-			// somehow. Just re-create it from what we received.
-			else {
-				historyClone(tweet, history);
-			}
+			ourHistory = historyGetCreate(receiver, tweet);
+			mergeHistories(receiver, sender, tweet, ourHistory, history);
 		}
 
+		// Note that if the history has been just created then we're returning
+		// useless stuff, but for the sake of cleanliness that's ok.
 		return ourHistory;
 	}
 
@@ -272,7 +261,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * Method called whenever a <b>new</b> message, which needs to be forwarded,
 	 * is received <b>for the first time</b> by the application.
 	 */
-	private void addPending(Node receiver, Tweet tweet, Object history) {
+	private void addPending(Node sender, Node receiver, Tweet tweet,
+			Object history) {
 
 		/** We need our social network, and the Tweet itself. **/
 		Linkable ourSn = (Linkable) receiver.getProtocol(fSocialNetworkId);
@@ -288,7 +278,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 		 * Determines to which of our neighbors we need to forward this message
 		 * to. This is determined by the set:
 		 * 
-		 * ({tweet destinations} ∩ f(receiver)) - (history ∪ <false positives>))
+		 * ({tweet destinations} ∩ f(receiver)) - (history ∪ {sender} ∪ <false
+		 * positives>))
 		 */
 		for (int i = 0; i < ourSn.degree(); i++) {
 			Node neighbor = ourSn.getNeighbor(i);
@@ -298,9 +289,17 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 				continue;
 			}
 
-			// Checks that the neighbor is a destination for the message, and
-			// also that it is not in the history.
-			if (tweet.isDestination(neighbor)
+			/**
+			 * Checks that:<BR>
+			 * 1. the neighbor is a destination for the message;<BR>
+			 * 2. the neighbor is not the sender; <BR>
+			 * 3. the neighbor isn't already in the message history.<BR>
+			 * 
+			 * Note that (2) might be redundant, but the idea is that we never
+			 * send a message back to the sender, no matter what the underlying
+			 * history implementation does.
+			 **/
+			if (tweet.isDestination(neighbor) && !sender.equals(neighbor)
 					&& !historyContains(ourHistory, neighbor)) {
 				fPending.put(neighbor, tweet);
 			}
@@ -332,7 +331,32 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	}
 
 	// ----------------------------------------------------------------------
-	// Methods for manipulating histories. To be overrided by subclasses.
+	// Monitoring.
+	// ----------------------------------------------------------------------
+
+	public int queueSize() {
+		return fPending.size();
+	}
+
+	// ----------------------------------------------------------------------
+	// Methods for manipulating histories. Protected ones are to be overrided
+	// by subclasses.
+	// ----------------------------------------------------------------------
+
+	/**
+	 * Retrieves a history object using {@link #historyGet(Tweet)}, creating a
+	 * new one and adding the current node if it returns null.
+	 */
+	private Object historyGetCreate(SNNode current, Tweet message) {
+		Object history = historyGet(message);
+		if (history == null) {
+			history = historyCreate(message);
+			/** Adds ourselves to the history. **/
+			historyAdd(history, current);
+		}
+		return history;
+	}
+
 	// ----------------------------------------------------------------------
 
 	/**

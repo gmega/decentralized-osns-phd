@@ -470,7 +470,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		public void eventDelivered(SNNode sending, SNNode receiving, Tweet tweet,
 				boolean duplicate) {
 
-			// Sanity check.
+			// Sanity check -- no protocol should do this.
 			if (tweet.poster.equals(receiving)) {
 				throw new InternalError();
 			}

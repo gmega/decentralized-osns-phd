@@ -34,7 +34,7 @@ public class EventMatcher {
 			Assert.assertEquals(reference.next(), actual.next());
 		}
 		
-		Assert.assertFalse(actual.hasNext());
+		Assert.assertFalse("Too many events.", actual.hasNext());
 	}
 	
 }
