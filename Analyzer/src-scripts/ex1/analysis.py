@@ -11,6 +11,10 @@ from graph.util import igraph_neighbors
 from resources import ORIGINAL_ID, BLACK
 import igraph
 from graph.transformers import strip_unmarked_vertices
+from experiment.logparse import BaseFormatDecoder
+import operator
+import re
+from webbrowser import Opera
 
 # =============================================================================
 
@@ -87,7 +91,8 @@ class BestPars:
             return zero_by_zero
 
         return numerator / float(denominator)
-            
+
+# =============================================================================
     
 class Stat:
     """ """
@@ -119,9 +124,7 @@ class Stat:
                 
         if parameter_data.latency_sum > 0:
             assert parameter_data.delivered > 0
-                
-        
-                
+                   
         return parameter_data
         
     def best(self, is_better):
@@ -225,6 +228,119 @@ class EstimateIdeals(object):
     
 # =============================================================================
 
+class BaseLoad(object):
+    """ Parses a load log (with per-round, cumulative load data) and outputs:
+     
+     - The average unit experiment load per round;
+     - the average accrued load per node.
+    """
+    
+    def __init__(self, verbose=True):
+        self._verbose = verbose
+        self._matcher = re.compile("-- Unit experiment ([0-9]+) is done")
+        self._experiments = {}
+    
+    def execute(self):
+        
+        self.__load_data__(sys.stdin)
+        self.__print_data__(self._experiments)
+                
+    def __print_data__(self, experiments):
+        accrued_messages = [0, 0, 0, 0]
+        zero_tuple = (0, 0, 0, 0)
+        aggregate = {}
+        
+        for experiment_id, experiment in self._experiments.items():
+            for stats in experiment:
+                # Unpacks for printing.                 
+                node_id, sent, received, duplicates, experiments = stats
+                stats = stats[1:len(stats) + 1]
+                
+                # Prints per-experiment averages.
+                print "N:", int(experiment_id), int(node_id),
+                print sent/experiments, received/experiments, duplicates/experiments
+                
+                # Accrues the data under the node id.
+                old = aggregate.setdefault(node_id, zero_tuple)
+                aggregate[node_id] = map(operator.add, old, stats)
+                
+                # Accrues the data under the total, but averages first cause
+                # we threw information away to save memory.
+                stats = [i/experiments for i in stats]
+                accrued_messages = map(operator.add, accrued_messages, stats)
+        
+        print >> sys.stderr, " -- There were", len(aggregate.keys()), "unique node IDs."
+        
+        # Prints per-node aggregates.
+        for node_id, stat in aggregate.items():
+            sent, received, duplicates, n = stat
+            print "T:", int(node_id), (sent/n), (received/n), (duplicates/n)
+        
+        # And the whole-thing aggregate.
+        print "A:", " ".join([str(i) for i in accrued_messages])
+            
+    def __load_data__(self, file):
+        count = 1
+        for line in file:
+            # End-of-experiment line.
+            if line.startswith("-"):
+                match = self._matcher.match(line)
+                if match is None:
+                    self.__line_error__(line, count)
+                    continue               
+                id = float(match.group(1))
+                self.__get_experiment__(id).experiment_finished()
+                if self._verbose:
+                    print >> sys.stderr, "Processed [" + str(int(id)) + "]."
+            # Data line. 
+            else:
+                try:
+                    experiment_id, node_id, sent, received, duplicates = [float(i) for i in line.split(" ")]
+                    self.__get_experiment__(experiment_id).add(node_id, (sent, received, duplicates))
+                except ValueError:
+                    self.__line_error__(line, count)
+            count += 1
+                    
+    def __line_error__(self, line, line_no):
+        print >> sys.stderr, "Malformed line [" + str(line_no) + "] has been ignored. Offending line: \"", line, "\")."
+                
+    def __get_experiment__(self, id):
+        if not (id in self._experiments):
+            self._experiments[id] = UnitExperiment(id)
+        
+        return self._experiments[id]
+                
+class UnitExperiment(object):
+    
+    def __init__(self, id):
+        self._id = id
+        self._node_data = {}
+        self._repetition = 1.0
+        
+    def add(self, node_id, point):
+        
+        if node_id in self._node_data:
+            node_data = self._node_data[node_id]
+        else:
+            # Sanity check.
+            if self._repetition != 1.0:
+                raise Exception("Nodes were missing from previous experiments (%d)." % node_id)
+            node_data = [[0, 0, 0], 1.0] 
+            self._node_data[node_id] = node_data
+        
+        node_data[0] = map(operator.add, point, node_data[0])
+        node_data[1] = self._repetition
+    
+    def experiment_finished(self):
+        self._repetition += 1.0
+    
+    def __iter__(self):
+        for node_id, node_data in self._node_data.items():
+            yield [node_id] + node_data[0] + [node_data[1]]
+
+    
+# =============================================================================
+
 class PrintDegrees:
     
     def __init__(self, filename):
@@ -253,3 +369,5 @@ class Clean(object):
         with open(self._output, "w") as output:
             enc = EdgeListEncoder(output)
             enc.encode(g)
+
+# =============================================================================
