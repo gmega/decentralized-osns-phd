@@ -289,21 +289,31 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 				continue;
 			}
 
-			/**
-			 * Checks that:<BR>
-			 * 1. the neighbor is a destination for the message;<BR>
-			 * 2. the neighbor is not the sender; <BR>
-			 * 3. the neighbor isn't already in the message history.<BR>
-			 * 
-			 * Note that (2) might be redundant, but the idea is that we never
-			 * send a message back to the sender, no matter what the underlying
-			 * history implementation does.
-			 **/
-			if (tweet.isDestination(neighbor) && !sender.equals(neighbor)
-					&& !historyContains(ourHistory, neighbor)) {
+			if (shouldForward(sender, neighbor, tweet, ourHistory)) {
 				fPending.put(neighbor, tweet);
 			}
 		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	/**
+	 * Checks that:<BR>
+	 * <ol>
+	 * <li>the neighbor is a destination for the message;</li>
+	 * <li>the neighbor is not the sender;</li>
+	 * <li>the neighbor is not the posted of the message;</li>
+	 * <li>the neighbor isn't already in the message history.</li>
+	 * 
+	 * Note that (2) might be redundant, but the idea is that we never send a
+	 * message back to the sender, no matter what the underlying history
+	 * implementation does.
+	 **/
+	private boolean shouldForward(Node sender, Node neighbor, Tweet tweet,
+			Object ourHistory) {
+		return tweet.isDestination(neighbor) && !sender.equals(neighbor)
+				&& !historyContains(ourHistory, neighbor)
+				&& !tweet.poster.equals(neighbor);
 	}
 
 	// ----------------------------------------------------------------------

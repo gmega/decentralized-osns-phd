@@ -8,8 +8,8 @@ import experiment
 import sys
 import re
 from misc.util import replace_vars, replace_vars_using, FileWrapper
-from experiment import REPETITION, TEXT_OUTPUT_LOG, NAME_CONSTITUENTS, BIN_MESSAGE_LOG,\
-    DESCRIPTORS_ROOT, TEMPLATES_ROOT, SNIPPETS_ROOT, TPLPART_SEPARATOR,\
+from experiment import REPETITION, TEXT_OUTPUT_LOG, NAME_CONSTITUENTS, BIN_MESSAGE_LOG, \
+    DESCRIPTORS_ROOT, TEMPLATES_ROOT, SNIPPETS_ROOT, TPLPART_SEPARATOR, \
     EXPERIMENT_TEMPLATE
 import os
 import logging
@@ -66,13 +66,13 @@ class ChkStructure:
             for list in lists:
                 if int(list[i - 1][par]) != i:
                     logger.info("element " + str(i) + " is missing.")
-                    return -1
+                    return - 1
         return i
 
 #==========================================================================
 
 class ExpandTemplate(object):
-    def __init__(self, template,  output=FileWrapper(sys.stdout, True), 
+    def __init__(self, template, output=FileWrapper(sys.stdout, True),
                  snippets_root=SNIPPETS_ROOT):
         self._snippets_root = snippets_root
         self._template = template
@@ -95,7 +95,7 @@ class ExpandTemplate(object):
 
 class MkExperiment(object):
     
-    def __init__(self, template, templates_root=TEMPLATES_ROOT, snippets_root=SNIPPETS_ROOT, 
+    def __init__(self, template, templates_root=TEMPLATES_ROOT, snippets_root=SNIPPETS_ROOT,
                  experiment_template=EXPERIMENT_TEMPLATE):
         self._templates_root = templates_root
         self._snippets_root = snippets_root
@@ -113,11 +113,11 @@ class MkExperiment(object):
         experiment_path = os.getcwd()
         
         for part in path_parts:
-            experiment_path = os.path.join(experiment_path,part)
+            experiment_path = os.path.join(experiment_path, part)
             if os.path.exists(experiment_path):
                 if os.path.isfile(experiment_path):
-                    print >> sys.stderr, "A file with name",experiment_path,"already exists."
-                    return -1 
+                    print >> sys.stderr, "A file with name", experiment_path, "already exists."
+                    return - 1 
             else:
                 os.mkdir(experiment_path)
 
@@ -144,7 +144,7 @@ class InferExperimentTemplate(object):
             if self.__matches__(cwd.split(os.sep), file.split("-")):
                 print file
 
-        return -1
+        return - 1
     
     
     def __matches__(self, larger, smaller):
@@ -178,4 +178,37 @@ class FilenameHandler:
             
         return info
         
+#==========================================================================
+
+class LineParser(object):
+    
+    def __init__(self, acceptor, converters, source, fs=" "):
+        logger.info("Parsed lines should have " + str(len(converters)) + " elements.")
+        self._converters = converters
+        self._acceptor = acceptor
+        self._source = source
+        self._fs = fs
+        self._counter = 0
+        self._last_error = (None, -1)
+        
+    def __iter__(self):
+        for line in self._source:
+            self._counter += 1
+            line_type = self._acceptor(line)
+            if (line_type is None):
+                continue
+            try:
+                yield [line_type, map(self.__type_convert__, self._converters, line.split(self._fs))]
+            except ValueError as exception:
+                logger.warning("Malformed line " + str(self._counter) + " has been ignored. Offending line: \"" + line + "\"")
+                self._last_error = (exception, self._counter)
+            
+    def __type_convert__(self, x, y):
+        return x(y)
+
+    def line(self):
+        return self._counter
+    
+    def error(self):
+        return self._last_error
 #==========================================================================    

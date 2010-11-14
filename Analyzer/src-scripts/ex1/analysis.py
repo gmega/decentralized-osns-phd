@@ -9,12 +9,10 @@ from graph.codecs import AdjacencyListDecoder, GraphLoader, EdgeListDecoder, \
     EdgeListEncoder
 from graph.util import igraph_neighbors
 from resources import ORIGINAL_ID, BLACK
-import igraph
 from graph.transformers import strip_unmarked_vertices
-from experiment.logparse import BaseFormatDecoder
 import operator
 import re
-from webbrowser import Opera
+from experiment.util import LineParser
 
 # =============================================================================
 
@@ -32,7 +30,7 @@ class BestPars:
     def __init__(self, keys):
         self._stats = {}
         self._keys = keys.split(",")
-        
+      
         
     def execute(self):
         
@@ -61,15 +59,13 @@ class BestPars:
     
     def __data__(self):
         
-        for line in sys.stdin:
-            all_parts = line.split(" ")
-            
-            parameters = all_parts[0:len(self._keys)]
-            data = all_parts[len(self._keys):]
-            if (len(data) < 6):
-                raise Exception(data)
-            id, degree, t_max, t_avg, t_var, undelivered = [float(i.lstrip().rstrip()) for i in data]
-            
+        identities = [lambda x : x]*(len(self._keys))
+        float_values = [lambda x : float(x.lstrip().rstrip())]*6
+        line_parser = LineParser(lambda x : True, identities + float_values, sys.stdin)
+        
+        for type, line in line_parser:
+            parameters = line[0:len(self._keys)]
+            id, degree, t_max, t_avg, t_var, undelivered = line[len(self._keys):]
             delivered = degree - undelivered
             sum = delivered * t_avg
             sqr_sum = delivered * (t_var + t_avg * t_avg)
@@ -143,16 +139,17 @@ class Stat:
 class Join(object):
     """ Given a file with a set of keys, finds all lines in a second file that
         start with these same keys.
-
+        
+        Keys are read from a file, the remainder is streamed in from stdin.
     """
      
-    def __init__(self, optimals, keylength):
-        self._optimals = optimals
+    def __init__(self, keyfile, keylength):
+        self._optimals = keyfile
         self._keylength = int(keylength)
-      
+
         
     def execute(self):
-        # First reads the key.
+        # First reads the key file.
         print >> sys.stderr, "Parsing keys..."
         keys = set()
         with open(self._optimals, "r") as file:
@@ -325,7 +322,7 @@ class UnitExperiment(object):
             # Sanity check.
             if self._repetition != 1.0:
                 raise Exception("Nodes were missing from previous experiments (%d)." % node_id)
-            node_data = [[0, 0, 0], 1.0] 
+            node_data = [[0.0]*(len(point)), 1.0] 
             self._node_data[node_id] = node_data
         
         node_data[0] = map(operator.add, point, node_data[0])
@@ -338,7 +335,6 @@ class UnitExperiment(object):
         for node_id, node_data in self._node_data.items():
             yield [node_id] + node_data[0] + [node_data[1]]
 
-    
 # =============================================================================
 
 class PrintDegrees:
@@ -356,7 +352,7 @@ class PrintDegrees:
         
 # =============================================================================
 
-class Clean(object):
+class CleanGraph(object):
     def __init__(self, filename, output):
         self._filename = filename
         self._output = output

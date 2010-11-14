@@ -1,0 +1,97 @@
+# -----------------------------------------------------------------------------
+# Constants.
+# -----------------------------------------------------------------------------
+
+network.node SNNodeImpl
+simulation.cycles 90000000
+
+SIZE 72303
+
+# -----------------------------------------------------------------------------
+# PeerSim boilerplate.
+# -----------------------------------------------------------------------------
+
+network.size SIZE
+it.unitn.disi.registry contiguous
+
+# -----------------------------------------------------------------------------
+# Social network.
+# -----------------------------------------------------------------------------
+
+protocol.onehop GraphProtocol
+
+# -----------------------------------------------------------------------------
+# Social newscasting.
+# -----------------------------------------------------------------------------
+
+protocol.degreecentrality DegreeCentrality
+{
+	linkable onehop
+}
+
+protocol.snewscasting SocialNewscastingService
+{
+	social_neighborhood onehop 
+	
+	# Configurator.
+	configurator HistoryFwConfigurator
+	
+	# And configurator protocol parameters.
+	historyless
+	mode PURE_ANTICENTRALITY
+	chunk_size 1
+	latency
+	load
+
+	linkable onehop	
+}
+
+protocol.executor ActionExecutor
+{
+	social_newscasting_service snewscasting
+	neighborhood onehop
+}
+
+# -----------------------------------------------------------------------------
+# Initializers.
+# -----------------------------------------------------------------------------
+
+init.generic GenericInitializer
+{
+	protocol snewscasting
+}
+
+init.onehopinit GraphProtocolInit
+{
+	protocol onehop
+	file /home/giuliano/Graphs/Facebook.al
+	representation array
+}
+
+init.nrinit NodeRegistryInit
+
+include.init nrinit onehopinit generic
+
+# -----------------------------------------------------------------------------
+# Cycle-driven Action Scheduler
+# -----------------------------------------------------------------------------
+control.cdactscheduler CDActionScheduler
+{
+	executor executor
+}
+
+# -----------------------------------------------------------------------------
+# Unit Experiment Governor.
+# -----------------------------------------------------------------------------
+
+control.governor DisseminationExperimentGovernor
+{
+	scheduler FullNetworkScheduler
+	
+	linkable onehop
+	social_newscasting snewscasting
+	executor executor
+	repetitions 1
+	degreeCutoff 0
+	verbose
+}

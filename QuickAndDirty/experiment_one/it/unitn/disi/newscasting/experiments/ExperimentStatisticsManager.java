@@ -332,10 +332,10 @@ class UnitExperimentData {
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
 		buffer.append(" ");
-		// 3 - Messages received by the node.
+		// 4 - Messages received by the node.
 		buffer.append(fReceived[i]);
 		buffer.append(" ");
-		// 4 - Duplicates: everything after the first message are duplicates.
+		// 5 - Duplicates: everything after the first message are duplicates.
 		buffer.append(Math.max(0, fReceived[i] - 1));
 	}
 }

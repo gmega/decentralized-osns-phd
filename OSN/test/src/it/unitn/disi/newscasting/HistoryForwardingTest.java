@@ -27,7 +27,6 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-import peersim.core.CommonState;
 import peersim.core.Node;
 
 public class HistoryForwardingTest extends PeerSimTest {

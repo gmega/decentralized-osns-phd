@@ -20,8 +20,7 @@ public abstract class ProgressTracker {
         fTicks = 0;
         fUntilUpdate = 0;
     }
-    
-    
+        
     public void startTask() {
         this.displayWidget();
     }
