@@ -171,6 +171,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		// Loads the unit experiments.
 		UnitExperimentReader reader = new UnitExperimentReader(p.input(Inputs.experiments), fGraph);
 		fExperiments = reader.load();
+		System.err.println("Loaded [" + fExperiments.size() + "] unit experiments.");
 
 		// Sets up the output stream.
 		fStream = new PrintStream(p.output(Outputs.load));
