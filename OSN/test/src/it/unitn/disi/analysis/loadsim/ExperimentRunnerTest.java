@@ -39,13 +39,12 @@ public class ExperimentRunnerTest {
 
 		ExperimentRunner runner = new ExperimentRunner(u1, scheduler,
 				new SimStub(u1, u2, u3, u4), new TrivialSizeGenerator(), true);
-		Pair<Integer, Collection<? extends MessageStatistics>> a = runner
-				.call();
+		TaskResult a = runner.call();
 
-		Assert.assertEquals((int) a.a, 0);
+		Assert.assertEquals((int) a.root.id(), 0);
 
 		MessageStatistics[] s = new MessageStatistics[3];
-		for (MessageStatistics stats : a.b) {
+		for (MessageStatistics stats : a.statistics) {
 			s[stats.id] = stats;
 		}
 

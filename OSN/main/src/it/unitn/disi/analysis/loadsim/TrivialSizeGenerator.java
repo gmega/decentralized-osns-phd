@@ -1,5 +1,6 @@
 package it.unitn.disi.analysis.loadsim;
 
+import peersim.config.AutoConfig;
 import peersim.graph.Graph;
 
 /**
@@ -8,6 +9,7 @@ import peersim.graph.Graph;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class TrivialSizeGenerator implements IMessageSizeGenerator {
 
 	@Override

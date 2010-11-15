@@ -198,7 +198,9 @@ public class UnitExperiment {
 	 *         after the call to {@link #done()} has been performed.
 	 */
 	public double residue() {
-		return (double)(fIndexAssignment - 1.0) / (fDegree);
+		// This residue computation is correct as long as messages departing
+		// from the root node are properly registered.
+		return 1.0 - ((double) (fIndexAssignment)) / (fDegree + 1.0);
 	}
 
 	@Override

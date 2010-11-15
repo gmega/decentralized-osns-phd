@@ -289,14 +289,13 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// Callbacks.
 	// ----------------------------------------------------------------------
 
-	public void printSummary(int root,
-			Collection<? extends MessageStatistics> collection) {
-		for (MessageStatistics statistic : collection) {
-			if (!shouldPrintData(root, statistic.id)) {
+	public void printSummary(TaskResult results) {
+		for (MessageStatistics statistic : results.statistics) {
+			if (!shouldPrintData(results.root.id(), statistic.id)) {
 				continue;
 			}
 			StringBuffer buffer = new StringBuffer();
-			buffer.append(root);
+			buffer.append(results.root.id());
 			buffer.append(" ");
 			buffer.append(statistic.id);
 			buffer.append(" ");
@@ -307,6 +306,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			appendStatistic(statistic.sendBandwidth, buffer);
 			buffer.append(" ");
 			appendStatistic(statistic.receiveBandwidth, buffer);
+			buffer.append(" ");
+			buffer.append(results.duration);
 
 			synchronizedPrint(buffer.toString());
 		}
@@ -317,7 +318,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	private void emmitHeader() {
 		System.out.println("experiment_id node_id tx_tot rx_tot"
 				+ " tx_min tx_max tx_avg tx_var"
-				+ " rx_min rx_max rx_avg rx_var");
+				+ " rx_min rx_max rx_avg rx_var"
+				+ " duration");
 	}
 
 	// ----------------------------------------------------------------------
@@ -395,12 +397,12 @@ class CallbackThreadPoolExecutor extends ThreadPoolExecutor {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void afterExecute(Runnable r, Throwable t) {
-		Future<Pair<Integer, Collection<? extends MessageStatistics>>> future = (Future<Pair<Integer, Collection<? extends MessageStatistics>>>) r;
+		Future<TaskResult> future = (Future<TaskResult>) r;
 
-		Pair<Integer, Collection<? extends MessageStatistics>> statistics = null;
+		TaskResult results = null;
 
 		try {
-			statistics = future.get();
+			results = future.get();
 		} catch (ExecutionException ex) {
 			System.err.println("Error while running task.");
 			ex.printStackTrace();
@@ -412,6 +414,6 @@ class CallbackThreadPoolExecutor extends ThreadPoolExecutor {
 			fLoadSim.releaseCore();
 		}
 
-		fLoadSim.printSummary(statistics.a, statistics.b);
+		fLoadSim.printSummary(results);
 	}
 }

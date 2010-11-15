@@ -17,8 +17,7 @@ import java.util.concurrent.Callable;
  * 
  * @author giuliano
  */
-public class ExperimentRunner implements
-		Callable<Pair<Integer, Collection<? extends MessageStatistics>>> {
+public class ExperimentRunner implements Callable<TaskResult> {
 
 	/**
 	 * The {@link IScheduler} defining how to schedule the experiments.
@@ -61,7 +60,7 @@ public class ExperimentRunner implements
 	 * Experiment queue.
 	 */
 	private final LinkedList<ScheduleEntry> fQueue = new LinkedList<ScheduleEntry>();
-
+	
 	// ----------------------------------------------------------------------
 
 	public ExperimentRunner(UnitExperiment root, IScheduler schedule,
@@ -80,17 +79,16 @@ public class ExperimentRunner implements
 	// ----------------------------------------------------------------------
 
 	@Override
-	public Pair<Integer, Collection<? extends MessageStatistics>> call()
-			throws Exception {
+	public TaskResult call() throws Exception {
 		bootstrap();
-		for (int round = 0; !fSchedule.isOver(); round++) {
+		int round;
+		for (round = 0; !fSchedule.isOver(); round++) {
 			scheduleExperiments(round);
 			runExperiments(round);
 			commitResults(round);
 		}
 
-		return new Pair<Integer, Collection<? extends MessageStatistics>>(
-				fRoot.id(), fStatistics.values());
+		return new TaskResult(round, fRoot, fStatistics.values());
 	}
 
 	// ----------------------------------------------------------------------

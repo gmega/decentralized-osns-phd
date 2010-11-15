@@ -1,5 +1,7 @@
 package it.unitn.disi.analysis.loadsim;
 
+import java.util.Random;
+
 import junit.framework.Assert;
 
 import org.junit.Test;
@@ -73,7 +75,46 @@ public class UnitExperimentTest {
 		
 		assertSent(exp, 2, 1, 12, 0);
 		assertRecv(exp, 2, 1, 24, 1);
-	}	
+	}
+	
+	
+	@Test
+	public void computesResidue() {
+		UnitExperiment [] experiments = new UnitExperiment[11];
+		double [] residues = new double [] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+		int [] addMsgs = new int[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1};
+		
+		int RANDOM_DUPLICATES_MAX = 100;
+		double EPSILON= 0.001;
+		
+		Random random = new Random(42);
+		
+		for(int i = 0; i < experiments.length; i++) {
+			experiments[i] = new UnitExperiment(0, 9, false);
+			
+			for (int j = 0; j <= addMsgs[i]; j++) {
+				experiments[i].addData(j, 1, 1);
+			}
+			
+			double residue = experiments[i].residue();
+			if (addMsgs[i] > 0) {
+				for (int j = 0; j < random.nextInt(RANDOM_DUPLICATES_MAX); j++) {
+					experiments[i].addData(random.nextInt(addMsgs[i] + 1), 1, 1);
+				}
+			}
+			Assert.assertEquals(residue, experiments[i].residue());
+			
+			experiments[i].done();
+		}
+		
+		for (int i = 0; i < residues.length; i++) {
+			assertAlmostEquals(residues[i], experiments[i].residue(), EPSILON);
+		}
+	}
+	
+	private void assertAlmostEquals(double v1, double v2, double epsilon) {
+		Assert.assertTrue(Math.abs(v1 - v2) <= epsilon);
+	}
 	
 	private void assertSent(UnitExperiment exp, int id, int...vals) {
 		for (int i = 0; i < vals.length; i++) {
