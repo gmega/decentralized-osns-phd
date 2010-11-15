@@ -37,6 +37,11 @@ public class ExperimentRunner implements
 	private final ILoadSim fParent;
 
 	/**
+	 * {@link IMessageSizeGenerator} used to assign size to the messages.
+	 */
+	private final IMessageSizeGenerator fGenerator;
+
+	/**
 	 * Whether or not to print load information at each round.
 	 */
 	private final boolean fPrintRounds;
@@ -55,19 +60,21 @@ public class ExperimentRunner implements
 	/**
 	 * Experiment queue.
 	 */
-	private LinkedList<Pair<Integer, UnitExperiment>> fQueue = new LinkedList<Pair<Integer, UnitExperiment>>();
+	private final LinkedList<ScheduleEntry> fQueue = new LinkedList<ScheduleEntry>();
 
 	// ----------------------------------------------------------------------
-	
+
 	public ExperimentRunner(UnitExperiment root, IScheduler schedule,
-			ILoadSim parent, boolean printRounds) {
+			ILoadSim parent, IMessageSizeGenerator generator,
+			boolean printRounds) {
 		fSchedule = schedule;
 		fParent = parent;
 		fStatistics = new HashMap<Integer, InternalMessageStatistics>();
 		fRoot = root;
 		fPrintRounds = printRounds;
+		fGenerator = generator;
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Callable interface.
 	// ----------------------------------------------------------------------
@@ -85,7 +92,7 @@ public class ExperimentRunner implements
 		return new Pair<Integer, Collection<? extends MessageStatistics>>(
 				fRoot.id(), fStatistics.values());
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Private helpers.
 	// ----------------------------------------------------------------------
@@ -98,15 +105,16 @@ public class ExperimentRunner implements
 			}
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void runExperiments(int round) {
-		Iterator<Pair<Integer, UnitExperiment>> it = fQueue.iterator();
+		Iterator<ScheduleEntry> it = fQueue.iterator();
 		while (it.hasNext()) {
-			Pair<Integer, UnitExperiment> entry = it.next();
-			int startTime = entry.a;
-			UnitExperiment experiment = entry.b;
+			ScheduleEntry e = it.next();
+
+			UnitExperiment experiment = e.experiment;
+			int startTime = e.startRound;
 
 			for (Integer nodeId : experiment.participants()) {
 				// We only simulate neighborhood intersections.
@@ -115,10 +123,11 @@ public class ExperimentRunner implements
 				}
 				// Adds the traffic from the neighboring unit experiments.
 				InternalMessageStatistics stats = get(nodeId);
-				stats.roundReceived += experiment.messagesReceived(nodeId,
-						round - startTime);
-				stats.roundSent += experiment.messagesSent(nodeId, round
-						- startTime);
+				stats.roundReceived += e.messageSize
+						* experiment
+								.messagesReceived(nodeId, round - startTime);
+				stats.roundSent += e.messageSize
+						* experiment.messagesSent(nodeId, round - startTime);
 			}
 
 			if ((experiment.duration() + startTime - 1) == round) {
@@ -127,7 +136,7 @@ public class ExperimentRunner implements
 			}
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void commitResults(int round) {
@@ -161,7 +170,7 @@ public class ExperimentRunner implements
 			fParent.synchronizedPrint(buff.toString());
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void create(int node, int degree) {
@@ -172,7 +181,7 @@ public class ExperimentRunner implements
 				degree);
 		fStatistics.put(node, stats);
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private InternalMessageStatistics get(int nodeId) {
@@ -183,15 +192,15 @@ public class ExperimentRunner implements
 		}
 		return stats;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void scheduleExperiments(int round) {
 		for (UnitExperiment experiment : fSchedule.atTime(round)) {
-			fQueue.add(new Pair<Integer, UnitExperiment>(round, experiment));
+			fQueue.add(new ScheduleEntry(experiment, fGenerator.nextSize(
+					experiment.id(), fParent.getGraph()), round));
 		}
 	}
-	
 	// ----------------------------------------------------------------------
 }
 
@@ -219,5 +228,19 @@ class InternalMessageStatistics extends MessageStatistics {
 		StringBuffer buffer = new StringBuffer();
 		append(buffer);
 		return buffer.toString();
+	}
+}
+
+class ScheduleEntry {
+
+	public final UnitExperiment experiment;
+	public final int messageSize;
+	public final int startRound;
+
+	public ScheduleEntry(UnitExperiment experiment, int messageSize,
+			int startRound) {
+		this.experiment = experiment;
+		this.messageSize = messageSize;
+		this.startRound = startRound;
 	}
 }

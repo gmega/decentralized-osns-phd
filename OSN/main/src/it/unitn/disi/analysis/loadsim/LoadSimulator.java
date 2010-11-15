@@ -90,12 +90,29 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	 */
 	private volatile IndexedNeighborGraph fGraph;
 
+	/**
+	 * An {@link IndexedNeighborGraph} decoder.
+	 */
 	private String fDecoder;
 
+	/**
+	 * An {@link IScheduler}.
+	 */
 	private String fScheduler;
 
+	/**
+	 * An {@link IMessageSizeGenerator}.
+	 */
+	private String fSizeGenerator;
+
+	/**
+	 * @see SimulationMode
+	 */
 	private final SimulationMode fSimMode;
 
+	/**
+	 * @see PrintMode
+	 */
 	private final PrintMode fPrintMode;
 
 	/**
@@ -134,7 +151,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			@Attribute(value = "sim_mode", defaultValue = "root") String simMode,
 			@Attribute(value = "seed", defaultValue = Attribute.VALUE_NONE) String randomSeed,
 			@Attribute("cores") int cores,
-			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder) {
+			@Attribute(value = "decoder", defaultValue = Attribute.VALUE_NULL) String decoder,
+			@Attribute(value = "size_generator", defaultValue = Attribute.VALUE_NULL) String sizeGenerator) {
 
 		fSimMode = SimulationMode.valueOf(simMode.toLowerCase());
 		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
@@ -143,7 +161,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		fResolver = resolver;
 		fDecoder = decoder;
 		fScheduler = scheduler;
-		
+		fSizeGenerator = sizeGenerator;
+
 		if (randomSeed.equals(Attribute.VALUE_NONE)) {
 			fRandom = new Random();
 		} else {
@@ -184,7 +203,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 				+ fExecutor.getCorePoolSize() + "] threads.");
 
 		emmitHeader();
-		
+
 		ProgressTracker tracker = Progress.newTracker(
 				"Running load simulations", fExperiments.values().size());
 		tracker.startTask();
@@ -196,8 +215,9 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			}
 			UnitExperiment experiment = it.next();
 			IScheduler scheduler = createScheduler(experiment);
+			IMessageSizeGenerator generator = createSizeGenerator();
 			ExperimentRunner runner = new ExperimentRunner(experiment,
-					scheduler, this, fPrintMode == PrintMode.all);
+					scheduler, this, generator, fPrintMode == PrintMode.all);
 			fExecutor.submit(runner);
 			// Well, submitting is not really progress, but it's ok.
 			tracker.tick();
@@ -211,21 +231,40 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	// ----------------------------------------------------------------------
 
 	private IScheduler createScheduler(UnitExperiment experiment) {
-		HashMap<String, Object> config = new HashMap<String, Object>();
+		HashMap<String, Object> config = baseConfig();
 		config.put(IScheduler.ROOT, experiment);
-		config.put(IScheduler.RANDOM, fRandom);
-		config.put(IScheduler.PARENT, this);
+		return (IScheduler) create(fScheduler, config);
+	}
 
+	// ----------------------------------------------------------------------
+
+	private IMessageSizeGenerator createSizeGenerator() {
+		HashMap<String, Object> config = baseConfig();
+		return (IMessageSizeGenerator) create(fSizeGenerator, config);
+	}
+
+	// ----------------------------------------------------------------------
+
+	private Object create(String className, HashMap<String, Object> config) {
 		try {
-			@SuppressWarnings("unchecked")
-			ObjectCreator<IScheduler> creator = new ObjectCreator<IScheduler>(
-					(Class<IScheduler>) Class.forName(fScheduler),
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			ObjectCreator creator = new ObjectCreator(
+					(Class<? extends Object>) Class.forName(className),
 					CompositeResolver.compositeResolver(new HashMapResolver(
 							config), fResolver));
 			return creator.create("");
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private HashMap<String, Object> baseConfig() {
+		HashMap<String, Object> config = new HashMap<String, Object>();
+		config.put(IScheduler.RANDOM, fRandom);
+		config.put(IScheduler.PARENT, this);
+		return config;
 	}
 
 	// ----------------------------------------------------------------------
@@ -239,7 +278,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private synchronized void appendStatistic(IncrementalStats stats,
@@ -316,13 +355,13 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			synchronizedPrint(buffer.toString());
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	private void emmitHeader() {
-		System.out.println("experiment_id node_id tx_tot rx_tot" +
-				" tx_min tx_max tx_avg tx_var" + 
-				" rx_min rx_max rx_avg rx_var");
+		System.out.println("experiment_id node_id tx_tot rx_tot"
+				+ " tx_min tx_max tx_avg tx_var"
+				+ " rx_min rx_max rx_avg rx_var");
 	}
 
 	// ----------------------------------------------------------------------
