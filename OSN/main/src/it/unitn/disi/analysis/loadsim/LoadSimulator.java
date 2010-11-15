@@ -9,7 +9,6 @@ import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
@@ -36,7 +35,6 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.config.resolvers.CompositeResolver;
-import peersim.graph.Graph;
 import peersim.util.IncrementalStats;
 
 /**
@@ -70,15 +68,6 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public static enum PrintMode {
 		all, summary_only
 	}
-
-	/**
-	 * Unit experiment row keys for {@link TableReader}.
-	 */
-	private static final String EXPERIMENT_ID = "root_id";
-	private static final String NODE_ID = "neighbor_id";
-	private static final String SENT = "sent";
-	private static final String RECEIVED = "received";
-	private static final String DUPLICATES = "duplicates";
 
 	// ----------------------------------------------------------------------
 	// State.
@@ -180,7 +169,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 		fGraph = LightweightStaticGraph.load(decoder(p.input(Inputs.graph)));
 
 		// Loads the unit experiments.
-		fExperiments = loadUnitExperiments(fGraph, p.input(Inputs.experiments));
+		UnitExperimentReader reader = new UnitExperimentReader(p.input(Inputs.experiments), fGraph);
+		fExperiments = reader.load();
 
 		// Sets up the output stream.
 		fStream = new PrintStream(p.output(Outputs.load));
@@ -294,40 +284,6 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	// ----------------------------------------------------------------------
 
-	private Map<Integer, UnitExperiment> loadUnitExperiments(Graph graph,
-			InputStream input) throws IOException {
-
-		System.err.print("Reading unit experiment data ... ");
-
-		Map<Integer, UnitExperiment> experiments = new HashMap<Integer, UnitExperiment>();
-
-		// Now loads the actual data.
-		TableReader reader = new TableReader(input);
-		while (reader.hasNext()) {
-			int id = Integer.parseInt(reader.get(EXPERIMENT_ID));
-			int nodeId = Integer.parseInt(reader.get(NODE_ID));
-			int sent = Integer.parseInt(reader.get(SENT));
-			int received = Integer.parseInt(reader.get(RECEIVED));
-			int dups = Integer.parseInt(reader.get(DUPLICATES));
-
-			UnitExperiment experiment = experiments.get(id);
-			if (experiment == null) {
-				experiment = new UnitExperiment(id, graph.degree(id), true);
-				experiments.put(id, experiment);
-			}
-
-			experiment.addData(nodeId, sent, received + dups);
-			reader.next();
-		}
-
-		// Wraps up the experiments.
-		for (UnitExperiment experiment : experiments.values()) {
-			experiment.done();
-		}
-
-		System.err.println("[OK]");
-		return experiments;
-	}
 
 	// ----------------------------------------------------------------------
 	// Callbacks.

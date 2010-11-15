@@ -38,7 +38,7 @@ public class ExperimentRunnerTest {
 				new UnitExperiment[][] { { u1 }, { u4 }, { u2 }, { u3 }, {} });
 
 		ExperimentRunner runner = new ExperimentRunner(u1, scheduler,
-				new SimStub(u1, u2, u3, u4), true);
+				new SimStub(u1, u2, u3, u4), new TrivialSizeGenerator(), true);
 		Pair<Integer, Collection<? extends MessageStatistics>> a = runner
 				.call();
 
@@ -73,7 +73,7 @@ class SimStub implements ILoadSim {
 
 	@Override
 	public IndexedNeighborGraph getGraph() {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
