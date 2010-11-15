@@ -380,3 +380,17 @@ class CDF:
 
 #===============================================================================
 
+class PrintUntil(object):
+    """ Simple utility to print a file till a separator is found. Separator 
+    matches are sought for inside of individual lines. 
+    """
+    
+    def __init__(self, sep):
+        self._sep = sep
+        
+    def execute(self):
+        for line in sys.stdin:
+            line = line.rstrip().lstrip()
+            if self._sep in line:
+                break;
+            print line
