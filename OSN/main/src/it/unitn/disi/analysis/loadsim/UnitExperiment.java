@@ -2,6 +2,7 @@ package it.unitn.disi.analysis.loadsim;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +59,11 @@ public class UnitExperiment {
 	 * Number of participants in the {@link UnitExperiment}.
 	 */
 	private final int fDegree;
+	
+	/**
+	 * Number of participants who got zero messages.
+	 */
+	private final BitSet fInfected;
 
 	/**
 	 * Constructed a new unit experiment.
@@ -74,6 +80,7 @@ public class UnitExperiment {
 	public UnitExperiment(int id, int degree, boolean cumulative) {
 		fId = id;
 		fDegree = degree;
+		fInfected = new BitSet(degree);
 		if (cumulative) {
 			fCumSum = newRow();
 		}
@@ -117,6 +124,11 @@ public class UnitExperiment {
 		row[sentIndex(j)] += deltaSent;
 		row[receivedIndex(j)] += deltaReceived;
 		fSeen.add(nodeId);
+		
+		// Computes node infection.
+		if (received > 0 && nodeId != fId) {
+			fInfected.set(j);
+		}
 	}
 
 	/**
@@ -195,12 +207,18 @@ public class UnitExperiment {
 
 	/**
 	 * @return the residue for this {@link UnitExperiment} (only makes sense
-	 *         after the call to {@link #done()} has been performed.
+	 *         after the call to {@link #done()} has been performed).
 	 */
 	public double residue() {
-		// This residue computation is correct as long as messages departing
-		// from the root node are properly registered.
-		return 1.0 - ((double) (fIndexAssignment)) / (fDegree + 1.0);
+		return undelivered() / ((double)fDegree);
+	}
+
+	/**
+	 * @return the total number of undelivered message (only makes sense after
+	 *         the call to {@link #done()} has been performed.
+	 */
+	public int undelivered() {
+		return fDegree - fInfected.cardinality();
 	}
 
 	@Override
