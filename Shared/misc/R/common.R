@@ -205,16 +205,26 @@ simple_name_generator <- function(prefix, suffix) {
 
 ##############################################################
 #
-# Divides two vectors and applies the convention that 0/0 = 1
+# Divides two vectors and applies a convention for 0/0.
 #
 ##############################################################
-safe_divide <- function(v1, v2) {
+safe_divide <- function(v1, v2, zero_by_zero=1.0) {
   reckless <- v1/v2
   replaces <- which(v1 == 0 & v2 == 0)
-  reckless[replaces] = 1.0
+  reckless[replaces] = zero_by_zero
   return(reckless)
 }
 
+##############################################################
+#
+# Adds a row to a table under a given name.
+#
+##############################################################
+add_row_with_name <- function(a_table, a_row, a_name) {
+  mod_table <- cbind(a_table, a_row)
+  names(mod_table)[[ncol(mod_table)]] <- a_name
+  return(mod_table)
+}
 
 ##############################################################
 #

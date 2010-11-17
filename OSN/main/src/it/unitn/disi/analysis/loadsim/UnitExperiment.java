@@ -61,7 +61,7 @@ public class UnitExperiment {
 	private final int fDegree;
 	
 	/**
-	 * Number of participants who got zero messages.
+	 * Number of infected participants.
 	 */
 	private final BitSet fInfected;
 

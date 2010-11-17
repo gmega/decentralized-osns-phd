@@ -1,0 +1,25 @@
+###################################
+# Graph remap snippet.
+###################################
+
+analyzer -t python --psyco -V input=./Facebook.al:n=150:output_folder=./2hop-samples/originals/ ex1.gen.GenerateDatasets 2> ./2hop-samples/sizetables.text
+
+for i in `seq 1 150`; do cat ./originals/twohop-${i}.al | analyzer-j -o stdout:./mapfiles/twohop-${i}.map -p decoder=it.unitn.disi.codecs.AdjListGraphDecoder it.unitn.disi.cli.GraphRemap | analyzer-j -i stdin -o stdout it.unitn.disi.cli.ByteGraph2Adj > ./remapped/twohop-${i}.al; done;
+
+for i in `seq 1 150`; do cat ./remapped/twohop-${i}.al | analyzer-j -o ./ordertwo/ordertwo-${i}.bin -p order=2 it.unitn.disi.cli.ComputeOrderGraph; done;
+
+for i in `seq 1 150`; do cat ./remapped/twohop-${i}.al | analyzer-j it.unitn.disi.cli.SimpleQuestions; done;
+
+for i in `seq 1 1`; do
+	scheduler -a submit -o ./outputs-out/output-${i}.text\
+ "${HOME}/bin/peersim-m 1024 ./f2fcolleor_over_cyclonsn.pss\
+ SIZE=`cat ${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al | wc -l`\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle\
+ protocol.peersampling.view_size=50\
+ protocol.peersampling.l=5\
+ init.onehopinit.file=${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al\
+ init.twohopinit.file=${HOME}/Graphs/2hop-samples/ordertwo/ordertwo-${i}.bin"
+done;

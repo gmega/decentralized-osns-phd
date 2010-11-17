@@ -1,0 +1,34 @@
+# ------------------------------------
+#  Validation latency extraction.
+# ------------------------------------
+MODE="-random"
+echo "id degree t_max t_avg t_var avg_speedup min_speedup duplicates undelivered" >> latencies-validation${MODE}.text
+cat output.out | grep DE: | cut -d" " -f2-10 > latencies-validation${MODE}.text
+
+# ------------------------------------
+#  Churn experiment latency extraction.
+# ------------------------------------
+
+DIR=${PWD}
+REP=1
+for j in `seq 0.1 0.1 0.6`; do
+	DOWN=$j
+	for i in 0.01 0.05 0.1; do
+		echo "id degree t_max t_avg t_var avg_speedup min_speedup duplicates undelivered" > latencies-0.1-${i}-${REP}.text
+		zcat ${DIR}/DOWN_${DOWN}/output-${i}-${REP}.out.gz | grep DE: | cut -d" " -f4-12 | sed s/.$// >> latencies-${DOWN}-${i}-${REP}.text
+	done;
+done;
+
+# ------------------------------------
+#  Unit experiment progress
+# ------------------------------------
+
+REP=1
+for j in `seq 0.1 0.1 0.6`; do
+	DOWN=$j
+	for i in 0.01 0.05 0.1; do
+		echo $j $i `zcat ./DOWN_${DOWN}/output-0.05-1.out.gz | grep Schedule | wc -l`
+	done;
+done;
+
+

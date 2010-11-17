@@ -4,19 +4,14 @@ import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.LightweightStaticGraph;
-import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
-import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -166,12 +161,15 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	@Override
 	public void execute(StreamProvider p) throws IOException {
 		// Loads the graph.
-		fGraph = LightweightStaticGraph.load(decoder(p.input(Inputs.graph)));
+		fGraph = LightweightStaticGraph.load(GraphCodecHelper
+				.uncheckedCreateDecoder(p.input(Inputs.graph), fDecoder));
 
 		// Loads the unit experiments.
-		UnitExperimentReader reader = new UnitExperimentReader(p.input(Inputs.experiments), fGraph);
+		UnitExperimentReader reader = new UnitExperimentReader(
+				p.input(Inputs.experiments), fGraph);
 		fExperiments = reader.load();
-		System.err.println("Loaded [" + fExperiments.size() + "] unit experiments.");
+		System.err.println("Loaded [" + fExperiments.size()
+				+ "] unit experiments.");
 
 		// Sets up the output stream.
 		fStream = new PrintStream(p.output(Outputs.load));
@@ -260,18 +258,6 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	// ----------------------------------------------------------------------
 
-	private ResettableGraphDecoder decoder(InputStream stream) {
-		String decoder = (fDecoder == null) ? AdjListGraphDecoder.class
-				.getName() : fDecoder;
-		try {
-			return GraphCodecHelper.createDecoder(stream, decoder);
-		} catch (Exception ex) {
-			throw MiscUtils.nestRuntimeException(ex);
-		}
-	}
-
-	// ----------------------------------------------------------------------
-
 	private synchronized void appendStatistic(IncrementalStats stats,
 			StringBuffer buffer) {
 		buffer.append(stats.getMin());
@@ -284,7 +270,6 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	}
 
 	// ----------------------------------------------------------------------
-
 
 	// ----------------------------------------------------------------------
 	// Callbacks.
@@ -319,8 +304,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	private void emmitHeader() {
 		System.out.println("experiment_id node_id tx_tot rx_tot"
 				+ " tx_min tx_max tx_avg tx_var"
-				+ " rx_min rx_max rx_avg rx_var"
-				+ " duration");
+				+ " rx_min rx_max rx_avg rx_var" + " duration");
 	}
 
 	// ----------------------------------------------------------------------

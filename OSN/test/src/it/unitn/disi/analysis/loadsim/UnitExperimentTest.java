@@ -82,7 +82,7 @@ public class UnitExperimentTest {
 	public void computesResidue() {
 		UnitExperiment [] experiments = new UnitExperiment[11];
 		double [] residues = new double [] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-		int [] addMsgs = new int[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1};
+		int [] addMsgs = new int[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 		
 		int RANDOM_DUPLICATES_MAX = 100;
 		double EPSILON= 0.001;
@@ -90,10 +90,17 @@ public class UnitExperimentTest {
 		Random random = new Random(42);
 		
 		for(int i = 0; i < experiments.length; i++) {
-			experiments[i] = new UnitExperiment(0, 9, false);
+			experiments[i] = new UnitExperiment(0, 10, false);
 			
+			// Adds data.
 			for (int j = 0; j <= addMsgs[i]; j++) {
 				experiments[i].addData(j, 1, 1);
+			}
+			
+			// Adds some zero entries for the remaining nodes. 
+			// These cannot affect the residue.
+			for (int j = addMsgs[i]; j < addMsgs.length; j++) {
+				experiments[i].addData(j, 0, 0);
 			}
 			
 			double residue = experiments[i].residue();
@@ -111,6 +118,7 @@ public class UnitExperimentTest {
 			assertAlmostEquals(residues[i], experiments[i].residue(), EPSILON);
 		}
 	}
+
 	
 	private void assertAlmostEquals(double v1, double v2, double epsilon) {
 		Assert.assertTrue(Math.abs(v1 - v2) <= epsilon);

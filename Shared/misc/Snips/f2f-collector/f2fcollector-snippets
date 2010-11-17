@@ -1,0 +1,299 @@
+########################################################
+#
+# BASH SECTION
+#
+########################################################
+
+########################################################
+# Dry runs
+########################################################
+
+# CyclonSN dry runs.
+
+for i in `seq 1 50`; do
+ SIZE=`cat ${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al | wc -l`;
+ scheduler -a submit -o ${PWD}/dryruns/samples/cyclonsn/output-${i}.out\
+ "${HOME}/bin/peersim-m 1024 ${PWD}/f2fcollector_over_cyclonsn.pss\
+ SIZE=${SIZE}\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle\
+ protocol.peersampling.view_size=50\
+ protocol.peersampling.l=5\
+ init.onehopinit.file=${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al\      
+ init.twohopinit.file=${HOME}/Graphs/2hop-samples/ordertwo/ordertwo-${i}.bin\
+ init.twohopinit.decoder=it.unitn.disi.codecs.AdjListGraphDecoder";
+done;
+
+# Over Facebook.
+peersim-m 2048 ${PWD}/f2fcollector_over_cyclonsn.pss\
+ SIZE=72303\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=local\
+ protocol.peersampling.view_size=50\
+ protocol.peersampling.l=5
+
+
+
+for i in `seq 1 32`; do scheduler -a submit -o /home/giuliano/jobs-local/cyclonsn/runs/run-${i}.text "peersim-m 2048 /home/giuliano/jobs-local/cyclonsn/f2fcollector_over_cyclonsn.pss SIZE=72303 protocol.approximator.selection_layer=collector protocol.approximator.exchange_layer=collector  protocol.approximator.selection_mode=highestranking protocol.approximator.utility_function=local protocol.peersampling.view_size=50 protocol.peersampling.l=5"; done;
+
+
+# Central Limit Theorem runs.
+for i in `seq 1 2`; do scheduler --compress -o ${PWD}/clt-runs2/output-${i}.out.gz -a submit "peersim-m 2048 ${PWD}/f2fcollector_over_cyclonsn.pss SIZE=72303 protocol.approximator.selection_layer=collector protocol.approximator.exchange_layer=collector protocol.approximator.selection_mode=highestranking protocol.approximator.utility_function=local protocol.peersampling.view_size=50 protocol.peersampling.l=5"; done;
+
+# Perfect sampling dry runs.
+
+# Over samples.
+for i in `seq 1 1`; do 
+ SIZE=`cat ${HOME}/Graphs/2hop-samples/remapped/ntwohop-${i}.al | wc -l`;
+ scheduler -a submit -o ${PWD}/dryruns/samples/perfect/output-${i}.out\
+ "${HOME}/bin/peersim-m 1024 ${PWD}/f2fcollector_over_perfectps.pss\
+ SIZE=${SIZE}\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle\
+ protocol.peersampling.view_size=50\
+ protocol.peersampling.l=5\
+ init.onehopinit.file=${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al\
+ init.twohopinit.file=${HOME}/Graphs/2hop-samples/ordertwo/ordertwo-${i}.bin\
+ init.twohopinit.decoder=it.unitn.disi.graph.codecs.AdjListGraphDecoder";
+done;
+
+# Over Facebook.
+peersim-m 2048 ${PWD}/f2fcollector_over_perfectps.pss\
+ SIZE=72303\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle\
+ protocol.peersampling.view_size=50\
+ protocol.peersampling.l=5\
+ init.onehopinit.file=${HOME}/Graphs/Facebook.al\
+ init.twohopinit.file=${HOME}/Graphs/Facebook-2-hop.bin\
+ init.twohopinit.decoder=it.unitn.disi.codecs.ByteGraphDecoder
+
+
+# Pathos runs
+	 
+peersim-m 1024 ${PWD}/f2fcollector_over_perfectps.pss\
+ SIZE=${SIZE}\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle\
+ protocol.peersampling.view_size=50\
+ init.onehopinit.file=${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al\
+ init.twohopinit.file=${HOME}/Graphs/2hop-samples/ordertwo/ordertwo-${i}.bin\
+ init.twohopinit.decoder=it.unitn.disi.codecs.AdjListGraphDecoder
+
+
+# Convergence times.
+for i in `seq 1 50`; do echo $i `cat output-${i}.out | grep ApproximationObserver: | wc -l` `cat ${HOME}/Graphs/2hop-samples/remapped/twohop-${i}.al | wc -l` >> times.text; done;
+cat times.text | sort -n -k2
+
+# Missing list extraction.
+cat output.out | awk '/B_MissingList/,/E_MissingList/ { print }' | sed '1d' | sed '$d' | cut -d" " -f2 | xargs
+
+for i in `cat missinglist | cut -d" " -f2`; do echo $i `cat freqs.out | grep "^${i} " | avg-column 1`; done;
+
+# Straggler analysis
+for i in `ls *.out`; do cat $i | grep SEEN | cut -d" " -f2-4 > ./analysis/$i.cut; done;
+
+
+# Broken logs.
+for i in `seq 1 50`; do
+	cat output-13-${i}.out.cut | sort -n -k2 | sort -n --stable -k1 | uniq > /home/giuliano/Work_local/peersim-jobs/cyclonsn/pathos/13/stragglers/output-${i}.text;
+done;
+
+for i in `seq 1 50`; do
+   echo "u v time" > stragglers-${i}.text
+   analyzer --psyco -t python -V onehop=~/Graphs/2hop-samples/remapped/twohop-13.al:logfile=./output-${i}.text ex1.gen.Stragglers >> stragglers-${i}.text;
+done;
+
+peersim-m 2048 ./f2fcollector_over_perfectps.pss\
+ protocol.approximator.selection_layer=collector\
+ protocol.approximator.exchange_layer=collector\
+ protocol.approximator.selection_mode=highestranking\
+ protocol.approximator.utility_function=oracle
+ 
+# Firstfit.
+nohup peersim-m 2048 ./f2fcollector_over_perfectps.pss protocol.approximator.query_neighborhood=collector protocol.approximator.selection_mode=FIRSTFIT protocol.approximator.utility_function=local > ./dryruns-perfect/firstfit.out 2> ./dryruns-perfect/firstfit.err &
+
+# Bestfit, local cost.
+nohup peersim-m 2048 ./f2fcollector_over_perfectps.pss protocol.approximator.query_neighborhood=collector protocol.approximator.selection_mode=HIGHESTRANKING protocol.approximator.utility_function=local > ./dryruns-perfect/bestfit-local.out 2> ./dryruns-perfect/bestfit-local.err &
+
+# Bestfit, oracle cost.
+nohup peersim-m 2048 ./f2fcollector_over_perfectps.pss protocol.approximator.query_neighborhood=collector protocol.approximator.selection_mode=HIGHESTRANKING protocol.approximator.utility_function=oracle > ./dryruns-perfect/bestfit-oracle.out 2> ./dryruns-perfect/bestfit-oracle.err &
+
+# Bestfit, local cost, peersampling.
+nohup peersim-m 2048 ./f2fcollector_over_perfectps.pss protocol.approximator.query_neighborhood=peersampling protocol.approximator.selection_mode=HIGHESTRANKING protocol.approximator.utility_function=local > ./dryruns-perfect/firstfit.out 2> ./dryruns-perfect/bestfit-local-ps.err &
+
+# Bestfit, oracle cost.
+nohup peersim-m 2048 ./f2fcollector_over_perfectps.pss protocol.approximator.query_neighborhood=peersampling protocol.approximator.selection_mode=HIGHESTRANKING protocol.approximator.utility_function=oracle > ./dryruns-perfect/bestfit-oracle-ps.out 2> ./dryruns-perfect/bestfit-oracle-s.err &
+
+# Reconstruction analysis.
+
+for i in `ls *.out`; do
+	NAME=`echo $i | awk 'BEGIN {FS = "\\\."} {print $1}'`
+	echo "rebuilt total random proactive" > ./$NAME.cut
+	cat $i | grep ApproximationObserver: | cut -d" " -f2-5 >> ./$NAME.cut;
+done
+
+########################################################
+#
+# R SECTION
+#
+########################################################
+
+# Plotting Reconstructor over CyclonSN 
+
+plot(noproactive$rebuilt ~ cycles, ylim=c(0,3025000), xlab="Cycles", ylab="Edges Reconstructed", type="l", col="red", lwd=2, main="F2F Overlay Reconstructor (Over CyclonSN)")
+
+lines(ff_ps$rebuilt ~ cycles, col="green", lwd=2, lty=2)
+lines(l_ps$rebuilt ~ cycles, col="purple", lwd=2, lty=3)
+
+lines(ff_collector$rebuilt ~ cycles, col="blue", lwd=2, lty=2, lty=4)
+lines(l_collector$rebuilt ~ cycles, col="magenta", lwd=2, lty=5)
+lines(oracle_collector$rebuilt ~ cycles, col="orange", lwd=2, lty=6)
+
+abline(h=3016566, lty=2, lwd=2)
+
+legend("bottomright", c("No Proactive", "First Fit/PS", "Best Fit/PS", "First Fit/Collector", "Best Fit/Collector", "Oracle Best Fit/Collector"), col=c("red", "green", "purple", "blue", "magenta", "orange"), lty=1:5, bty="n")
+
+# Perfect PS
+cycles <- seq(2,100)
+legend("bottomright", c("Oracle/PS", "First Fit/Collector", "Best Fit/Collector", "Oracle/Collector"), col=c("red", "green", "purple", "orange"), lty=c(1,2,3,6), bty="n")
+plot(p(oracle_ps$rebuilt) ~ cycles, xlab="Cycles", ylab="Edges Reconstructed", type="l", col="red", lwd=2, main="F2F Overlay Reconstructor (Over Perfect Peer Sampling)")
+
+plot(chance_1, xlab="Cycles", ylab="Probability", type="l", col="red", lwd=2, main="Probability that a descriptor will be seen at least once before round k")
+legend("bottomright", c("n = 1514, l = 5", "n = 24000, l = 5", "n = 24000, l = 10", "n = 24000, l = 15", "n = 24000, l = 25"), col=c("red", "magenta", "blue", "orange", "purple"), lty=1:5, bty="n")
+lines(chance_2_5, col="magenta", lwd=2, lty=2)
+lines(chance_2_10, col="blue", lwd=2, lty=3)
+lines(chance_2_15, col="orange", lwd=2, lty=4)
+lines(chance_2_25, col="purple", lwd=2, lty=5)
+
+# Newscast, perfect, and CyclonSN
+cycles <- 1:100 * 5
+plot(lcnewscast$rebuilt ~ cycles, ylim=c(0,3016566), ylab="Reconstructed Edges", type="l", xlab="Cycles", col="red", lty=1, lwd=2, main="Performance of Selection over Collector View")
+lines(lccyclon$rebuilt ~ cycles, col="green", lwd=2, lty=2)
+lines(lcperfect$rebuilt ~ cycles, col="purple", lwd=2, lty=3)
+lines(ocnewscast$rebuilt ~ cycles[1:length(ocnewscast$rebuilt)], col="blue", lwd=2, lty=4)
+abline(v=length(ocnewscast$rebuilt)*5, col="blue", lwd=2, lty=4)
+lines(occyclon$rebuilt ~ cycles[1:length(occyclon$rebuilt)], col="magenta", lwd=2, lty=5)
+abline(v=length(occyclon$rebuilt)*5, col="magenta", lwd=2, lty=5)
+lines(ocperfect$rebuilt ~ cycles[1:length(ocperfect$rebuilt)], col="orange", lwd=2, lty=6)
+abline(v=length(ocperfect$rebuilt)*5, col="orange", lwd=2, lty=6)
+abline(h=3016566, lty=2, lwd=2)
+axis(3, at=c(length(ocnewscast$rebuilt)*5, length(occyclon$rebuilt)*5, length(ocperfect$rebuilt)*5), cex.axis=0.7)
+
+legend(130, y=750000, c("Local/Newscast", "Local/CyclonSN", "Local/Perfect Peer Sampling", "Oracle/Newscast", "Oracle/CyclonSN", "Oracle/Perfect Peer Sampling"), col=c("red", "green", "purple", "blue", "magenta", "orange"), lty=1:6, bty="n")
+
+
+
+cycles <- 1:100 * 5
+plot(lpnewscast$rebuilt ~ cycles, ylim=c(0,3016566), ylab="Reconstructed Edges", type="l", xlab="Cycles", col="red", lty=1, lwd=2, main="Performance of Selection over Peer Sampling View")
+lines(lpcyclon$rebuilt ~ cycles, col="green", lwd=2, lty=2)
+lines(lpperfect$rebuilt ~ cycles, col="purple", lwd=2, lty=3)
+lines(opnewscast$rebuilt ~ cycles[1:length(opnewscast$rebuilt)], col="blue", lwd=2, lty=4)
+lines(opcyclon$rebuilt ~ cycles, col="magenta", lwd=2, lty=5)
+lines(opperfect$rebuilt ~ cycles, col="orange", lwd=2, lty=6)
+legend("bottomright", c("Local/Newscast", "Local/CyclonSN", "Local/Perfect Peer Sampling", "Oracle/Newscast", "Oracle/CyclonSN", "Oracle/Perfect Peer Sampling"), col=c("red", "green", "purple", "blue", "magenta", "orange"), lty=1:6, bty="n")
+abline(h=3016566, lty=2, lwd=2)
+
+
+abline(h=3016566, lty=2, lwd=2)
+abline(v=length(operfect$rebuilt), lty=6, col="orange")
+abline(v=length(onewscast$rebuilt), lty=4, col="blue")
+
+
+# Straggler plotting.
+
+full_deal <- function(timevector, metric, percentage, metric_name, cex=0.1,...) {
+	stragglers <- get_stragglers(timevector, percentage)
+	stragplot(stragglers, metric, metric_name, cx=cex,...)
+}
+
+stragplot <- function(stragglers, metric, metric_name, cx=0.1, smudge_x=0.0, smudge_y=0.0, ...) {
+	metric <- cbind(perm=order_vector(order(metric[metric_name][[1]])), metric)
+
+	straggler_vals <- metric[metric$id %in% stragglers$id,][c(metric_name, "perm")]
+	stragglers <- cbind(stragglers, straggler_vals)
+
+	range_y <- smudge_range(metric[metric_name][[1]], smudge_y)
+	range_x <- smudge_range(metric$perm, smudge_x)
+
+	plot(smudge(metric[metric_name][[1]], range_y) ~ smudge(metric$perm, range_x), cex=cx, ...)
+	points(smudge(stragglers[metric_name][[1]], range_y) ~ smudge(stragglers$perm, range_x), cex=cx, col="red")
+	abline(h=max(stragglers[metric_name][[1]]), lty=2, lwd=2, col="purple")
+}
+
+smudge_range <- function(vect, smudge_factor) {
+	range <- max(vect) - min(vect)
+	range <- (range/2.0)*smudge_factor
+	return(range)
+}
+
+smudge <- function(vect, range) {
+	noise <- runif(length(vect), -range, +range);
+	return(vect + noise)
+}
+
+order_vector <- function(permutation) {
+	tt <- data.frame(perm=permutation, index=seq(1,length(permutation)))
+	tt <- tt[order(tt$perm),]
+	return(tt$index)
+}
+
+assign_id <- function(tbl) {
+	tbl <- reorder_table(tbl)
+	ids <- seq(1, length(tbl$u))
+	print(length(ids))
+	return(cbind(id=ids, tbl))
+}
+
+get_stragglers <- function(stragglers, percentage=0.9) {
+	stragglers <- reorder_table(stragglers)
+	stragglers <- assign_id(stragglers)
+	stragglers <- pick_stragglers(stragglers, percentage)
+	return(stragglers)
+}
+
+reorder_table <- function(tbl) {
+	tbl <- tbl[order(tbl$v),]
+	return(tbl[order(tbl$u),])
+}
+
+pick_stragglers <- function(straggs, percentage) {
+	stragglers <- as.numeric(quantile(straggs$time, probs=percentage))
+	stragglers <- straggs[straggs$time >= stragglers,]
+	return(stragglers)
+}
+
+relsizes <- read.table("$RELSIZES", header=TRUE)
+intersections <- read.table("$INTERSECTIONS", header=TRUE)
+timevalues <- read.table("$TIMEVALUES", header=TRUE)
+
+relsizes <- assign_id(relsizes)
+intersections <- assign_id(intersections)
+
+pdf(file="$OUTPUT_RELSIZES")
+full_deal(timevalues, relsizes, 0.90, "relsizes", 0.3, smudge_x=0.02, smudge_y=0.02, main="Relative neighbohood sizes (Sample $i, n = $SIZE)", ylab="Size of neighborhood of u relative to v", "Edge Index")
+dev.off()
+
+pdf(file="$OUTPUT_INTERSECTIONS")
+full_deal(timevalues, intersections, 0.90, "intersections", 0.3, smudge_x=0.02, smudge_y=0.02, main="2-hop intersection size (Sample $i, n = $SIZE)", ylab="2-hop intersections between u and v", "Edge Index")
+dev.off()
+
+plot(tc$V2, main="Reconstruction Times (CyclonSN vs. Perfect) and Sample Sizes", xlab="Sample", ylab="Time (left) / Size (right)", lty=2, lwd=2, col="red", type="l")
+lines(ts$V2, lty=3, lwd=2, col="blue")> par(new=TRUE)
+plot(tc$V3, lty=1, lwd=2, col="green", type="l", axes=FALSE, xlab="", ylab="")
+legend("topleft", c("Cyclon SN", "Perfect Peer Sampling", "Neighborhood Sizes"), col=c("red", "blue", "green"), lty=c(2,3,1), lwd=2, bty="n")
+axis(4)
+
+
+
+

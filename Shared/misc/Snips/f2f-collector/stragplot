@@ -1,0 +1,83 @@
+
+# Straggler plotting.
+
+full_deal <- function(timevector, metric, percentage, metric_name, cex=0.1,...) {
+	stragglers <- get_stragglers(timevector, percentage)
+	stragplot(stragglers, metric, metric_name, cx=cex,...)
+}
+
+stragplot <- function(stragglers, metric, metric_name, cx=0.1, smudge_x=0.0, smudge_y=0.0, ...) {
+	metric <- cbind(perm=order_vector(order(metric[metric_name][[1]])), metric)
+
+	straggler_vals <- metric[metric$id %in% stragglers$id,][c(metric_name, "perm")]
+	stragglers <- cbind(stragglers, straggler_vals)
+
+	range_y <- smudge_range(metric[metric_name][[1]], smudge_y)
+	range_x <- smudge_range(metric$perm, smudge_x)
+
+	plot(smudge(metric[metric_name][[1]], range_y) ~ smudge(metric$perm, range_x), cex=cx, ...)
+	points(smudge(stragglers[metric_name][[1]], range_y) ~ smudge(stragglers$perm, range_x), cex=cx, col="red")
+	abline(h=max(stragglers[metric_name][[1]]), lty=2, lwd=2, col="purple")
+}
+
+smudge_range <- function(vect, smudge_factor) {
+	range <- max(vect) - min(vect)
+	range <- (range/2.0)*smudge_factor
+	return(range)
+}
+
+smudge <- function(vect, range) {
+	noise <- runif(length(vect), -range, +range);
+	return(vect + noise)
+}
+
+order_vector <- function(permutation) {
+	tt <- data.frame(perm=permutation, index=seq(1,length(permutation)))
+	tt <- tt[order(tt$perm),]
+	return(tt$index)
+}
+
+assign_id <- function(tbl) {
+	tbl <- reorder_table(tbl)
+	ids <- seq(1, length(tbl$u))
+	print(length(ids))
+	return(cbind(id=ids, tbl))
+}
+
+get_stragglers <- function(stragglers, percentage=0.9) {
+	stragglers <- reorder_table(stragglers)
+	stragglers <- assign_id(stragglers)
+	stragglers <- pick_stragglers(stragglers, percentage)
+	return(stragglers)
+}
+
+reorder_table <- function(tbl) {
+	tbl <- tbl[order(tbl$v),]
+	return(tbl[order(tbl$u),])
+}
+
+pick_stragglers <- function(straggs, percentage) {
+	stragglers <- as.numeric(quantile(straggs$time, probs=percentage))
+	stragglers <- straggs[straggs$time >= stragglers,]
+	return(stragglers)
+}
+
+relsizes <- read.table("${RELSIZES}", header=FALSE)
+intersections <- read.table("${INTERSECTIONS}", header=FALSE)
+
+colnames(relsizes) <- c("u", "v", "relsizes")
+colnames(intersections) <- c("u","v","intersections")
+
+timevalues <- read.table("${TIMEVALUES}", header=TRUE)
+
+relsizes <- assign_id(relsizes)
+intersections <- assign_id(intersections)
+
+pdf(file="${OUTPUT_RELSIZES}")
+full_deal(timevalues, relsizes, 0.90, "relsizes", 0.3, smudge_x=0.02, smudge_y=0.02, main="Relative neighbohood sizes (Sample ${i}, n = ${SIZE})", ylab="Size of neighborhood of u relative to v", "Edge Index")
+dev.off()
+
+pdf(file="${OUTPUT_INTERSECTIONS}")
+full_deal(timevalues, intersections, 0.90, "intersections", 0.3, smudge_x=0.02, smudge_y=0.02, main="2-hop intersection size (Sample ${i}, n = ${SIZE})", ylab="2-hop intersections between u and v", "Edge Index")
+dev.off()
+

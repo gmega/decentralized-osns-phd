@@ -1,0 +1,203 @@
+#!/usr/bin/env Rscript
+
+library(igraph)
+
+lib_home <- Sys.getenv("RLIB_HOME")
+source(paste(lib_home,"commonStats.R",sep="/"))
+
+names_excluding <- function(table, exclude) {
+	the_names <- names(table)
+	the_names <- the_names[which(!(the_names %in% exclude))]
+	return(the_names)
+}
+
+order_by <- function(table, field) {
+	return(table[order(field),])
+}
+
+add_degree <- function(table, graph) {
+	degrees <- degree(graph)
+	# igraph IDs are zero-based, but R arrays are 1-based.
+	indexes <- table$id + 1 
+	return(cbind(table, degree=degrees[indexes]))
+}
+
+###############################################################################
+# Load Analysis
+###############################################################################
+
+#
+# Adds "delivered" column to the table.
+#
+add_delivered <- function(a_table) {
+	delivered <- a_table$degree - a_table$undelivered
+	return(cbind(a_table, delivered=delivered))
+}
+
+add_message_statistics <- function(load_table) {
+	total_received <- load_table$received + load_table$duplicates
+	total_messages <- load_table$received + load_table$duplicates + load_table$sent
+}
+
+combine_load_data <- function(load, ideal, factors=c("id")) {
+	# Order tables.
+	ideal <- order_by(ideal, ideal$id)
+	load <- order_by(load, load$id)
+
+	# Iron out the lenghts.
+	ideal <- ideal[which(ideal$id %in% load$id),]
+	
+	# Aggregate everything but IDs on the load tables.
+	load <- aggregate(load[names_excluding(load, factors)], list(id=load$id), sum)
+
+	if (length(ideal$id) != length(load$id)) {
+		warning(paste("ID tables differ in length: ",
+				length(ideal$id),"!=", length(load$id),". Leftover IDs will be discarded."))
+		load <- load[which(load$id %in% ideal$id),]
+	}
+	
+	total_receives <- load$duplicates + load$received
+	total_messages <- total_receives + load$sent
+	ideal_total_messages <- ideal$wreceived + ideal$wsent
+	
+	return(cbind(load, ideal, total_received=total_receives, 
+			total_messages=total_messages, wtotal_messages=ideal_total_messages))
+}
+
+add_overwork_statistics <- function(cload_table) {
+	send_overwork <- safe_divide(cload_table$sent, cload_table$wsent)
+	receive_overwork <- safe_divide(cload_table$total_received, cload_table$wreceived)
+	
+	send_savings <- cload_table$wsent - cload_table$sent
+	receive_savings <- cload_table$wreceived - cload_table$total_received
+	
+	balance <- send_savings + receive_savings
+
+	return(cbind(cload_table, send_overwork=send_overwork, 
+		receive_overwork=receive_overwork, balance=balance))
+}
+
+full_load_analysis <- function(load_table, ideal, graph, factors=c("id")) {
+	transformed <- combine_load_data(load_table, ideal, factors)
+	transformed <- add_overwork_statistics(transformed)
+	transformed <- add_degree(transformed, graph)
+	return(transformed)
+}
+
+###############################################################################
+# Latency Analysis
+###############################################################################
+
+#
+# Adds "experiments" column to table.
+#
+add_experiment_counts <- function(a_table) {
+	ones <- c()
+	ones[1:length(a_table$id)] <- 1
+	return(cbind(a_table, experiments=ones))
+}
+
+#
+# Computes and adds "t_avg" from latency_sum and delivered.
+#
+add_latencies <- function(a_table) {
+	t_avg <- mapply(safe_divide, a_table$latency_sum, a_table$delivered)
+	return(cbind(a_table, t_avg=t_avg))
+}
+
+#
+# Computes and adds "t_var" from squared_sum, t_avg, and delivered.
+#
+add_variances <- function(a_table) {
+	sq_average <- a_table$t_avg*a_table$t_avg
+	n <- a_table$delivered
+	t_var <- a_table$squared_sum/n - sq_average
+	return(cbind(a_table, t_var=t_var))
+}
+
+add_transitivities <- function(a_table, a_graph) {
+	transitivities <- transitivity(a_graph, type='localundirected', a_table$id)
+	replace <- which(is.nan(transitivities))
+	warning(paste("there were",length(replace),"NaN values.",sep=" "))
+	transitivities[replace] <- 1.0
+	return (cbind(a_table, transitivity=transitivities))
+}
+
+#
+# Aggregates raw experiment table and creates sum-of-latencies row, 
+# as well as aggregate variance.
+#
+combine_experiments <- function(a_table) {
+	# Adds the latency sums first.
+	transformed <- add_simple_sum(a_table, "t_avg", "delivered", "latency_sum")
+	# Then the squared sums.
+	transformed <- add_squared_sum(transformed, "t_avg", "t_var", "delivered")
+	# Then the experiment counts.
+	transformed <- add_experiment_counts(transformed)
+	# Then the t_max sums.
+	transformed <- cbind(transformed, max_latency_sum=transformed$t_max)
+
+	# Finally, aggregates all experiments.
+	transformed <- aggregate(transformed[c("latency_sum", "max_latency_sum", "squared_sum", "delivered", "undelivered", "duplicates", "experiments")],
+	list(id=transformed$id, degree=transformed$degree), sum)
+
+	# Now computes the variances and averages again, as well as average tmax.
+	transformed <- add_latencies(transformed)
+	transformed <- add_variances(transformed)
+
+	t_max <- transformed$max_latency_sum / transformed$experiments
+	transformed <- cbind(transformed, t_max=t_max)
+
+	return(transformed)
+}
+
+global_variance <- function(a_table) {
+	average <- global_latency_average(a_table)
+	sq_sums <- sum(a_table$squared_sum)
+	n <- sum(a_table$delivered)
+	sq_average <- average*average
+	variance <- sq_sums/n - sq_average
+	return(variance)
+}
+
+global_latency_average <- function(a_table) {
+	summation <- sum(a_table$latency_sum)
+	n <- sum(a_table$delivered)
+	return(summation/n)
+}
+
+global_average_of_maximums <- function(a_table) {
+	summation <- sum(a_table$max_latency_sum)
+	n <- sum(a_table$experiments)
+	return(summation/n)	
+}
+
+# Not very reusable.
+full_processing <- function(start, end, name_generator, graph) {
+	a_table <- loadtables(start, end, name_generator)
+	return(table_processing(a_table, graph))
+}
+
+table_processing <- function(a_table, graph) {
+	a_table <- add_delivered(a_table)
+	a_table <- combine_experiments(a_table)
+	if (!is.null(graph)) {
+		a_table <- add_transitivities(a_table, graph)
+	}
+	a_table <- a_table[order(a_table$degree),]
+
+	return(a_table)
+}
+
+aggregates <- function(a_table, graph) {
+	a_table <- table_processing(a_table, graph)
+	
+}
+
+# Trivial hybrid
+#cent_select <- which(cent_tables$t_avg < rnd_tables$t_avg & cent_tables$t_avg < ac_tables$t_avg)
+#rnd_select <- which(rnd_tables$t_avg < cent_tables$t_avg & rnd_tables$t_avg < ac_tables$t_avg)
+#ac_select <- which(ac_tables$t_avg <= rnd_tables$t_avg & ac_tables$t_avg <= cent_tables$t_avg)
+#trivial_hybrid <- rbind(ac_tables[ac_select,],rnd_tables[rnd_select,],cent_tables[cent_select,])
+#trivial_hybrid <- trivial_hybrid[order(trivial_hybrid$id),]
+
