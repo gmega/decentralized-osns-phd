@@ -11,8 +11,8 @@ import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
-import it.unitn.disi.newscasting.internal.selectors.AntiCentralitySelector;
-import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
@@ -45,7 +45,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	public static final String PAR_MODE = "mode";
 
 	enum SelectorType {
-		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CR, DEMERS
+		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CA2, ONE_OTHER_CR, DEMERS
 	}
 
 	public static final String PAR_HISTORYLESS = "historyless";
@@ -119,7 +119,8 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@SuppressWarnings("unchecked")
 	protected IPeerSelector selector(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
+		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix,
+				PAR_MODE));
 
 		IPeerSelector selector;
 		switch (type) {
@@ -162,6 +163,13 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			app.addSubscriber((IEventObserver) selector);
 			break;
 
+		// Hack, this class needs to be restructured.
+		case ONE_OTHER_CA2:
+			selector = oneThanTheOther(anticentrality(prefix + ".c"),
+					anticentrality(prefix + ".ac"), prefix);
+			app.addSubscriber((IEventObserver) selector);
+			break;
+
 		case ONE_OTHER_CR:
 			selector = oneThanTheOther(centrality(prefix),
 					new RandomSelectorOverLinkable(prefix), prefix);
@@ -179,7 +187,8 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	@Override
 	protected void registerUpdaters(String prefix, TableReader reader) {
-		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix, PAR_MODE));
+		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix,
+				PAR_MODE));
 		IExperimentObserver updater = null;
 		switch (type) {
 
@@ -234,14 +243,14 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
 
-	private AntiCentralitySelector anticentrality(String prefix) {
-		return genericCreate(AntiCentralitySelector.class, prefix);
+	private BiasedCentralitySelector anticentrality(String prefix) {
+		return genericCreate(BiasedCentralitySelector.class, prefix);
 	}
 
 	// ----------------------------------------------------------------------
 
-	private CentralitySelector centrality(String prefix) {
-		return genericCreate(CentralitySelector.class, prefix);
+	private PercentileCentralitySelector centrality(String prefix) {
+		return genericCreate(PercentileCentralitySelector.class, prefix);
 	}
 
 	// ----------------------------------------------------------------------
@@ -291,7 +300,7 @@ abstract class SelectorUpdater extends ParameterUpdater {
 
 /**
  * {@link CentralityUpdater} knows how to update the parameters of a
- * {@link CentralitySelector}.
+ * {@link PercentileCentralitySelector}.
  * 
  * @author giuliano
  */
@@ -305,7 +314,7 @@ class CentralityUpdater extends SelectorUpdater {
 	@Override
 	public void update(IPeerSelector selector, TableReader reader) {
 		double psi = Double.parseDouble(reader.get("psi"));
-		((CentralitySelector) selector).setPSI(psi);
+		((PercentileCentralitySelector) selector).setPSI(psi);
 	}
 }
 

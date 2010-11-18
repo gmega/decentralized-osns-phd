@@ -3,7 +3,7 @@ package it.unitn.disi.sps;
 import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
 import it.unitn.disi.utils.IReference;
@@ -123,7 +123,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 		switch (fSelectionMode) {
 		case HIGHESTRANKING:
-			selector = new CentralitySelector(neighborhood,
+			selector = new PercentileCentralitySelector(neighborhood,
 					new FallThroughReference<IUtilityFunction>(
 							utilityFunction()), 1.0, CommonState.r);
 			break;
