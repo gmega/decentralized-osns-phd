@@ -19,13 +19,13 @@ import peersim.core.Node;
 import peersim.core.Protocol;
 
 /**
- * {@link CentralitySelector} biases selection towards nodes with higher
+ * {@link PercentileCentralitySelector} biases selection towards nodes with higher
  * centrality.
  * 
  * @author giuliano
  */
 @AutoConfig
-public class CentralitySelector implements IPeerSelector, Protocol {
+public class PercentileCentralitySelector implements IPeerSelector, Protocol {
 
 	// ----------------------------------------------------------------------
 	// Shared state.
@@ -58,7 +58,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(
+	public PercentileCentralitySelector(
 			@Attribute("linkable") int linkableId,
 			@Attribute("ranking") int ranking,
 			@Attribute("psi") double psi) {
@@ -69,7 +69,7 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector(IReference<Linkable> linkableId,
+	public PercentileCentralitySelector(IReference<Linkable> linkableId,
 			IReference<IUtilityFunction> ranking, double psi,
 			Random random) {
 		fLinkable = linkableId;
@@ -196,9 +196,9 @@ public class CentralitySelector implements IPeerSelector, Protocol {
 	// Protocol interface.
 	// ----------------------------------------------------------------------
 
-	public CentralitySelector clone() {
+	public PercentileCentralitySelector clone() {
 		try {
-			CentralitySelector cloned = (CentralitySelector) super.clone();
+			PercentileCentralitySelector cloned = (PercentileCentralitySelector) super.clone();
 			cloned.fFriends = new PermutingCache(fLinkable);
 			cloned.fCentralityScores = new HashMap<Node, Integer>(
 					fCentralityScores);

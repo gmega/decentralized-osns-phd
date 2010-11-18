@@ -3,7 +3,7 @@ package it.unitn.disi.newscasting;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.newscasting.internal.selectors.CentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
@@ -66,7 +66,7 @@ public class TestCentralitySelector {
 		builder.replayAll();
 
 		Random r = new Random(42);
-		CentralitySelector slktor = new CentralitySelector(
+		PercentileCentralitySelector slktor = new PercentileCentralitySelector(
 				new ProtocolReference<Linkable>(linkable),
 				new ProtocolReference<IUtilityFunction>(ranking), 0.6, r);
 		Set<Integer> selectedSet = new HashSet<Integer>();

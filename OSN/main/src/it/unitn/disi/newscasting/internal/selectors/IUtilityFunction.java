@@ -12,7 +12,7 @@ import peersim.core.Protocol;
 public interface IUtilityFunction extends Protocol {
 	/**
 	 * @return the relative utility of <code>target</code> with respect to
-	 *         <code>base</code>.
+	 *         <code>base</code>. The value should be equal or larger than zero.
 	 */
 	public int utility(Node base, Node target);
 

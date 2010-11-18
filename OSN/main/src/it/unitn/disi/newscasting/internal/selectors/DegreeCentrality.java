@@ -15,29 +15,36 @@ import peersim.core.Node;
 public class DegreeCentrality implements IUtilityFunction {
 
 	private int fLinkable;
-	
+
 	/**
-	 * If toggled, reverses the scores.
+	 * If toggled, assigns higher score to lower centrality nodes.
 	 */
 	private boolean fAnticentrality;
-	
-	public DegreeCentrality(
-			@Attribute("linkable") int linkable,
+
+	public DegreeCentrality(@Attribute("linkable") int linkable,
 			@Attribute("anticentrality") boolean anticentrality) {
 		fLinkable = linkable;
 		fAnticentrality = anticentrality;
+		System.err.println("Ranking function is "
+				+ this.getClass().getSimpleName() + " operating in ["
+				+ (fAnticentrality ? "anticentrality" : "centrality")
+				+ "] mode.");
 	}
-	
+
 	@Override
 	public boolean isDynamic() {
 		return false;
 	}
 
 	@Override
-	public int utility(Node source, Node target){
+	public int utility(Node source, Node target) {
 		int score = GraphUtils.countIntersections(source, target, fLinkable);
 		if (fAnticentrality) {
 			score = ((Linkable) source.getProtocol(fLinkable)).degree() - score;
+		}
+		// Sanity test
+		if (score < 0) {
+			throw new InternalError(Integer.toString(score));
 		}
 		return score;
 	}
