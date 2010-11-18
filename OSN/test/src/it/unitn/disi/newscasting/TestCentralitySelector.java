@@ -19,7 +19,25 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 
 public class TestCentralitySelector {
+	
 	@Test public void selectPeer() throws Exception{
+		Set<Integer> selectedSet = runTest(false);
+		assertEquals(5, selectedSet.size());
+		for (Integer selected : selectedSet) {
+			assertTrue((selected > 0 && selected < 5) || selected == 11);
+		}
+	}
+	
+	@Test
+	public void testAnticentrality() throws Exception {
+		Set<Integer> selectedSet = runTest(true);
+		assertEquals(5, selectedSet.size());
+		for (Integer selected : selectedSet) {
+			assertTrue(selected >= 5 && selected <= 10);
+		}
+	}
+	
+	private Set<Integer> runTest(boolean anticentrality) {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.mkNodeArray(12);
 		
@@ -40,7 +58,7 @@ public class TestCentralitySelector {
 			});
 
 		int ranking = -1;
-		DegreeCentrality centrality = new DegreeCentrality(linkable);
+		DegreeCentrality centrality = new DegreeCentrality(linkable, anticentrality);
 		for (Node node : builder) {
 			ranking = builder.addProtocol(node, centrality);
 		}
@@ -59,9 +77,6 @@ public class TestCentralitySelector {
 			selectedSet.add((int) selected.getID());
 		}
 		
-		assertEquals(5, selectedSet.size());
-		for (Integer selected : selectedSet) {
-			assertTrue((selected > 0 && selected < 5) || selected == 11);
-		}
+		return selectedSet;
 	}
 }
