@@ -198,11 +198,23 @@ class LineParser(object):
             if (line_type is None):
                 continue
             try:
-                yield [line_type, map(self.__type_convert__, self._converters, line.split(self._fs))]
+                split_line = line.split(self._fs)
+                # Sanity tests the line length.
+                if len(split_line) != len(self._converters):
+                    self.__line_error__(line, "Too many fields.", None)
+                    continue
+                yield [line_type, map(self.__type_convert__, self._converters, split_line)]
             except ValueError as exception:
-                logger.warning("Malformed line " + str(self._counter) + " has been ignored. Offending line: \"" + line + "\"")
-                self._last_error = (exception, self._counter)
-            
+                self.__line_error__(line, "Type conversion error.", exception)
+                self.__set_error__(exception)
+    
+    def __line_error__(self, line, detail, exception):
+        logger.warning("Malformed line " + str(self._counter) +\
+                       " has been ignored (" + detail +\
+                       "). Offending line: \"" + line + "\"")
+        self._last_error = (exception, self._counter)
+
+    
     def __type_convert__(self, x, y):
         return x(y)
 
