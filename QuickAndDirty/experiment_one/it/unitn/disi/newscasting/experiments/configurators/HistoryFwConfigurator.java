@@ -45,7 +45,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	public static final String PAR_MODE = "mode";
 
 	enum SelectorType {
-		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CA2, ONE_OTHER_CR, DEMERS
+		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CA2, ONE_OTHER_CA3, ONE_OTHER_CR, DEMERS
 	}
 
 	public static final String PAR_HISTORYLESS = "historyless";
@@ -169,6 +169,13 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 					anticentrality(prefix + ".ac"), prefix);
 			app.addSubscriber((IEventObserver) selector);
 			break;
+		// Hack, this class needs to be restructured.		
+		case ONE_OTHER_CA3:
+			selector = oneThanTheOther(centrality(prefix + ".c"),
+					centrality(prefix + ".ac"), prefix);
+			app.addSubscriber((IEventObserver) selector);
+			break;
+
 
 		case ONE_OTHER_CR:
 			selector = oneThanTheOther(centrality(prefix),

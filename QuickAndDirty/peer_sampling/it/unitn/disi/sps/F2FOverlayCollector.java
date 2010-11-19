@@ -21,7 +21,6 @@ import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import peersim.util.IncrementalStats;
 
 /**
  * Protocol which tries to reconstruct the F2F graph.
@@ -61,7 +60,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	@Attribute("sps")
 	private int fSampled;
 
-	@Attribute(value = "log_hits", defaultValue = "false")
+	@Attribute(value = "log_hits")
 	boolean fLogHits;
 	
 	private Layer fSelection;
@@ -71,8 +70,6 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	private ProactiveSelection fSelectionMode;
 
 	private UtilityFunction fUtilityFunction;
-	
-	private IncrementalStats fMessageStats = new IncrementalStats();
 	
 	private int fSentRounds = 0;
 
@@ -217,7 +214,6 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 		}
 
 		fSentRounds++;
-		fMessageStats.add(received);
 	}
 
 	private void markSeen(StaticVector<Integer> indexes, Node ourNode,
@@ -231,8 +227,8 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 	private void markSeen(int i, Node node, Linkable statik) {
 		checkIndex(i, statik);
-		if (fLogHits) {
-			System.out.println("SEEN " + node.getID() + " "
+		if (!fSeen.get(i) && fLogHits) {
+			System.out.println("L: " + node.getID() + " "
 					+ statik.getNeighbor(i).getID() + " "
 					+ CommonState.getTime());
 		}
@@ -358,12 +354,6 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 		return fProactiveHits;
 	}
 	
-	// ----------------------------------------------------------------------
-	
-	public IncrementalStats receivedStats() {
-		return fMessageStats;
-	}
-
 	// ----------------------------------------------------------------------
 
 	private void resetCounters() {
