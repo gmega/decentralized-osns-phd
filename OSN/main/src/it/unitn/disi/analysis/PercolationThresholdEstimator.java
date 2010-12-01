@@ -2,11 +2,11 @@ package it.unitn.disi.analysis;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.Edge;
-import it.unitn.disi.graph.GraphAlgorithms;
 import it.unitn.disi.graph.GraphWriter;
-import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.IOException;
 import java.io.InputStream;

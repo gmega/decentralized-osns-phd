@@ -4,11 +4,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.BitSet;
 
+import peersim.config.AutoConfig;
+
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
 
+@AutoConfig
 public class Simplify implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {

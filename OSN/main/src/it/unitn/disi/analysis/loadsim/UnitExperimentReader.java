@@ -23,7 +23,6 @@ public class UnitExperimentReader {
 	private static final String NODE_ID = "neighbor_id";
 	private static final String SENT = "sent";
 	private static final String RECEIVED = "received";
-	private static final String DUPLICATES = "duplicates";
 
 	private final InputStream fInput;
 
@@ -54,7 +53,6 @@ public class UnitExperimentReader {
 			int nodeId = Integer.parseInt(reader.get(NODE_ID));
 			int sent = Integer.parseInt(reader.get(SENT));
 			int received = Integer.parseInt(reader.get(RECEIVED));
-			int dups = Integer.parseInt(reader.get(DUPLICATES));
 
 			UnitExperiment experiment = experiments.get(id);
 			if (experiment == null) {
@@ -62,7 +60,7 @@ public class UnitExperimentReader {
 				experiments.put(id, experiment);
 			}
 
-			experiment.addData(nodeId, sent, received + dups);
+			experiment.addData(nodeId, sent, received);
 			reader.next();
 		}
 

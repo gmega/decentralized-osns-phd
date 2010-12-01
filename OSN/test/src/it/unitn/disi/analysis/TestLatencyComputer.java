@@ -6,7 +6,7 @@ import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.Adj2ByteGraph;
+import it.unitn.disi.graph.cli.Adj2ByteGraph;
 import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.EventCodec;

@@ -332,10 +332,11 @@ class UnitExperimentData {
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
 		buffer.append(" ");
-		// 4 - Messages received by the node.
+		// 4 - Messages received by the node. Note that this is COUNTING DUPLICATES.
 		buffer.append(fReceived[i]);
 		buffer.append(" ");
 		// 5 - Duplicates: everything after the first message are duplicates.
+		// XXX this is pointless, remove it cause it's only causing confusion.
 		buffer.append(Math.max(0, fReceived[i] - 1));
 	}
 }

@@ -2,6 +2,7 @@ package it.unitn.disi.graph;
 
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;

@@ -1,7 +1,7 @@
 import it.unitn.disi.analysis.PercolationThresholdEstimator;
-import it.unitn.disi.graph.GraphAlgorithms;
-import it.unitn.disi.graph.LightweightStaticGraph;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.test.framework.TestUtils;
 
 import java.io.InputStream;

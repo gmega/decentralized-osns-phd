@@ -2,8 +2,8 @@ package it.unitn.disi.sps.analysis;
 
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.PrintStream;
 

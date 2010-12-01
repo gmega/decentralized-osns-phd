@@ -1,13 +1,15 @@
 package it.unitn.disi;
 
 
+import javax.naming.ldap.BasicControl;
+
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.LSGTransformsTest;
-import it.unitn.disi.graph.TestConnectivityComputer;
+import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.network.EvtDecoderTest;
 import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.HistoryForwardingTest;
@@ -26,6 +28,8 @@ import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.TestMiscUtils;
 import it.unitn.disi.utils.TestTableReader;
 
+import org.apache.log4j.BasicConfigurator;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -60,5 +64,10 @@ import peersim.config.ObjectCreatorTest;
 })
 
 public class AllTests extends PeerSimTest {
+	
+	@BeforeClass
+	public static void log4jConfigure() {
+		BasicConfigurator.configure();
+	}
 
 }

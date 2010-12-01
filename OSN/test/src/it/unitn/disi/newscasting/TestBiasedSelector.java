@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.newscasting.internal.selectors.BiasedComponentSelector;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;

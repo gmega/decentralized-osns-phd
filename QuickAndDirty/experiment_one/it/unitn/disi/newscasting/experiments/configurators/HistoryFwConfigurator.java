@@ -169,6 +169,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 					anticentrality(prefix + ".ac"), prefix);
 			app.addSubscriber((IEventObserver) selector);
 			break;
+			
 		// Hack, this class needs to be restructured.		
 		case ONE_OTHER_CA3:
 			selector = oneThanTheOther(centrality(prefix + ".c"),
@@ -212,6 +213,12 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			updater = new OneThanTheOtherUpdater(fApplication, fLinkable,
 					reader, new CentralityUpdater(fApplication, fLinkable,
 							reader), null);
+			break;
+			
+		// Hack, this class needs to be restructured.
+		case ONE_OTHER_CA2:
+			updater = new OneThanTheOtherUpdater(fApplication, fLinkable,
+					reader, null, null);
 			break;
 
 		default:
