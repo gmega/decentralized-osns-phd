@@ -16,6 +16,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -64,6 +68,7 @@ public class GenericDriver {
 			}
 
 			System.err.println("Starting the Java generic driver.");
+			configLogging();
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
 
@@ -87,6 +92,13 @@ public class GenericDriver {
 			close(fIStreams);
 			close(fOStreams);
 		}
+	}
+
+	private void configLogging() {
+		Logger root = Logger.getRootLogger();
+		root.addAppender(new ConsoleAppender(new PatternLayout(
+				PatternLayout.TTCC_CONVERSION_PATTERN),
+				ConsoleAppender.SYSTEM_ERR));
 	}
 
 	private void printHelp(CmdLineParser parser) {

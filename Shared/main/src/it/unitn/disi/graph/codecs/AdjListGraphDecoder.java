@@ -47,9 +47,8 @@ public class AdjListGraphDecoder implements ResettableGraphDecoder {
 			}
 
 			fTokenizer = new StringTokenizer(line);
+			fSource = Integer.parseInt(fTokenizer.nextToken());
 		} while (!fTokenizer.hasMoreTokens());
-
-		fSource = Integer.parseInt(fTokenizer.nextToken());
 	}
 
 	public int getSource() {

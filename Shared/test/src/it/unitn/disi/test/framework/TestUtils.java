@@ -2,8 +2,8 @@ package it.unitn.disi.test.framework;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.GraphWriter;
-import it.unitn.disi.graph.Undirect;
 import it.unitn.disi.graph.cli.Adj2ByteGraph;
+import it.unitn.disi.graph.cli.Undirect;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 

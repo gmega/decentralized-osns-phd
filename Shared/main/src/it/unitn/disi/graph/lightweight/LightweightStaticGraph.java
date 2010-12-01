@@ -1,12 +1,14 @@
 package it.unitn.disi.graph.lightweight;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.cli.GraphRemap;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 
 import peersim.graph.Graph;
@@ -68,11 +70,17 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 
 	private final int[][] fAdjacency;
 	
-	private final boolean fDirected;
+	private final int fEdges;
+	
+	private Boolean fDirected;
+	
+	private Boolean fSimple;
+	
+	private Boolean fConnected;
 
-	LightweightStaticGraph(int[][] adjacency, boolean directed) {
+	LightweightStaticGraph(int[][] adjacency) {
 		fAdjacency = adjacency;
-		fDirected = directed;
+		fEdges = countEdges(adjacency);
 		sortAll();
 	}
 
@@ -88,6 +96,14 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return fAdjacency[i];
 	}
 	
+	private int countEdges(int[][] adjacency) {
+		int edges = 0;
+		for (int i = 0; i < adjacency.length; i++) {
+			edges += adjacency[i].length;
+		}
+		return edges;
+	}
+
 	private void sortAll(){
 		for (int i = 0; i < fAdjacency.length; i++) {
 			Arrays.sort(fAdjacency[i]);
@@ -105,6 +121,32 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return neighbors;
 	}
 	
+	public boolean directed() {
+		if (fDirected == null) {
+			fDirected = GraphAlgorithms.isDirected(this);
+		}
+		return fDirected;
+	}
+	
+	public boolean isSimple() {
+		if (fSimple == null) {
+			fSimple = GraphAlgorithms.isSimple(this);
+		}
+		return fSimple;
+	}
+	
+	public boolean isConnected() {
+		if (fConnected == null) {
+			fConnected = GraphAlgorithms.isConnected(this);
+		}
+		
+		return fConnected;
+	}
+	
+	public int edgeCount() {
+		return fEdges;
+	}
+
 	public int getNeighbor(int node, int index) {
 		return fAdjacency[node][index];
 	}
@@ -116,11 +158,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		}
 		return fAdjacency[i][index] == j;
 	}
-
-	public boolean directed() {
-		return fDirected;
-	}
-
+	
 	public Object getNode(int i) {
 		return null;
 	}

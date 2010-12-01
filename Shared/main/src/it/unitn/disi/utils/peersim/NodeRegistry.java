@@ -117,7 +117,7 @@ class ArrayListNodeRegistry extends AbstractNodeRegistry {
 
 	protected void store(long id, Node node) {
 		int int_id = (int)id;
-		MiscUtils.grow(fId2Node, int_id+1);
+		MiscUtils.grow(fId2Node, int_id + 1, null);
 		fId2Node.set(int_id, node);
 	}
 	

@@ -9,9 +9,9 @@ public class LSGMakeUndirected extends LSGTransformer {
 			int [] neighbors = lsg.fastGetNeighbours(i);
 			for(int j = 0; j < neighbors.length; j++) {
 				int neighbor = neighbors[j];
-				action.innerAction(i, neighbor);
+				action.edge(i, neighbor);
 				if (!lsg.isEdge(neighbor, i)) {
-					action.innerAction(neighbor, i);
+					action.edge(neighbor, i);
 				}
 			}
 		}

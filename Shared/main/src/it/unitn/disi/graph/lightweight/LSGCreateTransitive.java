@@ -24,7 +24,7 @@ public class LSGCreateTransitive extends LSGTransformer {
 				if (next.b > fOrder) {
 					break;
 				}
-				action.innerAction(i, next.a);
+				action.edge(i, next.a);
 			}
 		}
 	}

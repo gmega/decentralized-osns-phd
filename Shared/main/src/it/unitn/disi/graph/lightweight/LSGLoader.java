@@ -16,7 +16,7 @@ public class LSGLoader extends LSGCreator {
 		while (fDecoder.hasNext()) {
 			int source = fDecoder.getSource();
 			int target = fDecoder.next();
-			action.innerAction(source, target);
+			action.edge(source, target);
 		}
 	}
 }

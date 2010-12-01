@@ -36,9 +36,9 @@ public class MiscUtils {
 		}
 	}
 	
-	public static void grow(ArrayList<?> list, int size) {
+	public static <T> void grow(ArrayList<T> list, int size, T fill) {
 		while (list.size() < size) {
-			list.add(null);
+			list.add(fill);
 		}
 	}
 	
@@ -92,5 +92,15 @@ public class MiscUtils {
 	
 	public static double log2(double input) {
 		return Math.log(input)/Math.log(2.0);
+	}
+	
+	public static int integers(int count) {
+		int size = Integer.SIZE / Byte.SIZE;
+		return size * count;
+	}
+	
+	public static int pointers(int count) {
+		int size = Integer.parseInt(System.getProperty("sun.arch.data.model"))/Byte.SIZE;
+		return size*count;
 	}
 }

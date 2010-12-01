@@ -1,6 +1,7 @@
 package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
@@ -29,39 +30,12 @@ public class SimpleQuestions implements ITransformer {
 		LightweightStaticGraph graph = LightweightStaticGraph
 				.load(GraphCodecHelper.createDecoder(is, this.decoder));
 		PrintStream p = new PrintStream(oup);
-		BitSet set = new BitSet(graph.size());
+				
+		p.println(graph.isSimple() ? "Simple." : "Non-simple.");
+		p.println(graph.directed() ? "Directed." : "Undirected.");
+		p.println(graph.isConnected() ? "Connected." : "Disconnected.");
 		
-		boolean directed = false;
-		boolean simple = true;
-		int edges = 0;
-		for (int i = 0; i < graph.size(); i++) {
-			set.clear();
-			for (int j = 0; j < graph.degree(i); j++) {
-				edges++;
-				int neighbor = graph.getNeighbor(i, j);
-				if (!graph.isEdge(neighbor, i)) {
-					directed = true;
-				}
-				if (set.get(neighbor)) {
-					simple = false;
-				}
-				set.set(neighbor);
-			}
-		}
-		
-		if (simple) {
-			p.println("Simple.");
-		} else {
-			p.println("Non-simple.");
-		}
-		
-		if(directed) {
-			p.println("Directed.");
-		} else {
-			p.println("Undirected.");
-		}
-		
-		System.out.println("Edges (directed) " + edges+".");
+		System.out.println("Edges (directed) " + graph.edgeCount() + ".");
 	}
 
 }
