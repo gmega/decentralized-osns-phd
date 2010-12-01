@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;

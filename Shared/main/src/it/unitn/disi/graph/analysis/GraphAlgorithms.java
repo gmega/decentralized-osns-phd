@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.analysis;
 
 import it.unitn.disi.utils.DisjointSets;
 import peersim.graph.Graph;

@@ -28,49 +28,33 @@ public class Simplify implements ITransformer {
 	@Attribute("directed")
 	private boolean fDirected;
 
-	@Attribute(value = "discard_interval", defaultValue = "-1")
-	private int fDiscard;
-
 	public void execute(InputStream is, OutputStream oup) throws IOException {
 		ByteGraphDecoder dec = new ByteGraphDecoder(is);
 		Set<Edge> edges = new HashSet<Edge>();
 		
-		int counter = 0;
 		int current = -1;
 		
 		byte [] buf = new byte[4];
 		while (dec.hasNext()) {
 			Edge edge = new Edge(dec.getSource(), dec.next(), !fDirected);
 			
-			/** If we're trying to discard...**/
-			if (fDiscard > 0){
-				/** ... then the IDs must be ordered. Which means that the 
-				 * current source can be either equal or one larger than "current",
-				 * but never smaller. */
-				if (edge.source > current) {
-					current = edge.source;
-				} else if (edge.source != current){
-					throw new IllegalStateException("IDs are not ordered ("
-							+ edge.source + "," + current
-							+ "), cannot use reduced footprint mode.");
-				}
+			/** 
+			 * Source IDs must be ordered, otherwise we cannot do this 
+			 * without loading the whole graph into memory.
+			 */
+			if (edge.source > current) {
+				current = edge.source;
+				edges.clear();
+			} else if (edge.source != current){
+				throw new IllegalStateException("IDs are not ordered ("
+						+ edge.source + "," + current
+						+ "), cannot use reduced footprint mode.");
 			}
 			
 			if (!edges.contains(edge)) {
 				edges.add(edge);
 				oup.write(CodecUtils.encode(edge.source, buf));
 				oup.write(CodecUtils.encode(edge.target, buf));
-			}
-			
-			if (++counter == fDiscard) {
-				/** Cleans up all edges involving nodes smaller than the current. */
-				Iterator<Edge> it = edges.iterator();
-				while(it.hasNext()) {
-					Edge maybeStale = it.next();
-					if (maybeStale.source < current && maybeStale.target < current) {
-						it.remove();
-					}
-				}
 			}
 		}
 	}

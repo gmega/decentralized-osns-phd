@@ -1,0 +1,9 @@
+dem_lat0.1 <- add_simple_sum(dem_lat0.1, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
+dem_lat0.2 <- add_simple_sum(dem_lat0.2, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
+dem_lat0.3 <- add_simple_sum(dem_lat0.3, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
+dem_lat0.4 <- add_simple_sum(dem_lat0.4, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
+ 
+lat_tables <- list(dem_lat0.1, dem_lat0.2, dem_lat0.3, dem_lat0.4, fwd_c_lat, fwd_rnd_lat, fwd_ac_lat, fwd_bal_lat)
+fwd_bal_lat <- add_simple_sum(fwd_bal_lat, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
+
+plot(ecdf(dem_lat0.1$t_avg)[1:len]

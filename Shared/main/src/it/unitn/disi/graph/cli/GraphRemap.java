@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.cli;
 
 import static it.unitn.disi.utils.logging.CodecUtils.encode;
 import it.unitn.disi.cli.IMultiTransformer;
@@ -14,19 +14,24 @@ import java.util.Map;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
+/**
+ * {@link GraphRemap} reassigns vertex IDs to a contiguous range.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class GraphRemap implements IMultiTransformer {
-	
+
 	public static enum Inputs {
 		GRAPH;
 	}
-	
+
 	public static enum Outputs {
 		GRAPH, MAPFILE;
 	}
 
 	private String fDecoder;
-	
+
 	private Map<Integer, Integer> fMapped;
 
 	private int fIds;
@@ -38,11 +43,11 @@ public class GraphRemap implements IMultiTransformer {
 		fDecoder = decoder;
 	}
 
-	public void execute(StreamProvider p)
-			throws Exception {
+	public void execute(StreamProvider p) throws Exception {
 		int edges = 0;
-		GraphDecoder dec = GraphCodecHelper.createDecoder(p.input(Inputs.GRAPH), fDecoder);
-		OutputStream graph = p.output(Outputs.GRAPH); 
+		GraphDecoder dec = GraphCodecHelper.createDecoder(
+				p.input(Inputs.GRAPH), fDecoder);
+		OutputStream graph = p.output(Outputs.GRAPH);
 		PrintStream mapfile = new PrintStream(p.output(Outputs.MAPFILE));
 
 		while (dec.hasNext()) {
@@ -53,8 +58,9 @@ public class GraphRemap implements IMultiTransformer {
 			graph.write(encode(map(source, mapfile), fBuf));
 			graph.write(encode(map(target, mapfile), fBuf));
 		}
-		
-		System.err.println("Remapped " + fMapped.size() + " vertices, " + edges + " edges.");
+
+		System.err.println("Remapped " + fMapped.size() + " vertices, " + edges
+				+ " edges.");
 	}
 
 	private Integer map(Integer integer, PrintStream mapfile) {

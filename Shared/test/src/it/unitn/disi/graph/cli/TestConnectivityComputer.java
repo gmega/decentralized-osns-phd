@@ -1,5 +1,7 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.cli;
 
+
+import it.unitn.disi.graph.cli.ComputeConnectivity;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

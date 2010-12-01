@@ -1,11 +1,11 @@
 package it.unitn.disi.test.framework;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.Adj2ByteGraph;
 import it.unitn.disi.graph.GraphWriter;
-import it.unitn.disi.graph.LightweightStaticGraph;
 import it.unitn.disi.graph.Undirect;
+import it.unitn.disi.graph.cli.Adj2ByteGraph;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -42,7 +42,7 @@ for i in `seq 1 32`; do scheduler -a submit -o /home/giuliano/jobs-local/cyclons
 
 
 # Central Limit Theorem runs.
-for i in `seq 1 2`; do scheduler --compress -o ${PWD}/clt-runs2/output-${i}.out.gz -a submit "peersim-m 2048 ${PWD}/f2fcollector_over_cyclonsn.pss SIZE=72303 protocol.approximator.selection_layer=collector protocol.approximator.exchange_layer=collector protocol.approximator.selection_mode=highestranking protocol.approximator.utility_function=local protocol.peersampling.view_size=50 protocol.peersampling.l=5"; done;
+for i in `seq 1 2`; do scheduler --compress -o ${PWD}/clt-runs2/output-${i}.out.gz -a submit "peersim-m 2048 ${PWD}/f2fcollector_over_cyclonsn.pss SIZE=72303 protocol.approximator.selection_layer=collector protocol.approximator.log_hits protocol.approximator.exchange_layer=collector protocol.approximator.selection_mode=highestranking protocol.approximator.utility_function=local protocol.peersampling.view_size=50 protocol.peersampling.l=5"; done;
 
 # Perfect sampling dry runs.
 

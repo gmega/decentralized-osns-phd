@@ -2,6 +2,7 @@ package it.unitn.disi.graph;
 
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
 

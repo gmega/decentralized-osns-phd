@@ -1,7 +1,8 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,7 +13,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
- * Answers two simple questions about a graph: whether it is simple, and whether
+ * Answers three simple questions about a graph: whether it is simple, and whether
  * it is directed.
  * 
  * @author giuliano
@@ -28,7 +29,6 @@ public class SimpleQuestions implements ITransformer {
 		LightweightStaticGraph graph = LightweightStaticGraph
 				.load(GraphCodecHelper.createDecoder(is, this.decoder));
 		PrintStream p = new PrintStream(oup);
-		
 		BitSet set = new BitSet(graph.size());
 		
 		boolean directed = false;

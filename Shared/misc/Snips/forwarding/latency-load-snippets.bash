@@ -44,6 +44,16 @@ for i in 0.01 0.05 0.1; do (nohup zcat output-${i}-1.out.gz | grep "N:" | sed 's
 echo "root_id neighbor_id sent received duplicates" > ./loadsim-inputs/input.text
 nohup cat ./output.gz | pigz -d | analyzer -t python -V sep='-- Unit experiment 72302' misc.cli.PrintUntil | grep "N:" | cut -d":" -f2 >> ./loadsim-inputs/input.text
 
+# -----------------------------------------------------
+# PSI-based heuristics
+# -----------------------------------------------------
+# Dettaching the PSI from the rest.
+# From PSI to 0.1 to 0.9
+cat $i | pigz -d | grep "N:" | sed 's/.$//' | cut -d":" -f2 | sed 's/PSI [0-9]\.[0-9]/& /' | cut -d" " -f2-6 
+
+# The painful 0.99.
+cat $i | pigz -d | grep "N:" | sed 's/.$//' | cut -d":" -f2 | sed 's/PSI 0\.99/& /' | cut -d" " -f2-6
+
 #######################################################
 # LoadSim command line.
 #######################################################
@@ -51,7 +61,7 @@ nohup cat ./output.gz | pigz -d | analyzer -t python -V sep='-- Unit experiment 
 # -----------------------------------------------------
 # DEMERS  
 # -----------------------------------------------------
-ACTIVITY=0.001
+ACTIVITY=0.01
 for i in 0.4 0.3 0.2 0.1; do
 	cat ${PWD}/loadsim-inputs/sim_input-${i}.text.gz | pigz -d |\
 	analyzer-j -i ${GRAPHS_HOME}/Facebook.al:stdin\
@@ -74,7 +84,7 @@ done;
 # -----------------------------------------------------
 
 ACTIVITY=0.01
-cat ${PWD}/loadsim-inputs/input.text.gz | pigz -d |\
+nohup cat ${PWD}/loadsim-inputs/input.text.gz | pigz -d |\
 analyzer-j -i ${GRAPHS_HOME}/Facebook.al:stdin\
  -p scheduler=it.unitn.disi.analysis.loadsim.UniformRateScheduler:\
 probability=${ACTIVITY}:\
@@ -87,7 +97,7 @@ cores=8:\
 print_mode=summary_only:\
 sim_mode=root:\
 seed="__NONE__"\
- it.unitn.disi.analysis.loadsim.LoadSimulator > ./loadsim-outputs/load_analysis-${ACTIVITY}.text 
+ it.unitn.disi.analysis.loadsim.LoadSimulator > ./loadsim-outputs/load_analysis-${ACTIVITY}.text 2> ./loadsim-outputs/load_analysis-${ACTIVITY}.err
 
 # -- Overhead analysis --
 cat ${PWD}/loadsim-inputs/input.text.gz | pigz -d |\
@@ -129,6 +139,12 @@ done;
 echo id degree t_max t_avg t_var avg_speedup min_speedup duplicates undelivered > ./latencies/latencies.text
 cat ./output.gz | pigz -d | grep DE: | cut -d":" -f2 | sed 's/Infinity/0/g' | sed 's/NaN/0/g' | sed 's/-4.6566128730773926E-10/0/g' | sed 's/-2147483648/0/g' >> ./latencies/latencies.text
 
+# -----------------------------------------------------
+# PSI heuristics.
+# -----------------------------------------------------
+
+# CHECK, cause the -f3-10 is kind of bizarre and works only if there's a space before the psi.
+nohup cat `ls *.gz` | pigz -d |  grep DE: | cut -d":" -f2 | sed 's/Infinity/0/g' | sed 's/NaN/0/g' | sed 's/-4.6566128730773926E-10/0/g' | sed 's/-2147483648/0/g' | sed 's/.$//' | cut -d" " -f3-8,12 | analyzer -t python -V keys=psi ex1.analysis.BestPars > ./latencies/optimal-latencies.text 2> ./latencies/optimal-latencies.err
 #######################################################
 # Parameter Analysis snippets.
 #######################################################
@@ -147,8 +163,6 @@ zcat output-PSI_0.1-R_0.out.gz | grep DE: | sed 's/NaN/0/g' | sed 's/-4.65661287
 
 ALL_LOGS=log-{`seq -s, 1 15`}.text
 cat `eval echo $ALL_LOGS` | grep "DE:" | cut -d" " -f3-8,12 | analyzer -t python --psyco ex1.scripts.BestPSI > ./best-psi.text
-
-
 
 # Cut snippet for sequential heuristics.
 

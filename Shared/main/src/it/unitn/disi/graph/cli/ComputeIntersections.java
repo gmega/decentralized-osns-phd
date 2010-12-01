@@ -1,8 +1,9 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.PrintStream;
 

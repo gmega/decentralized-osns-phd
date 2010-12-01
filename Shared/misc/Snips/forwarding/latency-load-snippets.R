@@ -89,6 +89,30 @@ full_load_analysis <- function(load_table, ideal, graph, factors=c("id")) {
 ###############################################################################
 
 #
+# Gets the residue.
+#
+
+res_divide <- function(a, b) {
+	return(safe_divide(a,b,0.0))
+}
+
+get_residue <- function(a_table) {
+	undelivered <- a_table$undelivered
+	delivered <- a_table$delivered
+	tot <- undelivered + delivered
+	return(mapply(res_divide, undelivered, tot))
+}
+
+#
+# Gets the duplicate ratio.
+#
+get_dup_ratio <- function(a_table) {
+	dups <- a_table$duplicates
+	delivered <- a_table$delivered
+	return(mapply(safe_divide, dups, delivered))
+}
+
+#
 # Adds "experiments" column to table.
 #
 add_experiment_counts <- function(a_table) {
