@@ -192,6 +192,7 @@ class LineParser(object):
         self._last_error = (None, -1)
         
     def __iter__(self):
+        expected_fields = len(self._converters)
         for line in self._source:
             self._counter += 1
             line_type = self._acceptor(line)
@@ -200,8 +201,10 @@ class LineParser(object):
             try:
                 split_line = line.split(self._fs)
                 # Sanity tests the line length.
-                if len(split_line) != len(self._converters):
-                    self.__line_error__(line, "Too many fields.", None)
+                line_fields = len(split_line)
+                if line_fields != expected_fields:
+                    self.__line_error__(line, "Wrong number of fields (" +\
+                                        str(expected_fields) + " != " + str(line_fields) + ")", None)
                     continue
                 yield [line_type, map(self.__type_convert__, self._converters, split_line)]
             except ValueError as exception:
@@ -223,4 +226,5 @@ class LineParser(object):
     
     def error(self):
         return self._last_error
+    
 #==========================================================================    

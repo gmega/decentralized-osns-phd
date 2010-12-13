@@ -10,12 +10,14 @@ import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +28,6 @@ import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
-import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -40,6 +41,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		IApplicationInterface, IInitializable {
 
 	private static final String CONFIGURATOR = "configurator";
+
+	private static final int DEFAULT_STRATEGIES = 1;
 
 	// ----------------------------------------------------------------------
 	// Parameters.
@@ -97,7 +100,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	 */
 	private HashMap<Class<? extends IContentExchangeStrategy>, StrategyEntry> fStrategyIndex;
 
-	private ArrayList<StrategyEntry> fStrategies;
+	private StrategyEntry[] fStrategies;
 
 	// ----------------------------------------------------------------------
 	// Misc.
@@ -132,6 +135,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		try {
 			fConfigurator.configure(this, fPrefix, fProtocolID,
 					fSocialNetworkID);
+			compact();
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -142,7 +146,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	private void flushState() {
 		fObserver = new MergeObserverImpl();
 		fStrategyIndex = new HashMap<Class<? extends IContentExchangeStrategy>, StrategyEntry>();
-		fStrategies = new ArrayList<StrategyEntry>();
+		fStrategies = new StrategyEntry[DEFAULT_STRATEGIES];
 		fChannel = new BroadcastBus();
 		fVisibility = new DefaultVisibility(fSocialNetworkID);
 	}
@@ -165,19 +169,36 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	public void addStrategy(Class<? extends IContentExchangeStrategy>[] keys,
 			IContentExchangeStrategy strategy,
 			IReference<IPeerSelector> selector,
-			IReference<ISelectionFilter> filter, double probability) {
+			IReference<ISelectionFilter> filter) {
 
 		StrategyEntry entry = new StrategyEntry(strategy, selector,
 				new BinaryCompositeFilter(
 						new FallThroughReference<ISelectionFilter>(
-								ISelectionFilter.UP_FILTER), filter),
-				probability);
+								ISelectionFilter.UP_FILTER), filter));
 
-		fStrategies.add(entry);
+		strategyArrayAdd(entry);
 
 		for (Class<? extends IContentExchangeStrategy> key : keys) {
 			fStrategyIndex.put(key, entry);
 		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void strategyArrayAdd(StrategyEntry entry) {
+		if (fStrategies[fStrategies.length - 1] != null) {
+			fStrategies = Arrays.copyOf(fStrategies, fStrategies.length * 2);
+		}
+
+		int idx = MiscUtils.lastDifferentFrom(fStrategies, null);
+		fStrategies[idx + 1] = entry;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	private void compact() {
+		fStrategies = Arrays.copyOf(fStrategies,
+				MiscUtils.lastDifferentFrom(fStrategies, null) + 1);
 	}
 
 	// ----------------------------------------------------------------------
@@ -203,8 +224,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		 * Runs the configured exchange strategies, with the configured peer
 		 * selectors.
 		 */
-		for (int i = 0; i < fStrategies.size(); i++) {
-			StrategyEntry entry = fStrategies.get(i);
+		for (int i = 0; i < fStrategies.length; i++) {
+			StrategyEntry entry = fStrategies[i];
 
 			if (!runStrategy(entry)) {
 				continue;
@@ -262,13 +283,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	private boolean runStrategy(StrategyEntry entry) {
-		boolean shouldRun = true;
-		// A strategy is run if:
-		// 1 - it's not quiescent;
-		shouldRun &= entry.strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT;
-		// 2 - it passes the dice test.
-		shouldRun &= (CommonState.r.nextDouble() < entry.probability);
-		return shouldRun;
+		return entry.strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT;
 	}
 
 	// ----------------------------------------------------------------------
@@ -405,7 +420,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		}
 		return entry;
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// IInitializable interface.
 	// ----------------------------------------------------------------------
@@ -415,7 +430,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		fOwner = node;
 		this.configure();
 	}
-	
+
 	@Override
 	public void reinitialize() {
 		// XXX Tell protocol parts that node rejoined the network.
@@ -426,7 +441,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	public Object clone() {
-		// Cloning here is tricky because of loose coupling. 
+		// Cloning here is tricky because of loose coupling.
 		try {
 			SocialNewscastingService cloned = (SocialNewscastingService) super
 					.clone();
@@ -467,8 +482,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		/**
 		 * Registers the reception of a range of tweet events.
 		 */
-		public void eventDelivered(SNNode sending, SNNode receiving, Tweet tweet,
-				boolean duplicate) {
+		public void eventDelivered(SNNode sending, SNNode receiving,
+				Tweet tweet, boolean duplicate) {
 
 			// Sanity check -- no protocol should do this.
 			if (tweet.poster.equals(receiving)) {
@@ -512,14 +527,10 @@ class StrategyEntry {
 	public final BinaryCompositeFilter filter;
 	public final IReference<IPeerSelector> selector;
 
-	public final double probability;
-
 	public StrategyEntry(IContentExchangeStrategy strategy,
-			IReference<IPeerSelector> selector, BinaryCompositeFilter filter,
-			double probability) {
+			IReference<IPeerSelector> selector, BinaryCompositeFilter filter) {
 		this.strategy = strategy;
 		this.selector = selector;
 		this.filter = filter;
-		this.probability = probability;
 	}
 }

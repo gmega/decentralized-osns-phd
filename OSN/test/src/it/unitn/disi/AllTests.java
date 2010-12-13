@@ -4,11 +4,13 @@ package it.unitn.disi;
 import javax.naming.ldap.BasicControl;
 
 import it.unitn.disi.analysis.TestLatencyComputer;
+import it.unitn.disi.analysis.TestPercolationThresholdEstimator;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.LSGTransformsTest;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.network.EvtDecoderTest;
 import it.unitn.disi.newscasting.EventStorageTest;
@@ -39,6 +41,7 @@ import peersim.config.ObjectCreatorTest;
 @Suite.SuiteClasses({
 	TestCentralitySelector.class,
 	TestGraphWrapper.class,
+	GraphAlgorithmsTest.class,
 	TestPeerSelectors.class,
 	TestView.class,
 	TestBiasedSelector.class,

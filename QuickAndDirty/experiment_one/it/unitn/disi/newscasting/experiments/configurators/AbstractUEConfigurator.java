@@ -120,7 +120,7 @@ public abstract class AbstractUEConfigurator implements
 
 		app.addStrategy(classes(), strategy,
 				new FallThroughReference<IPeerSelector>(selector),
-				new FallThroughReference<ISelectionFilter>(filter), 1.0);
+				new FallThroughReference<ISelectionFilter>(filter));
 
 		if (strategy instanceof IEventObserver) {
 			app.addSubscriber((IEventObserver) strategy);

@@ -8,7 +8,6 @@ import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collection;
 
 import peersim.graph.Graph;
@@ -16,9 +15,8 @@ import peersim.graph.Graph;
 /**
  * Simple, fast, very lightweight, and very limited implementation of the
  * {@link Graph} interface, tailored specifically for read-only access of huge
- * (more than 200 million edges) static graphs.
- * <BR>
-
+ * (more than 200 million edges) static graphs. <BR>
+ * 
  * @author giuliano
  */
 public class LightweightStaticGraph implements IndexedNeighborGraph {
@@ -26,14 +24,14 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	// --------------------------------------------------------------------------
 	// Static creational and transform methods.
 	// --------------------------------------------------------------------------
-	
+
 	/**
 	 * Loads a graph into memory. Graphs must have a continuous range of IDs,
 	 * meaning that vertices must be labeled from 0 to N, where N is the number
 	 * of vertices in the graph.
 	 * 
-	 * {@link GraphRemap} can do the work of ID remapping for graphs which
-	 * do not present continuous ID ranges.
+	 * {@link GraphRemap} can do the work of ID remapping for graphs which do
+	 * not present continuous ID ranges.
 	 * 
 	 * @param decoder
 	 *            a {@link ResettableGraphDecoder} pointing to the graph to be
@@ -49,17 +47,18 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		LSGCreator creator = new LSGLoader(decoder);
 		return creator.create();
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
+
 	public static LightweightStaticGraph undirect(LightweightStaticGraph source) {
 		LSGMakeUndirected undir = new LSGMakeUndirected();
 		return undir.transform(source);
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
-	public static LightweightStaticGraph transitiveGraph(LightweightStaticGraph base, int order) {
+
+	public static LightweightStaticGraph transitiveGraph(
+			LightweightStaticGraph base, int order) {
 		LSGCreateTransitive transitive = new LSGCreateTransitive(order);
 		return transitive.transform(base);
 	}
@@ -69,13 +68,13 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	// --------------------------------------------------------------------------
 
 	private final int[][] fAdjacency;
-	
+
 	private final int fEdges;
-	
+
 	private Boolean fDirected;
-	
+
 	private Boolean fSimple;
-	
+
 	private Boolean fConnected;
 
 	LightweightStaticGraph(int[][] adjacency) {
@@ -84,18 +83,6 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		sortAll();
 	}
 
-	public int degree(int i) {
-		return fAdjacency[i].length;
-	}
-
-	public int size() {
-		return fAdjacency.length;
-	}
-
-	public int[] fastGetNeighbours(int i) {
-		return fAdjacency[i];
-	}
-	
 	private int countEdges(int[][] adjacency) {
 		int edges = 0;
 		for (int i = 0; i < adjacency.length; i++) {
@@ -104,10 +91,41 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return edges;
 	}
 
-	private void sortAll(){
+	private void sortAll() {
 		for (int i = 0; i < fAdjacency.length; i++) {
 			Arrays.sort(fAdjacency[i]);
 		}
+	}
+
+	// --------------------------------------------------------------------------
+	// IndexedNeighborhoodGraph interface.
+	// --------------------------------------------------------------------------
+
+	/**
+	 * {@link Graph#isEdge(int, int)} implementation which works by doing a
+	 * binary search over an array of neighbors sorted by id. This is O(log(n))
+	 * on the degree, but allows us to obtain significant memory savings.
+	 */
+	public boolean isEdge(int i, int j) {
+		int index = Arrays.binarySearch(fAdjacency[i], j);
+		if (index < 0 || index >= fAdjacency[i].length) {
+			return false;
+		}
+		return fAdjacency[i][index] == j;
+	}
+
+	/**
+	 * @return the number of vertices in the graph.
+	 */
+	public int size() {
+		return fAdjacency.length;
+	}
+
+	/**
+	 * @return the <b>out degree</b> of a vertex.
+	 */
+	public int degree(int i) {
+		return fAdjacency[i].length;
 	}
 
 	public Collection<Integer> getNeighbours(int i) {
@@ -120,29 +138,54 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 
 		return neighbors;
 	}
-	
+
+	/**
+	 * Same as {@link #getNeighbours(int)}, except that it actually returns the
+	 * <b>internal</b> array being used to store data instead of copying it to a
+	 * {@link Collection}. This is highly efficient, but writing to this array
+	 * will result in unspecified behavior.
+	 */
+	public int[] fastGetNeighbours(int i) {
+		return fAdjacency[i];
+	}
+
+	/**
+	 * Returns <code>true</code> if this graph is directed, or
+	 * <code>false</code> otherwise.
+	 */
 	public boolean directed() {
 		if (fDirected == null) {
 			fDirected = GraphAlgorithms.isDirected(this);
 		}
 		return fDirected;
 	}
-	
+
+	/**
+	 * Returns <code>true</code> if this graph is simple, or
+	 * <code>false</code> otherwise.
+	 */
 	public boolean isSimple() {
 		if (fSimple == null) {
 			fSimple = GraphAlgorithms.isSimple(this);
 		}
 		return fSimple;
 	}
-	
+
+	/**
+	 * Returns <code>true</code> if this graph is connected, or
+	 * <code>false</code> otherwise.
+	 */
 	public boolean isConnected() {
 		if (fConnected == null) {
 			fConnected = GraphAlgorithms.isConnected(this);
 		}
-		
+
 		return fConnected;
 	}
-	
+
+	/**
+	 * Returns the number of edges in this graph. 
+	 */
 	public int edgeCount() {
 		return fEdges;
 	}
@@ -151,14 +194,6 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		return fAdjacency[node][index];
 	}
 
-	public boolean isEdge(int i, int j) {
-		int index = Arrays.binarySearch(fAdjacency[i], j);
-		if (index < 0 || index >= fAdjacency[i].length) {
-			return false;
-		}
-		return fAdjacency[i][index] == j;
-	}
-	
 	public Object getNode(int i) {
 		return null;
 	}

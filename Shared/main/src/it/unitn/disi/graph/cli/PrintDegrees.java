@@ -1,32 +1,37 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 
+import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.graph.Graph;
 
+/**
+ * Prints node degrees.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
-public class PrintDegrees implements ITransformer {
+public class PrintDegrees extends GraphAnalyzer {
+	
+	public PrintDegrees(@Attribute("decoder") String decoder) {
+		super(decoder);
+	}
 
-	public void execute(InputStream is, OutputStream oup) throws IOException {
-		ByteGraphDecoder dec = new ByteGraphDecoder(is);
-		Graph graph = LightweightStaticGraph.load(dec);
-
-		OutputStreamWriter writer = new OutputStreamWriter(oup);
-
+	@Override
+	protected void transform(LightweightStaticGraph graph, OutputStream oup)
+			throws IOException {
+		PrintStream out = new PrintStream(oup);
+		out.println("id degree");
 		try {
 			for (int i = 0; i < graph.size(); i++) {
-				writer.write(i + " " + graph.degree(i) + "\n");
+				out.println(i + " " + graph.degree(i));
 			}
 		} finally {
-			writer.close();
+			oup.close();
 		}
 	}
 }

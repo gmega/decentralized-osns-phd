@@ -53,6 +53,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 */
 	protected final int fChunkSize;
 
+	private ActivityStatus fStatus;
+
 	// ----------------------------------------------------------------------
 	// Protocol state.
 	// ----------------------------------------------------------------------
@@ -72,6 +74,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 		fAdaptableId = adaptableId;
 		fSocialNetworkId = socialNetworkId;
 		fChunkSize = chunkSize;
+		recomputeStatus();
 	}
 
 	// ----------------------------------------------------------------------
@@ -114,14 +117,14 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public ActivityStatus status() {
-		return fPending.size() > 0 ? ActivityStatus.ACTIVE
-				: ActivityStatus.QUIESCENT;
+		return fStatus;
 	}
 
 	// ----------------------------------------------------------------------
 
+	@Override
 	public void clear(Node source) {
-		fPending.clear();
+		fwTableClear();
 	}
 
 	// ----------------------------------------------------------------------
@@ -216,7 +219,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 					&& historyContains(ourHistory, neighbor)) {
 				// Cancels the scheduling. Note that this might not result
 				// in a real removal.
-				fPending.remove(neighbor, tweet);
+				fwTableDelete(neighbor, tweet);
 			}
 		}
 	}
@@ -290,7 +293,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 			}
 
 			if (shouldForward(sender, neighbor, tweet, ourHistory)) {
-				fPending.put(neighbor, tweet);
+				fwTableAdd(neighbor, tweet);
 			}
 		}
 	}
@@ -317,13 +320,44 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	}
 
 	// ----------------------------------------------------------------------
+	// Read/Write handling of the forwarding table.
+	// ----------------------------------------------------------------------
 
 	private Tweet removeAny(Node peer) {
 		Set<Tweet> pendings = fPending.get(peer);
 		Iterator<Tweet> it = pendings.iterator();
 		Tweet toReturn = it.next();
 		it.remove();
+		recomputeStatus();
 		return toReturn;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	private void fwTableAdd(Node destination, Tweet message) {
+		fPending.put(destination, message);
+		recomputeStatus();
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private void fwTableDelete(Node destination, Tweet tweet) {
+		fPending.remove(destination, tweet);
+		recomputeStatus();
+	}
+	
+	// ----------------------------------------------------------------------
+
+	private void fwTableClear() {
+		fPending.clear();
+		recomputeStatus();
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void recomputeStatus() {
+		fStatus = fPending.size() > 0 ? ActivityStatus.ACTIVE
+				: ActivityStatus.QUIESCENT;
 	}
 
 	// ----------------------------------------------------------------------

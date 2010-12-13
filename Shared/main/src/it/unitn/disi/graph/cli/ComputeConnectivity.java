@@ -1,48 +1,39 @@
- package it.unitn.disi.graph.cli;
+package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.util.Stack;
 
+import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 @AutoConfig
-public class ComputeConnectivity implements ITransformer {
+public class ComputeConnectivity extends GraphAnalyzer {
 
 	private LightweightStaticGraph fGraph;
-
-	int compute(OutputStream oStream) throws IOException {
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-				oStream));
-
-		int components = 0;
-		System.err.println("Step 4 - Now running Tarjan's algorithm.");
-		float connectedness = 0;
-		try {
-			for (int i = 0; i < fGraph.size(); i++) {
-				components = tarjan(fGraph.fastGetNeighbours(i));
-				if (components != 0) {
-					connectedness += (1.0/components);
-				}
-				writer.write(i + " " + components + " " + fGraph.fastGetNeighbours(i).length + "\n");
-			}
-			connectedness /= fGraph.size();
-			writer.write("AVG_CONN:" + connectedness);
-		} finally {
-			writer.close();
-		}
-		return components;
+	
+	public ComputeConnectivity(@Attribute("decoder") String decoder) {
+		super(decoder);
 	}
 
-	void load(InputStream s) throws IOException {
-		fGraph = LightweightStaticGraph.load(new ByteGraphDecoder(s));
+	int compute(OutputStream oStream) throws IOException {
+		PrintStream out = new PrintStream(oStream);
+
+		int components = 0;
+		System.err.println("Running Tarjan's algorithm.");
+		try {
+			out.println("id components degree");
+			for (int i = 0; i < fGraph.size(); i++) {
+				out.println(i + " " + tarjan(fGraph.fastGetNeighbours(i)) + " "
+						+ fGraph.fastGetNeighbours(i).length + "\n");
+			}
+		} finally {
+			out.close();
+		}
+		return components;
 	}
 
 	private int fVisitCounter = 0;
@@ -149,9 +140,15 @@ public class ComputeConnectivity implements ITransformer {
 
 		return upstream;
 	}
+	
+	void setBaseGraph(LightweightStaticGraph graph) {
+		fGraph = graph;
+	}
 
-	public void execute(InputStream is, OutputStream oup) throws IOException {
-		load(is);
+	@Override
+	protected void transform(LightweightStaticGraph graph, OutputStream oup)
+			throws IOException {
+		setBaseGraph(graph);
 		initTarjan();
 		compute(oup);
 	}

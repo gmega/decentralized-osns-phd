@@ -1,12 +1,9 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 import peersim.config.Attribute;
@@ -21,11 +18,15 @@ import peersim.config.AutoConfig;
  * @author giuliano
  */
 @AutoConfig
-public class Undirect implements ITransformer {
+public class Undirect extends GraphAnalyzer {
 	
-	public void execute(InputStream is, OutputStream oup) throws IOException {
-		LightweightStaticGraph graph = LightweightStaticGraph.load(new ByteGraphDecoder(is));
-
+	public Undirect(@Attribute("decoder") String decoder) {
+		super(decoder);
+	}
+	
+	@Override
+	protected void transform(LightweightStaticGraph graph, OutputStream oup) throws IOException{
+		
 		byte[] buf = new byte[4];
 		for (int i = 0; i < graph.size(); i++) {
 			for (int j : graph.getNeighbours(i)) {

@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
@@ -38,6 +37,9 @@ public class GenericDriver {
 
 	@Option(name = "-p", usage = "colon (:) separated list of key=value pairs (transformer-specific)", required = false)
 	private String fParameters = "";
+	
+	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
+	private char fSplitChar = ':'; 
 
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
 	private boolean fVerbose;
@@ -110,12 +112,13 @@ public class GenericDriver {
 
 	private Map<String, Object> parseProperties(String params) {
 		Map<String, Object> props = new HashMap<String, Object>();
-		String[] pairs = params.split(":");
+		String[] pairs = params.split(Character.toString(fSplitChar));
 		for (String pair : pairs) {
 			String[] kvPair = pair.split("=");
 			if (kvPair.length != 2) {
 				continue;
 			}
+			System.out.println(kvPair[0] + " "+ kvPair[1]);
 			props.put(kvPair[0], kvPair[1]);
 		}
 

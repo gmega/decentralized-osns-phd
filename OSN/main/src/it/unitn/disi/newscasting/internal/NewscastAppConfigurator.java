@@ -32,11 +32,6 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 	private static final String PAR_ANTI_ENTROPY = "ae";
 	
 	/**
-	 * Percentage (expected) of the rounds in which a strategy is to be run.
-	 */
-	private static final String PAR_PERCENTAGE = "percentage";
-
-	/**
 	 * Selector for a strategy.
 	 */
 	private static final String PAR_SELECTOR = "selector";
@@ -109,14 +104,15 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		// were the same thing at the beginning) but that should change with time.
 		DemersAntiEntropy dae = new DemersAntiEntropy(protocolId, socialNetworkId);
 		app.addStrategy(new Class [] { DemersAntiEntropy.class },
-				dae, selector(PAR_ANTI_ENTROPY), filter(PAR_ANTI_ENTROPY),
-				probability(PAR_ANTI_ENTROPY));
+				dae, selector(PAR_ANTI_ENTROPY), filter(PAR_ANTI_ENTROPY));
 	}
 
 	@SuppressWarnings("unchecked")
 	private void configureGreedyDiffusion(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId, boolean histories) {
 		HistoryForwarding gd;
+		
+		@SuppressWarnings("rawtypes")
 		Class [] keys;
 		PeerSimResolver resolver = new PeerSimResolver();
 		if (histories) {
@@ -129,8 +125,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		
 		app.addStrategy(keys, gd,
 				selector(PAR_RUMOR_MONGER),
-				new FallThroughReference<ISelectionFilter>(gd),
-				probability(PAR_RUMOR_MONGER));
+				new FallThroughReference<ISelectionFilter>(gd));
 		app.addSubscriber(gd);
 	}
 
@@ -140,8 +135,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		DemersRumorMonger demersRm = new DemersRumorMonger(prefix + "."
 				+ PAR_RUMOR_MONGER, protocolId, new ProtocolReference<Linkable>(socialNetworkId), CommonState.r);
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, demersRm,
-				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER),
-				probability(PAR_RUMOR_MONGER));
+				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER));
 
 		// Rumor mongering wants to know of new events.
 		app.addSubscriber(demersRm);
@@ -185,15 +179,6 @@ public class NewscastAppConfigurator implements IApplicationConfigurator{
 		
 		return new ProtocolReference<ISelectionFilter>(Configuration
 				.getPid(filterName));
-	}
-
-	private double probability(String prefix) {
-		String percentageName = prefix + "." + prefix + "." + PAR_PERCENTAGE;
-		if (!Configuration.contains(percentageName)) {
-			return 1.0;
-		}
-		
-		return Double.parseDouble(Configuration.getString(percentageName));
 	}
 
 	public Object clone () {

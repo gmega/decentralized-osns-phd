@@ -8,10 +8,9 @@ import it.unitn.disi.utils.logging.CodecUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 /**
- * Extracts the undirected core out of a directed subgraph.
+ * Extracts the undirected core out of a directed graph.
  * 
  * @author giuliano
  */
@@ -24,9 +23,7 @@ public class ByteDirectedSubgraph implements ITransformer{
 		
 		for (int i = 0; i < g.size(); i++) {
 			for (int neighbor : g.fastGetNeighbours(i)) {
-				int [] neighborNeighbors = g.fastGetNeighbours(neighbor);
-				int idx = Arrays.binarySearch(neighborNeighbors, i);
-				if (idx >= 0 && idx < neighborNeighbors.length && neighborNeighbors[idx] == i) {
+				if (g.isEdge(neighbor, i)) {
 					oup.write(CodecUtils.encode(i, buf));
 					oup.write(CodecUtils.encode(neighbor, buf));
 				}

@@ -42,10 +42,14 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// Parameter keys.
 	// ----------------------------------------------------------------------
 
-	public static final String PAR_MODE = "mode";
+	public static final String PAR_TYPE = "type";
 
-	enum SelectorType {
-		PURE_CENTRALITY, PURE_ANTICENTRALITY, PURE_RANDOM, ALTERNATING_CA, ALTERNATING_CR, ONE_OTHER_CA, ONE_OTHER_CA2, ONE_OTHER_CA3, ONE_OTHER_CR, DEMERS
+	enum CompositeHeuristic {
+		SIMPLE, ALTERNATING, ONE_OTHER
+	}
+
+	enum AtomicHeuristic {
+		RANDOM, CENTRALITY, CENTRALITY_PSI
 	}
 
 	public static final String PAR_HISTORYLESS = "historyless";
@@ -119,68 +123,27 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@SuppressWarnings("unchecked")
 	protected IPeerSelector selector(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix,
-				PAR_MODE));
-
+		CompositeHeuristic type = CompositeHeuristic.valueOf(fResolver
+				.getString(prefix, PAR_TYPE));
 		IPeerSelector selector;
 		switch (type) {
 
-		case PURE_ANTICENTRALITY:
-			selector = anticentrality(prefix);
+		case SIMPLE:
+			selector = simpleHeuristic(prefix);
 			break;
 
-		case PURE_RANDOM:
-			selector = new RandomSelectorOverLinkable(prefix);
-			break;
-
-		case PURE_CENTRALITY:
-			selector = centrality(prefix);
-			break;
-
-		case ALTERNATING_CA:
-			selector = new GenericCompositeSelector(
-					false,
-					prefix,
+		case ALTERNATING:
+			selector = new GenericCompositeSelector(false, prefix,
 					new IReference[] {
-							new FallThroughReference<Object>(centrality(prefix)),
 							new FallThroughReference<Object>(
-									anticentrality(prefix)) });
-			break;
-
-		case ALTERNATING_CR:
-			selector = new GenericCompositeSelector(
-					false,
-					prefix,
-					new IReference[] {
-							new FallThroughReference<Object>(centrality(prefix)),
+									simpleHeuristic(subPrefix(prefix, 0))),
 							new FallThroughReference<Object>(
-									new RandomSelectorOverLinkable(prefix)) });
+									simpleHeuristic(subPrefix(prefix, 1))) });
 			break;
 
-		case ONE_OTHER_CA:
-			selector = oneThanTheOther(centrality(prefix),
-					anticentrality(prefix), prefix);
-			app.addSubscriber((IEventObserver) selector);
-			break;
-
-		// Hack, this class needs to be restructured.
-		case ONE_OTHER_CA2:
-			selector = oneThanTheOther(anticentrality(prefix + ".c"),
-					anticentrality(prefix + ".ac"), prefix);
-			app.addSubscriber((IEventObserver) selector);
-			break;
-			
-		// Hack, this class needs to be restructured.		
-		case ONE_OTHER_CA3:
-			selector = oneThanTheOther(centrality(prefix + ".c"),
-					centrality(prefix + ".ac"), prefix);
-			app.addSubscriber((IEventObserver) selector);
-			break;
-
-
-		case ONE_OTHER_CR:
-			selector = oneThanTheOther(centrality(prefix),
-					new RandomSelectorOverLinkable(prefix), prefix);
+		case ONE_OTHER:
+			selector = oneThanTheOther(simpleHeuristic(subPrefix(prefix, 1)),
+					simpleHeuristic(subPrefix(prefix, 0)), prefix);
 			app.addSubscriber((IEventObserver) selector);
 			break;
 
@@ -193,32 +156,41 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
 
+	private IPeerSelector simpleHeuristic(String prefix) {
+		AtomicHeuristic type = AtomicHeuristic.valueOf(fResolver.getString(
+				prefix, PAR_TYPE));
+		switch (type) {
+
+		case RANDOM:
+			return new RandomSelectorOverLinkable(fResolver, prefix);
+
+		case CENTRALITY:
+			return genericCreate(BiasedCentralitySelector.class, prefix);
+
+		case CENTRALITY_PSI:
+			return genericCreate(PercentileCentralitySelector.class, prefix);
+		}
+
+		return null;
+	}
+
+	// ----------------------------------------------------------------------
+
 	@Override
 	protected void registerUpdaters(String prefix, TableReader reader) {
-		SelectorType type = SelectorType.valueOf(fResolver.getString(prefix,
-				PAR_MODE));
+		CompositeHeuristic type = CompositeHeuristic.valueOf(fResolver
+				.getString(prefix, PAR_TYPE));
 		IExperimentObserver updater = null;
 		switch (type) {
 
-		case PURE_ANTICENTRALITY:
-		case PURE_RANDOM:
+		case SIMPLE:
+			updater = simpleUpdater(prefix, reader);
 			break;
 
-		case PURE_CENTRALITY:
-			updater = new CentralityUpdater(fApplication, fLinkable, reader);
-			break;
-
-		case ONE_OTHER_CA:
-		case ONE_OTHER_CR:
+		case ONE_OTHER:
 			updater = new OneThanTheOtherUpdater(fApplication, fLinkable,
-					reader, new CentralityUpdater(fApplication, fLinkable,
-							reader), null);
-			break;
-			
-		// Hack, this class needs to be restructured.
-		case ONE_OTHER_CA2:
-			updater = new OneThanTheOtherUpdater(fApplication, fLinkable,
-					reader, null, null);
+					reader, simpleUpdater(subPrefix(prefix, 0), reader),
+					simpleUpdater(subPrefix(prefix, 1), reader));
 			break;
 
 		default:
@@ -228,6 +200,24 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		if (updater != null) {
 			DisseminationExperimentGovernor.addExperimentObserver(updater);
 		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private SelectorUpdater simpleUpdater(String prefix, TableReader reader) {
+		AtomicHeuristic type = AtomicHeuristic.valueOf(fResolver.getString(
+				prefix, PAR_TYPE));
+		switch (type) {
+		case CENTRALITY_PSI:
+			return new CentralityUpdater(fApplication, fLinkable, reader);
+		}
+		return null;
+	}
+	
+	// ----------------------------------------------------------------------
+
+	private String subPrefix(String prefix, int index) {
+		return prefix + "." + index;
 	}
 
 	// ----------------------------------------------------------------------
@@ -253,18 +243,6 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	private OneThanTheOther oneThanTheOther(IPeerSelector s1, IPeerSelector s2,
 			String prefix) {
 		return new OneThanTheOther(s1, s2, fResolver, prefix);
-	}
-
-	// ----------------------------------------------------------------------
-
-	private BiasedCentralitySelector anticentrality(String prefix) {
-		return genericCreate(BiasedCentralitySelector.class, prefix);
-	}
-
-	// ----------------------------------------------------------------------
-
-	private PercentileCentralitySelector centrality(String prefix) {
-		return genericCreate(PercentileCentralitySelector.class, prefix);
 	}
 
 	// ----------------------------------------------------------------------

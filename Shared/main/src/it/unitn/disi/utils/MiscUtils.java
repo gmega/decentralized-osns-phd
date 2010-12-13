@@ -89,6 +89,22 @@ public class MiscUtils {
 		return false;
 	}
 	
+	public static <T> int lastDifferentFrom(T [] array, T element) {
+		int i = array.length - 1;
+		boolean equals = true;
+		for (; i >= 0; i--) {
+			if (array[i] == null) {
+				equals = (element == null);
+			} else {
+				equals = array[i].equals(element);
+			}
+			
+			if (!equals) {
+				break;
+			}
+		}
+		return i;
+	}
 	
 	public static double log2(double input) {
 		return Math.log(input)/Math.log(2.0);

@@ -18,12 +18,21 @@ from experiment.util import LineParser
 
 class BestPars:
     """ Given a set of simulation logs, computes which parameter combination 
-    yields the best average dissemination latency. Reads the logs from the standard
-    input. Assumes parameter combinations appear prefixing each record. Currently,
-    is hardwired to find the combination that optimizes the dissemination latency. 
+    yields some best value for a given metric. The mechanics on how to 
+    interpret and compute the actual metric from the input data is delegated to
+    subclasses.
     
-    CAREFUL: if your protocol loses messages, best average latency doesn't mean 
-    best results.
+    This class and all subclasses make the assumption that input files are 
+    organized as:
+    
+    (p1, p2 ..., pn) node_id node_degree (v1, v2, ..., vn)
+    
+    where:
+    
+    - pi represents a parameter value;
+    - id uniquely identifies a node in the network;
+    - node_degree is the degree of the node in the network;
+    - vi represents the values required to compute the metric.
     
     """
     
@@ -31,56 +40,85 @@ class BestPars:
         self._stats = {}
         self._keys = keys.split(",")
       
-        
+              
     def execute(self):
         
         for parameters, id, degree, data in self.__data__():
             stat = self.__get__(id, degree)
             stat.point(parameters, data)
-
-        print "id degree", " ".join([str(i) for i in self._keys]), "t_avg t_max t_var latency_sum max_latency_sum delivered experiments"
         
-        scoring = lambda x, y: x.latency_sum < y.latency_sum
+        print "id degree", " ".join([str(i) for i in self._keys]), self.__header__()
                 
         for stat in self._stats.values():
-            parameters, best = stat.best(scoring)
+            parameters, best = stat.best(self.__ranking__)
+            statistics_string = " ".join([str(i) for i in self.__statistics__(best)])
+            print int(stat.id), int(stat.degree), " ".join([str(i) for i in parameters]), statistics_string 
+
             
-            n = float(best.delivered)
-            experiments = float(best.n)
-            
-            t_max_sum = best.t_max
-            latency_sum = best.latency_sum
-            t_max = self.__checked_divide__(t_max_sum, experiments, 0)
-            t_avg = self.__checked_divide__(latency_sum, n, 0)
-            t_var = self.__checked_divide__(best.sqr_sum, n, 0) - (t_avg * t_avg)
-            
-            print int(stat.id), int(stat.degree), " ".join([str(i) for i in parameters]), t_avg, t_max, t_var, latency_sum, t_max_sum, n, experiments 
-            
-    
     def __data__(self):
-        
+        # Keys go untransformed.
         identities = [lambda x : x]*(len(self._keys))
-        float_values = [lambda x : float(x.lstrip().rstrip())]*6
-        line_parser = LineParser(lambda x : True, identities + float_values, sys.stdin)
-        
+        # Node id and degree get converted to integers.
+        integers = [lambda x : int(x)] * 2
+        # Custom converters supplied by the subclass.
+        converters = self.__type_converters__()
+        line_parser = LineParser(lambda x : True, identities + integers + converters, sys.stdin)
+        klength = len(self._keys)
         for type, line in line_parser:
-            parameters = line[0:len(self._keys)]
-            id, degree, t_max, t_avg, t_var, undelivered = line[len(self._keys):]
-            delivered = degree - undelivered
-            sum = delivered * t_avg
-            sqr_sum = delivered * (t_var + t_avg * t_avg)
-                       
-            yield(tuple(parameters), id, degree, {"t_max":t_max, "sqr_sum":sqr_sum,
-                            "latency_sum":sum, "delivered":delivered,
-                            "undelivered":undelivered})
-            
+            # Key fields.
+            parameters = line[0:klength]
+            # The two fields immediately after the keys should be id and degree.
+            id, degree = line[klength:klength + 2]
+            # The remainder of the fields are the data.
+            data_point = self.__data_point__(degree, line[klength + 2:])            
+            yield(tuple(parameters), id, degree, data_point)
+
             
     def __get__(self, id, degree):
         
         if not (id in self._stats):
-            self._stats[id] = Stat(id, degree)
+            self._stats[id] = NodeData(id, degree)
         return self._stats[id]
     
+# =============================================================================
+    
+class BestLatency(BestPars):
+    """ BestPars subclass which selects parameter combinations yielding the 
+        best average latencies. """
+        
+    def __init__(self, keys):
+        BestPars.__init__(self, keys)
+    
+    def __type_converters__(self):
+        return [lambda x : float(x.lstrip().rstrip())]*4
+
+
+    def __header__(self):
+        return "t_avg t_max t_var latency_sum max_latency_sum delivered experiments"
+
+    
+    def __ranking__(self, x, y):
+        return x.latency_sum < y.latency_sum
+
+    
+    def __data_point__(self, degree, data):
+        t_max, t_avg, t_var, undelivered = data 
+        delivered = degree - undelivered
+        sum = delivered * t_avg
+        sqr_sum = delivered * (t_var + t_avg * t_avg)
+        return {"t_max":t_max, "sqr_sum":sqr_sum, "latency_sum":sum, "delivered":delivered, "undelivered":undelivered}
+
+    
+    def __print_statistic__(self, best):
+        n = float(best.delivered)
+        experiments = float(best.n)
+        t_max_sum = best.t_max
+        latency_sum = best.latency_sum
+        t_max = self.__checked_divide__(t_max_sum, experiments, 0)
+        t_avg = self.__checked_divide__(latency_sum, n, 0)
+        t_var = self.__checked_divide__(best.sqr_sum, n, 0) - (t_avg * t_avg)
+        return (t_avg, t_max, t_var, latency_sum, t_max_sum, n, experiments)
+
     
     def __checked_divide__(self, numerator, denominator, zero_by_zero):
         if denominator == 0 and numerator == 0:
@@ -88,18 +126,23 @@ class BestPars:
 
         return numerator / float(denominator)
 
+
 # =============================================================================
     
-class Stat:
-    """ """
-    
+class NodeData:
+    """ Stores data regarding the outcomes of the various experiments involving
+        a single node. Memory consumption grows linearly with the number of parameter
+        combinations.  
+    """
     def __init__(self, id, degree):
         self.degree = degree
         self.id = id
         self._data = {}
+
         
     def point(self, parameters, data):
         self.__add_parameter_data__(parameters, data)
+
 
     def __add_parameter_data__(self, parameters, data):
         # If we do not have an entry for this particular
@@ -117,11 +160,9 @@ class Stat:
             for key, increment in data.items():
                 value = getattr(parameter_data, key)
                 setattr(parameter_data, key, value + increment)
-                
-        if parameter_data.latency_sum > 0:
-            assert parameter_data.delivered > 0
                    
         return parameter_data
+
         
     def best(self, is_better):
         best = None
@@ -222,148 +263,5 @@ class EstimateIdeals(object):
         counters = Multicounter({"worst_t_avg_sum":0.0, "worst_t_max_sum":0.0, "intended_receives":0, "worst_sends":0})
         self._estimates[id] = counters
         return counters
-    
-# =============================================================================
-
-class BaseLoad(object):
-    """ Parses a load log (with per-round, cumulative load data) and outputs:
-     
-     - The average unit experiment load per round;
-     - the average accrued load per node.
-    """
-    
-    def __init__(self, verbose=True):
-        self._verbose = verbose
-        self._matcher = re.compile("-- Unit experiment ([0-9]+) is done")
-        self._experiments = {}
-    
-    def execute(self):
-        
-        self.__load_data__(sys.stdin)
-        self.__print_data__(self._experiments)
-                
-    def __print_data__(self, experiments):
-        accrued_messages = [0, 0, 0, 0]
-        zero_tuple = (0, 0, 0, 0)
-        aggregate = {}
-        
-        for experiment_id, experiment in self._experiments.items():
-            for stats in experiment:
-                # Unpacks for printing.                 
-                node_id, sent, received, duplicates, experiments = stats
-                stats = stats[1:len(stats) + 1]
-                
-                # Prints per-experiment averages.
-                print "N:", int(experiment_id), int(node_id),
-                print sent/experiments, received/experiments, duplicates/experiments
-                
-                # Accrues the data under the node id.
-                old = aggregate.setdefault(node_id, zero_tuple)
-                aggregate[node_id] = map(operator.add, old, stats)
-                
-                # Accrues the data under the total, but averages first cause
-                # we threw information away to save memory.
-                stats = [i/experiments for i in stats]
-                accrued_messages = map(operator.add, accrued_messages, stats)
-        
-        print >> sys.stderr, " -- There were", len(aggregate.keys()), "unique node IDs."
-        
-        # Prints per-node aggregates.
-        for node_id, stat in aggregate.items():
-            sent, received, duplicates, n = stat
-            print "T:", int(node_id), (sent/n), (received/n), (duplicates/n)
-        
-        # And the whole-thing aggregate.
-        print "A:", " ".join([str(i) for i in accrued_messages])
-            
-    def __load_data__(self, file):
-        count = 1
-        for line in file:
-            # End-of-experiment line.
-            if line.startswith("-"):
-                match = self._matcher.match(line)
-                if match is None:
-                    self.__line_error__(line, count)
-                    continue               
-                id = float(match.group(1))
-                self.__get_experiment__(id).experiment_finished()
-                if self._verbose:
-                    print >> sys.stderr, "Processed [" + str(int(id)) + "]."
-            # Data line. 
-            else:
-                try:
-                    experiment_id, node_id, sent, received, duplicates = [float(i) for i in line.split(" ")]
-                    self.__get_experiment__(experiment_id).add(node_id, (sent, received, duplicates))
-                except ValueError:
-                    self.__line_error__(line, count)
-            count += 1
-                    
-    def __line_error__(self, line, line_no):
-        print >> sys.stderr, "Malformed line [" + str(line_no) + "] has been ignored. Offending line: \"", line, "\")."
-                
-    def __get_experiment__(self, id):
-        if not (id in self._experiments):
-            self._experiments[id] = UnitExperiment(id)
-        
-        return self._experiments[id]
-                
-class UnitExperiment(object):
-    
-    def __init__(self, id):
-        self._id = id
-        self._node_data = {}
-        self._repetition = 1.0
-        
-    def add(self, node_id, point):
-        
-        if node_id in self._node_data:
-            node_data = self._node_data[node_id]
-        else:
-            # Sanity check.
-            if self._repetition != 1.0:
-                raise Exception("Nodes were missing from previous experiments (%d)." % node_id)
-            node_data = [[0.0]*(len(point)), 1.0] 
-            self._node_data[node_id] = node_data
-        
-        node_data[0] = map(operator.add, point, node_data[0])
-        node_data[1] = self._repetition
-    
-    def experiment_finished(self):
-        self._repetition += 1.0
-    
-    def __iter__(self):
-        for node_id, node_data in self._node_data.items():
-            yield [node_id] + node_data[0] + [node_data[1]]
-
-# =============================================================================
-
-class PrintDegrees:
-    
-    def __init__(self, filename):
-        self._filename = filename
-        
-    def execute(self):
-        loader = GraphLoader(self._filename, EdgeListDecoder, retain_id_map=False)
-        g = loader.load_graph()
-        degrees = g.degree()
-        for degree in degrees:
-            print degree
-
-        
-# =============================================================================
-
-class CleanGraph(object):
-    def __init__(self, filename, output):
-        self._filename = filename
-        self._output = output
-        
-    def execute(self):
-        loader = GraphLoader(self._filename, EdgeListDecoder, retain_id_map=False)
-        g = loader.load_graph()
-        g = strip_unmarked_vertices(g, BLACK)
-        
-        with open(self._output, "w") as output:
-            enc = EdgeListEncoder(output)
-            enc.encode(g)
 
 # =============================================================================

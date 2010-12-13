@@ -241,11 +241,11 @@ public class HistoryForwardingTest extends PeerSimTest {
 			if (fUseHistories) {
 				fw = new BloomFilterHistoryFw(protocolId, socialNetworkId, 1, 50, 0.001);
 				app.addStrategy(new Class[]{ BloomFilterHistoryFw.class, HistoryForwarding.class }, 
-						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
+						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw));
 			} else {
 				fw = new HistoryForwarding(protocolId, socialNetworkId, 1);
 				app.addStrategy(new Class[]{ HistoryForwarding.class }, 
-						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw), 1.0);
+						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw));
 
 			}
 			app.addSubscriber(fw);

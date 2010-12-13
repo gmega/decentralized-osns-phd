@@ -1,41 +1,47 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.BitSet;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.graph.Graph;
 
 /**
- * Answers three simple questions about a graph: whether it is simple, and whether
- * it is directed.
+ * Answers three simple questions about a graph: whether it is simple, and
+ * whether it is directed.
  * 
  * @author giuliano
  */
 @AutoConfig
-public class SimpleQuestions implements ITransformer {
+public class SimpleQuestions extends GraphAnalyzer {
 
-	@Attribute(value="decoder", defaultValue="it.unitn.disi.graph.codecs.ByteGraphDecoder")
-	private String decoder;
+	public SimpleQuestions(@Attribute("decoder") String decoder) {
+		super(decoder);
+	}
 	
 	@Override
-	public void execute(InputStream is, OutputStream oup) throws Exception {
-		LightweightStaticGraph graph = LightweightStaticGraph
-				.load(GraphCodecHelper.createDecoder(is, this.decoder));
+	protected void transform(LightweightStaticGraph graph, OutputStream oup)
+			throws IOException {
 		PrintStream p = new PrintStream(oup);
-				
 		p.println(graph.isSimple() ? "Simple." : "Non-simple.");
 		p.println(graph.directed() ? "Directed." : "Undirected.");
-		p.println(graph.isConnected() ? "Connected." : "Disconnected.");
-		
-		System.out.println("Edges (directed) " + graph.edgeCount() + ".");
+		componentList(graph, p);
+		System.out.println("Graph has [" + graph.size() + "] vertices and ["
+				+ graph.edgeCount() + "] edges (directed).");
 	}
-
+	
+	private void componentList(Graph graph, PrintStream oup) {
+		int [] components = GraphAlgorithms.components(graph);
+		for (int i = 0; i < components.length; i++) {
+			if (components[i] != 0) {
+				oup.print("[" + components[i] + "] ");
+			}
+		}
+		oup.println("");
+	}
 }

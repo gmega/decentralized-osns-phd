@@ -74,6 +74,17 @@ public class SubgraphDecorator implements Graph {
 			fMappings[i] = idx;
 		}
 	}
+	
+	// --------------------------------------------------------------------------
+	
+	public void setVertexList(int [] list) {
+		fInvMap.clear();
+		ensureMappingsSize(list.length);
+		for (int i = 0; i < list.length; i++) {
+			fInvMap.put(list[i], i);
+			fMappings[i] = list[i];
+		}
+	}
 
 	// --------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@ import it.unitn.disi.graph.GraphWriter;
 import it.unitn.disi.graph.cli.Adj2ByteGraph;
 import it.unitn.disi.graph.cli.Undirect;
 import it.unitn.disi.graph.codecs.AdjListGraphDecoder;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import java.io.ByteArrayInputStream;
@@ -44,7 +45,7 @@ public class TestUtils {
 	}
 	
 	public static ByteArrayInputStream undirect(ByteArrayInputStream input) {
-		return runTransformer(new Undirect(), input);
+		return runTransformer(new Undirect(ByteGraphDecoder.class.getName()), input);
 	}
 	
 	public static LightweightStaticGraph graph(String adjList) {
