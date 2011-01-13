@@ -13,6 +13,8 @@ from graph.transformers import strip_unmarked_vertices
 import operator
 import re
 from experiment.util import LineParser
+import numpy
+import math
 
 # =============================================================================
 
@@ -51,13 +53,13 @@ class BestPars:
                 
         for stat in self._stats.values():
             parameters, best = stat.best(self.__ranking__)
-            statistics_string = " ".join([str(i) for i in self.__statistics__(best)])
+            statistics_string = " ".join([str(i) for i in self.__print_statistic__(best)])
             print int(stat.id), int(stat.degree), " ".join([str(i) for i in parameters]), statistics_string 
 
             
     def __data__(self):
         # Keys go untransformed.
-        identities = [lambda x : x]*(len(self._keys))
+        identities = [lambda x : x] * (len(self._keys))
         # Node id and degree get converted to integers.
         integers = [lambda x : int(x)] * 2
         # Custom converters supplied by the subclass.
@@ -70,7 +72,7 @@ class BestPars:
             # The two fields immediately after the keys should be id and degree.
             id, degree = line[klength:klength + 2]
             # The remainder of the fields are the data.
-            data_point = self.__data_point__(degree, line[klength + 2:])            
+            data_point = self.__data_point__(line_parser.line(), degree, line[klength + 2:])            
             yield(tuple(parameters), id, degree, data_point)
 
             
@@ -101,11 +103,16 @@ class BestLatency(BestPars):
         return x.latency_sum < y.latency_sum
 
     
-    def __data_point__(self, degree, data):
+    def __data_point__(self, line_number, degree, data):
         t_max, t_avg, t_var, undelivered = data 
         delivered = degree - undelivered
         sum = delivered * t_avg
         sqr_sum = delivered * (t_var + t_avg * t_avg)
+        
+        # Sanity checks the data.
+        if delivered == 0 and sum != 0:
+            raise Exception("Line: " + str(line_number)) 
+        
         return {"t_max":t_max, "sqr_sum":sqr_sum, "latency_sum":sum, "delivered":delivered, "undelivered":undelivered}
 
     

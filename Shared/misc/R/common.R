@@ -228,6 +228,17 @@ add_row_with_name <- function(a_table, a_row, a_name) {
 
 ##############################################################
 #
+# Excludes the specified columns.
+#
+##############################################################
+names_excluding <- function(table, exclude) {
+	the_names <- names(table)
+	the_names <- the_names[which(!(the_names %in% exclude))]
+	return(the_names)
+}
+
+##############################################################
+#
 # Very simple check for command line arguments.
 #
 ##############################################################

@@ -5,11 +5,6 @@ library(igraph)
 lib_home <- Sys.getenv("RLIB_HOME")
 source(paste(lib_home,"commonStats.R",sep="/"))
 
-names_excluding <- function(table, exclude) {
-	the_names <- names(table)
-	the_names <- the_names[which(!(the_names %in% exclude))]
-	return(the_names)
-}
 
 order_by <- function(table, field) {
 	return(table[order(field),])

@@ -1,6 +1,22 @@
 lib_home <- Sys.getenv("RLIB_HOME")
 source(paste(lib_home,"common.R",sep="/"))
 
+add_rank <- function(a_table, cname, rname) {
+	ordered <- a_table[order(a_table[c(cname)]),]
+	ordered <- cbind(ordered, rank=1:length(ordered[c(cname)][[1]]))
+	avg_ranks <- aggregate(ordered[c("rank")], ordered[c(cname)], mean)
+	avg_ranks <- merge(ordered, avg_ranks, c(cname), suffixes=c("", "_avg"))
+	avg_ranks <- add_row_with_name(avg_ranks, avg_ranks$rank_avg, rname)
+	return(avg_ranks)
+	return(avg_ranks[names_excluding(avg_ranks, c("rank", "rank_avg"))])
+}
+
+spearman <- function(a_table, x_col, y_col) {
+	a_table <- add_rank(a_table, x_col, "rxi")
+	a_table <- add_rank(a_table, y_col, "ryi")
+	return(cor(a_table$rxi, a_table$ryi))
+}
+
 #
 # Adds "latency_sum" column to table.
 #

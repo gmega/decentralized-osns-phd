@@ -28,7 +28,7 @@ public class ComputeConnectivity extends GraphAnalyzer {
 			out.println("id components degree");
 			for (int i = 0; i < fGraph.size(); i++) {
 				out.println(i + " " + tarjan(fGraph.fastGetNeighbours(i)) + " "
-						+ fGraph.fastGetNeighbours(i).length + "\n");
+						+ fGraph.fastGetNeighbours(i).length);
 			}
 		} finally {
 			out.close();

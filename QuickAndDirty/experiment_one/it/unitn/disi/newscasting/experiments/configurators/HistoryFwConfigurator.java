@@ -129,7 +129,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		switch (type) {
 
 		case SIMPLE:
-			selector = simpleHeuristic(prefix);
+			selector = simpleHeuristic(subPrefix(prefix, 0));
 			break;
 
 		case ALTERNATING:

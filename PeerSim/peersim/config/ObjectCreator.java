@@ -189,15 +189,15 @@ public class ObjectCreator<T> implements IAttributeSource {
 			try {
 				resolveParameter(prefix, key, annotations[i], parameterTypes[i]);
 			} catch (MissingParameterException ex) {
-				data.append(" - ");
+				data.append(" -> (prefix: ");
 				if (prefix == null || prefix.equals("")) {
 					data.append("<<no prefix>>");
 				} else {
 					data.append(prefix);
 				}
-				data.append(", ");
+				data.append(", attribute: ");
 				data.append(key);
-				data.append("\n");
+				data.append(")\n");
 				return -1;
 			}
 		}

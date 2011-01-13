@@ -118,7 +118,6 @@ public class GenericDriver {
 			if (kvPair.length != 2) {
 				continue;
 			}
-			System.out.println(kvPair[0] + " "+ kvPair[1]);
 			props.put(kvPair[0], kvPair[1]);
 		}
 
