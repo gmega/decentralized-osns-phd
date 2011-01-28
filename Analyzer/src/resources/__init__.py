@@ -44,7 +44,7 @@ _METADATA = ".analyzer"
 # Resource accessors
 #===============================================================================
 def resource(file_name):
-    the_path = path([_RESOURCES] + [file_name])
+    the_path = __path__([_RESOURCES] + [file_name])
     if os.path.exists(the_path):
         return the_path
     
@@ -52,7 +52,7 @@ def resource(file_name):
 
 
 def output(file_elements):
-    return path([_OUTPUTS] + file_elements)
+    return __path__([_OUTPUTS] + file_elements)
 
 
 def home():
@@ -63,7 +63,7 @@ def home():
     return base_path
 
 
-def path(elements, base_path=home()):
+def __path__(elements, base_path=home()):
     
     file_name = elements.pop()
     
@@ -77,9 +77,9 @@ def path(elements, base_path=home()):
     return base_path
 
 
-def storage_area(filename):
-    return path([filename, _METADATA], os.getenv("HOME"))
+def __storage_area__(filename):
+    return __path__([filename, _METADATA], os.getenv("HOME"))
 
 
-RESOURCE_HOME = path([_RESOURCES])
-OUTPUT_HOME = path([_OUTPUTS]) 
+RESOURCE_HOME = __path__([_RESOURCES])
+OUTPUT_HOME = __path__([_OUTPUTS]) 

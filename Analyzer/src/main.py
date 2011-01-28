@@ -45,7 +45,7 @@ def _main(args):
     print >> sys.stderr, "Starting the Python generic driver."
     
     if options.verbose:
-        print >> sys.stderr, "System path is:", sys.path
+        print >> sys.stderr, "System __path__ is:", sys.__path__
 
     # Configures progress tracking verbosity.
     ProgressTracker.set_detail(FULL if options.verbose else TASK_BOUNDARY_ONLY)

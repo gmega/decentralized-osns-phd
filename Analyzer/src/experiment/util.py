@@ -44,7 +44,7 @@ class ChkStructure:
     def __collect__(self, folder, template):
         matching = []
         handler = FilenameHandler(NAME_CONSTITUENTS, template)
-        for file in os.listdir(os.path.join(self._root, folder)):
+        for file in os.listdir(os.__path__.join(self._root, folder)):
             candidate = handler.info(file)
             if not candidate is None:
                 matching.append(candidate)
@@ -87,7 +87,7 @@ class ExpandTemplate(object):
                     print >> self._output, line
     
     def __expand_tpl__(self, file_name):
-        leaf = os.path.realpath(os.path.join(self._snippets_root, file_name.rstrip()))
+        leaf = os.__path__.realpath(os.__path__.join(self._snippets_root, file_name.rstrip()))
         with open (leaf, "r") as file:
             return file.read()
 
@@ -103,9 +103,9 @@ class MkExperiment(object):
         self._experiment_template = experiment_template
         
     def execute(self):
-        tplpath = os.path.join(self._templates_root, self._template)
+        tplpath = os.__path__.join(self._templates_root, self._template)
         
-        if not os.path.isfile(tplpath):
+        if not os.__path__.isfile(tplpath):
             print >> sys.stderr, "Invalid experiment template ", tplpath + "."
             return 1
         
@@ -113,15 +113,15 @@ class MkExperiment(object):
         experiment_path = os.getcwd()
         
         for part in path_parts:
-            experiment_path = os.path.join(experiment_path, part)
-            if os.path.exists(experiment_path):
-                if os.path.isfile(experiment_path):
+            experiment_path = os.__path__.join(experiment_path, part)
+            if os.__path__.exists(experiment_path):
+                if os.__path__.isfile(experiment_path):
                     print >> sys.stderr, "A file with name", experiment_path, "already exists."
                     return - 1 
             else:
                 os.mkdir(experiment_path)
 
-        experiment_template = os.path.join(experiment_path, self._experiment_template)
+        experiment_template = os.__path__.join(experiment_path, self._experiment_template)
         
         with open(experiment_template, "w") as file:            
             expand_tpl = ExpandTemplate(tplpath, file, self._snippets_root)

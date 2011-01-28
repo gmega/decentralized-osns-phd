@@ -13,7 +13,7 @@ class Test(unittest.TestCase):
     def testStore(self):
         test_store = resources.output(["teststore"])
         
-        if os.path.exists(test_store):
+        if os.__path__.exists(test_store):
             os.remove(test_store)
          
         store = _Store(test_store)

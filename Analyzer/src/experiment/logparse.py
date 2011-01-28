@@ -970,8 +970,8 @@ def _output_files(specs):
         key = spec_part[0] + ":" + spec_part[1]
         
         output = {2 : lambda : BaseFormatDecoder(sys.stdout, BaseFormatDecoder.SPECIAL),
-                  3 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[2]), open_mode = "w"),
-                  4 : lambda : BaseFormatDecoder(os.path.realpath(spec_part[3]), 
+                  3 : lambda : BaseFormatDecoder(os.__path__.realpath(spec_part[2]), open_mode = "w"),
+                  4 : lambda : BaseFormatDecoder(os.__path__.realpath(spec_part[3]), 
                                                  open_mode="a" if spec_part[2] == "append" else "w") }[len(spec_part)]
            
         outputs[key] = output()

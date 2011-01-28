@@ -32,30 +32,31 @@ class BestPars:
     where:
     
     - pi represents a parameter value;
-    - id uniquely identifies a node in the network;
+    - node_id uniquely identifies a node in the network;
     - node_degree is the degree of the node in the network;
     - vi represents the values required to compute the metric.
     
     """
     
-    def __init__(self, keys):
+    def __init__(self, keys = None, input=sys.stdin, output=sys.stdout):
         self._stats = {}
-        self._keys = keys.split(",")
-      
-              
+        self._keys = [] if keys is None else keys.split(",")
+        self._input = input
+        self._output = output
+                          
     def execute(self):
-        
         for parameters, id, degree, data in self.__data__():
-            stat = self.__get__(id, degree)
-            stat.point(parameters, data)
+            exp_set = self.__get__(id, degree)
+            exp_set.point(parameters, data)
         
-        print "id degree", " ".join([str(i) for i in self._keys]), self.__header__()
+        all_fields = ["id", "degree"] + [str(i) for i in self._keys] + self.__header__()
+        print " ".join(all_fields)
                 
-        for stat in self._stats.values():
-            parameters, best = stat.best(self.__ranking__)
-            statistics_string = " ".join([str(i) for i in self.__print_statistic__(best)])
-            print int(stat.id), int(stat.degree), " ".join([str(i) for i in parameters]), statistics_string 
-
+        for id, data in self._stats.items():
+            degree, experiment_set = data
+            parameters, best_set = self.__best__(experiment_set)
+            statistics_string = " ".join([str(i) for i in self.__print_statistic__(best_set)])
+            print >> self._output, int(id), int(degree), " ".join([str(i) for i in parameters]), statistics_string
             
     def __data__(self):
         # Keys go untransformed.
@@ -64,7 +65,7 @@ class BestPars:
         integers = [lambda x : int(x)] * 2
         # Custom converters supplied by the subclass.
         converters = self.__type_converters__()
-        line_parser = LineParser(lambda x : True, identities + integers + converters, sys.stdin)
+        line_parser = LineParser(lambda x : True, identities + integers + converters, self._input)
         klength = len(self._keys)
         for type, line in line_parser:
             # Key fields.
@@ -75,32 +76,46 @@ class BestPars:
             data_point = self.__data_point__(line_parser.line(), degree, line[klength + 2:])            
             yield(tuple(parameters), id, degree, data_point)
 
+
+    def __best__(self, parameterized_set):
+        best = None
+        for parameters, experiment_set in parameterized_set.items():
+            if best is None or self.__is_better__(experiment_set, best[1]): 
+                best = (parameters, experiment_set)
+
+        return best
+
             
     def __get__(self, id, degree):
         
         if not (id in self._stats):
-            self._stats[id] = NodeData(id, degree)
-        return self._stats[id]
+            self._stats[id] = (degree, ParameterizedExperimentSet())
+        return self._stats[id][1]
     
 # =============================================================================
     
 class BestLatency(BestPars):
     """ BestPars subclass which selects parameter combinations yielding the 
-        best average latencies. """
+        best average latencies. 
         
-    def __init__(self, keys):
-        BestPars.__init__(self, keys)
+        Assumes the existence of four fields after the node degree:
+        [maximum latency] [average latency] [latency variance] [messages undelivered]
+    """
+    def __init__(self, keys, input=sys.stdin, output=sys.stdout):
+        BestPars.__init__(self, keys, input, output)
+    
     
     def __type_converters__(self):
         return [lambda x : float(x.lstrip().rstrip())]*4
 
 
     def __header__(self):
-        return "t_avg t_max t_var latency_sum max_latency_sum delivered experiments"
+        return ["t_avg", "t_max", "t_var", "latency_sum", 
+                "max_latency_sum", "delivered", "experiments"]
 
     
-    def __ranking__(self, x, y):
-        return x.latency_sum < y.latency_sum
+    def __is_better__(self, x, y):
+        return self.__checked_divide__(x.latency_sum, x.delivered, 0.0) < self.__checked_divide__(y.latency_sum, y.delivered, 0.0)
 
     
     def __data_point__(self, line_number, degree, data):
@@ -111,14 +126,14 @@ class BestLatency(BestPars):
         
         # Sanity checks the data.
         if delivered == 0 and sum != 0:
-            raise Exception("Line: " + str(line_number)) 
+            raise Exception("Data inconsistency - line: " + str(line_number)) 
         
         return {"t_max":t_max, "sqr_sum":sqr_sum, "latency_sum":sum, "delivered":delivered, "undelivered":undelivered}
 
     
     def __print_statistic__(self, best):
         n = float(best.delivered)
-        experiments = float(best.n)
+        experiments = float(best.repetitions)
         t_max_sum = best.t_max
         latency_sum = best.latency_sum
         t_max = self.__checked_divide__(t_max_sum, experiments, 0)
@@ -136,51 +151,62 @@ class BestLatency(BestPars):
 
 # =============================================================================
     
-class NodeData:
-    """ Stores data regarding the outcomes of the various experiments involving
-        a single node. Memory consumption grows linearly with the number of parameter
-        combinations.  
+class ParameterizedExperimentSet:
+    """ Stores one experiment set per parameter combination of parameters.
     """
-    def __init__(self, id, degree):
-        self.degree = degree
-        self.id = id
+    def __init__(self):
         self._data = {}
-
         
+    
     def point(self, parameters, data):
-        self.__add_parameter_data__(parameters, data)
-
-
-    def __add_parameter_data__(self, parameters, data):
         # If we do not have an entry for this particular
         # parameter combination, creates one.
         if not (parameters in self._data):
-            fields = {"n":1}
-            fields.update(data)            
-            parameter_data = Multicounter(fields)
-            self._data[parameters] = parameter_data
-
+            experiment_set = ExperimentSet(data)
+            self._data[parameters] = experiment_set
         # Otherwise, increments what we already had.
         else:
-            parameter_data = self._data[parameters]
-            parameter_data.n += 1
-            for key, increment in data.items():
-                value = getattr(parameter_data, key)
-                setattr(parameter_data, key, value + increment)
-                   
-        return parameter_data
+            experiment_set = self._data[parameters]
+            experiment_set.point(data)
 
-        
-    def best(self, is_better):
-        best = None
-        
-        for key, item in self._data.items():
-            if best is None:
-                best = (key, item)
-            elif (is_better(item, best[1])):
-                best = (key, item)
 
-        return best
+    def items(self):
+        return self._data.items()
+        
+# =============================================================================
+
+class ExperimentSet(object):
+    """ An ExperimentSet represents a set of data points, one for each repetition
+    of a given experiment.
+    """
+        
+    def __init__(self, initial_point):
+        self._counter = dict(initial_point)
+        self._schema = set(initial_point.keys())
+        self._repetitions = 1
+
+
+    def point(self, data):
+        self.__verify_matches__(data.keys())
+        self._repetitions += 1
+        for key, increment in data.items():
+            self._counter[key] += increment;
+        
+        
+    def __verify_matches__(self, data_keys):
+        for data_key in data_keys:
+            if not data_key in self._schema:
+                raise Exception("Key " + data_key + " is not valid.")
+    
+    
+    def __getattr__(self, key):
+        return self._counter[key]
+
+    
+    @property
+    def repetitions(self):
+        return self._repetitions
+
 
 # =============================================================================
 

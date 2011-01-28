@@ -44,10 +44,10 @@ class OSNSExperimentSetLoader:
     def __collect__(self, folder, template):
         matching = []
         handler = FilenameHandler(NAME_CONSTITUENTS, template)
-        for file in os.listdir(os.path.join(self._root, folder)):
+        for file in os.listdir(os.__path__.join(self._root, folder)):
             candidate = handler.info(file)
             if not candidate is None:
-                candidate[self.ORIGINAL] = os.path.join(folder, file)
+                candidate[self.ORIGINAL] = os.__path__.join(folder, file)
                 candidate[self.LOG_TYPE] = folder
                 matching.append(candidate)
                 

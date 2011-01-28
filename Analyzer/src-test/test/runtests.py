@@ -11,22 +11,22 @@ import sys
 import time
 from misc.reflection import get_object
 
-ALL_MODULES = ["test_analysis", 
-               "test_community", 
-               "test_ds", 
+ALL_MODULES = ["test.test_analysis", 
+               "test.test_community", 
+               "test.test_ds", 
                "test_graph", 
-               #"test_main", 
-               "test_snippets", 
-               "test_transformers", 
-               "test_util",
-               "test_logparse"]
+               "test.test_snippets", 
+               "test.test_transformers", 
+               "test.test_util",
+               "test.test_logparse",
+               "ex1_test.test_analysis"]
 
 def main():
     
     suites = []
         
     for element in ALL_MODULES:
-        module = get_object("test." + element)
+        module = get_object(element, True)
         suites.append(unittest.TestLoader().loadTestsFromModule(module))
         
     MultiSuiteTestRunner().run(suites)
