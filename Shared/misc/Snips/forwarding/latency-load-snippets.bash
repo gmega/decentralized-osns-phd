@@ -145,6 +145,16 @@ cat ./output.gz | pigz -d | grep DE: | cut -d":" -f2 | sed 's/Infinity/0/g' | se
 
 # CHECK, cause the -f3-10 is kind of bizarre and works only if there's a space before the psi.
 nohup cat `ls *.gz` | pigz -d |  grep DE: | cut -d":" -f2 | sed 's/Infinity/0/g' | sed 's/NaN/0/g' | sed 's/-4.6566128730773926E-10/0/g' | sed 's/-2147483648/0/g' | sed 's/.$//' | cut -d" " -f3-8,12 | analyzer -t python -V keys=psi ex1.analysis.BestPars > ./latencies/optimal-latencies.text 2> ./latencies/optimal-latencies.err
+
+# -----------------------------------------------------
+# Hybrid nzero, PSIless.
+# -----------------------------------------------------
+
+# Extracts latency for certain repetitions and values of NZERO.
+for j in `seq 1 6`; do 
+	analyzer-j -o ../latencies-$i.text -s , -p file_list="`ls | grep NZERO_[1-8]-[1-${j}] | xargs`",matching_only=true,allow_partial=true,line_prefix=DE: it.unitn.disi.logparse.LogParse
+done;
+
 #######################################################
 # Parameter Analysis snippets.
 #######################################################

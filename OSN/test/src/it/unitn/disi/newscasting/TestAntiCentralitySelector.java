@@ -38,10 +38,10 @@ public class TestAntiCentralitySelector {
 				});
 
 		Random r = new Random(42);
-		DegreeCentrality centrality = new DegreeCentrality(pid, true);
+		DegreeCentrality centrality = new DegreeCentrality(pid);
 		BiasedCentralitySelector slktor = new BiasedCentralitySelector(
 				new ProtocolReference<Linkable>(pid),
-				new FallThroughReference<IUtilityFunction>(centrality), r);
+				new FallThroughReference<IUtilityFunction>(centrality), true, r);
 
 		Node node = builder.getNodes().get(0);
 		builder.replayAll();
@@ -60,9 +60,9 @@ public class TestAntiCentralitySelector {
 			Node neighbor = lnk.getNeighbor(i);
 			Assert.assertEquals(i + 1, neighbor.getID());
 			int selections = counter.count(neighbor);
+			System.out.println("i: " + selections);
 			Assert.assertTrue(selections > last);
 			last = selections;
-			System.out.print(last + " ");
 		}
 
 		System.out.println();

@@ -155,11 +155,9 @@ combine_experiments <- function(a_table) {
 	transformed <- add_experiment_counts(transformed)
 	# Then the t_max sums.
 	transformed <- cbind(transformed, max_latency_sum=transformed$t_max)
-
 	# Finally, aggregates all experiments.
 	transformed <- aggregate(transformed[c("latency_sum", "max_latency_sum", "squared_sum", "delivered", "undelivered", "duplicates", "experiments")],
 	list(id=transformed$id, degree=transformed$degree), sum)
-
 	# Now computes the variances and averages again, as well as average tmax.
 	transformed <- add_latencies(transformed)
 	transformed <- add_variances(transformed)
@@ -213,10 +211,23 @@ aggregates <- function(a_table, graph) {
 	
 }
 
+###############################################################################
+# Printing metrics.
+###############################################################################
+print_percentiles <- function(name, vec, percentiles) {
+	values <- quantile(vec, percentiles)
+	for(i in 1:length(percentiles)) {
+		percentil <- percentiles[i]*100
+		cat(paste(percentil, "th percentile", name, values[i], "\n"))
+	}
+}
+
 # Trivial hybrid
 #cent_select <- which(cent_tables$t_avg < rnd_tables$t_avg & cent_tables$t_avg < ac_tables$t_avg)
 #rnd_select <- which(rnd_tables$t_avg < cent_tables$t_avg & rnd_tables$t_avg < ac_tables$t_avg)
 #ac_select <- which(ac_tables$t_avg <= rnd_tables$t_avg & ac_tables$t_avg <= cent_tables$t_avg)
 #trivial_hybrid <- rbind(ac_tables[ac_select,],rnd_tables[rnd_select,],cent_tables[cent_select,])
 #trivial_hybrid <- trivial_hybrid[order(trivial_hybrid$id),]
+
+
 

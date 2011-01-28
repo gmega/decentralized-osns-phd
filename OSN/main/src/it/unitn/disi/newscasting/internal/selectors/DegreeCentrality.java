@@ -16,19 +16,8 @@ public class DegreeCentrality implements IUtilityFunction {
 
 	private int fLinkable;
 
-	/**
-	 * If toggled, assigns higher score to lower centrality nodes.
-	 */
-	private boolean fAnticentrality;
-
-	public DegreeCentrality(@Attribute("linkable") int linkable,
-			@Attribute("anticentrality") boolean anticentrality) {
+	public DegreeCentrality(@Attribute("linkable") int linkable) {
 		fLinkable = linkable;
-		fAnticentrality = anticentrality;
-		System.err.println("Ranking function is "
-				+ this.getClass().getSimpleName() + " operating in ["
-				+ (fAnticentrality ? "anticentrality" : "centrality")
-				+ "] mode.");
 	}
 
 	@Override
@@ -39,9 +28,6 @@ public class DegreeCentrality implements IUtilityFunction {
 	@Override
 	public int utility(Node source, Node target) {
 		int score = GraphUtils.countIntersections(source, target, fLinkable);
-		if (fAnticentrality) {
-			score = ((Linkable) source.getProtocol(fLinkable)).degree() - score;
-		}
 		// Sanity test
 		if (score < 0) {
 			throw new InternalError(Integer.toString(score));

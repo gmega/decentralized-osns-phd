@@ -32,8 +32,7 @@ public class JZCat implements ITransformer {
 		char[] buffer = new char[1024];
 		int read = 0;
 
-		while (read != -1) {
-			read = reader.read(buffer);
+		while ((read = reader.read(buffer)) != -1) {
 			writer.write(buffer, 0, read);
 		}
 	}

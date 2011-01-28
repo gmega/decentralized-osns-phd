@@ -28,15 +28,6 @@ public class TestCentralitySelector {
 		}
 	}
 	
-	@Test
-	public void testAnticentrality() throws Exception {
-		Set<Integer> selectedSet = runTest(true);
-		assertEquals(5, selectedSet.size());
-		for (Integer selected : selectedSet) {
-			assertTrue(selected >= 5 && selected <= 10);
-		}
-	}
-	
 	private Set<Integer> runTest(boolean anticentrality) {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.mkNodeArray(12);
@@ -58,7 +49,7 @@ public class TestCentralitySelector {
 			});
 
 		int ranking = -1;
-		DegreeCentrality centrality = new DegreeCentrality(linkable, anticentrality);
+		DegreeCentrality centrality = new DegreeCentrality(linkable);
 		for (Node node : builder) {
 			ranking = builder.addProtocol(node, centrality);
 		}

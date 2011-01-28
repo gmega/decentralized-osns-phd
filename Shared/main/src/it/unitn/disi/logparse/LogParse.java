@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.DeflaterOutputStream;
 
 import org.apache.log4j.Logger;
 
@@ -29,15 +30,30 @@ public class LogParse implements ITransformer {
 
 	private static final Logger fLogger = Logger.getLogger(LogParse.class);
 
+	/**
+	 * A list of files to parse. Might be gzipped or plain text files.
+	 */
 	@Attribute("file_list")
 	private String fFileList;
 
+	/**
+	 * An invariant prefix which identifies lines of interest.
+	 */
 	@Attribute("line_prefix")
 	private String fLinePrefix;
 
+	/**
+	 * If true, only outputs lines with the matching prefix.
+	 */
 	@Attribute("matching_only")
 	private boolean fMatchingOnly;
-	
+
+	/**
+	 * If true, allows partially completed files to be parsed.
+	 */
+	@Attribute("allow_partial")
+	private boolean fAllowPartial;
+
 	private String[] fParameters;
 
 	@Override
@@ -48,7 +64,15 @@ public class LogParse implements ITransformer {
 			String file = list[i];
 			Pair<String, String> pars = parameters(file);
 			if (pars != null) {
-				processFile(file, pars.a, pars.b, new PrintStream(oup));
+				try {
+					processFile(file, pars.a, pars.b, new PrintStream(oup));
+				} catch (java.io.EOFException ex) {
+					fLogger.error("Unexpected end-of-file found.");
+					if(!fAllowPartial) {
+						fLogger.error("Re-run with the allow_partial option to skip this file and continue.");
+						return;
+					}
+				}
 			}
 		}
 	}
