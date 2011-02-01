@@ -1,7 +1,7 @@
 package it.unitn.disi.graph;
 
-import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.sps.IInputStreamProvider;
+import it.unitn.disi.utils.IInputStreamProvider;
+import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 
 import java.io.File;
@@ -49,7 +49,7 @@ public class GraphProtocol implements Protocol, IDynamicLinkable {
 
 	public GraphProtocol() {
 	}
-	
+
 	public GraphProtocol(String prefix) {
 	}
 
@@ -72,17 +72,30 @@ public class GraphProtocol implements Protocol, IDynamicLinkable {
 	 */
 	public void configure(Node node, IndexedNeighborGraph graph,
 			INodeRegistry registry) {
+		this.configure((int) node.getID(), graph, registry);
+	}
+
+	/**
+	 * Alternative formulation for
+	 * {@link #configure(Node, IndexedNeighborGraph, INodeRegistry)}, where
+	 * instead of passing the actual {@link Node} object, the client passes only
+	 * its numeric ID (as given by {@link Node#getID()}, and cast to
+	 * <code>int</code>). Clients should avoid using this method, since it is
+	 * more error prone, and less abstract.
+	 */
+	public void configure(int nodeId, IndexedNeighborGraph graph,
+			INodeRegistry registry) {
 
 		if (isInit()) {
 			throw new IllegalStateException(
 					"Initialization should be performed only once.");
 		}
 
-		fId = (int) node.getID();
-		if (fId < 0) {
+		if (nodeId < 0) {
 			throw new IllegalArgumentException();
 		}
-
+		
+		fId = nodeId;
 		if (graph == null || registry == null) {
 			throw new NullPointerException();
 		}
@@ -152,11 +165,6 @@ public class GraphProtocol implements Protocol, IDynamicLinkable {
 	public IndexedNeighborGraph graph() {
 		chkInit();
 		return fGraph;
-	}
-
-	private INodeRegistry registry() {
-		chkInit();
-		return fRegistry;
 	}
 
 	private void chkInit() {

@@ -2,35 +2,43 @@ package it.unitn.disi.newscasting;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.SubgraphDecorator;
+import it.unitn.disi.utils.peersim.IInitializable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import peersim.config.Configuration;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.core.Protocol;
 import peersim.graph.Graph;
 import peersim.graph.GraphAlgorithms;
 
-public class ComponentComputationService implements Protocol {
+/**
+ * Protocol providing information about neighborhood fragmentation.
+ * 
+ * @author giuliano
+ */
+@AutoConfig
+public class ComponentComputationService implements Protocol, IInitializable {
 
-	private static final String PAR_SN = "fast_graph_protocol";
-	
 	private static GraphAlgorithms fGa = new GraphAlgorithms();
+	
+	private int fLinkableId;
+	
+	private Node fOwner;
 	
 	private HashMap<Integer, Integer> fComponentTable = new HashMap<Integer, Integer>();
 	
 	private ArrayList<Integer> [] fMappings;
 	
-	private int fLinkableId;
-	
 	private int fLastCheck = -1;
 	
-	public ComponentComputationService(String prefix) {
-		fLinkableId = Configuration.getPid(prefix + "." + PAR_SN);
+	public ComponentComputationService(@Attribute("linkable") int linkableId) {
+		fLinkableId = linkableId;
 	}
 
 	/**
@@ -43,8 +51,8 @@ public class ComponentComputationService implements Protocol {
 	 * NOTE: if this method is called with a node OTHER THAN the owner node, 
 	 * the behavior of the service becomes unspecified. 
 	 */
-	public int components(Node node) {
-		check(node);
+	public int components() {
+		check();
 		return fMappings.length; 
 	}
 
@@ -54,8 +62,8 @@ public class ComponentComputationService implements Protocol {
 	 * cast to {@link Integer}), returns the index of the connected component that
 	 * the neighboring node belongs to.
 	 */
-	public int componentOf(Node central, int id) {
-		check(central);
+	public int componentOf(int id) {
+		check();
 		return fComponentTable.get(id);
 	}
 
@@ -67,24 +75,24 @@ public class ComponentComputationService implements Protocol {
 	 * @param id
 	 * @return
 	 */
-	public List<Integer> members(Node central, int id) {
-		check(central);
+	public List<Integer> members(int id) {
+		check();
 		return fMappings[id];
 	}
 	
-	private void check(Node node) {
+	private void check() {
 		if (fLastCheck == CommonState.getTime()) {
 			return;
 		}
 		
-		GraphProtocol lnk = (GraphProtocol) node.getProtocol(fLinkableId);
+		GraphProtocol lnk = (GraphProtocol) fOwner.getProtocol(fLinkableId);
 		boolean dirty = true;
 		
 		dirty = lnk.hasChanged(CommonState.getIntTime());
 		dirty |= (fMappings == null);
 		
 		if (dirty) {
-			recomputeComponents(node, lnk);
+			recomputeComponents(fOwner, lnk);
 		}
 		
 		fLastCheck = CommonState.getIntTime();
@@ -120,6 +128,19 @@ public class ComponentComputationService implements Protocol {
 		}
 	}
 	
+	@Override
+	public void initialize(Node node) {
+		if (fOwner != null) {
+			throw new IllegalStateException();
+		}
+		fOwner = node;
+	}
+
+	@Override
+	public void reinitialize() {
+		fOwner = null;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public Object clone() {
 		try {
@@ -130,11 +151,10 @@ public class ComponentComputationService implements Protocol {
 					cssClone.fMappings[i] = new ArrayList<Integer>(fMappings[i]);
 				}
 			}
-			cssClone.fComponentTable = new HashMap(this.fComponentTable);		
+			cssClone.fComponentTable = new HashMap<Integer, Integer>(this.fComponentTable);		
 			return cssClone;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException();
 		}
 	}
-
 }

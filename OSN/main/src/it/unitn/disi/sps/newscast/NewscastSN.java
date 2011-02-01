@@ -1,7 +1,5 @@
 package it.unitn.disi.sps.newscast;
 
-import it.unitn.disi.IDynamicLinkable;
-import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.sps.newscast.View.BufferHandler;
@@ -10,6 +8,8 @@ import it.unitn.disi.sps.selectors.RandomSelector;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
+import it.unitn.disi.utils.peersim.IDynamicLinkable;
+import it.unitn.disi.utils.peersim.IInitializable;
 
 import java.util.HashMap;
 import java.util.Iterator;

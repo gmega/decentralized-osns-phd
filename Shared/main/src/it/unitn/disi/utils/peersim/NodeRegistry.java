@@ -98,6 +98,7 @@ class HashMapNodeRegistry extends AbstractNodeRegistry {
 	public Node getNode(long id) { return fId2Node.get(id); }
 	public Node removeNode(long id){ return fId2Node.remove(id); }
 	public boolean contains(long id) { return fId2Node.containsKey(id); }
+	public void clear() { fId2Node.clear(); }
 }
 
 /**
@@ -145,6 +146,9 @@ class ArrayListNodeRegistry extends AbstractNodeRegistry {
 		return fId2Node.get((int) id) != null; 
 	}
 
+	public void clear(){
+		fId2Node.clear();
+	}
 }
 
 

@@ -35,7 +35,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 	public void indirectDissemination(){
 
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(4);
+		builder.addNodes(4);
 		
 		final int CYCLES = 4;
 		
@@ -64,7 +64,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder, SOCIAL_NETWORK_ID,
 				SELECTOR_PID, log, nodes, root, true);
 		
-		builder.replayAll();
+		builder.done();
 
 		// Posts a reply to our tweet.
 		Node replier = nodes.get(1);
@@ -104,7 +104,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 	@Test
 	public void doesntSendBackToSender() {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(2);
+		builder.addNodes(2);
 		
 		final int CYCLES = 4;
 		
@@ -125,7 +125,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder,
 				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, false);
 		
-		builder.replayAll();
+		builder.done();
 		
 		Node root = nodes.get(0);
 		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);
@@ -144,7 +144,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 	@Test
 	public void learnsHistoryFromDuplicate() {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(4);
+		builder.addNodes(4);
 		
 		final int CYCLES = 4;
 		
@@ -169,7 +169,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder,
 				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, true);
 		
-		builder.replayAll();
+		builder.done();
 		
 		Node root = nodes.get(0);
 		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);

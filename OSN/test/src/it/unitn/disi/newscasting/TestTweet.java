@@ -17,7 +17,7 @@ public class TestTweet {
 		
 		int pid = builder.assignCompleteLinkable();
 		DefaultVisibility vis = new DefaultVisibility(pid);
-		builder.replayAll();
+		builder.done();
 		
 		Tweet root = new Tweet(A, 1, vis);
 		// Note that this is actually illegal as two different events

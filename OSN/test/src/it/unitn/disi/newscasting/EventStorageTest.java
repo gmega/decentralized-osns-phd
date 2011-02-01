@@ -37,7 +37,7 @@ public class EventStorageTest extends PeerSimTest{
 		int pid = builder.assignCompleteLinkable();
 		DefaultVisibility vis = new DefaultVisibility(pid);
 		
-		builder.replayAll();
+		builder.done();
 
 		for (int i = 0; i < 1000; i++) {
 			a[i] = i;
@@ -78,7 +78,7 @@ public class EventStorageTest extends PeerSimTest{
 		addInterval(s2, node, 15, 25); // [15, 25]
 		addInterval(s1, node, 28, 30); // [28, 30]
 		
-		builder.replayAll();
+		builder.done();
 		Linkable sn = (Linkable) node.getProtocol(pid);
 
 		s1.merge(null, null, s2, IMergeObserver.NULL, sn);
@@ -88,14 +88,14 @@ public class EventStorageTest extends PeerSimTest{
 
 	@Test
 	public void testObserver() {
-		Node[] array = builder.mkNodeArray(10);
+		Node[] array = builder.addNodes(10);
 		int pid = builder.assignCompleteLinkable();
 		DefaultVisibility vis = new DefaultVisibility(pid);
 
 		final CompactEventStorage s1 = new CompactEventStorage(vis);
 		final CompactEventStorage s2 = new CompactEventStorage(vis);
 		
-		builder.replayAll();
+		builder.done();
 		Linkable sn = (Linkable) array[0].getProtocol(pid);
 
 		Random rnd = new Random(1);

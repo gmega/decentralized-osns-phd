@@ -1,6 +1,5 @@
 package it.unitn.disi.newscasting.probabrm;
 
-import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.ComponentComputationService;
@@ -10,6 +9,7 @@ import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -190,11 +190,11 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 				.getProtocol(fCCSId);
 		Tweet msg = new Tweet(owner, sequenceNumber, new DefaultVisibility(
 				fNeighborhoodId));
-		for (int i = 0; i < css.components(owner); i++) {
+		for (int i = 0; i < css.components(); i++) {
 			// The send probabilities are the same for connected components,
 			// so we just pick the parameter computed for an arbitrary
 			// member.
-			List<Integer> members = css.members(owner, i);
+			List<Integer> members = css.members(i);
 			double probability = fFlood ? 1.0 : fSendProbabilities.get(members
 					.get(0).longValue());
 			fPendings.add(makeStrategy(owner, msg, fParentProtocolId,

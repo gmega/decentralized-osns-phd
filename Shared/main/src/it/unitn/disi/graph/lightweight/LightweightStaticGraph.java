@@ -49,6 +49,12 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	}
 
 	// --------------------------------------------------------------------------
+	
+	public static LightweightStaticGraph fromAdjacency(int [][] adjlists) {
+		return new LightweightStaticGraph(adjlists);
+	}
+
+	// --------------------------------------------------------------------------
 
 	public static LightweightStaticGraph undirect(LightweightStaticGraph source) {
 		LSGMakeUndirected undir = new LSGMakeUndirected();

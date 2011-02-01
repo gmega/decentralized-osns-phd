@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
-import it.unitn.disi.IDynamicLinkable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 

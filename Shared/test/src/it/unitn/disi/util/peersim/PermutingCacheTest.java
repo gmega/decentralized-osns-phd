@@ -23,7 +23,7 @@ public class PermutingCacheTest extends PeerSimTest {
 	@Before
 	public void setUp() {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(10);
+		builder.addNodes(10);
 		hub = builder.getNodes().get(0);
 		
 		linkable = builder.assignLinkable(new long [][]{
@@ -31,7 +31,7 @@ public class PermutingCacheTest extends PeerSimTest {
 				{0},{0},{0},{0},{0},{0},{0},{0},{0}
 		});
 		
-		builder.replayAll();
+		builder.done();
 	}
 
 	@Test

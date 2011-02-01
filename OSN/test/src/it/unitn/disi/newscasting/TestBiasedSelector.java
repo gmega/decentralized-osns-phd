@@ -57,8 +57,6 @@ public class TestBiasedSelector extends PeerSimTest{
 				new ByteArrayInputStream(sb.toString().getBytes())));
 		graph = LightweightStaticGraph.undirect(graph);
 		
-		INodeRegistry reg = NodeRegistry.getInstance();
-		
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		
 		int pid = -1;
@@ -69,13 +67,12 @@ public class TestBiasedSelector extends PeerSimTest{
 			pid = builder.addProtocol(node, gp);
 		}
 		
-		builder.replayAll();
+		builder.done();
 		
 		for (int i = 0; i <= 55; i++) {
 			Node node = builder.getNodes().get(i);
-			reg.registerNode(node);
 			GraphProtocol gp = (GraphProtocol) node.getProtocol(pid);			
-			gp.configure(node, graph, reg);
+			gp.configure(node, graph, NodeRegistry.getInstance());
 		}
 
 		Random r = new Random(42);

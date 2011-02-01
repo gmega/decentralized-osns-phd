@@ -21,7 +21,7 @@ public class TestAntiCentralitySelector {
 	@Test
 	public void selectPeer() throws Exception {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(11);
+		builder.addNodes(11);
 
 		int pid = builder.assignLinkable(new long[][] {
 				{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, // 0
@@ -44,7 +44,7 @@ public class TestAntiCentralitySelector {
 				new FallThroughReference<IUtilityFunction>(centrality), true, r);
 
 		Node node = builder.getNodes().get(0);
-		builder.replayAll();
+		builder.done();
 
 		Linkable lnk = (Linkable) node.getProtocol(pid);
 

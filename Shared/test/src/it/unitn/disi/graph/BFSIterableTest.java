@@ -3,6 +3,7 @@ package it.unitn.disi.graph;
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.test.framework.ExtendedAssertions;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -45,7 +46,7 @@ public class BFSIterableTest {
 			BFSIterator it = new BFSIterator(graph, i);
 			for (int j = 0; j < searchLength; j++) {
 				Pair <Integer, Integer> next = it.next();
-				TestUtils.assertContains(next, search);
+				ExtendedAssertions.assertContains(next, search);
 			}
 			
 			while (it.hasNext()) {

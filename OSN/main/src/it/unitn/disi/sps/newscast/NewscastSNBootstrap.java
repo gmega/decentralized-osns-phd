@@ -1,6 +1,6 @@
 package it.unitn.disi.sps.newscast;
 
-import it.unitn.disi.IInitializable;
+import it.unitn.disi.utils.peersim.IInitializable;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Linkable;

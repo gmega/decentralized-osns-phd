@@ -11,6 +11,7 @@ import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.network.EvtDecoderTest;
+import it.unitn.disi.newscasting.ComponentComputationServiceTest;
 import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.HistoryForwardingTest;
 import it.unitn.disi.newscasting.TestAntiCentralitySelector;
@@ -61,7 +62,8 @@ import peersim.config.ObjectCreatorTest;
 	ExperimentRunnerTest.class,
 	UnitExperimentTest.class,
 	BFSIterableTest.class,
-	LSGTransformsTest.class
+	LSGTransformsTest.class,
+	ComponentComputationServiceTest.class
 })
 
 public class AllTests extends PeerSimTest {

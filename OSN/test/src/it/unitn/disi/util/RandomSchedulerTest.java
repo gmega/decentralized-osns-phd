@@ -19,7 +19,7 @@ public class RandomSchedulerTest extends PeerSimTest{
 	public void testRandomScheduler() throws Exception { 
 		
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(21);
+		builder.addNodes(21);
 		
 		int pid = builder.assignLinkable(
 			new long[][] {
@@ -46,7 +46,7 @@ public class RandomSchedulerTest extends PeerSimTest{
 				{0},								//20
 			});
 		
-		builder.replayAll();
+		builder.done();
 		
 		Graph graph = new OverlayGraph(pid);
 		

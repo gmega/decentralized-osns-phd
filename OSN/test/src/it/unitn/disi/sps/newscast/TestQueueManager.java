@@ -27,7 +27,7 @@ public class TestQueueManager {
 	@Test
 	public void testManager() {
 		View view = new View(25, r);
-		Node [] array = builder.mkNodeArray(20);
+		Node [] array = builder.addNodes(20);
 		
 		for (int i = 0; i < 10; i++) {
 			view.append(array[i], r.nextInt());
@@ -79,7 +79,7 @@ public class TestQueueManager {
 	@Test
 	public void testShuffling() {
 		View view = new View(26, r);
-		Node [] array = builder.mkNodeArray(25);
+		Node [] array = builder.addNodes(25);
 		
 		Set<Node> expected = new HashSet<Node>();
 		for (int i = 0; i < 20; i++) {

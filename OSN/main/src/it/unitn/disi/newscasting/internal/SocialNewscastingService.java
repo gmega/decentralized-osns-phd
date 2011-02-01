@@ -1,6 +1,5 @@
 package it.unitn.disi.newscasting.internal;
 
-import it.unitn.disi.IInitializable;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IApplicationInterface;
@@ -12,6 +11,7 @@ import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 

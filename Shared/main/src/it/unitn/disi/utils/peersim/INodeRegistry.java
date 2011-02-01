@@ -39,5 +39,10 @@ public interface INodeRegistry {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean contains(long id);
+	
+	/**
+	 * Removes all currently registered nodes. 
+	 */
+	public void clear();
 
 }

@@ -30,7 +30,7 @@ public class RumorListTest {
 
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		builder.replayAll();
+		builder.done();
 
 		for (int i = 0; i < 8; i++) {
 			rList.add((Linkable) node.getProtocol(pid), new Tweet(node, i,
@@ -80,7 +80,7 @@ public class RumorListTest {
 
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		builder.replayAll();
+		builder.done();
 
 		for (int i = 0; i < 19; i++) {
 			rList.add((Linkable) node.getProtocol(pid), new Tweet(node, i,

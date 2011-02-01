@@ -30,7 +30,7 @@ public class TestCentralitySelector {
 	
 	private Set<Integer> runTest(boolean anticentrality) {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.mkNodeArray(12);
+		builder.addNodes(12);
 		
 		int linkable = builder.assignLinkable(
 			new long[][] {
@@ -54,7 +54,7 @@ public class TestCentralitySelector {
 			ranking = builder.addProtocol(node, centrality);
 		}
 		
-		builder.replayAll();
+		builder.done();
 
 		Random r = new Random(42);
 		PercentileCentralitySelector slktor = new PercentileCentralitySelector(

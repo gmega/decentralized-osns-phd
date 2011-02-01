@@ -31,7 +31,7 @@ public class TestPeerSelectors {
 			view.append(builder.baseNode(), r.nextInt(1000));
 		}
 		
-		builder.replayAll();
+		builder.done();
 		
 		RandomSelector tabooed = new RandomSelector(view, r);
 		TabooSelectionFilter filter = new TabooSelectionFilter(25);

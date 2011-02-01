@@ -39,8 +39,8 @@ public class TestView {
 		p1 = new NewscastSN(10, 2, 2, r, false, false);
 		p2 = new NewscastSN(10, 2, 2, r, false, false);
 
-		Node[] nd1 = builder.mkNodeArray(10);
-		Node[] nd2 = builder.mkNodeArray(10);
+		Node[] nd1 = builder.addNodes(10);
+		Node[] nd2 = builder.addNodes(10);
 
 		for (int i = 0; i < 10; i++) {
 			p1.view().append(nd1[i], tStamps1[i]);
@@ -82,7 +82,7 @@ public class TestView {
 				30, 12, 1 // ts2
 		};
 
-		Node[] nd1 = builder.mkNodeArray(15);
+		Node[] nd1 = builder.addNodes(15);
 		Node[] nd2 = { builder.baseNode(), // Should be added to the buffer.
 				nd1[1], // Should not be added to the buffer.
 				nd1[8], // Should not be added to the buffer.
@@ -195,8 +195,8 @@ public class TestView {
 		int[] tStamps1 = { 5, 7, 1, 2, 4, 9, 10, 3, 1, 2 };
 		int[] tStamps2 = { 13, 4, 2, 7, 9, 1, 23, 12, 1, 4 };
 
-		Node[] nd1 = builder.mkNodeArray(10);
-		Node[] nd2 = builder.mkNodeArray(10);
+		Node[] nd1 = builder.addNodes(10);
+		Node[] nd2 = builder.addNodes(10);
 
 		for (int i = 0; i < 10; i++) {
 			p1.view().append(nd1[i], tStamps1[i]);
