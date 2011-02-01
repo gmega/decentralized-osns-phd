@@ -2,8 +2,8 @@ package it.unitn.disi.sps.fake;
 
 import java.util.Arrays;
 
-import it.unitn.disi.IInitializable;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.peersim.IInitializable;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
