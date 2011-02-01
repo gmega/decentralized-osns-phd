@@ -18,7 +18,8 @@ import peersim.graph.Graph;
 import peersim.graph.GraphAlgorithms;
 
 /**
- * Protocol providing information about neighborhood fragmentation.
+ * {@link ComponentComputationService} can tell into how many disjoint
+ * components a given neighborhood is fragmented on.
  * 
  * @author giuliano
  */
@@ -26,17 +27,29 @@ import peersim.graph.GraphAlgorithms;
 public class ComponentComputationService implements Protocol, IInitializable {
 
 	private static GraphAlgorithms fGa = new GraphAlgorithms();
-	
+
+	/**
+	 * Neighborhood linkable.
+	 */
 	private int fLinkableId;
-	
+
+	/**
+	 * Node at the center of the neighborhood.
+	 */
 	private Node fOwner;
-	
+
+	/**
+	 * Node-to-component mappings.
+	 */
 	private HashMap<Integer, Integer> fComponentTable = new HashMap<Integer, Integer>();
-	
-	private ArrayList<Integer> [] fMappings;
-	
+
+	/**
+	 * Member lists.
+	 */
+	private ArrayList<Integer>[] fMappings;
+
 	private int fLastCheck = -1;
-	
+
 	public ComponentComputationService(@Attribute("linkable") int linkableId) {
 		fLinkableId = linkableId;
 	}
@@ -46,21 +59,21 @@ public class ComponentComputationService implements Protocol, IInitializable {
 	 *            the {@link Node} instance that "owns" this {@link Protocol}
 	 *            instance.
 	 * 
-	 * @return the number of connected components in the owner's neighborhood.
-	 * <BR><BR>
-	 * NOTE: if this method is called with a node OTHER THAN the owner node, 
-	 * the behavior of the service becomes unspecified. 
+	 * @return the number of connected components in the owner's neighborhood. <BR>
+	 * <BR>
+	 *         NOTE: if this method is called with a node OTHER THAN the owner
+	 *         node, the behavior of the service becomes unspecified.
 	 */
 	public int components() {
 		check();
-		return fMappings.length; 
+		return fMappings.length;
 	}
 
 	/**
 	 * Given a central {@link Node} and an ID number for a {@link Node} in the
-	 * neighborhood of the central node (as returned by {@link Node#getID()}, and
-	 * cast to {@link Integer}), returns the index of the connected component that
-	 * the neighboring node belongs to.
+	 * neighborhood of the central node (as returned by {@link Node#getID()},
+	 * and cast to {@link Integer}), returns the index of the connected
+	 * component that the neighboring node belongs to.
 	 */
 	public int componentOf(int id) {
 		check();
@@ -79,34 +92,34 @@ public class ComponentComputationService implements Protocol, IInitializable {
 		check();
 		return fMappings[id];
 	}
-	
+
 	private void check() {
 		if (fLastCheck == CommonState.getTime()) {
 			return;
 		}
-		
+
 		GraphProtocol lnk = (GraphProtocol) fOwner.getProtocol(fLinkableId);
 		boolean dirty = true;
-		
+
 		dirty = lnk.hasChanged(CommonState.getIntTime());
 		dirty |= (fMappings == null);
-		
+
 		if (dirty) {
 			recomputeComponents(fOwner, lnk);
 		}
-		
+
 		fLastCheck = CommonState.getIntTime();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void recomputeComponents(Node n, GraphProtocol fgp) {
 		Graph g = fgp.graph();
 		SubgraphDecorator neighborhood = new SubgraphDecorator(g, true);
 		neighborhood.setVertexList(g.getNeighbours(fgp.getId()));
-		
+
 		Map<Integer, Integer> components = fGa.tarjan(neighborhood);
-		fMappings = new ArrayList [components.size()];
-		
+		fMappings = new ArrayList[components.size()];
+
 		for (int i = 0; i < fMappings.length; i++) {
 			fMappings[i] = new ArrayList<Integer>();
 		}
@@ -114,20 +127,26 @@ public class ComponentComputationService implements Protocol, IInitializable {
 		HashMap<Integer, Integer> roots = new HashMap<Integer, Integer>();
 		int componentId = 0;
 		for (int i = 0; i < neighborhood.size(); i++) {
+			// Roots are arbitrary numbers. We want component
+			// ids to fall within a continuous range [1, #components], 
+			// so we remap them.
 			int color = fGa.root[i];
+			// Root is known?
 			if (roots.containsKey(color)) {
 				color = roots.get(color);
-			} else {
+			} 
+			// Otherwise assigns an index to the root.
+			else {
 				roots.put(color, componentId);
 				color = componentId++;
 			}
-			
+
 			int originalId = neighborhood.inverseIdOf(i);
 			fMappings[color].add(originalId);
-			fComponentTable.put(originalId, componentId);
+			fComponentTable.put(originalId, color);
 		}
 	}
-	
+
 	@Override
 	public void initialize(Node node) {
 		if (fOwner != null) {
@@ -140,18 +159,20 @@ public class ComponentComputationService implements Protocol, IInitializable {
 	public void reinitialize() {
 		fOwner = null;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public Object clone() {
 		try {
-			ComponentComputationService cssClone = (ComponentComputationService) super.clone();
+			ComponentComputationService cssClone = (ComponentComputationService) super
+					.clone();
 			if (fMappings != null) {
-				cssClone.fMappings = new ArrayList [fMappings.length];
+				cssClone.fMappings = new ArrayList[fMappings.length];
 				for (int i = 0; i < fMappings.length; i++) {
 					cssClone.fMappings[i] = new ArrayList<Integer>(fMappings[i]);
 				}
 			}
-			cssClone.fComponentTable = new HashMap<Integer, Integer>(this.fComponentTable);		
+			cssClone.fComponentTable = new HashMap<Integer, Integer>(
+					this.fComponentTable);
 			return cssClone;
 		} catch (CloneNotSupportedException ex) {
 			throw new RuntimeException();

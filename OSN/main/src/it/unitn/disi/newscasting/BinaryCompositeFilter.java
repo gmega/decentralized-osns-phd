@@ -45,6 +45,6 @@ public class BinaryCompositeFilter implements ISelectionFilter {
 	}
 	
 	public IReference<ISelectionFilter> right() {
-		return fLeft;
+		return fRight;
 	}
 }

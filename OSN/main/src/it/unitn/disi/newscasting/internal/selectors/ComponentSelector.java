@@ -35,11 +35,18 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			new FallThroughReference<ISelectionFilter>(new HollowFilter()),
 			new FallThroughReference<ISelectionFilter>(new HollowFilter()));
 
-	private IReference<ComponentComputationService> fComponents;
+	private final IReference<ComponentComputationService> fComponents;
 
-	private IReference<IPeerSelector> fDelegate;
+	private final IReference<IPeerSelector> fDelegate;
 
 	private int[] fRankedComponents;
+
+	public ComponentSelector(
+			IReference<ComponentComputationService> components,
+			IReference<IPeerSelector> delegate) {
+		fComponents = components;
+		fDelegate = delegate;
+	}
 
 	@Override
 	public Node selectPeer(Node source, ISelectionFilter filter) {
@@ -51,8 +58,10 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		ComponentComputationService service = fComponents.get(source);
 		List<Integer> allowed = service.members(nextComponent(source));
 		allow(allowed);
-		return fDelegate.get(source).selectPeer(source,
+		Node result = fDelegate.get(source).selectPeer(source,
 				composeFilter(this, filter));
+		disallowAll();
+		return result;
 	}
 
 	@Override
@@ -108,8 +117,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		Arrays.sort(permutation, new Comparator<Integer>() {
 			@Override
 			public int compare(Integer o1, Integer o2) {
-				return service.members(permutation[o1]).size()
-						- service.members(permutation[o2]).size();
+				return service.members(o2).size() - service.members(o1).size();
 			}
 		});
 
@@ -140,10 +148,13 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	}
 
 	private void allow(List<Integer> allowedNeighbors) {
-		fAllowed.clear();
 		for (Integer allowedNeighbor : allowedNeighbors) {
 			fAllowed.set(allowedNeighbor);
 		}
+	}
+	
+	private void disallowAll() {
+		fAllowed.clear();
 	}
 
 	/**
@@ -151,7 +162,8 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	 * once.
 	 */
 	private boolean done() {
-		return fRankedComponents[fRankedComponents.length - 1] == ALREADY_SELECTED;
+		return fRankedComponents != null
+				&& fRankedComponents[fRankedComponents.length - 1] == ALREADY_SELECTED;
 	}
 
 	private static class HollowFilter implements ISelectionFilter {
