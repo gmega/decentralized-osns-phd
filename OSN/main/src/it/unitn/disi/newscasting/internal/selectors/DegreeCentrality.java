@@ -5,6 +5,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
+import peersim.core.Protocol;
 
 /**
  * Centrality ranking based on node degree.
@@ -12,7 +13,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class DegreeCentrality implements IUtilityFunction<Node, Node> {
+public class DegreeCentrality implements IUtilityFunction<Node, Node>, Protocol {
 
 	private int fLinkable;
 

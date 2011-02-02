@@ -68,7 +68,6 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		if (done()) {
 			return fDelegate.get(source).selectPeer(source, filter);
 		}
-
 		ComponentComputationService service = fComponents.get(source);
 		List<Integer> allowed = service.members(nextComponent(source));
 		allow(allowed);
@@ -130,7 +129,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		final IUtilityFunction<Node, Integer> f = (IUtilityFunction<Node, Integer>) fUtility
 				.get(source);
 
-		// Now sorts by size.
+		// Sorts in ascending order of utility.
 		Arrays.sort(permutation, new Comparator<Integer>() {
 			@Override
 			public int compare(Integer o1, Integer o2) {

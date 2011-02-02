@@ -1,5 +1,8 @@
 package it.unitn.disi.newscasting;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -25,61 +28,61 @@ public class ComponentSelectorTest extends PeerSimTest {
 
 	@Test
 	public void testSelectPeer() throws Exception {
-		long[][] graph = new long[][] { 
-				{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
-				{ 0, 2 }, 
-				{ 0, 1, 3 }, 
-				{ 0, 2 }, 
-				{ 0, 5, 7 }, 
-				{ 0, 4, 6 },
-				{ 0, 5 }, 
-				{ 4, 0 }, 
-				{ 0, 9 }, 
-				{ 0, 8 }, 
-				{ 0 } 
-			};
+		long[][] graph = new long[][] { { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
+				{ 0, 2 }, { 0, 1, 3 }, { 0, 2 }, { 0, 5, 7 }, { 0, 4, 6 },
+				{ 0, 5 }, { 4, 0 }, { 0, 9 }, { 0, 8 }, { 0 } };
 
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(11);
 		Node root = builder.getNodes().get(0);
 		int linkable = builder.assignLinkable(graph);
 		builder.done();
-		
+
 		INodeRegistry registry = NodeRegistry.getInstance();
-		
-		ComponentComputationService service = new ComponentComputationService(linkable);
+
+		ComponentComputationService service = new ComponentComputationService(
+				linkable);
 		service.initialize(root);
-		IReference<ComponentComputationService> ref = new FallThroughReference<ComponentComputationService>(service);
-		
+		IReference<ComponentComputationService> ref = new FallThroughReference<ComponentComputationService>(
+				service);
+
+		ComponentSizeRanking ranking = new ComponentSizeRanking(ref);
+
 		ComponentCheckingSelector checker = new ComponentCheckingSelector(
-				new ProtocolReference<Linkable>(linkable), ref, registry);
-		
+				new ProtocolReference<Linkable>(linkable), ref, ranking,
+				registry);
+
 		ComponentSelector slktor = new ComponentSelector(ref,
 				new FallThroughReference<IPeerSelector>(checker),
 				new FallThroughReference<IUtilityFunction<Node, Integer>>(
-						new ComponentSizeRanking(ref)));
-		
-		for(int i = 0; i < service.components(); i++) {
+						ranking));
+
+		for (int i = 0; i < service.components(); i++) {
 			Assert.assertNotNull(slktor.selectPeer(root));
 		}
-		
+
 		Assert.assertNull(slktor.selectPeer(root));
 	}
 
 	class ComponentCheckingSelector implements IPeerSelector {
 
-		private IReference<Linkable> fNeighborhood;
+		private IUtilityFunction<Node, Integer> fRanking;
+
+		private ArrayList<Integer> fOrder;
 
 		private IReference<ComponentComputationService> fService;
+
+		private IReference<Linkable> fNeighborhood;
 
 		private INodeRegistry fRegistry;
 
 		public ComponentCheckingSelector(IReference<Linkable> neighborhood,
 				IReference<ComponentComputationService> service,
-				INodeRegistry registry) {
+				IUtilityFunction<Node, Integer> ranking, INodeRegistry registry) {
 			this.fNeighborhood = neighborhood;
 			this.fService = service;
 			this.fRegistry = registry;
+			this.fRanking = ranking;
 		}
 
 		@Override
@@ -100,7 +103,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 			// Returns the first node just so we don't return null.
 			return fRegistry.getNode((long) members.get(0));
 		}
-		
+
 		private boolean allAllowed(Node source, ISelectionFilter filter) {
 			boolean allowed = true;
 			Linkable neighbors = fNeighborhood.get(source);
@@ -116,10 +119,32 @@ public class ComponentSelectorTest extends PeerSimTest {
 			for (int i = 0; i < neighbors.degree(); i++) {
 				Node neighbor = neighbors.getNeighbor(i);
 				if (filter.canSelect(neighbor)) {
-					return service.componentOf((int) neighbor.getID());
+					return checkOrder(source,
+							service.componentOf((int) neighbor.getID()));
 				}
 			}
 			return -1;
+		}
+
+		private int checkOrder(final Node source, int componentId) {
+			if (fOrder == null) {
+				fOrder = new ArrayList<Integer>();
+				ComponentComputationService css = fService.get(source);
+				for (int i = 0; i < css.components(); i++) {
+					fOrder.add(i);
+				}
+				Collections.sort(fOrder, new Comparator<Integer>() {
+					@Override
+					public int compare(Integer o1, Integer o2) {
+						return fRanking.utility(source, o1)
+								- fRanking.utility(source, o2);
+					}
+				});
+			}
+
+			int allowedComponent = fOrder.remove(fOrder.size() - 1);
+			Assert.assertEquals(allowedComponent, componentId);
+			return allowedComponent;
 		}
 
 		private void assertAllow(ISelectionFilter filter,

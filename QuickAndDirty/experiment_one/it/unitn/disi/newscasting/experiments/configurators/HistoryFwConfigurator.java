@@ -12,6 +12,7 @@ import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
+import it.unitn.disi.newscasting.internal.selectors.ComponentSelector;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
@@ -45,7 +46,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	public static final String PAR_TYPE = "type";
 
 	enum CompositeHeuristic {
-		SIMPLE, ALTERNATING, ONE_OTHER
+		SIMPLE, ALTERNATING, ONE_OTHER, COMPONENT_SELECTOR
 	}
 
 	enum AtomicHeuristic {
@@ -147,6 +148,11 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			app.addSubscriber((IEventObserver) selector);
 			break;
 
+		case COMPONENT_SELECTOR:
+			selector = componentSelectorHeuristic(
+					simpleHeuristic(subPrefix(prefix, 0)), prefix);
+			break;
+
 		default:
 			throw new IllegalArgumentException(type.toString());
 		}
@@ -243,6 +249,13 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	private OneThanTheOther oneThanTheOther(IPeerSelector s1, IPeerSelector s2,
 			String prefix) {
 		return new OneThanTheOther(s1, s2, fResolver, prefix);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	private ComponentSelector componentSelectorHeuristic(IPeerSelector delegate, String prefix) {
+		return new ComponentSelector(prefix, fResolver,
+				new FallThroughReference<IPeerSelector>(delegate));
 	}
 
 	// ----------------------------------------------------------------------

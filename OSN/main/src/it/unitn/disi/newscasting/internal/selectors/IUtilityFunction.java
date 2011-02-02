@@ -1,14 +1,12 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
-import peersim.core.Protocol;
-
 /**
  * A {@link IUtilityFunction} can compute the utility of one object relative to
  * another.
  * 
  * @author giuliano
  */
-public interface IUtilityFunction<K, V> extends Protocol {
+public interface IUtilityFunction<K, V> {
 	/**
 	 * @return the relative utility of <code>target</code> with respect to
 	 *         <code>base</code>. The value should be equal or larger than zero.

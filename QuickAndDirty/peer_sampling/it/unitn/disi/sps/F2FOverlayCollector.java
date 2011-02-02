@@ -528,7 +528,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 		}
 	}
 
-	private class IntersectingUnseenUtility implements IUtilityFunction {
+	private class IntersectingUnseenUtility implements IUtilityFunction<Node, Node> {
 
 		@Override
 		public int utility(Node base, Node target) {
@@ -554,7 +554,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	 * 
 	 * @author giuliano
 	 */
-	private class OracleMaximumGainUtility implements IUtilityFunction {
+	private class OracleMaximumGainUtility implements IUtilityFunction<Node, Node> {
 
 		@Override
 		public int utility(Node base, Node target) {

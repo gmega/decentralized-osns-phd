@@ -23,8 +23,4 @@ public class ComponentSizeRanking implements IUtilityFunction<Node, Integer> {
 		return false;
 	}
 
-	public Object clone() {
-		return this;
-	}
-
 }
