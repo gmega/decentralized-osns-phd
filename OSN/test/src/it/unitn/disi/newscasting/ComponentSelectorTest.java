@@ -6,6 +6,8 @@ import junit.framework.Assert;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.ComponentSelector;
+import it.unitn.disi.newscasting.internal.selectors.ComponentSizeRanking;
+import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.IReference;
@@ -35,7 +37,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 				{ 0, 9 }, 
 				{ 0, 8 }, 
 				{ 0 } 
-				};
+			};
 
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(11);
@@ -51,8 +53,11 @@ public class ComponentSelectorTest extends PeerSimTest {
 		
 		ComponentCheckingSelector checker = new ComponentCheckingSelector(
 				new ProtocolReference<Linkable>(linkable), ref, registry);
+		
 		ComponentSelector slktor = new ComponentSelector(ref,
-				new FallThroughReference<IPeerSelector>(checker));
+				new FallThroughReference<IPeerSelector>(checker),
+				new FallThroughReference<IUtilityFunction<Node, Integer>>(
+						new ComponentSizeRanking(ref)));
 		
 		for(int i = 0; i < service.components(); i++) {
 			Assert.assertNotNull(slktor.selectPeer(root));

@@ -12,7 +12,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class DegreeCentrality implements IUtilityFunction {
+public class DegreeCentrality implements IUtilityFunction<Node, Node> {
 
 	private int fLinkable;
 

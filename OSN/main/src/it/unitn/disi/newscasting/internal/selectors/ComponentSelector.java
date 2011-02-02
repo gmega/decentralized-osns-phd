@@ -5,6 +5,7 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
+import peersim.config.IResolver;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
@@ -12,6 +13,7 @@ import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 
 /**
  * {@link ComponentSelector} is a selection heuristics which constrains a
@@ -39,13 +41,25 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 
 	private final IReference<IPeerSelector> fDelegate;
 
+	private final IReference<IUtilityFunction<Node, Integer>> fUtility;
+
 	private int[] fRankedComponents;
+
+	public ComponentSelector(String prefix, IResolver resolver,
+			IReference<IPeerSelector> delegate) {
+		this(new ProtocolReference<ComponentComputationService>(
+				resolver.getInt(prefix, "css")), delegate,
+				new ProtocolReference<IUtilityFunction<Node, Integer>>(
+						resolver.getInt(prefix, "ranking")));
+	}
 
 	public ComponentSelector(
 			IReference<ComponentComputationService> components,
-			IReference<IPeerSelector> delegate) {
+			IReference<IPeerSelector> delegate,
+			IReference<IUtilityFunction<Node, Integer>> utility) {
 		fComponents = components;
 		fDelegate = delegate;
+		fUtility = utility;
 	}
 
 	@Override
@@ -106,18 +120,21 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		throw new IllegalStateException("Internal error");
 	}
 
-	private int[] rankComponents(Node source) {
+	private int[] rankComponents(final Node source) {
 		final ComponentComputationService service = fComponents.get(source);
 		final Integer[] permutation = new Integer[service.components()];
 		for (int i = 0; i < permutation.length; i++) {
 			permutation[i] = i;
 		}
 
+		final IUtilityFunction<Node, Integer> f = (IUtilityFunction<Node, Integer>) fUtility
+				.get(source);
+
 		// Now sorts by size.
 		Arrays.sort(permutation, new Comparator<Integer>() {
 			@Override
 			public int compare(Integer o1, Integer o2) {
-				return service.members(o2).size() - service.members(o1).size();
+				return f.utility(source, o2) - f.utility(source, o1);
 			}
 		});
 
@@ -152,7 +169,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			fAllowed.set(allowedNeighbor);
 		}
 	}
-	
+
 	private void disallowAll() {
 		fAllowed.clear();
 	}
