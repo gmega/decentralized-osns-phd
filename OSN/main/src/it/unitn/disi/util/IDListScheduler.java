@@ -10,12 +10,16 @@ import java.util.Iterator;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
+/**
+ * {@link IDListScheduler} takes node IDs from a list on a file and schedules them as they
+ * are.
+ */
 @AutoConfig
-public class SimpleScheduler implements Iterable<Integer> {
+public class IDListScheduler implements Iterable<Integer> {
 
 	private ArrayList<Integer> fSchedule;
 
-	public SimpleScheduler(@Attribute("schedule") String schedule) {
+	public IDListScheduler(@Attribute("schedule") String schedule) {
 		try {
 			fSchedule = loadSchedule(schedule);
 		} catch (IOException ex) {
