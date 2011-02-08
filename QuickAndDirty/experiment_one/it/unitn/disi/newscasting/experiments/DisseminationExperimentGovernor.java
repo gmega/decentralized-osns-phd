@@ -373,7 +373,7 @@ public class DisseminationExperimentGovernor implements Control {
 		return socialNewscasting.storage().elements() != 0;
 	}
 
-	private Node currentNode() {
+	public SNNode currentNode() {
 		return fCurrent;
 	}
 
