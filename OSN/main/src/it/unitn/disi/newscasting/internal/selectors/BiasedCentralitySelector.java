@@ -29,9 +29,11 @@ import peersim.core.Protocol;
 @AutoConfig
 public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 
+	private static boolean fPrintOnce = true;
+
 	private IReference<Linkable> fLinkable;
 
-	private IReference<IUtilityFunction> fRanking;
+	private IReference<IUtilityFunction<Node, Node>> fRanking;
 
 	private final Random fRandom;
 
@@ -41,17 +43,27 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 			@Attribute("ranking") int ranking,
 			@Attribute("anticentrality") boolean anticentrality) {
 		this(new ProtocolReference<Linkable>(linkable),
-				new ProtocolReference<IUtilityFunction>(ranking),
+				new ProtocolReference<IUtilityFunction<Node, Node>>(ranking),
 				anticentrality, CommonState.r);
 	}
 
 	public BiasedCentralitySelector(IReference<Linkable> linkableRef,
-			IReference<IUtilityFunction> ranking, boolean anticentrality,
-			Random random) {
+			IReference<IUtilityFunction<Node, Node>> ranking,
+			boolean anticentrality, Random random) {
 		fLinkable = linkableRef;
 		fRanking = ranking;
 		fRandom = random;
 		fAntiCentrality = anticentrality;
+
+		// Hack to get the centrality config printed without putting too much
+		// crap on the logs.
+		if (fPrintOnce) {
+			System.out.println(BiasedCentralitySelector.class.getName()
+					+ ": on "
+					+ (fAntiCentrality ? "anticentrality" : "centrality")
+					+ " mode.");
+			fPrintOnce = false;
+		}
 	}
 
 	public Node selectPeer(Node source) {
@@ -81,7 +93,7 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 	private Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> makeWheel(
 			Node source, Linkable neighborhood, ISelectionFilter filter) {
 		ArrayList<MutableSimplePair<Integer, Integer>> fof = new ArrayList<MutableSimplePair<Integer, Integer>>();
-		IUtilityFunction ranking = fRanking.get(source);
+		IUtilityFunction<Node, Node> ranking = fRanking.get(source);
 		// Computes the centrality metric.
 		int total = 0;
 		for (int i = 0; i < neighborhood.degree(); i++) {
@@ -115,7 +127,7 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 		for (int i = 0; i < probabs.length; i++) {
 			probabs[i] = ((double) fof.get(i).a) / total;
 		}
-		
+
 		// Inverts the assignment if anticentrality.
 		if (fAntiCentrality) {
 			invertAssignment(probabs);
@@ -129,9 +141,9 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 	public void clear(Node source) {
 		// We don't cache anything.
 	}
-	
-	private void invertAssignment(double [] array) {
-		int middle = array.length/2;
+
+	private void invertAssignment(double[] array) {
+		int middle = array.length / 2;
 		for (int i = 0; i < middle; i++) {
 			int j = array.length - i - 1;
 			double tmp = array[j];
@@ -139,7 +151,7 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 			array[i] = tmp;
 		}
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Cloneable requirements.
 	// ----------------------------------------------------------------------

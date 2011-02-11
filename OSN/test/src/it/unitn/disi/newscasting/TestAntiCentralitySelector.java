@@ -41,7 +41,7 @@ public class TestAntiCentralitySelector {
 		DegreeCentrality centrality = new DegreeCentrality(pid);
 		BiasedCentralitySelector slktor = new BiasedCentralitySelector(
 				new ProtocolReference<Linkable>(pid),
-				new FallThroughReference<IUtilityFunction>(centrality), true, r);
+				new FallThroughReference<IUtilityFunction<Node, Node>>(centrality), true, r);
 
 		Node node = builder.getNodes().get(0);
 		builder.done();

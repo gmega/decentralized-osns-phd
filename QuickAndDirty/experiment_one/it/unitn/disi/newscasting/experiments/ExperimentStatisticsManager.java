@@ -28,11 +28,19 @@ public class ExperimentStatisticsManager implements IEventObserver,
 
 	private UnitExperimentData fCurrentExperiment;
 
+	/**
+	 * Headers must be printed once. These flags are a cheap way to implement
+	 * that.
+	 */
+	private boolean fPrintedLatencyHeader;
+	private boolean fPrintedLoadHeader;
+
 	private ExperimentStatisticsManager() {
 	}
 
 	public void printLatencyStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
+			printLatencyHeader();
 			System.out.println(fCurrentExperiment.latencyStatistics());
 			System.out.println("RT: "
 					+ fCurrentExperiment.fTweet.poster.getID() + " "
@@ -42,7 +50,22 @@ public class ExperimentStatisticsManager implements IEventObserver,
 
 	public void printLoadStatistics(PrintStream stream) {
 		if (fCurrentExperiment != null) {
+			printLoadHeader();
 			System.out.println(fCurrentExperiment.loadStatistics());
+		}
+	}
+
+	private void printLatencyHeader() {
+		if (!fPrintedLatencyHeader) {
+			System.out.println(fCurrentExperiment.latencyFields());
+			fPrintedLatencyHeader = true;
+		}
+	}
+
+	private void printLoadHeader() {
+		if (!fPrintedLoadHeader) {
+			System.out.println(fCurrentExperiment.loadFields());
+			fPrintedLoadHeader = true;
 		}
 	}
 
@@ -88,6 +111,22 @@ public class ExperimentStatisticsManager implements IEventObserver,
  * @author giuliano
  */
 class UnitExperimentData {
+
+	/**
+	 * All lines related to load data are prefixed by this.
+	 */
+	private static final String LOAD_PREFIX = "N:";
+
+	/**
+	 * All lines related to latency data are prefixed by this.
+	 */
+	private static final String LATENCY_PREFIX = "DE:";
+
+	/**
+	 * Character which separates fields for all data we print here.
+	 */
+	private static final String FIELD_SEPARATOR = " ";
+
 	/**
 	 * Number of messages received by each node (tracks mainly duplicates).
 	 */
@@ -213,7 +252,7 @@ class UnitExperimentData {
 	 *         this unit experiment.
 	 */
 	public int duplicates() {
-		return received() - delivered() + undelivered();
+		return received() - delivered();
 	}
 
 	/**
@@ -247,10 +286,10 @@ class UnitExperimentData {
 	}
 
 	/**
-	 * @return the average message latency.
+	 * @return the sum for all received message latencies.
 	 */
-	public double getAvg() {
-		return fLatency.getAverage();
+	public double getSum() {
+		return fLatency.getSum();
 	}
 
 	/**
@@ -271,8 +310,7 @@ class UnitExperimentData {
 	 * @return the average speedup over the naïve dissemination approach.
 	 */
 	public double averageSpeedup() {
-		double worstAverage = (double) (fTweet.destinations() + 1) / 2.0;
-		return worstAverage / getAvg();
+		return ((fTweet.destinations() + 1) * delivered()) / (2.0 * getSum());
 	}
 
 	/**
@@ -282,27 +320,62 @@ class UnitExperimentData {
 		return CommonState.getIntTime() - fTime;
 	}
 
+	public String latencyFields() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(LATENCY_PREFIX);
+		buffer.append("id");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("degree");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("t_max");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("latency_sum");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("t_var");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("avg_speedup");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("max_speedup");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("duplicates");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("undelivered");
+		return buffer.toString();
+	}
+
 	public String latencyStatistics() {
 		StringBuffer buffer = new StringBuffer();
-		buffer.append("DE:");
-		buffer.append(" ");
+		buffer.append(LATENCY_PREFIX);
 		buffer.append(fTweet.profile().getID()); // 1(2) - id
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(fTweet.destinations()); // 2(3) - degree
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(getMax()); // 3(4) - max
-		buffer.append(" ");
-		buffer.append(getAvg()); // 4(5) - avg
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append(getSum()); // 4(5) - latency sum
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(getVar()); // 5(6) - var
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(averageSpeedup());
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(minimumSpeedup());
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(duplicates());
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append(undelivered());
+		return buffer.toString();
+	}
+
+	public String loadFields() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(LOAD_PREFIX);
+		buffer.append("root");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("id");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("sent");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("received");
 		return buffer.toString();
 	}
 
@@ -322,21 +395,19 @@ class UnitExperimentData {
 
 	private void appendLoad(StringBuffer buffer, Node node) {
 		int i = (int) node.getID();
-		buffer.append("N:");
+		buffer.append(LOAD_PREFIX);
 		// 1 - Originator (identifies the unit experiment).
 		buffer.append(fTweet.poster.getID());
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		// 2 - The node for which the statistics we are about to printed.
 		buffer.append(i);
-		buffer.append(" ");
+		buffer.append(FIELD_SEPARATOR);
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
-		buffer.append(" ");
-		// 4 - Messages received by the node. Note that this is COUNTING DUPLICATES.
+		buffer.append(FIELD_SEPARATOR);
+		// 4 - Messages received by the node. Note that this is COUNTING
+		// DUPLICATES.
 		buffer.append(fReceived[i]);
-		buffer.append(" ");
-		// 5 - Duplicates: everything after the first message are duplicates.
-		// XXX this is pointless, remove it cause it's only causing confusion.
-		buffer.append(Math.max(0, fReceived[i] - 1));
+		buffer.append(FIELD_SEPARATOR);
 	}
 }

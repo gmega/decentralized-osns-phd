@@ -9,6 +9,9 @@ import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 @AutoConfig
 public class StatisticsPrinter implements IExperimentObserver {
 
+	@Attribute("load_per_cycle")
+	private boolean fLoadPerCycle;
+	
 	@Attribute("load")
 	private boolean fLoad;
 
@@ -24,7 +27,7 @@ public class StatisticsPrinter implements IExperimentObserver {
 
 	@Override
 	public void experimentCycled(Node root) {
-		if (fLoad) {
+		if (fLoadPerCycle) {
 			fManager.printLoadStatistics(System.out);
 		}
 	}
