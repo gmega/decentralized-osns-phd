@@ -3,8 +3,8 @@ package it.unitn.disi.cli;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
-import it.unitn.disi.utils.logging.EventSet;
-import it.unitn.disi.utils.logging.IBinaryEvent;
+import it.unitn.disi.utils.logging.RecordTypeSet;
+import it.unitn.disi.utils.logging.IBinaryRecordType;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class TestEventDecoder {
 			len = append(number, buf, len);
 		}
 		
-		EventCodec decoder = new EventCodec(Byte.class, new IBinaryEvent[] {
+		EventCodec decoder = new EventCodec(Byte.class, new IBinaryRecordType[] {
 			new TestEvent((byte)0, Long.class, Long.class, Integer.class, Long.class),
 			new TestEvent((byte)1, Long.class, Integer.class),
 			new TestEvent((byte)2, Long.class, Long.class, Long.class, Long.class)
@@ -79,7 +79,7 @@ public class TestEventDecoder {
 	}
 }
 
-class TestEvent implements IBinaryEvent {
+class TestEvent implements IBinaryRecordType {
 	
 	private ArrayList<Class<? extends Number>> fParts;
 	
@@ -102,7 +102,7 @@ class TestEvent implements IBinaryEvent {
 	}
 
 	@Override
-	public EventSet<? extends Enum<? extends IBinaryEvent>> eventSet() {
+	public RecordTypeSet<? extends Enum<? extends IBinaryRecordType>> eventSet() {
 		return null;
 	}
 
