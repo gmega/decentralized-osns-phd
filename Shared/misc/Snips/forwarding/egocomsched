@@ -1,0 +1,18 @@
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(0,9037)' graph.metrics.EgonetCommunityCount > fbego9037.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(9037,18074)' graph.metrics.EgonetCommunityCount > fbego18074.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(18074,27111)' graph.metrics.EgonetCommunityCount > fbego27111.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(27111,36148)' graph.metrics.EgonetCommunityCount > fbego36148.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(36148,45185)' graph.metrics.EgonetCommunityCount > fbego45185.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(45185,54222)' graph.metrics.EgonetCommunityCount > fbego54222.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(54222,63259)' graph.metrics.EgonetCommunityCount > fbego63259.text &
+
+analyzer --verbose -t python -V input=./Facebook.al:vlist='range(63259,72303)' graph.metrics.EgonetCommunityCount > fbego72303.text &
+
+echo "id degree communities" > fbg-egocomm.text
+for i in `ls fbego*`; do cat $i | grep COS: | cut -d":" -f2 | sed '1d' >> fbg-egocomm.text; done;
