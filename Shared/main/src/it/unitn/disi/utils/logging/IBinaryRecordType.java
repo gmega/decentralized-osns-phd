@@ -3,11 +3,11 @@ package it.unitn.disi.utils.logging;
 import java.util.List;
 
 /**
- * A binary event is an event which is composed by a collection of numbers. 
+ * A binary event is an event which is composed by a collection of numbers.
  * 
  * @author giuliano
  */
-public interface IBinaryEvent {
+public interface IBinaryRecordType {
 
 	/**
 	 * @return the value which must be the first to appear before any event.
@@ -21,17 +21,17 @@ public interface IBinaryEvent {
 	public List<Class<? extends Number>> components();
 
 	/**
-	 * Optional operation. If unsupported, will return <code>null</code>.
-	 * <BR>
+	 * Optional operation. If unsupported, will return <code>null</code>. <BR>
+	 * 
 	 * @return a string such that String.format(formattingString(),
 	 *         <components>) returns a complete string representation for an
-	 *         event instance. 
+	 *         event instance.
 	 */
 	public String formattingString();
 
 	/**
-	 * @return the {@link EventSet} object associated to the parent {@link Enum}
-	 *         class of this {@link IBinaryEvent}.
+	 * @return the {@link RecordTypeSet} object associated to the parent
+	 *         {@link Enum} class of this {@link IBinaryRecordType}.
 	 */
-	public EventSet<? extends Enum<? extends IBinaryEvent>> eventSet();
+	public RecordTypeSet<? extends Enum<? extends IBinaryRecordType>> eventSet();
 }

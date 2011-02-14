@@ -2,6 +2,9 @@ package it.unitn.disi.utils.logging;
 
 import it.unitn.disi.utils.EOFException;
 
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -27,6 +30,7 @@ public class EventCodec {
 		fDecoderRegistry.put(Byte.class, new ByteCodec());
 		fDecoderRegistry.put(Integer.class, new FastIntegerCodec());
 		fDecoderRegistry.put(Long.class, new FastLongCodec());
+		fDecoderRegistry.put(Double.class, new FastDoubleCodec());
 
 		int max = 0;
 		for (IPrimitiveCodec decoder : fDecoderRegistry.values()) {
@@ -35,13 +39,13 @@ public class EventCodec {
 		fBuffer = new byte[max];
 	}
 
-	private final Map<Number, IBinaryEvent> fTypes = new HashMap<Number, IBinaryEvent>();
+	private final Map<Number, IBinaryRecordType> fTypes = new HashMap<Number, IBinaryRecordType>();
 
 	private final IPrimitiveCodec fTypeDecoder;
 
-	public EventCodec(Class<? extends Number> typeClass, IBinaryEvent[] types) {
+	public EventCodec(Class<? extends Number> typeClass, IBinaryRecordType[] types) {
 		fTypeDecoder = lookupDecoder(typeClass);
-		for (IBinaryEvent type : types) {
+		for (IBinaryRecordType type : types) {
 			registerType(type);
 		}
 	}
@@ -51,7 +55,7 @@ public class EventCodec {
 	}
 
 	public int encodeEvent(byte[] buffer, int startingOffset, Number... event) {
-		IBinaryEvent type = typeCheck(event);
+		IBinaryRecordType type = typeCheck(event);
 
 		// Encodes the type.
 		int offset = unsafeEncode(fTypeDecoder.getType(), event[0], buffer,
@@ -65,8 +69,8 @@ public class EventCodec {
 		return offset;
 	}
 
-	public IBinaryEvent typeCheck(Number... event) {
-		IBinaryEvent type = fTypes.get(event[0]);
+	public IBinaryRecordType typeCheck(Number... event) {
+		IBinaryRecordType type = fTypes.get(event[0]);
 		if (type == null) {
 			throw new IllegalArgumentException("Unknown event type " + event[0]
 					+ ".");
@@ -93,7 +97,7 @@ public class EventCodec {
 	}
 	
 	public String toString(Number...event) {
-		IBinaryEvent type = typeCheck(event);
+		IBinaryRecordType type = typeCheck(event);
 		String formatting = type.formattingString();
 		if (formatting == null) {
 			return "No formatting defined for event " + type.toString() + ".";
@@ -111,7 +115,7 @@ public class EventCodec {
 		return codec.encode(value, buffer, offset);
 	}
 
-	private void registerType(IBinaryEvent type) {
+	private void registerType(IBinaryRecordType type) {
 		ArrayList<IPrimitiveCodec> list = new ArrayList<IPrimitiveCodec>();
 		for (Class<? extends Number> klass : type.components()) {
 			list.add(lookupDecoder(klass));
@@ -136,7 +140,7 @@ public class EventCodec {
 
 		private Number fNext;
 
-		private IBinaryEvent fCurrentEventType;
+		private IBinaryRecordType fCurrentEventType;
 
 		private int fDecodingIndex;
 
@@ -189,6 +193,15 @@ public class EventCodec {
 			fNext = readNext();
 
 			return toReturn;
+		}
+		
+		@SuppressWarnings("unchecked")
+		public <T> T next(Class<T> klass) {
+			Number generic = next();
+			if (!(klass.isAssignableFrom(generic.getClass()))) {
+				throw new IllegalArgumentException("Element is not of the required type.");
+			}
+			return (T) generic;
 		}
 
 		public void remove() {
@@ -288,7 +301,7 @@ class ByteCodec implements IPrimitiveCodec {
 }
 
 class FastLongCodec implements IPrimitiveCodec {
-	public Number decode(byte[] encoded) {
+	public Long decode(byte[] encoded) {
 		return CodecUtils.decodeLong(encoded, 0);
 	}
 
@@ -303,6 +316,32 @@ class FastLongCodec implements IPrimitiveCodec {
 	public Class<? extends Number> getType() {
 		return Long.class;
 	}
+}
+
+class FastDoubleCodec implements IPrimitiveCodec {
+
+	private final FastLongCodec fDelegate = new FastLongCodec();
+	
+	@Override
+	public Class<? extends Number> getType() {
+		return Double.class;
+	}
+
+	@Override
+	public int encode(Number number, byte[] buffer, int offset) {
+		return fDelegate.encode(Double.doubleToLongBits(number.doubleValue()), buffer, offset);
+	}
+
+	@Override
+	public Number decode(byte[] encoded) {
+		return Double.longBitsToDouble(fDelegate.decode(encoded));
+	}
+
+	@Override
+	public int size() {
+		return Double.SIZE / Byte.SIZE;
+	}
+	
 }
 
 class FastIntegerCodec implements IPrimitiveCodec {

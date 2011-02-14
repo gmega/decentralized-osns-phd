@@ -83,13 +83,13 @@ public class CodecUtils {
 		return Collections.unmodifiableList(al);
 	}
 	
-	public static IBinaryEvent [] merge (IBinaryEvent[] ... arrays) {
+	public static IBinaryRecordType [] merge (IBinaryRecordType[] ... arrays) {
 		int size = 0;
 		for (int i = 0; i < arrays.length; i++) {
 			size += arrays[i].length;
 		}
 		
-		IBinaryEvent [] all = new IBinaryEvent[size];
+		IBinaryRecordType [] all = new IBinaryRecordType[size];
 		
 		int k = 0;
 		for (int i = 0; i < arrays.length; i++) {
