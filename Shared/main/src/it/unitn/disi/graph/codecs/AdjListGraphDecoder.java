@@ -39,16 +39,19 @@ public class AdjListGraphDecoder implements ResettableGraphDecoder {
 		String line;
 		do {
 			line = fReader.readLine();
-
 			if (line == null) {
 				return;
 			} else if (line.startsWith("#")) {
 				continue;
 			}
-
 			fTokenizer = new StringTokenizer(line);
 			fSource = Integer.parseInt(fTokenizer.nextToken());
 		} while (!fTokenizer.hasMoreTokens());
+	}
+	
+	public void realign() throws IOException {
+		// We cannot recover from arbitrary realignments.
+		advanceLine();
 	}
 
 	public int getSource() {

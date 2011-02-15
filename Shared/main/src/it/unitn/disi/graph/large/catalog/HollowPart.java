@@ -20,7 +20,7 @@ public class HollowPart<T extends Number> implements ICatalogPart<T> {
 
 	@Override
 	public T compute(IndexedNeighborGraph g, int root) {
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override

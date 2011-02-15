@@ -70,6 +70,10 @@ public abstract class AbstractEdgeListDecoder implements ResettableGraphDecoder 
 		fSeenEof = false;
 		fSource = readInt(true);
 	}
+	
+	public void realign() throws IOException {
+		init();
+	}
 
 	public void unexpectedEOF(String msg) throws IOException {
 		throw new IOException("Unexpected end-of-file (" + msg + ").");

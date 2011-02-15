@@ -16,7 +16,8 @@ import it.unitn.disi.utils.logging.RecordTypeSet;
  */
 public enum CatalogRecordTypes implements ICatalogRecordType {
 
-	PROPERTY_RECORD(new NeighborhoodSize(),
+	PROPERTY_RECORD(new NeighborhoodRoot(),
+			new NeighborhoodSize(),
 			new NeighborhoodClustering(),
 			new HollowPart<Long>(Long.class, "offset"));
 

@@ -1,12 +1,12 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.utils.logging.CodecUtils;
-import it.unitn.disi.utils.logging.EventSet;
-import it.unitn.disi.utils.logging.IBinaryEvent;
+import it.unitn.disi.utils.logging.RecordTypeSet;
+import it.unitn.disi.utils.logging.IBinaryRecordType;
 
 import java.util.List;
 
-public enum NewscastEvents implements IBinaryEvent{
+public enum NewscastEvents implements IBinaryRecordType{
 	/**
 	 * Event type {@link NewscastEvents#TWEETED} corresponds to a new tweet
 	 * being produced.
@@ -83,8 +83,8 @@ public enum NewscastEvents implements IBinaryEvent{
 	// ----------------------------------------------------------------------
 	
 	/** Associated event set providing extra functionality. */
-	public static final EventSet<NewscastEvents> set = 
-		new EventSet<NewscastEvents>(NewscastEvents.class);
+	public static final RecordTypeSet<NewscastEvents> set = 
+		new RecordTypeSet<NewscastEvents>(NewscastEvents.class);
 
 	// ----------------------------------------------------------------------
 	
@@ -112,7 +112,7 @@ public enum NewscastEvents implements IBinaryEvent{
 		return fFormat;
 	}
 	
-	public EventSet<? extends Enum<? extends IBinaryEvent>> eventSet() {
+	public RecordTypeSet<? extends Enum<? extends IBinaryRecordType>> eventSet() {
 		return set;
 	}
 }

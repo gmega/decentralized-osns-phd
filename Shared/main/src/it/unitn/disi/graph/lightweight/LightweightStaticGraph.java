@@ -53,6 +53,21 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	public static LightweightStaticGraph fromAdjacency(int [][] adjlists) {
 		return new LightweightStaticGraph(adjlists);
 	}
+	
+	// --------------------------------------------------------------------------
+	
+	public static LightweightStaticGraph fromGraph(Graph g) {
+		int [][] a = new int[g.size()][];
+		for (int i = 0; i < a.length; i++) {
+			a[i] = new int[g.degree(i)];
+			int j = 0;
+			for (int neighbor : g.getNeighbours(i)) {
+				a[i][j] = neighbor;
+				j++;
+			}
+		}
+		return fromAdjacency(a);
+	}
 
 	// --------------------------------------------------------------------------
 

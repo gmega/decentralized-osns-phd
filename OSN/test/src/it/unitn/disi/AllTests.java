@@ -10,6 +10,7 @@ import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
+import it.unitn.disi.graph.large.catalog.CatalogTest;
 import it.unitn.disi.network.EvtDecoderTest;
 import it.unitn.disi.newscasting.ComponentComputationServiceTest;
 import it.unitn.disi.newscasting.EventStorageTest;
@@ -64,6 +65,7 @@ import peersim.config.ObjectCreatorTest;
 	BFSIterableTest.class,
 	LSGTransformsTest.class,
 	ComponentComputationServiceTest.class,
+	CatalogTest.class
 })
 
 public class AllTests extends PeerSimTest {

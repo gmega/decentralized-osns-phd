@@ -8,21 +8,22 @@ import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
 
 /**
- * Provides an {@link Iterator} interface for reading {@link CatalogRecord}s
- * from an {@link InputStream}.
+ * Provides an {@link ICatalogCursor} interface for reading
+ * {@link CatalogRecord}s from an {@link InputStream}.
  * 
  * @author giuliano
  */
-public class CatalogReader implements Iterator<CatalogRecord> {
+public class CatalogReader extends AbstractCatalogCursor {
 
 	private EventCodec fDecoder = new EventCodec(Byte.class,
 			CatalogRecordTypes.values());
 
 	private DecodingStream fStream;
 
-	private ICatalogRecordType fType;
+	private boolean fStarted;
 
 	public CatalogReader(InputStream is, ICatalogRecordType type) {
+		super(type, false);
 		fStream = fDecoder.decodingStream(is);
 	}
 
@@ -32,19 +33,21 @@ public class CatalogReader implements Iterator<CatalogRecord> {
 	}
 
 	@Override
-	public CatalogRecord next() {
-		List<Class<? extends Number>> parts = fType.components();
-		Object[] record = new Object[parts.size()];
+	public void next() {
+		List<Class<? extends Number>> parts = type().components();
+		Number [] buffer = valueBuffer();
+		// Skips the magic number.
+		fStream.next(Byte.class);
 		for (int i = 0; i < parts.size(); i++) {
 			Class<? extends Number> type = parts.get(i);
-			record[i] = fStream.next(type);
+			buffer[i] = fStream.next(type);
 		}
-		return new CatalogRecord(fType, record);
+		fStarted = true;
 	}
 
 	@Override
-	public void remove() {
-		throw new UnsupportedOperationException();
+	protected boolean isReady() {
+		return fStarted;
 	}
-
+	
 }
