@@ -7,6 +7,7 @@ import it.unitn.disi.newscasting.experiments.ComponentSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 import it.unitn.disi.newscasting.experiments.OneThanTheOther;
+import it.unitn.disi.newscasting.experiments.PredicateHeuristic;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
@@ -219,7 +220,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		}
 		return null;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private String subPrefix(String prefix, int index) {
@@ -250,12 +251,13 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			String prefix) {
 		return new OneThanTheOther(s1, s2, fResolver, prefix);
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
-	private ComponentSelector componentSelectorHeuristic(IPeerSelector delegate, String prefix) {
-		return new ComponentSelector(prefix, fResolver,
-				new FallThroughReference<IPeerSelector>(delegate));
+
+	private IPeerSelector componentSelectorHeuristic(IPeerSelector delegate,
+			String prefix) {
+		return new PredicateHeuristic(new ComponentSelector(prefix, fResolver,
+				new FallThroughReference<IPeerSelector>(delegate)), delegate);
 	}
 
 	// ----------------------------------------------------------------------
@@ -355,4 +357,21 @@ class OneThanTheOtherUpdater extends SelectorUpdater {
 			fSecond.update(otto.second(), reader);
 		}
 	}
+}
+
+/**
+ * Special reference type for the {@link DisseminationExperimentGovernor} which
+ * allows us to work around the fact that the singleton will be instantiated by
+ * PeerSim after its dependencies.
+ * 
+ * @author giuliano
+ */
+class GovernorSingletonReference implements
+		IReference<DisseminationExperimentGovernor> {
+
+	@Override
+	public DisseminationExperimentGovernor get(Node owner) {
+		return DisseminationExperimentGovernor.singletonInstance();
+	}
+
 }

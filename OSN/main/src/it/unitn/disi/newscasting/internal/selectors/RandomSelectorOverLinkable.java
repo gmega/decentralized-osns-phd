@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.internal.selectors;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import peersim.config.IResolver;
 import peersim.config.resolvers.PeerSimResolver;
@@ -45,6 +46,12 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 	
 	public RandomSelectorOverLinkable(int pid) {
 		fCache = new PermutingCache(pid);
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public RandomSelectorOverLinkable(IReference<Linkable> neighborhood) {
+		fCache = new PermutingCache(neighborhood);
 	}
 	
 	// ----------------------------------------------------------------------

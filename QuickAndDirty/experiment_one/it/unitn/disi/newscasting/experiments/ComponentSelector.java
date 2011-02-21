@@ -11,6 +11,7 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
@@ -44,6 +45,8 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 
 	private final IReference<IUtilityFunction<Node, Integer>> fUtility;
 
+	private final boolean fStopOnceDone;
+
 	private int[] fRankedComponents;
 
 	public ComponentSelector(String prefix, IResolver resolver,
@@ -51,23 +54,27 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		this(new ProtocolReference<ComponentComputationService>(
 				resolver.getInt(prefix, "css")), delegate,
 				new ProtocolReference<IUtilityFunction<Node, Integer>>(
-						resolver.getInt(prefix, "ranking")));
+						resolver.getInt(prefix, "ranking")), resolver
+						.getBoolean(prefix, "stop_once_done"));
 	}
 
 	public ComponentSelector(
 			IReference<ComponentComputationService> components,
 			IReference<IPeerSelector> delegate,
-			IReference<IUtilityFunction<Node, Integer>> utility) {
+			IReference<IUtilityFunction<Node, Integer>> utility,
+			boolean stopOnceDone) {
 		fComponents = components;
 		fDelegate = delegate;
 		fUtility = utility;
+		fStopOnceDone = stopOnceDone;
 	}
 
 	@Override
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		// No more work to do, dispatches to delegate directly.
-		if (done() || !isRoot(source)) {
-			return fDelegate.get(source).selectPeer(source, filter);
+		if (done()) {
+			return fStopOnceDone ? null : fDelegate.get(source).selectPeer(
+					source, filter);
 		}
 		ComponentComputationService service = fComponents.get(source);
 		List<Integer> allowed = service.members(nextComponent(source));
@@ -76,14 +83,6 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 				composeFilter(this, filter));
 		disallowAll();
 		return result;
-	}
-
-	private boolean isRoot(Node source) {
-		DisseminationExperimentGovernor deg = DisseminationExperimentGovernor.singletonInstance();
-		if (deg != null) {
-			return deg.currentNode() == source;
-		} 
-		return true;
 	}
 
 	@Override
@@ -151,10 +150,6 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		for (int i = 0; i < permutation.length; i++) {
 			asPrimitive[i] = permutation[i];
 		}
-		
-		for(int component : asPrimitive) {
-			System.out.println(f.utility(source, component));
-		}
 
 		return asPrimitive;
 	}
@@ -195,22 +190,4 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 				&& fRankedComponents[fRankedComponents.length - 1] == ALREADY_SELECTED;
 	}
 
-	private static class HollowFilter implements ISelectionFilter {
-
-		private ISelectionFilter fDelegate;
-
-		@Override
-		public Node selected(Node node) {
-			return fDelegate.selected(node);
-		}
-
-		@Override
-		public boolean canSelect(Node node) {
-			return fDelegate.canSelect(node);
-		}
-
-		public void bind(ISelectionFilter delegate) {
-			fDelegate = delegate;
-		}
-	}
 }

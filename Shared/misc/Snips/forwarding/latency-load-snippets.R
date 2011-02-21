@@ -1,10 +1,14 @@
 #!/usr/bin/env Rscript
 
 library(igraph)
+library(ggplot2)
 
 lib_home <- Sys.getenv("RLIB_HOME")
 source(paste(lib_home,"commonStats.R",sep="/"))
 
+heatmap_colours <- function() {
+	return(c("blue", "cyan", "green", "yellow", "orange", "red"))
+}
 
 order_by <- function(table, field) {
 	return(table[order(field),])
@@ -16,6 +20,7 @@ add_degree <- function(table, graph) {
 	indexes <- table$id + 1 
 	return(cbind(table, degree=degrees[indexes]))
 }
+
 
 ###############################################################################
 # Load Analysis
@@ -77,6 +82,36 @@ full_load_analysis <- function(load_table, ideal, graph, factors=c("id")) {
 	transformed <- add_overwork_statistics(transformed)
 	transformed <- add_degree(transformed, graph)
 	return(transformed)
+}
+
+sorted_fairness_plot <- function(table, work_col, root_col="root", ...) {
+	# Sorts the points.
+	alt_roots <- 1:length(table[work_col])
+	table <- cbind(table, alt_roots=alt_roots)
+	table <- table[order(table$alt_roots),]
+	return(fairness_plot(table, work_col, root_col="alt_roots", ...))
+}
+
+fairness_plot <- function(table, work_col, root_col="root", bins=200, breaks=NULL, ylimit=NULL) {
+	pl <- ggplot(table)
+	pl <- pl + stat_binhex(bins=bins, aes_string(x=root_col, y=work_col))
+	pl <- pl + scale_fill_gradientn(name="density", colours=heatmap_colours(), breaks=breaks)
+	if(!is.null(ylimit)) {
+		pl <- pl + ylim(ylimit)
+	}
+	return(pl)
+}
+
+mar <- function(vals) {
+	sum(abs(vals - mean(vals)))
+}
+
+coeff_var <- function(vals) {
+	return(sqrt(var(vals))/mean(vals))
+}
+
+norm_mar <- function(vals) {
+	return(mar(vals)/mean(vals))
 }
 
 ###############################################################################

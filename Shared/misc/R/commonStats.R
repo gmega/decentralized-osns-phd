@@ -69,3 +69,14 @@ global_average <- function(a_table, sum_row, n_row) {
 	n <- sum(a_table[c(n_row)])
 	return(summation/n)
 }
+
+#
+# Computes the mean absolute error of a vector.
+#
+# @param x: a numeric vector.
+#
+mar <- function(x) {
+	total <- sum(abs(x - mean(x)))
+	return(total/length(x))
+}
+

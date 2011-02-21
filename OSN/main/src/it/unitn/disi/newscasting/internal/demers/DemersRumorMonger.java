@@ -114,7 +114,6 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 		// Feedback is used to adjust the "hotness" of the rumors.
 		fRumorList.demote(fResponseBuffer, size);
-
 		return true;
 	}
 

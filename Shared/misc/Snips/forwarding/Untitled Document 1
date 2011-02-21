@@ -1,0 +1,37 @@
+coeff_var <- function(vals) {
+	return(sqrt(var(vals))/mean(vals))
+}
+
+plot_neighborhood <- function(graph, root) {
+	components <- neighbors(graph, root)
+	subg <- subgraph(graph, c(root, components))
+	tkplot(subg)
+}
+
+plot_sent <- function(tbl, root) {
+	sub <- tbl[tbl$root == root,]
+	sub <- cbind(sub, idx=1:length(sub$id))
+	root_row <- sub[sub$id == root,]
+	mn <- data.frame(mn=c(mean(sub$sent)))
+	d <- ggplot() + 
+	geom_point(data=sub, aes(x=idx, y=sent, colour="Friends")) + 
+	geom_point(data=root_row, aes(x=idx, y=sent, colour="Root"), size=6) + 
+	geom_hline(data=mn, aes(yintercept=mn, colour="Average"), size=1.5) + 
+	scale_colour_manual(name="Type", c("Friends"="Black", "Root"=alpha("Red", 0.6), "Average"=alpha("Orange", 0.6))) + 
+	xlab("Node Index") + ylab("Messages Sent")
+	return(d)
+}
+
+fairness_stats <- function(lt, selector, grouping) {
+	vars <- aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), var)
+	cv <- aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), coeff_var)
+	m <- data.frame(var=vars$x, cv=cv$x)
+	m[c(grouping)] <- vars[c("grouping")]
+	return(m)
+}
+
+cornonan <- function(v1, v2) {
+	v1_nonan <- v1[!is.nan(v1) & !is.nan(v2)]
+	v2_nonan <- v2[!is.nan(v1) & !is.nan(v2)]
+	return(cor(v1_nonan,v2_nonan))
+}

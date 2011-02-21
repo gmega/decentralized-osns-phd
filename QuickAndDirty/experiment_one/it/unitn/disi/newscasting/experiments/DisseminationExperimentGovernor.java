@@ -9,6 +9,7 @@ import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.INodeRegistry;
+import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -108,6 +109,8 @@ public class DisseminationExperimentGovernor implements Control {
 
 	private SNNode fCurrent;
 
+	private final NodeRebootSupport fRebootSupport;
+
 	/**
 	 * The experiment scheduler.
 	 */
@@ -127,6 +130,7 @@ public class DisseminationExperimentGovernor implements Control {
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
+		fRebootSupport = new NodeRebootSupport(prefix);
 		resetScheduler();
 		publishSingleton();
 	}
@@ -323,9 +327,15 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void setCurrentNode(SNNode node) {
+		// Clears state from the last experiment.
 		if (fCurrent != null) {
 			clearNeighborhoodState(fCurrent);
 		}
+
+		fCurrent = node;
+
+		// Initializes the nodes for the next experiment.
+		runInitializers(node);
 
 		if (verbose) {
 			Linkable sn = (Linkable) node.getProtocol(linkable);
@@ -333,8 +343,6 @@ public class DisseminationExperimentGovernor implements Control {
 			System.out.println("-- Scheduled node " + node.getID() + " (deg. "
 					+ degree + ").");
 		}
-
-		fCurrent = node;
 	}
 
 	private void clearNeighborhoodState(SNNode node) {
@@ -344,6 +352,16 @@ public class DisseminationExperimentGovernor implements Control {
 		for (int i = 0; i < degree; i++) {
 			SNNode nei = (SNNode) lnk.getNeighbor(i);
 			clearStorage(nei);
+		}
+	}
+
+	private void runInitializers(SNNode node) {
+		Linkable lnk = (Linkable) node.getProtocol(linkable);
+		int degree = lnk.degree();
+		fRebootSupport.initialize(node);
+		for (int i = 0; i < degree; i++) {
+			SNNode nei = (SNNode) lnk.getNeighbor(i);
+			fRebootSupport.initialize(nei);
 		}
 	}
 
