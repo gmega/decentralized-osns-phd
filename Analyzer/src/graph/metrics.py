@@ -10,10 +10,11 @@ import logging
 from graph.util import igraph_neighbors, neighbors_in_common,\
     count_neighbors_in_common
 from misc.reflection import get_object
-from graph.codecs import GraphLoader
+from graph.codecs import GraphLoader, AdjacencyListDecoder
 from misc.util import ProgressTracker
 from numpy.ma.core import ceil
-from resources import IGRAPH_ID
+from resources import IGRAPH_ID, ORIGINAL_ID
+from igraph import Graph
 
 logger = logging.getLogger(__name__)
 
@@ -235,3 +236,29 @@ class NodeCountingClusteringComputer(object):
         return (2*float(triangles))/float(triplets)
 
 # =========================================================================
+
+class EgonetCommunityCount(object):
+    
+    def __init__(self, input, vlist="None"):
+        self._input = input
+        self._vlist = eval(vlist)
+        
+    def execute(self):
+        loader = GraphLoader(self._input, AdjacencyListDecoder, False, True, True)
+        g = loader.load_graph()
+        to_eval = self._vlist if not self._vlist is None else range(0, len(g.vs))
+        
+        print "COS:id degree communities"
+        for vertex_id in to_eval:
+            real_id = loader.id_of(vertex_id)
+            # Gets f*(A).
+            neighbors = igraph_neighbors(real_id, g)
+            subg = g.subgraph(neighbors)
+            # Splits into communities.
+            # Treats special case of fully disconnected graph (igraph bug):
+            if len(subg.es) == 0:
+                communities = len(subg.vs)
+            else:
+                communities = len(subg.community_fastgreedy())
+            
+            print ("COS:"+str(vertex_id)), g.degree(real_id), communities    

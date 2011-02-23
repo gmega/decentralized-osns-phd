@@ -10,6 +10,7 @@ import junit.framework.Assert;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
@@ -55,7 +56,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 		ComponentSelector slktor = new ComponentSelector(ref,
 				new FallThroughReference<IPeerSelector>(checker),
 				new FallThroughReference<IUtilityFunction<Node, Integer>>(
-						ranking), false);
+						ranking), false, null);
 
 		for (int i = 0; i < service.components(); i++) {
 			Assert.assertNotNull(slktor.selectPeer(root));

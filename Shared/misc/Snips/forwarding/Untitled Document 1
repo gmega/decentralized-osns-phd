@@ -1,11 +1,56 @@
-coeff_var <- function(vals) {
-	return(sqrt(var(vals))/mean(vals))
+png_mass_plot <- function(all_tables, degs, prefix, suffixes, titles, w, h, yl) {
+	for(i in 1:length(all_tables)) {
+		table <- all_tables[[i]]
+
+		# Variances.p
+		filename <- paste(prefix,suffixes[i],"-var",".png",sep="")
+		print(filename)
+		png(filename, width=w, height=h)
+		print(plot_fairness(compute_plot_fairness(table, degs, "var"), title=titles[i], yl=yl, ylb="Variance"))
+		dev.off()
+
+		# Coefficient of variation.
+		filename <- paste(prefix,suffixes[i],"-cv",".png",sep="")
+		print(filename)
+		png(filename, width=w, height=h)
+		print(plot_fairness(compute_plot_fairness(table, degs, "cv"), title=titles[i], yl=c(0,20), ylb="Coefficient of Variation"))
+		dev.off()
+	}
 }
 
-plot_neighborhood <- function(graph, root) {
-	components <- neighbors(graph, root)
-	subg <- subgraph(graph, c(root, components))
-	tkplot(subg)
+# Computes data for fairness plot.
+compute_plot_fairness <- function(tbl, degs, stat="var") {
+	sendstats <- fairness_stats(tbl, "sent", "root")
+	recvstats <- fairness_stats(tbl, "received", "root")
+	sendstats <- sendstats[order(sendstats$root),]
+	recvstats <- recvstats[order(sendstats$root),]
+	all <- data.frame(root=sendstats$root, degree=degs$degree, sent=sendstats[,c(stat)], recv=recvstats[,c(stat)])
+	return(all)
+}
+
+# Plots separating sends and receives.
+plot_fairness <- function(plot_data, title=NULL, alph=0.4, xl=NULL, yl=NULL, ylb="Value") {
+	d <- ggplot(plot_data) +
+	geom_point(aes(x=degree, y=sent, colour="Sent"), size=1) + 
+	geom_point(aes(x=degree, y=recv, colour="Received"), size=1) +
+	coord_trans(xtrans="log1p", ytrans="log1p") +
+	scale_colour_manual(name="Type", c("Sent"=alpha("Black", alph), "Received"=alpha("Red",alph))) + 
+	xlab("Degree") + ylab(ylb)
+	
+	# Adds title.
+	if (!is.null(title)) {
+		d <- d + opts(title=title)
+	}
+
+	# And limits.
+	if (!is.null(xl)) {
+		d <- d + xlim(xl)
+	}
+	if (!is.null(yl)) {
+		d <- d + ylim(yl)
+	}
+
+	return(d)
 }
 
 plot_sent <- function(tbl, root) {
@@ -23,11 +68,18 @@ plot_sent <- function(tbl, root) {
 }
 
 fairness_stats <- function(lt, selector, grouping) {
-	vars <- aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), var)
-	cv <- aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), coeff_var)
+	varsp <- parallel(aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), var))
+	cvp <- parallel(aggregate(lt[,c(selector)], by=list(grouping=lt[,c(grouping)]), coeff_var))
+	vars <- collect(varsp, wait=TRUE)[[1]]
+	cv <- collect(cvp, wait=TRUE)[[1]]
 	m <- data.frame(var=vars$x, cv=cv$x)
 	m[c(grouping)] <- vars[c("grouping")]
 	return(m)
+}
+
+by_id <- function(load, par, aggregator=sum) {
+	agg <- aggregate(load[c(par)], by=list(id=load$id), aggregator)
+	return(agg)
 }
 
 cornonan <- function(v1, v2) {
@@ -35,3 +87,15 @@ cornonan <- function(v1, v2) {
 	v2_nonan <- v2[!is.nan(v1) & !is.nan(v2)]
 	return(cor(v1_nonan,v2_nonan))
 }
+
+coeff_var <- function(vals) {
+	return(sqrt(var(vals))/mean(vals))
+}
+
+
+plot_neighborhood <- function(graph, root) {
+	components <- neighbors(graph, root)
+	subg <- subgraph(graph, c(root, components))
+	tkplot(subg)
+}
+

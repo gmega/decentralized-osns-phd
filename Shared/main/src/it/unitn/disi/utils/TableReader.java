@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -19,6 +21,8 @@ public class TableReader {
 	private final BufferedReader fReader;
 
 	private final ArrayList<String> fHeader;
+	
+	private final List<String> fROHeader;
 
 	private String[] fCurrent;
 
@@ -27,6 +31,11 @@ public class TableReader {
 	public TableReader(InputStream stream) throws IOException {
 		fReader = new BufferedReader(new InputStreamReader(stream));
 		fHeader = readHeader();
+		fROHeader = Collections.unmodifiableList(fHeader);
+	}
+	
+	public List<String> columns() {
+		return fROHeader;
 	}
 
 	public boolean hasNext() {

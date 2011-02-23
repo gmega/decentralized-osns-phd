@@ -11,6 +11,8 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.internal.ICoreInterface;
+import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.IReference;
@@ -44,37 +46,52 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	private final IReference<IPeerSelector> fDelegate;
 
 	private final IReference<IUtilityFunction<Node, Integer>> fUtility;
+	
+	// XXX HACK!!
+	private final ICoreInterface fIntf;
 
 	private final boolean fStopOnceDone;
 
 	private int[] fRankedComponents;
 
 	public ComponentSelector(String prefix, IResolver resolver,
-			IReference<IPeerSelector> delegate) {
+			IReference<IPeerSelector> delegate, 
+			// XXX HACK!!
+			ICoreInterface intf) {
 		this(new ProtocolReference<ComponentComputationService>(
 				resolver.getInt(prefix, "css")), delegate,
 				new ProtocolReference<IUtilityFunction<Node, Integer>>(
 						resolver.getInt(prefix, "ranking")), resolver
-						.getBoolean(prefix, "stop_once_done"));
+						.getBoolean(prefix, "stop_once_done"), intf);
 	}
 
 	public ComponentSelector(
 			IReference<ComponentComputationService> components,
 			IReference<IPeerSelector> delegate,
 			IReference<IUtilityFunction<Node, Integer>> utility,
-			boolean stopOnceDone) {
+			boolean stopOnceDone,
+			//XXX HACK!
+			ICoreInterface intf
+			) {
 		fComponents = components;
 		fDelegate = delegate;
 		fUtility = utility;
 		fStopOnceDone = stopOnceDone;
+		fIntf = intf;
 	}
 
 	@Override
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		// No more work to do, dispatches to delegate directly.
 		if (done()) {
-			return fStopOnceDone ? null : fDelegate.get(source).selectPeer(
-					source, filter);
+			// XXX HACK! Just to get this thing running.
+			if (fStopOnceDone) {
+				if (fIntf != null) {
+					fIntf.getStrategy(HistoryForwarding.class).clear(source);
+				}
+				return null;
+			}
+			return fDelegate.get(source).selectPeer(source, filter);
 		}
 		ComponentComputationService service = fComponents.get(source);
 		List<Integer> allowed = service.members(nextComponent(source));

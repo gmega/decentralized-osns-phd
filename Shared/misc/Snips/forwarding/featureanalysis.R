@@ -50,8 +50,8 @@ aggregate_by_featurevalue <- function(table, avg_function, featurebreaks, featur
 #
 #
 # -----------------------------------------------------------------------------
-plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, colors, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL,...) {
-	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, global_latency_average, featurebreaks, featurevector)) })
+plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, colors, aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL,...) {
+	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector)) })
 	# Finds the maximum
 	if (is.null(ylim)) {
 		coalesced <- c(datasets)
@@ -70,7 +70,14 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, col
 	}
 
 	if(!is.null(lnames)) {
-		legend(lpos, lnames, col=colors, lwd=lwd, lty=1:length(tables), bty="n")
+		if(!is.character(lpos)) {
+			x <- lpos[1]
+			y <- lpos[2]
+		} else {
+			x <- lpos
+			y <- NULL
+		}
+		legend(x, y, lnames, col=colors, lwd=lwd, lty=1:length(tables), bty="n")
 	}
 }
 

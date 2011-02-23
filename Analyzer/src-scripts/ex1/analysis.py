@@ -38,7 +38,7 @@ class BestPars:
     
     """
     
-    def __init__(self, keys = None, input=sys.stdin, output=sys.stdout):
+    def __init__(self, keys=None, input=sys.stdin, output=sys.stdout):
         self._stats = {}
         self._keys = [] if keys is None else keys.split(",")
         self._input = input
@@ -98,20 +98,21 @@ class BestLatency(BestPars):
     """ BestPars subclass which selects parameter combinations yielding the 
         best average latencies. 
         
-        Assumes the existence of four fields after the node degree:
-        [maximum latency] [average latency] [latency variance] [messages undelivered]
+        Assumes the existence of five fields after the node degree:
+        [maximum latency] [average latency] [latency variance] [messages undelivered] [duplicates]
     """
-    def __init__(self, keys, input=sys.stdin, output=sys.stdout):
+    def __init__(self, keys=None, input=sys.stdin, output=sys.stdout):
         BestPars.__init__(self, keys, input, output)
     
     
     def __type_converters__(self):
-        return [lambda x : float(x.lstrip().rstrip())]*4
+        return [lambda x : float(x.lstrip().rstrip())]*5
 
 
     def __header__(self):
-        return ["t_avg", "t_max", "t_var", "latency_sum", 
-                "max_latency_sum", "delivered", "experiments"]
+        return ["t_avg", "t_max", "t_var", "latency_sum",
+                "max_latency_sum", "delivered", "undelivered",
+                "duplicates", "experiments"]
 
     
     def __is_better__(self, x, y):
@@ -119,16 +120,17 @@ class BestLatency(BestPars):
 
     
     def __data_point__(self, line_number, degree, data):
-        t_max, t_avg, t_var, undelivered = data 
+        t_max, sum, t_var, duplicates, undelivered = data 
         delivered = degree - undelivered
-        sum = delivered * t_avg
-        sqr_sum = delivered * (t_var + t_avg * t_avg)
+        sqr_sum = delivered * t_var + self.__checked_divide__(sum*sum, delivered, 0.0) 
         
         # Sanity checks the data.
         if delivered == 0 and sum != 0:
             raise Exception("Data inconsistency - line: " + str(line_number)) 
         
-        return {"t_max":t_max, "sqr_sum":sqr_sum, "latency_sum":sum, "delivered":delivered, "undelivered":undelivered}
+        return {"t_max":t_max, "sqr_sum":sqr_sum,
+                "latency_sum":sum, "delivered":delivered,
+                "duplicates":duplicates, "undelivered":undelivered}
 
     
     def __print_statistic__(self, best):
@@ -136,10 +138,13 @@ class BestLatency(BestPars):
         experiments = float(best.repetitions)
         t_max_sum = best.t_max
         latency_sum = best.latency_sum
+        duplicates = best.duplicates
+        undelivered = best.undelivered
         t_max = self.__checked_divide__(t_max_sum, experiments, 0)
         t_avg = self.__checked_divide__(latency_sum, n, 0)
         t_var = self.__checked_divide__(best.sqr_sum, n, 0) - (t_avg * t_avg)
-        return (t_avg, t_max, t_var, latency_sum, t_max_sum, n, experiments)
+        return (t_avg, t_max, t_var, latency_sum, t_max_sum, n, undelivered, duplicates,
+                experiments)
 
     
     def __checked_divide__(self, numerator, denominator, zero_by_zero):

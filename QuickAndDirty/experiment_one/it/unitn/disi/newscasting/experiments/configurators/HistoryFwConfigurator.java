@@ -150,7 +150,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			break;
 
 		case COMPONENT_SELECTOR:
-			selector = componentSelectorHeuristic(
+			selector = componentSelectorHeuristic(app,
 					simpleHeuristic(subPrefix(prefix, 0)), prefix);
 			break;
 
@@ -254,10 +254,10 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
 
-	private IPeerSelector componentSelectorHeuristic(IPeerSelector delegate,
-			String prefix) {
+	private IPeerSelector componentSelectorHeuristic(ICoreInterface app,
+			IPeerSelector delegate, String prefix) {
 		return new PredicateHeuristic(new ComponentSelector(prefix, fResolver,
-				new FallThroughReference<IPeerSelector>(delegate)), delegate);
+				new FallThroughReference<IPeerSelector>(delegate), app), delegate);
 	}
 
 	// ----------------------------------------------------------------------
