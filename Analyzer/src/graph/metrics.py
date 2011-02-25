@@ -16,6 +16,9 @@ from numpy.ma.core import ceil
 from resources import IGRAPH_ID, ORIGINAL_ID
 from igraph import Graph
 
+import time
+import forkmap
+
 logger = logging.getLogger(__name__)
 
 # =========================================================================
@@ -23,45 +26,69 @@ logger = logging.getLogger(__name__)
 class SharedHubs:
     ''' Counts the shared hubs in a neighborhood. '''   
  
-    def __init__(self, input, percentile=0.9, decoder="graph.codecs.AdjacencyListDecoder"):
+    def __init__(self, input, procs=1, granularity=1000, percentile=0.9, max=None, decoder="graph.codecs.AdjacencyListDecoder"):
         self._input = input
-        self._percentile = percentile
+        self._granularity = int(granularity)
+        self._percentile = float(percentile)
         self._decoder = get_object(decoder)
+        self._procs=int(procs)
+        self._max = None if max is None else int(max)
 
         
     def execute(self):
         g = GraphLoader(self._input, self._decoder).load_graph()
         counts = self.__compute_counts__(g)
-        for i in range(0, len(counts)):
-            print i,counts[i]
+        print "id degree shared"
+        for vertex in g.vs:
+            assert vertex.index == vertex[IGRAPH_ID]
+            print vertex[ORIGINAL_ID], g.degree(vertex.index), counts[vertex.index]
 
         
     def __compute_counts__(self, g):
-        
         # Counters for hubs.
-        counts = [0]*len(g.vs)
-        
         tracker = ProgressTracker("computing shared hubs", len(g.vs))
         tracker.start_task()
-        
-        for vertex in range(0, len(g.vs)):
-            neighbors = igraph_neighbors(vertex, g)
+        start = time.time()
+        max = len(g.vs) if self._max is None else self._max
+        all_counts = forkmap.map(lambda x: self.__compute_shared_hubs__(g, x, self._granularity, max),\
+                                 range(0, max,\
+                                 self._granularity),
+                                 n=self._procs)
+        end = time.time() - start
+        logger.info("Computation time:" + str(end) + ".")
+        tracker.done()
+        return self.__merge_counters__(all_counts, len(g.vs))
+    
+    
+    def __merge_counters__(self, counters, length):
+        mergedcounter = [0]*length
+        for counter in counters:
+            for key, value in counter.items():
+                mergedcounter[key] += value
+        return mergedcounter
+    
+    
+    def __compute_shared_hubs__(self, g, rootid, granularity, maxval):
+        counts = {}
+        tracker = ProgressTracker("computing shared hubs", granularity)
+        tracker.start_task()
+        for i in range(rootid, min(rootid + granularity, maxval)):
+            tracker.tick();
+            neighbors = igraph_neighbors(i, g)
             subgraph = g.subgraph(neighbors)
-            the_list = [(i, self.__centrality__(subgraph, i)) for i in range(0, len(subgraph.vs))]
             
+            # What's the centrality score of each of my neighbors?
+            the_list = [(j, self.__centrality__(subgraph, j)) for j in range(0, len(subgraph.vs))]
             # Ranks by centrality.
             the_list.sort(cmp=lambda x,y: y[1] - x[1])
-            # Counts the top percentile.
+            # Computes which nodes fall in the top percentiles.
             top = int(ceil((1.0 - self._percentile)*len(the_list)))
             for i in range(0, top):
-                counts[subgraph.vs[the_list[i][0]][IGRAPH_ID]] += 1
-            
-            tracker.tick()
-            
+                vid = subgraph.vs[the_list[i][0]][IGRAPH_ID]
+                counts.setdefault(vid, 0)
+                counts[vid] += 1
         tracker.done()
-                
         return counts
-    
 
     def __centrality__(self, g, idx):
         return g.degree(idx)

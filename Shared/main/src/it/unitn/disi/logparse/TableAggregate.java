@@ -6,6 +6,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -38,14 +40,26 @@ public class TableAggregate implements IMultiTransformer {
 
 	private final IAggregationOp fOp;
 
-	public TableAggregate(@Attribute("file_list") String fileList,
-			@Attribute("aggregate") String aggregate,
-			@Attribute("ignore") String ignores,
-			@Attribute("aggregator") String aggregator) {
+	public TableAggregate(
+			@Attribute(value = "file_list", description = "Space-separated list of files to process.") String fileList,
+			@Attribute(value = "aggregate", description = "Space-separated list of fields to be aggregated.") String aggregate,
+			@Attribute(value = "ignore", description = "Space-separated list of fields to be ignored (won't be printed in the output).") String ignores,
+			@Attribute(value = "aggregator", description = "Aggregation operation to apply.") String aggregator,
+			@Attribute(value = "aggregation_count", description = "Field where counts of aggregation are stored.") String countField) {
+
 		fFileList = fileList.split(SEPARATOR_CHAR);
-		fAggregatables = aggregate.split(SEPARATOR_CHAR);
 		fIgnores = ignores.split(SEPARATOR_CHAR);
-		fOp = chooseOp(aggregator);
+
+		String[] aggregatables = aggregate.split(SEPARATOR_CHAR);
+		FieldDispatcher dispatcher = new FieldDispatcher();
+		dispatcher.register(new SumAggregation(1.0), countField);
+		dispatcher.register(chooseOp(aggregator), aggregatables);
+		fOp = dispatcher;
+		
+		fAggregatables = new String[aggregatables.length + 1];
+		System.arraycopy(aggregatables, 0, fAggregatables, 0,
+				aggregatables.length);
+		fAggregatables[fAggregatables.length - 1] = countField;
 	}
 
 	@Override
@@ -57,11 +71,11 @@ public class TableAggregate implements IMultiTransformer {
 		// Picks one table as leading, arbitrarily.
 		TableReader leading = fTables[0];
 
-		// Prints the header.
-		printHeader(out, leading);
-
 		// Computes leads.
 		String[] leads = computeLeads(leading);
+		
+		// Prints the header.
+		printHeader(out, leads);
 
 		int lineNo = 0;
 		while (leading.hasNext()) {
@@ -92,12 +106,19 @@ public class TableAggregate implements IMultiTransformer {
 		System.err.println("Lead table: " + lineNo + " lines.");
 	}
 
-	private void printHeader(PrintStream out, TableReader leading) {
+	private void printHeader(PrintStream out, String [] leads) {
 		StringBuffer header = new StringBuffer();
-		for (String key : leading.columns()) {
+		
+		for (String key : leads) {
 			header.append(key);
 			header.append(FIELD_SEPARATOR);
 		}
+		
+		for (String key : fAggregatables) {
+			header.append(key);
+			header.append(FIELD_SEPARATOR);
+		}
+		
 		out.println(header.toString());
 	}
 
@@ -154,12 +175,61 @@ public class TableAggregate implements IMultiTransformer {
 		String aggregate(TableReader[] readers, String fieldKey);
 	}
 
+	/**
+	 * Enables different {@link IAggregationOp} to be used for each field.
+	 * 
+	 * @author giuliano
+	 */
+	static class FieldDispatcher implements IAggregationOp {
+
+		private final Map<String, IAggregationOp> fDispatchTable;
+
+		public FieldDispatcher() {
+			fDispatchTable = new HashMap<String, IAggregationOp>();
+		}
+
+		public void register(IAggregationOp op, String... fields) {
+			for (String field : fields) {
+				fDispatchTable.put(field, op);
+			}
+		}
+
+		@Override
+		public String aggregate(TableReader[] readers, String fieldKey) {
+			return fDispatchTable.get(fieldKey).aggregate(readers, fieldKey);
+		}
+
+	}
+
 	static class SumAggregation implements IAggregationOp {
+
+		private Double fDefault;
+
+		public SumAggregation() {
+			this(null);
+		}
+
+		public SumAggregation(Double dephault) {
+			fDefault = dephault;
+		}
+
 		@Override
 		public String aggregate(TableReader[] readers, String fieldKey) {
 			double aggregate = 0.0;
 			for (TableReader reader : readers) {
-				aggregate += Double.parseDouble(reader.get(fieldKey));
+				String value = reader.get(fieldKey);
+				double doubleValue;
+				// XXX resolving default values doesn't really belong here,
+				// but to a wrapping layer over TableReader.
+				if (value == null) {
+					if (fDefault == null) {
+						throw new IllegalArgumentException("Unknown field " + fieldKey + ".");
+					}
+					doubleValue = fDefault;
+				} else {
+					doubleValue = Double.parseDouble(value);
+				}
+				aggregate += doubleValue;
 			}
 			return Double.toString(aggregate);
 		}

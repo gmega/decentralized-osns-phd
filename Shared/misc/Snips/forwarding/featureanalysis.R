@@ -1,16 +1,7 @@
-dem_lat0.1 <- add_simple_sum(dem_lat0.1, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
-dem_lat0.2 <- add_simple_sum(dem_lat0.2, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
-dem_lat0.3 <- add_simple_sum(dem_lat0.3, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
-dem_lat0.4 <- add_simple_sum(dem_lat0.4, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
- 
-lat_tables <- list(dem_lat0.1, dem_lat0.2, dem_lat0.3, dem_lat0.4, fwd_c_lat, fwd_rnd_lat, fwd_ac_lat, fwd_bal_lat)
-fwd_bal_lat <- add_simple_sum(fwd_bal_lat, avg_row="t_avg", n_row="delivered", sum_row="latency_sum")
-
-plot(ecdf(dem_lat0.1$t_avg)[1:len]
-
 # -----------------------------------------------------------------------------
 # Plots correlations with average latency.
 # -----------------------------------------------------------------------------
+
 plot_cor <- function(table, x=800, y=0.6, pos=NULL, lwd=2) {
 	max_deg <- max(table$degree)
 	table <- table[order(table$id),]
@@ -43,12 +34,12 @@ plot_cor <- function(table, x=800, y=0.6, pos=NULL, lwd=2) {
 # -----------------------------------------------------------------------------
 
 aggregate_by_featurevalue <- function(table, avg_function, featurebreaks, featurevector) {
-	return(sapply(featurebreaks, function(x) { return(avg_function(table[which(featurevector >= x),])) }));
+	return(sapply(featurebreaks, function(x) { return(avg_function(table, which(featurevector >= x))) }));
 }
 
 # -----------------------------------------------------------------------------
-#
-#
+# Generic function which allows us to plot aggregate curves by successively 
+# removing classes of points and recomputing.
 # -----------------------------------------------------------------------------
 plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, colors, aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL,...) {
 	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector)) })
@@ -81,12 +72,5 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, col
 	}
 }
 
-m <- c(seg_avg_con, seg_avg_con2, seg_avg_con3)
-m <- m[!is.nan(m)]
-plot(seg_avg_con, type="l", lty=2, lwd=2, col="red", xlab=expression(paste("neighborhoods with ",kappa[comm],"(A) > x")), ylab="average latency", ylim=c(0, max(m)))
-# plot(seg_avg_con, type="l", lty=2, lwd=2, col="red", xlab=expression(paste("neighborhoods with ",kappa,"(A) > x")), ylab="average latency", ylim=c(0, max(m)))
-rm(m)
-lines(seg_avg_con2, type="l", lty=3, lwd=2, col="purple")
-lines(seg_avg_con3, type="l", lty=3, lwd=2, col="blue")
-legend("bottomright", c("anticentrality", "components/clustering/random", "components/size/random"), col=c("red", "blue", "purple"), lty=c(1:3), lwd=2, bty="n")
+
 

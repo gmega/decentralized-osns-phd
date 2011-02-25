@@ -257,12 +257,5 @@ print_percentiles <- function(name, vec, percentiles) {
 	}
 }
 
-# Trivial hybrid
-#cent_select <- which(cent_tables$t_avg < rnd_tables$t_avg & cent_tables$t_avg < ac_tables$t_avg)
-#rnd_select <- which(rnd_tables$t_avg < cent_tables$t_avg & rnd_tables$t_avg < ac_tables$t_avg)
-#ac_select <- which(ac_tables$t_avg <= rnd_tables$t_avg & ac_tables$t_avg <= cent_tables$t_avg)
-#trivial_hybrid <- rbind(ac_tables[ac_select,],rnd_tables[rnd_select,],cent_tables[cent_select,])
-#trivial_hybrid <- trivial_hybrid[order(trivial_hybrid$id),]
-
 
 

@@ -11,50 +11,41 @@ import java.lang.annotation.Target;
  * <BR>
  * As an example, suppose we had a class <code>Example</code>: <BR>
  * <code>
- * 	@AutoConfig
- * 	class Example {
- * 		@Attribute("some_string")
- * 		private String s;
  * 
- * 		@Attribute(Attribute.AUTO)
- * 		private int linkable;
- *  }
- *  </code>
- *  <BR>
- *  and the following configuration file:
- *  <BR>
- *  <code>
+ * @AutoConfig class Example {
+ * @Attribute("some_string") private String s;
+ * 
+ * @Attribute(Attribute.AUTO) private int linkable; } </code> <BR>
+ *                            and the following configuration file: <BR>
+ *                            <code>
  *  protocol.other SomeClass
  *  
  *  protocol.example Example
  *  example.some_string some value
  *  example.linkable other
- *  </code>
- *  <BR>
- *  This would cause the configurator to assign "some value" to <code>Example.s</code>, and
- *  the protocol id of <code>other</code> to <code>Example.linkable</code>.<BR>
- *  <BR>
- *  A similar effect could be achieved by:
- *  <code>
- *  @AutoConfig
- *  class Example {
- *  	public Example(@Attribute("some_string") String a_string,
- *  				@Attribute("linkable") int linkable) {
- *  		...
- *  	}
- *  }
- *  </code>
- *  
- *  This would cause the configurator to call the constructor of <code>Example</code> 
- *  and "some value" and the protocol id of <code>other</code> to <code>a_string</code>
- *  and <code>linkable</code>, respectively.
+ *  </code> <BR>
+ *                            This would cause the configurator to assign
+ *                            "some value" to <code>Example.s</code>, and the
+ *                            protocol id of <code>other</code> to
+ *                            <code>Example.linkable</code>.<BR>
+ * <BR>
+ *                            A similar effect could be achieved by: <code>
+ * @AutoConfig class Example { public Example(@Attribute("some_string") String
+ *             a_string,
+ * @Attribute("linkable") int linkable) { ... } } </code>
+ * 
+ *                        This would cause the configurator to call the
+ *                        constructor of <code>Example</code> and "some value"
+ *                        and the protocol id of <code>other</code> to
+ *                        <code>a_string</code> and <code>linkable</code>,
+ *                        respectively.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 public @interface Attribute {
 
 	// -------------------------------------------------------------------------
-	
+
 	/**
 	 * Causes the configurator to map the name of the annotated attribute to an
 	 * entry with the same name in the configuration file.
@@ -73,7 +64,12 @@ public @interface Attribute {
 	 * {@link #AUTO}. Might also be set to the special value {@link #PREFIX}.
 	 */
 	String value() default AUTO;
-	
+
+	/**
+	 * A short description for the attribute, to be printed by the help switch.
+	 */
+	String description() default "No description.";
+
 	// --------------------------------------------------------------------------
 	/**
 	 * Special value used internally to tell the configurator that the attribute
@@ -82,15 +78,15 @@ public @interface Attribute {
 	public static final String VALUE_NONE = "__NONE__";
 
 	/**
-	 * Special value used to tell the configurator that the attribute should be 
+	 * Special value used to tell the configurator that the attribute should be
 	 * assigned a null value if absent.
 	 */
 	public static final String VALUE_NULL = "__NULL__";
-	
+
 	/**
 	 * Default value for a configuration attribute.
 	 */
 	String defaultValue() default VALUE_NONE;
-	
+
 	// --------------------------------------------------------------------------
 }
