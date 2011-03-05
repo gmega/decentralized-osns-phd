@@ -51,6 +51,7 @@ public class ReconstructionInitializer implements Control {
 		INodeRegistry nr = NodeRegistry.getInstance();
 		
 		while(reader.hasNext()) {
+			reader.next();
 			long source = Long.parseLong(reader.get(SOURCE));
 			long target = Long.parseLong(reader.get(DESTINATION));
 			int time = Integer.parseInt(reader.get(TIME));

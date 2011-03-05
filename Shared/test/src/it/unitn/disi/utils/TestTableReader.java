@@ -19,19 +19,24 @@ public class TestTableReader {
 		sb.append("Elijah Wood ? 23020\n");
 		
 		TableReader tr = new TableReader(new ByteArrayInputStream(sb.toString().getBytes()));
+		Assert.assertTrue(tr.hasNext());
+		tr.next();
 		
 		Assert.assertEquals("John", tr.get("name"));
 		Assert.assertEquals("Doe", tr.get("surname"));
 		Assert.assertEquals("M", tr.get("sex"));
 		Assert.assertEquals("38100", tr.get("ZIP"));
+		Assert.assertTrue(tr.hasNext());
 		tr.next();
 
 		Assert.assertEquals("Jane", tr.get("name"));
 		Assert.assertEquals("Doe", tr.get("surname"));
 		Assert.assertEquals("F", tr.get("sex"));
 		Assert.assertEquals("38123", tr.get("ZIP"));
+		Assert.assertTrue(tr.hasNext());
 		tr.next();
 		
+		Assert.assertFalse(tr.hasNext());
 		Assert.assertEquals("Elijah", tr.get("name"));
 		Assert.assertEquals("Wood", tr.get("surname"));
 		Assert.assertEquals("?", tr.get("sex"));

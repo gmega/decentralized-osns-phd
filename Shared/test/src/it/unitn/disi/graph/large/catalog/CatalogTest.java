@@ -117,6 +117,7 @@ public class CatalogTest {
 		ByteGraphDecoder decoder = new ByteGraphDecoder(stream);
 		for (int i = 0; i < 1000; i++) {
 			CatalogRecord random = records[rand.nextInt(records.length)];
+			// Discards trivial records.
 			if (random.size == 1) {
 				i--;
 				continue;

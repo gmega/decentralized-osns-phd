@@ -43,6 +43,7 @@ public class UnitExperimentReader {
 		TableReader reader = new TableReader(fInput);
 		Integer currentRoot = null;
 		while (reader.hasNext()) {
+			reader.next();
 			Integer id = Integer.parseInt(reader.get(EXPERIMENT_ID));
 
 			if (!id.equals(currentRoot)) {
@@ -61,7 +62,6 @@ public class UnitExperimentReader {
 			}
 
 			experiment.addData(nodeId, sent, received);
-			reader.next();
 		}
 
 		// Wraps up the experiments.

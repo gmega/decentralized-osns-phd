@@ -470,8 +470,10 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			int size = tweet.destinations();
 			for (int i = 0; i < size; i++) {
 				Node owner = tweet.destination(i);
-				((SocialNewscastingService) owner.getProtocol(fProtocolID))
+				if (owner != tweet.poster) {
+					((SocialNewscastingService) owner.getProtocol(fProtocolID))
 						.countPending();
+				}
 			}
 
 			fChannel.tweeted(tweet);

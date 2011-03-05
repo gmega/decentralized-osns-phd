@@ -14,12 +14,14 @@ import peersim.core.Node;
  */
 public interface IMessageVisibility {
 	/**
-	 * @return the number of destinations for a {@link Tweet}.
+	 * @return the number of destinations for a {@link Tweet}. That includes the
+	 *         node posting the message.
 	 */
 	public int size(Tweet tweet);
-	
+
 	/**
-	 * @return the i-th destination for a {@link Tweet}.
+	 * @return the i-th destination for a {@link Tweet} (among the nodes
+	 *         returned, the poster of the message).
 	 * 
 	 * @throws IndexOutOfBoundsException
 	 *             if i >= {@link #size(Tweet)}.
@@ -28,7 +30,7 @@ public interface IMessageVisibility {
 
 	/**
 	 * Tells whether a {@link Node} is in the destination list for a given
-	 * {@link Tweet}.
+	 * {@link Tweet}. Again, # 
 	 * 
 	 * @return <code>true</code> if the tweet is in the destination list, or
 	 *         <code>false</code> otherwise.

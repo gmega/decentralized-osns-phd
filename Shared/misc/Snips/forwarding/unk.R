@@ -1,3 +1,7 @@
+library(R.oo)
+library(ggplot2)
+library(multicore)
+
 # -----------------------------------------------------------------------------
 # Plotting.
 # -----------------------------------------------------------------------------
@@ -61,6 +65,7 @@ plot_sent <- function(tbl, root) {
 	return(d)
 }
 
+
 # Plots neighborhood using igraph.
 plot_neighborhood <- function(graph, root) {
 	components <- neighbors(graph, root)
@@ -73,15 +78,12 @@ plot_neighborhood <- function(graph, root) {
 # -----------------------------------------------------------------------------
 
 
-send_receive_scatterplot <- function(ltable, srdata, degs, alph=0.4, title=NULL, xl=NULL, yl=NULL, log=TRUE) {
+send_receive_scatterplot <- function(srdata, degs, alph=0.4, title=NULL, xl=NULL, yl=NULL, log=TRUE) {
 
-	maximus <- data.frame(x=c(0, max(degs$degree)), y=c(0, max(degs$degree)))
-	
-	d <- ggplot(data.frame(id=srdata$id, sent=srdata$sent, recv=srdata$received, degree=degs$degree)) +
+	d <- ggplot(data.frame(id=srdata$id, sent=srdata$sent, recv=srdata$recv, degree=degs$degree)) +
 		geom_point(aes(x=degree, y=sent, colour="Sent"), size=1) + 
 		geom_point(aes(x=degree, y=recv, colour="Received"), size=1) +
-		geom_line(data=maximus, aes(x=x, y=y, colour="Dir. Mail.")) +
-		scale_colour_manual(name="Type", c("Sent"=alpha("Black", alph), "Received"=alpha("Red",alph), "Dir. Mail."="orange")) + 
+		scale_colour_manual(name="Type", c("Sent"=alpha("Black", alph), "Received"=alpha("Red",alph))) + 
 		xlab("Degree") + ylab("Value")
 
 	d <- add_log(add_title(add_lim(add_lim(d, ylim, yl), xlim, xl), title), log)
@@ -110,7 +112,6 @@ add_lim <- function(oplot, lim, value=NULL) {
 	return(oplot)
 }
 
-
 # -----------------------------------------------------------------------------
 # Computation.
 # -----------------------------------------------------------------------------
@@ -127,10 +128,10 @@ total_work_stats <- function(ltable) {
 	return(data.frame(id=sent$id, sent=sent$sent, recv=recv$received))
 }
 
-avg_work_stats <- function(ltable, degs) {
+avg_work_stats <- function(ltable, degs, reps) {
 	ttw <- total_work_stats(ltable)
-	ttw$sent <- ttw$sent/(degs$degree + 1)
-	ttw$recv <- ttw$recv/(degs$degree + 1)
+	ttw$sent <- ttw$sent/(reps*(degs$degree + 1))
+	ttw$recv <- ttw$recv/(reps*(degs$degree + 1))
 	return(ttw)
 }
 
@@ -161,7 +162,7 @@ coeff_var <- function(vals) {
 	return(sqrt(var(vals))/mean(vals))
 }
 
-# Total work aggregate.
+# Total work aggregate (if idx refers to degree).
 work_aggregate <- function(degs, stat="sent") {
 	return(function(wtable, idx) {
 		return(sum(wtable[idx, c(stat)])/sum(degs[idx]))

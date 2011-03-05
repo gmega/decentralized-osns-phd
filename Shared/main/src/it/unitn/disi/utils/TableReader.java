@@ -21,19 +21,27 @@ public class TableReader {
 	private final BufferedReader fReader;
 
 	private final ArrayList<String> fHeader;
-	
+
 	private final List<String> fROHeader;
 
 	private String[] fCurrent;
 
 	private String fNext;
 
+	/**
+	 * Attaches a {@link TableReader} to an input stream.
+	 * 
+	 * @param stream
+	 *            stream containing table data.
+	 * 
+	 * @throws IOException
+	 */
 	public TableReader(InputStream stream) throws IOException {
 		fReader = new BufferedReader(new InputStreamReader(stream));
 		fHeader = readHeader();
 		fROHeader = Collections.unmodifiableList(fHeader);
 	}
-	
+
 	public List<String> columns() {
 		return fROHeader;
 	}
@@ -41,7 +49,7 @@ public class TableReader {
 	public boolean hasNext() {
 		return fNext != null;
 	}
-
+	
 	public void next() throws IOException {
 		if (!hasNext()) {
 			throw new NoSuchElementException();
@@ -58,7 +66,7 @@ public class TableReader {
 	}
 
 	private ArrayList<String> readHeader() throws IOException {
-		// Fills in the "buffer".
+		// Fills in the readahead slot.
 		readLine();
 
 		// Reads the first line.
@@ -71,9 +79,6 @@ public class TableReader {
 			}
 			header.add(headerParts[i]);
 		}
-
-		readLine();
-
 		return header;
 	}
 

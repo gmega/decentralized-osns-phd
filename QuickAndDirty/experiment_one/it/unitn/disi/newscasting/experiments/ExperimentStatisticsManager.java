@@ -158,7 +158,7 @@ class UnitExperimentData {
 	private int fTime;
 
 	public UnitExperimentData(Tweet tweet) {
-		fPending = tweet.destinations();
+		fPending = tweet.destinations() - 1;
 		fTime = CommonState.getIntTime();
 		fTweet = tweet;
 		clear();
@@ -231,7 +231,6 @@ class UnitExperimentData {
 		for (int i = 0; i < fSent.length; i++) {
 			sent += fSent[i];
 		}
-
 		return sent;
 	}
 
@@ -303,14 +302,14 @@ class UnitExperimentData {
 	 * @return the minimum speedup over the naïve dissemination approach.
 	 */
 	public double minimumSpeedup() {
-		return (double) (fTweet.destinations()) / getMax();
+		return (double) (fTweet.destinations() - 1) / getMax();
 	}
 
 	/**
 	 * @return the average speedup over the naïve dissemination approach.
 	 */
 	public double averageSpeedup() {
-		return ((fTweet.destinations() + 1) * delivered()) / (2.0 * getSum());
+		return ((fTweet.destinations()) * delivered()) / (2.0 * getSum());
 	}
 
 	/**
@@ -348,7 +347,7 @@ class UnitExperimentData {
 		buffer.append(LATENCY_PREFIX);
 		buffer.append(fTweet.profile().getID()); // 1(2) - id
 		buffer.append(FIELD_SEPARATOR);
-		buffer.append(fTweet.destinations()); // 2(3) - degree
+		buffer.append(fTweet.destinations() - 1); // 2(3) - degree
 		buffer.append(FIELD_SEPARATOR);
 		buffer.append(getMax()); // 3(4) - max
 		buffer.append(FIELD_SEPARATOR);
@@ -381,15 +380,11 @@ class UnitExperimentData {
 
 	public String loadStatistics() {
 		StringBuffer buffer = new StringBuffer();
-
 		// Appends the statistics.
-		appendLoad(buffer, fTweet.poster);
-		buffer.append("\n");
 		for (int i = 0; i < fTweet.destinations(); i++) {
 			appendLoad(buffer, fTweet.destination(i));
 			buffer.append("\n");
 		}
-
 		return buffer.toString();
 	}
 

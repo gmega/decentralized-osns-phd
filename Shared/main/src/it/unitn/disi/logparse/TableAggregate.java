@@ -80,6 +80,10 @@ public class TableAggregate implements IMultiTransformer {
 		int lineNo = 0;
 		while (leading.hasNext()) {
 			lineNo++;
+			// Iterates all tables.
+			for (TableReader table : fTables) {
+				table.next();
+			}
 			// Checks that the leading fields coincide.
 			StringBuffer line = new StringBuffer();
 			checkLeads(fTables, leads);
@@ -96,11 +100,6 @@ public class TableAggregate implements IMultiTransformer {
 				line.append(FIELD_SEPARATOR);
 			}
 			out.println(line.toString());
-
-			// Iterates all tables.
-			for (TableReader table : fTables) {
-				table.next();
-			}
 		}
 		out.flush();
 		System.err.println("Lead table: " + lineNo + " lines.");

@@ -30,7 +30,7 @@ public class DefaultVisibility implements IMessageVisibility {
 
 	@Override
 	public int size(Tweet tweet) {
-		return socialNetwork(tweet).degree();
+		return socialNetwork(tweet).degree() + 1;
 	}
 
 	@Override
@@ -41,7 +41,10 @@ public class DefaultVisibility implements IMessageVisibility {
 
 	@Override
 	public Node get(Tweet tweet, int i) {
-		return socialNetwork(tweet).getNeighbor(i);
+		if (i == 0) {
+			return tweet.profile();
+		}
+		return socialNetwork(tweet).getNeighbor(i - 1);
 	}
 
 	private Linkable socialNetwork(Tweet tweet) {

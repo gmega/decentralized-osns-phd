@@ -14,8 +14,6 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 
 	private TableReader fReader;
 
-	private boolean fFirst = true;
-
 	public ParameterUpdater(IReference<Linkable> neighborhood,
 			TableReader reader) {
 		fNeighborhood = neighborhood;
@@ -56,15 +54,6 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 	protected abstract void update(Node node, TableReader reader);
 
 	private void nextParameterSet() {
-		// If it's the first time the method is called,
-		// no need to call next as the table reader already
-		// has a set of parameters to return.
-		if (fFirst) {
-			fFirst = false;
-			return;
-		}
-
-		// Next parameter.
 		try {
 			fReader.next();
 		} catch (IOException ex) {
