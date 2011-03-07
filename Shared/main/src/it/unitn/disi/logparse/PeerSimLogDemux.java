@@ -10,7 +10,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.DeflaterOutputStream;
 
 import org.apache.log4j.Logger;
 
@@ -21,14 +20,17 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
- * Java version of the script for extracting matching lines from huge log files.
+ * {@link PeerSimLogDemux} can "demultiplex" PeerSim log files. It's been
+ * designed to cope with PeerSim quirks, and to understand certain naming
+ * conventions that make handling logs easier.
  * 
  * @author giuliano
  */
 @AutoConfig
-public class LogParse implements ITransformer {
+public class PeerSimLogDemux implements ITransformer {
 
-	private static final Logger fLogger = Logger.getLogger(LogParse.class);
+	private static final Logger fLogger = Logger
+			.getLogger(PeerSimLogDemux.class);
 
 	/**
 	 * A list of files to parse. Might be gzipped or plain text files.
@@ -54,6 +56,13 @@ public class LogParse implements ITransformer {
 	@Attribute("allow_partial")
 	private boolean fAllowPartial;
 
+	/**
+	 * If true, omits the first matching line of all files but the first. Useful
+	 * when merging attribute-based logs which contain headers.
+	 */
+	@Attribute("single_header")
+	private boolean fSingleHeader;
+
 	private String[] fParameters;
 
 	@Override
@@ -65,10 +74,11 @@ public class LogParse implements ITransformer {
 			Pair<String, String> pars = parameters(file);
 			if (pars != null) {
 				try {
-					processFile(file, pars.a, pars.b, new PrintStream(oup));
+					processFile(file, pars.a, pars.b, new PrintStream(oup),
+							i != 0 && fSingleHeader, !pars.a.equals(""));
 				} catch (java.io.EOFException ex) {
 					fLogger.error("Unexpected end-of-file found.");
-					if(!fAllowPartial) {
+					if (!fAllowPartial) {
 						fLogger.error("Re-run with the allow_partial option to skip this file and continue.");
 						return;
 					}
@@ -78,18 +88,27 @@ public class LogParse implements ITransformer {
 	}
 
 	private void processFile(String filename, String substring,
-			String replacement, PrintStream out) throws IOException {
+			String replacement, PrintStream out, boolean singleHeader,
+			boolean replace) throws IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
 				BaseFormatDecoder.open(new File(filename))));
 		String line = null;
+		boolean first = true;
 		while ((line = reader.readLine()) != null) {
 			if (line.startsWith(fLinePrefix)) {
-				// Performs the replacement.
-				line = substitute(fLinePrefix, substring, replacement, line);
+				if (replace) {
+					// Performs the replacement.
+					line = substitute(fLinePrefix, substring, replacement, line);
+				}
 			} else if (fMatchingOnly) {
 				continue;
 			}
-			out.println(line);
+
+			if (!first || !singleHeader) {
+				out.println(line);
+			}
+			
+			first = false;
 		}
 	}
 
@@ -139,17 +158,20 @@ public class LogParse implements ITransformer {
 			count++;
 		}
 
-		fLogger.info("Looking for: " + parString);
-
-		if (count != fParameters.length) {
-			fLogger.warn(String
-					.format("Match failure on %1$s: expected %2$d parameters but found %3$d.",
-							file, fParameters.length, count));
-			return null;
+		if (parString.length() == 0) {
+			fLogger.info("No parameters in file " + file + ".");
+		} else {
+			fLogger.info("Looking for: " + parString);
+			if (count != fParameters.length) {
+				fLogger.warn(String
+						.format("Match failure on %1$s: expected %2$d parameters but found %3$d.",
+								file, fParameters.length, count));
+				return null;
+			}
+			replacementString.deleteCharAt(replacementString.length() - 1);
+			parString.deleteCharAt(parString.length() - 1);
 		}
 
-		replacementString.deleteCharAt(replacementString.length() - 1);
-		parString.deleteCharAt(parString.length() - 1);
 		return new Pair<String, String>(parString.toString(),
 				replacementString.toString());
 	}

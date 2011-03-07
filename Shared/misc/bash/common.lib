@@ -19,6 +19,7 @@ function out {
     echo $@
 }
 
+
 ############################################################### 
 #
 # Performs an averaging step using the python analyzer. 
@@ -114,6 +115,16 @@ function checkpar {
     then
 	err Incorrect number of arguments -- expected $1 but got $2.
 	exit
+    fi
+}
+
+function check_set {
+    if [ -z $2 ]
+    then 
+	err Mandatory argument $1 is missing. Type $0 -h for help.
+	exit 1
+    else
+	err Parameter $1 is $2.
     fi
 }
 

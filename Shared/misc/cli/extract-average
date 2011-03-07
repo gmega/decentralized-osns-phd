@@ -20,16 +20,6 @@ function print_help {
     exit 1
 }
 
-function check_set {
-    if [ -z $2 ]
-    then 
-	err Mandatory argument $1 is missing. Type $0 -h for help.
-	exit 1
-    else
-	err Parameter $1 is $2.
-    fi
-}
-
 #=======================================
 # Parses options. 
 #=======================================

@@ -116,7 +116,7 @@ class BestPars:
 
 class _HashableDict(dict):
     
-    def __init__(self, ):
+    def __init__(self):
         self._hash = None
     
     def __hash__(self):
