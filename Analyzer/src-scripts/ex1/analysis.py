@@ -12,9 +12,9 @@ from resources import ORIGINAL_ID, BLACK
 from graph.transformers import strip_unmarked_vertices
 import operator
 import re
-from experiment.util import LineParser
 import numpy
 import math
+from misc.parsing import LineParser, TableReader, type_converting_table_reader
 
 # =============================================================================
 
@@ -43,38 +43,59 @@ class BestPars:
         self._keys = [] if keys is None else keys.split(",")
         self._input = input
         self._output = output
+                     
                           
     def execute(self):
-        for parameters, id, degree, data in self.__data__():
-            exp_set = self.__get__(id, degree)
-            exp_set.point(parameters, data)
+        reader = self.__table_reader__()
+        while reader.has_next():
+            reader.next()
+            exp_set = self.__get__(reader.get("id"), reader.get("degree"))
+            exp_set.point(self.__key_tuple__(reader), self.__data_point__(reader))
         
-        all_fields = ["id", "degree"] + [str(i) for i in self._keys] + self.__header__()
-        print " ".join(all_fields)
-                
+        header_order = None
         for id, data in self._stats.items():
             degree, experiment_set = data
             parameters, best_set = self.__best__(experiment_set)
-            statistics_string = " ".join([str(i) for i in self.__print_statistic__(best_set)])
-            print >> self._output, int(id), int(degree), " ".join([str(i) for i in parameters]), statistics_string
+            record = self.__to_record__(best_set)
+            if header_order is None:
+                header_order = self.__make_header__(parameters, record)
+                
+            record.update(parameters)
+            record["id"] = id
+            record["degree"] = degree
+
+            self.__print_record__(header_order, record)
+    
+    
+    def __key_tuple__(self, reader):
+        keytuple = _HashableDict()
+        for key in self._keys:
+            keytuple[key] = reader.get(key)
+        return keytuple
+          
+
+    def __print_record__(self, header_order, record):
+        record_string = " ".join([str(record[key]) for key in header_order])
+        print >> self._output, record_string
+               
+               
+    def __make_header__(self, parameters, record):
+        header = ["id", "degree"]
+        header.extend(parameters.keys())
+        header.extend(record.keys())
+        header_string = " ".join(header)
+        print >> self._output, header_string
+        return header
             
-    def __data__(self):
-        # Keys go untransformed.
-        identities = [lambda x : x] * (len(self._keys))
+    def __table_reader__(self):
+        # 1. Setup type conversion.        
+        to_int = lambda x: int(x)
         # Node id and degree get converted to integers.
-        integers = [lambda x : int(x)] * 2
+        converters = {"id" : to_int, "degree" : to_int}
         # Custom converters supplied by the subclass.
-        converters = self.__type_converters__()
-        line_parser = LineParser(lambda x : True, identities + integers + converters, self._input)
-        klength = len(self._keys)
-        for type, line in line_parser:
-            # Key fields.
-            parameters = line[0:klength]
-            # The two fields immediately after the keys should be id and degree.
-            id, degree = line[klength:klength + 2]
-            # The remainder of the fields are the data.
-            data_point = self.__data_point__(line_parser.line(), degree, line[klength + 2:])            
-            yield(tuple(parameters), id, degree, data_point)
+        converters.update(self.__input_field_descriptors__()) 
+        # 2. Instantiate table reader.
+        return type_converting_table_reader(TableReader(self._input, header=True), converters)
 
 
     def __best__(self, parameterized_set):
@@ -91,60 +112,79 @@ class BestPars:
         if not (id in self._stats):
             self._stats[id] = (degree, ParameterizedExperimentSet())
         return self._stats[id][1]
+
+
+class _HashableDict(dict):
     
+    def __init__(self, ):
+        self._hash = None
+    
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash(tuple(sorted(self.items())))
+        return self._hash
+  
 # =============================================================================
     
 class BestLatency(BestPars):
     """ BestPars subclass which selects parameter combinations yielding the 
         best average latencies. 
-        
-        Assumes the existence of five fields after the node degree:
-        [maximum latency] [average latency] [latency variance] [messages undelivered] [duplicates]
     """
     def __init__(self, keys=None, input=sys.stdin, output=sys.stdout):
         BestPars.__init__(self, keys, input, output)
-    
-    
-    def __type_converters__(self):
-        return [lambda x : float(x.lstrip().rstrip())]*5
-
-
-    def __header__(self):
-        return ["t_avg", "t_max", "t_var", "latency_sum",
-                "max_latency_sum", "delivered", "undelivered",
-                "duplicates", "experiments"]
 
     
+    def __input_field_descriptors__(self):
+        descriptors = {}
+        stf = lambda x: float(x.lstrip().rstrip()) 
+        field_keys = ["t_max", "t_var", "latency_sum", "undelivered", "duplicates"]
+        for key in field_keys:
+            descriptors[key] = stf
+        return descriptors
+            
+
     def __is_better__(self, x, y):
         return self.__checked_divide__(x.latency_sum, x.delivered, 0.0) < self.__checked_divide__(y.latency_sum, y.delivered, 0.0)
 
     
-    def __data_point__(self, line_number, degree, data):
-        t_max, sum, t_var, duplicates, undelivered = data 
+    def __data_point__(self, reader):
+        # TODO this is an implicit dependency. Subclasses/delegates need to declare which fields
+        # they expect to be already set up, and which ones they handle themselves.
+        degree = reader.get("degree")
+        
+        # Subclass-only fields.
+        t_max = reader.get("t_max")
+        sum = reader.get("latency_sum")
+        t_var = reader.get("t_var")
+        duplicates = reader.get("duplicates")
+        undelivered = reader.get("undelivered")
+        
         delivered = degree - undelivered
-        sqr_sum = delivered * t_var + self.__checked_divide__(sum*sum, delivered, 0.0) 
+        sqr_sum = delivered * t_var + self.__checked_divide__(sum * sum, delivered, 0.0) 
         
         # Sanity checks the data.
         if delivered == 0 and sum != 0:
-            raise Exception("Data inconsistency - line: " + str(line_number)) 
+            raise Exception("Data inconsistency - line: " + str(reader.line_number())) 
         
         return {"t_max":t_max, "sqr_sum":sqr_sum,
                 "latency_sum":sum, "delivered":delivered,
                 "duplicates":duplicates, "undelivered":undelivered}
-
     
-    def __print_statistic__(self, best):
-        n = float(best.delivered)
-        experiments = float(best.repetitions)
-        t_max_sum = best.t_max
-        latency_sum = best.latency_sum
-        duplicates = best.duplicates
-        undelivered = best.undelivered
+
+    def __to_record__(self, experiment):
+        n = float(experiment.delivered)
+        experiments = float(experiment.repetitions)
+        t_max_sum = experiment.t_max
+        latency_sum = experiment.latency_sum
+        duplicates = experiment.duplicates
+        undelivered = experiment.undelivered
         t_max = self.__checked_divide__(t_max_sum, experiments, 0)
         t_avg = self.__checked_divide__(latency_sum, n, 0)
-        t_var = self.__checked_divide__(best.sqr_sum, n, 0) - (t_avg * t_avg)
-        return (t_avg, t_max, t_var, latency_sum, t_max_sum, n, undelivered, duplicates,
-                experiments)
+        t_var = self.__checked_divide__(experiment.sqr_sum, n, 0) - (t_avg * t_avg)
+        return {"t_avg" : t_avg, "t_max" : t_max, "t_var":t_var,\
+                "latency_sum":latency_sum, "t_max_sum":t_max_sum,\
+                "delivered":n, "undelivered":undelivered, "duplicates":duplicates,\
+                "experiments":experiments}
 
     
     def __checked_divide__(self, numerator, denominator, zero_by_zero):

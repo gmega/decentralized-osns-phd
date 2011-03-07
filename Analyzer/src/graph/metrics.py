@@ -7,7 +7,7 @@ import igraph
 import sys
 
 import logging
-from graph.util import igraph_neighbors, neighbors_in_common,\
+from graph.util import igraph_neighbors, neighbors_in_common, \
     count_neighbors_in_common
 from misc.reflection import get_object
 from graph.codecs import GraphLoader, AdjacencyListDecoder
@@ -17,7 +17,7 @@ from resources import IGRAPH_ID, ORIGINAL_ID
 from igraph import Graph
 
 import time
-import forkmap
+from misc import forkmap
 
 logger = logging.getLogger(__name__)
 
@@ -26,19 +26,21 @@ logger = logging.getLogger(__name__)
 class SharedHubs:
     ''' Counts the shared hubs in a neighborhood. '''   
  
-    def __init__(self, input, procs=1, granularity=1000, percentile=0.9, max=None, decoder="graph.codecs.AdjacencyListDecoder"):
+    def __init__(self, input, procs=1, granularity=1000, percentile=0.9, score="top_percentile",\
+                 max=None, decoder="graph.codecs.AdjacencyListDecoder"):
         self._input = input
         self._granularity = int(granularity)
         self._percentile = float(percentile)
         self._decoder = get_object(decoder)
-        self._procs=int(procs)
+        self._procs = int(procs)
         self._max = None if max is None else int(max)
+        self._f = getattr(self, "__" + score + "__")
 
         
     def execute(self):
         g = GraphLoader(self._input, self._decoder).load_graph()
         counts = self.__compute_counts__(g)
-        print "id degree shared"
+        print "id degree score"
         for vertex in g.vs:
             assert vertex.index == vertex[IGRAPH_ID]
             print vertex[ORIGINAL_ID], g.degree(vertex.index), counts[vertex.index]
@@ -50,8 +52,8 @@ class SharedHubs:
         tracker.start_task()
         start = time.time()
         max = len(g.vs) if self._max is None else self._max
-        all_counts = forkmap.map(lambda x: self.__compute_shared_hubs__(g, x, self._granularity, max),\
-                                 range(0, max,\
+        all_counts = forkmap.map(lambda x: self.__compute_shared_hubs__(g, x, self._granularity, max), \
+                                 range(0, max, \
                                  self._granularity),
                                  n=self._procs)
         end = time.time() - start
@@ -61,7 +63,7 @@ class SharedHubs:
     
     
     def __merge_counters__(self, counters, length):
-        mergedcounter = [0]*length
+        mergedcounter = [0] * length
         for counter in counters:
             for key, value in counter.items():
                 mergedcounter[key] += value
@@ -73,25 +75,60 @@ class SharedHubs:
         tracker = ProgressTracker("computing shared hubs", granularity)
         tracker.start_task()
         for i in range(rootid, min(rootid + granularity, maxval)):
-            tracker.tick();
             neighbors = igraph_neighbors(i, g)
             subgraph = g.subgraph(neighbors)
-            
-            # What's the centrality score of each of my neighbors?
-            the_list = [(j, self.__centrality__(subgraph, j)) for j in range(0, len(subgraph.vs))]
-            # Ranks by centrality.
-            the_list.sort(cmp=lambda x,y: y[1] - x[1])
-            # Computes which nodes fall in the top percentiles.
-            top = int(ceil((1.0 - self._percentile)*len(the_list)))
-            for i in range(0, top):
-                vid = subgraph.vs[the_list[i][0]][IGRAPH_ID]
-                counts.setdefault(vid, 0)
-                counts[vid] += 1
+            self._f(subgraph, counts)
+            tracker.tick();
         tracker.done()
         return counts
 
+
+    def __weighted_rankings__(self, subgraph, counts):
+        # What's the degree of each of my neighbors?
+        the_list = [(j, subgraph.degree(j)) for j in range(0, len(subgraph.vs))]
+        # Sorts by degree, larger first.
+        the_list.sort(cmp=lambda x, y: y[1] - x[1])
+
+        # Assigns the rankings.
+        rankClass = 0
+        last = -1
+        for i in range(0, len(the_list)):
+            index, degree = the_list[i]
+            if (degree != last):
+                rankClass += 1
+                last = degree
+            the_list[i] = (index, degree, rankClass)
+        
+        assert rankClass > 0
+        
+        # Computes the scores.
+        for i in range(0, len(the_list)):
+            index, degree, rank = the_list[i]
+            index = subgraph.vs[the_list[index][0]][IGRAPH_ID]
+            counts.setdefault(index, 0)
+            
+            # Weighted degree of this node.
+            score = float(degree) * (1.0 - (float(rank) / rankClass))
+            counts[index] += score
+
+    
+    def __top_percentile__(self, subgraph, counts):
+        # What's the centrality score of each of my neighbors?
+        the_list = [(j, self.__centrality__(subgraph, j)) for j in range(0, len(subgraph.vs))]
+        # Ranks by centrality.
+        the_list.sort(cmp=lambda x, y: y[1] - x[1])
+        # Computes which nodes fall in the top percentiles.
+        top = int(ceil((1.0 - self._percentile) * len(the_list)))
+        for i in range(0, top):
+            vid = subgraph.vs[the_list[i][0]][IGRAPH_ID]
+            counts.setdefault(vid, 0)
+            counts[vid] += 1
+    
+    
     def __centrality__(self, g, idx):
         return g.degree(idx)
+    
+    
 
 # =========================================================================
 
@@ -109,7 +146,7 @@ class OuterDegree:
             
         for vertex_id in self._vertex_list:
             for neighbor in igraph_neighbors(vertex_id, graph):
-                print vertex_id,neighbor,count_neighbors_in_common(vertex_id, neighbor, graph)
+                print vertex_id, neighbor, count_neighbors_in_common(vertex_id, neighbor, graph)
                 
 
 # =========================================================================
@@ -133,7 +170,7 @@ def avg_measure(id_list, computer, print_data_points=False):
             val = 0.0
             
         if print_data_points:
-            print vertex,val
+            print vertex, val
             
         sample_size += 1
         total += val
@@ -145,7 +182,7 @@ def avg_measure(id_list, computer, print_data_points=False):
 
 class FriendConnectednessComputer(object):
     
-    def __init__(self, graph, cutoff=-1):
+    def __init__(self, graph, cutoff= -1):
         self.graph = graph
         self.cutoff = cutoff
     
@@ -155,7 +192,7 @@ class FriendConnectednessComputer(object):
         if len(neighbors) <= self.cutoff:
             return None
         subgraph = self.graph.subgraph(neighbors)
-        return 1.0/len(subgraph.clusters())
+        return 1.0 / len(subgraph.clusters())
 
 # =========================================================================    
     
@@ -260,7 +297,7 @@ class NodeCountingClusteringComputer(object):
                 if self.graph.are_connected(n1, n2):
                     triangles = triangles + 1
         
-        return (2*float(triangles))/float(triplets)
+        return (2 * float(triangles)) / float(triplets)
 
 # =========================================================================
 
@@ -288,4 +325,4 @@ class EgonetCommunityCount(object):
             else:
                 communities = len(subg.community_fastgreedy())
             
-            print ("COS:"+str(vertex_id)), g.degree(real_id), communities    
+            print ("COS:" + str(vertex_id)), g.degree(real_id), communities    

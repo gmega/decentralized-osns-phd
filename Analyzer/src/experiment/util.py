@@ -44,7 +44,7 @@ class ChkStructure:
     def __collect__(self, folder, template):
         matching = []
         handler = FilenameHandler(NAME_CONSTITUENTS, template)
-        for file in os.listdir(os.__path__.join(self._root, folder)):
+        for file in os.listdir(os.path.join(self._root, folder)):
             candidate = handler.info(file)
             if not candidate is None:
                 matching.append(candidate)
@@ -87,7 +87,7 @@ class ExpandTemplate(object):
                     print >> self._output, line
     
     def __expand_tpl__(self, file_name):
-        leaf = os.__path__.realpath(os.__path__.join(self._snippets_root, file_name.rstrip()))
+        leaf = os.path.realpath(os.path.join(self._snippets_root, file_name.rstrip()))
         with open (leaf, "r") as file:
             return file.read()
 
@@ -103,9 +103,9 @@ class MkExperiment(object):
         self._experiment_template = experiment_template
         
     def execute(self):
-        tplpath = os.__path__.join(self._templates_root, self._template)
+        tplpath = os.path.join(self._templates_root, self._template)
         
-        if not os.__path__.isfile(tplpath):
+        if not os.path.isfile(tplpath):
             print >> sys.stderr, "Invalid experiment template ", tplpath + "."
             return 1
         
@@ -113,15 +113,15 @@ class MkExperiment(object):
         experiment_path = os.getcwd()
         
         for part in path_parts:
-            experiment_path = os.__path__.join(experiment_path, part)
-            if os.__path__.exists(experiment_path):
-                if os.__path__.isfile(experiment_path):
+            experiment_path = os.path.join(experiment_path, part)
+            if os.path.exists(experiment_path):
+                if os.path.isfile(experiment_path):
                     print >> sys.stderr, "A file with name", experiment_path, "already exists."
                     return - 1 
             else:
                 os.mkdir(experiment_path)
 
-        experiment_template = os.__path__.join(experiment_path, self._experiment_template)
+        experiment_template = os.path.join(experiment_path, self._experiment_template)
         
         with open(experiment_template, "w") as file:            
             expand_tpl = ExpandTemplate(tplpath, file, self._snippets_root)
@@ -177,55 +177,6 @@ class FilenameHandler:
             info[constituent] = m.group(self._match_template.groupindex[constituent])
             
         return info
-        
-#==========================================================================
 
-class LineParser(object):
-    
-    def __init__(self, acceptor, converters, source, fs=" "):
-        logger.info("Parsed lines should have " + str(len(converters)) + " elements.")
-        self._converters = converters
-        self._acceptor = acceptor
-        self._source = source
-        self._fs = fs
-        self._counter = 0
-        self._last_error = (None, -1)
-        
-    def __iter__(self):
-        expected_fields = len(self._converters)
-        for line in self._source:
-            self._counter += 1
-            line_type = self._acceptor(line)
-            if (line_type is None):
-                continue
-            try:
-                split_line = line.split(self._fs)
-                # Sanity tests the line length.
-                line_fields = len(split_line)
-                if line_fields != expected_fields:
-                    self.__line_error__(line, "Wrong number of fields (" +\
-                                        str(expected_fields) + " != " + str(line_fields) + ")", None)
-                    continue
-                yield [line_type, map(self.__type_convert__, self._converters, split_line)]
-            except ValueError as exception:
-                self.__line_error__(line, "Type conversion error.", exception)
-                self.__set_error__(exception)
-    
-    def __line_error__(self, line, detail, exception):
-        logger.warning("Malformed line " + str(self._counter) +\
-                       " has been ignored (" + detail +\
-                       "). Offending line: \"" + line + "\"")
-        self._last_error = (exception, self._counter)
-
-    
-    def __type_convert__(self, x, y):
-        return x(y)
-
-    def line(self):
-        return self._counter
-    
-    def error(self):
-        return self._last_error
-    
 #==========================================================================
 

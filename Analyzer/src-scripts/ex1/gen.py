@@ -42,7 +42,7 @@ class GenerateDatasets(object):
             
     
     def __write_graph__(self, g, filename):
-        with open(os.__path__.join(self._output_folder, filename), "w") as file:
+        with open(os.path.join(self._output_folder, filename), "w") as file:
             encoder = AdjacencyListEncoder(file, ORIGINAL_ID)
             encoder.encode(g)
         

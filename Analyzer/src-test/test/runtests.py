@@ -11,15 +11,15 @@ import sys
 import time
 from misc.reflection import get_object
 
-ALL_MODULES = ["test.test_analysis", 
+ALL_MODULES = ["test.test_ex1.test_analysis", 
                "test.test_community", 
                "test.test_ds", 
-               "test_graph", 
+               "test.test_graph", 
                "test.test_snippets", 
                "test.test_transformers", 
                "test.test_util",
                "test.test_logparse",
-               "ex1_test.test_analysis"]
+               "test.test_parsing"]
 
 def main():
     

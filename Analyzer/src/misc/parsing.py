@@ -4,6 +4,10 @@ Created on 11/ago/2009
 @author: giuliano
 '''
 import re
+import logging
+from analyzer.exception import ParseException
+
+logger = logging.getLogger(__name__)
 
 # Sucked from http://www.evanfosmark.com/2009/02/sexy-lexing-with-python/
 # and slightly modified.
@@ -106,7 +110,7 @@ class Lexer(object):
         if self.case_sensitive:
             flags = re.M
         else:
-            flags = re.M|re.I
+            flags = re.M | re.I
         self.regexc = re.compile("|".join(parts), flags)
         self.ws_regexc = re.compile("\s*", re.MULTILINE)
  
@@ -116,3 +120,164 @@ class Lexer(object):
             The scanner that it returns is built well for iterating.
         """
         return _InputScanner(self, input)
+
+        
+#==========================================================================
+
+class LineParser(object):
+    """ Parses lines performing appropriate type conversions, as well as checking that
+    lines have the proper number of fields. """
+    
+    def __init__(self, acceptor, converters, source, fs=" "):
+        logger.info("Parsed lines should have " + str(len(converters)) + " elements.")
+        self._converters = converters
+        self._acceptor = acceptor
+        self._source = source
+        self._fs = fs
+        self._counter = 0
+        self._last_error = (None, -1)
+        
+    def __iter__(self):
+        expected_fields = len(self._converters)
+        for line in self._source:
+            self._counter += 1
+            line_type = self._acceptor(line)
+            if (line_type is None):
+                continue
+            try:
+                split_line = line.split(self._fs)
+                # Sanity tests the line length.
+                line_fields = len(split_line)
+                if line_fields != expected_fields:
+                    self.__line_error__(line, "Wrong number of fields (" + \
+                                        str(expected_fields) + " != " + str(line_fields) + ")", None)
+                    continue
+                yield [line_type, map(self.__type_convert__, self._converters, split_line)]
+            except ValueError as exception:
+                self.__line_error__(line, "Type conversion error.", exception)
+                self.__set_error__(exception)
+    
+    def __line_error__(self, line, detail, exception):
+        logger.warning("Malformed line " + str(self._counter) + \
+                       " has been ignored (" + detail + \
+                       "). Offending line: \"" + line + "\"")
+        self._last_error = (exception, self._counter)
+
+    
+    def __type_convert__(self, x, y):
+        return x(y)
+
+    def line(self):
+        return self._counter
+    
+    def error(self):
+        return self._last_error
+
+#==========================================================================
+
+class TableReader(object):
+    """ Iterator-like object for reading table-structured log files which
+        allows fields to be referenced by name (R-style)."""
+
+    SILENT = 0
+    WARNING = 1
+    ERROR = 2
+    
+    def __init__(self, source, fs=" ", header=False, malformed=ERROR):
+        self._source = source
+        self._fs = fs
+        self._linecounter = 0
+        self._line = self.__rawline__()
+        self._header = self.__read_header__(header)
+        self._next_line = self.__readline__()
+        self._malformed = malformed
+
+        
+    def __read_header__(self, header):
+        index = {}
+        for i in range(0, len(self._line)):
+            key = self._line[i] if header else ("V" + str(i))
+            index[key] = i
+        return index
+
+
+    def has_next(self):
+        return not self._next_line is None
+    
+    
+    def next(self):
+        if not self.has_next():
+            raise StopIteration()
+        
+        self._line = self._next_line
+        self._next_line = self.__readline__()
+     
+            
+    def get(self, key):
+        if not key in self._header:
+            return None
+        return self._line[self._header[key]]
+    
+    
+    def line_number(self):
+        return self._linecounter 
+    
+    
+    def __rawline__(self):
+        rawline = self._source.readline()
+        # Found EOF.
+        if rawline == "":
+            return None
+        # Only modifies the last field to strip the newline.
+        rawline = rawline.rstrip("\r\n")
+        splitline = rawline.split(self._fs)
+        self._linecounter += 1
+        return splitline
+    
+    
+    def __readline__(self):
+        while True:
+            line = self.__rawline__()
+            if line is None:
+                break
+            expected = len(self._header)
+            actual = len(line)
+            if expected == actual:
+                break
+            msg = "incorrect number of columns: expected %d, found %d."\
+                   % (expected, actual)
+
+            self.__handle_malformed_line__(line, msg)
+        
+        return line
+
+    
+    def __handle_malformed_line__(self, msg):
+        if self._malformed == self.SILENT:
+            return
+        
+        msg = "Line %d -- %s" % (self._linecounter, msg)
+        if self._malformed == self.WARNING:
+            logger.warning(msg)
+        elif self._malformed == self.ERROR:
+            raise ParseException(msg)
+        else:
+            raise Exception("Invalid handling strategy code %d." % self._malformed)
+
+def type_converting_table_reader(reader, converters):
+    """ Decorates a TableReader so that its get method performs
+        type conversion.
+    """
+    rawget = reader.get
+    def converting_get(key):
+        val = rawget(key)
+        if val is None:
+            return None
+        if not key in converters:
+            return val
+        return converters[key](val)
+    reader.get = converting_get
+    return reader
+        
+#==========================================================================
+

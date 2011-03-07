@@ -196,6 +196,13 @@ def float_range(start, end, increment):
         accumulator += increment
     
     raise StopIteration()
+
+
+def range_inclusive(low, high, exclude=set()):
+    for i in range(low, high + 1):
+        if i in exclude:
+            continue
+        yield i
  
 
 def write_tuple_list(fileName, list):
@@ -215,25 +222,8 @@ def grid_coordinates_2d(dim, spacing):
     for i in range(0, y_dim):
         for j in range(0, x_dim):
             yield (j * x_spacing, i * y_spacing)
-        
-#===============================================================================
-# Scripting aids (for use with PSS scripts).
-#===============================================================================
+           
 
-def vertex_range(graph):
-    return range(0, len(graph.vs))
-
-
-def range_inclusive(low, high, exclude=set()):
-    for i in range(low, high + 1):
-        if i in exclude:
-            continue
-        yield i
-
-
-def _print(value):
-    print value
-    
 #===============================================================================
 # Constants.
 #===============================================================================

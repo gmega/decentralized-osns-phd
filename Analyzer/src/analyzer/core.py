@@ -116,7 +116,7 @@ class _Store:
     
     def __load__(self):
         
-        if not os.__path__.exists(self._file):
+        if not os.path.exists(self._file):
             return {}
         
         with open(self._file, "r") as file:
