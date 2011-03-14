@@ -5,19 +5,26 @@ import peersim.core.GeneralNode;
 
 public class SNNodeImpl extends GeneralNode implements SNNode {
 	
+	private INodeStateListener fListener = NULL_LISTENER;
+	
 	private long fDownTime;
 	
 	private long fUptime;
 	
 	private long fLastChange;
-
+	
 	public SNNodeImpl(String prefix) {
 		super(prefix);
 	}
 	
-	public void setFailState(int failState) {
-		super.setFailState(failState);
-		switch(failState) {
+	public void setFailState(int newState) {
+		int oldState = getFailState();
+		super.setFailState(newState);
+		if (oldState == newState) {
+			return;
+		}
+		
+		switch(newState) {
 		case GeneralNode.DEAD:
 		case GeneralNode.DOWN:
 			fUptime += delta();
@@ -28,6 +35,7 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 		}
 		
 		fLastChange = CommonState.getTime();
+		fListener.stateChanged(oldState, newState, this);
 	}
 
 	private long delta() {
@@ -51,4 +59,19 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	public long downtime() {
 		return !isUp() ? fDownTime + delta() : fDownTime;
 	}
+
+	@Override
+	public void setStateListener(INodeStateListener listener) {
+		fListener = listener;
+	}
+
+	@Override
+	public void clearStateListener() {
+		fListener = NULL_LISTENER;
+	}
+	
+	private static final INodeStateListener NULL_LISTENER = new INodeStateListener() {
+		@Override
+		public void stateChanged(int oldState, int newState, SNNode node) { }
+	};
 }

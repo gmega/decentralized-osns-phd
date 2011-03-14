@@ -31,3 +31,17 @@ max_min <- function(indegs, perc_threshold) {
   return(cbind(max_table[c("id", "max_indegree")], min_table[c("min_indegree")], avg_indegree = avg_indegs))
 }
 
+# Produces a data frame from applying a function to a set of points. Default
+# function is a line with slope 1.
+curve_data <- function(x, f=linefun(0, 1)) {
+	y = lapply(x, f)
+	return(data.frame(x=x, y=y))
+}
+
+# Returns a line function with specified intercept and slope.
+linefun <- function(intercept, slope) {
+	return(function(x){
+				return(intercept + slope*x)
+			})
+}
+

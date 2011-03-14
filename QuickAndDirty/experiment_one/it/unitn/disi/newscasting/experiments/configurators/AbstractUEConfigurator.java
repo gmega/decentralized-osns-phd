@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
+import it.unitn.disi.newscasting.experiments.TimeoutExpiration;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -40,6 +41,12 @@ public abstract class AbstractUEConfigurator implements
 	// ----------------------------------------------------------------------
 
 	public static final String PARAMETER_FILE = "parameters";
+
+	// ----------------------------------------------------------------------
+	// Timeout controller.
+	// ----------------------------------------------------------------------
+
+	public static final String PAR_TIMEOUT = "timeout";
 
 	// ----------------------------------------------------------------------
 	// Instance-shared state.
@@ -117,6 +124,17 @@ public abstract class AbstractUEConfigurator implements
 		// And the selection filter.
 		ISelectionFilter filter = filter(app, prefix, protocolId,
 				socialNetworkId);
+
+		// And the timeout controller, if applicable.
+		try {
+			int timeout = fResolver.getInt(prefix, PAR_TIMEOUT);
+			TimeoutExpiration controller = new TimeoutExpiration(
+					timeout,
+					new FallThroughReference<IContentExchangeStrategy>(strategy));
+			app.addSubscriber(controller);
+		} catch (MissingParameterException ex) {
+			// Do nothing.
+		}
 
 		app.addStrategy(classes(), strategy,
 				new FallThroughReference<IPeerSelector>(selector),

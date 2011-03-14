@@ -9,6 +9,7 @@ import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.INodeRegistry;
+import it.unitn.disi.utils.peersim.INodeStateListener;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -18,7 +19,9 @@ import java.util.Vector;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
+import peersim.core.CommonState;
 import peersim.core.Control;
+import peersim.core.Fallible;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -81,16 +84,10 @@ public class DisseminationExperimentGovernor implements Control {
 	private int executor;
 
 	/**
-	 * The number of times the schedule should be repeated.
+	 * The number of times the each experiment should be repeated.
 	 */
-	@Attribute
+	@Attribute("repetitions")
 	private int repetitions;
-
-	/**
-	 * The degree cutoff value. Nodes that don't meet it won't be scheduled.
-	 */
-	@Attribute
-	private int degreeCutoff;
 
 	/**
 	 * The {@link IContentExchangeStrategy} being unit experimented.
@@ -108,6 +105,8 @@ public class DisseminationExperimentGovernor implements Control {
 	// ----------------------------------------------------------------------
 
 	private SNNode fCurrent;
+
+	private int fRepeat = 0;
 
 	private final NodeRebootSupport fRebootSupport;
 
@@ -131,7 +130,7 @@ public class DisseminationExperimentGovernor implements Control {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 		fRebootSupport = new NodeRebootSupport(prefix);
-		resetScheduler();
+		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
 		publishSingleton();
 	}
 
@@ -139,7 +138,6 @@ public class DisseminationExperimentGovernor implements Control {
 
 	@Override
 	public boolean execute() {
-
 		// Schedules the next experiment.
 		if (isCurrentExperimentOver()) {
 			// Runs post-unit-experiment code.
@@ -150,9 +148,7 @@ public class DisseminationExperimentGovernor implements Control {
 				return true;
 			}
 		}
-
 		experimentCycled();
-
 		return false;
 	}
 
@@ -166,26 +162,15 @@ public class DisseminationExperimentGovernor implements Control {
 	 *         the simulation should stop).
 	 */
 	private boolean nextUnitExperiment() {
-
 		SNNode nextNode;
-		while (true) {
-			// Gets a suitable next node.
-			nextNode = suitableNext();
-
-			if (nextNode == null) {
-				// No viable node in the current schedule.
-				// If ther are still repetitions left ...
-				if (--repetitions != 0) {
-					// ... restarts the scheduler.
-					resetScheduler();
-					continue;
-				} else {
-					// Otherwise reports that there are no more
-					// experiments to run.
-					return true;
-				}
-			}
-			break;
+		if (fRepeat != 0) {
+			fRepeat--;
+			nextNode = currentNode();
+		} else if (fSchedule.hasNext()) {
+			fRepeat = repetitions;
+			nextNode = toNode(fSchedule.next());
+		} else {
+			return false;
 		}
 
 		// Starts the next experiment.
@@ -268,8 +253,9 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 	}
 
-	private void scheduleTweet(final Node nextNode) {
-		ReschedulingAction action = new ReschedulingAction(ActionExecutor.TWEET);
+	private void scheduleTweet(SNNode nextNode) {
+		DelayedAction action = new DelayedAction(ActionExecutor.TWEET,
+				Fallible.OK);
 		action.schedule(nextNode);
 	}
 
@@ -295,35 +281,9 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 	}
 
-	private void resetScheduler() {
-		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
-	}
-
-	/**
-	 * Selects the next node in the current schedule, skipping neighborhoods
-	 * smaller than a certain size.
-	 */
-	private SNNode suitableNext() {
-		Node nextNode = null;
+	private SNNode toNode(Integer id) {
 		INodeRegistry registry = NodeRegistry.getInstance();
-
-		while (fSchedule.hasNext()) {
-			Node candidate = registry.getNode(fSchedule.next());
-			Linkable sn = (Linkable) candidate.getProtocol(linkable);
-			if (sn.degree() >= degreeCutoff) {
-				nextNode = candidate;
-				break;
-			}
-
-			if (verbose) {
-				if (nextNode != null) {
-					System.out.println("-- Skipped node " + candidate.getID()
-							+ " (deg. " + sn.degree() + ").");
-				}
-			}
-		}
-
-		return (SNNode) nextNode;
+		return (SNNode) registry.getNode(id);
 	}
 
 	private void setCurrentNode(SNNode node) {
@@ -395,33 +355,43 @@ public class DisseminationExperimentGovernor implements Control {
 		return fCurrent;
 	}
 
-	class ReschedulingAction implements IAction {
+	/**
+	 * Schedules an {@link IAction} based on a predicate over
+	 * {@link Node#getFailState()}.
+	 * 
+	 * @author giuliano
+	 */
+	class DelayedAction implements INodeStateListener {
 
 		private final IAction fDelegate;
 
-		private int fReschedules = 0;
+		private final int fTriggerState;
 
-		public ReschedulingAction(IAction delegate) {
+		private long fScheduleTime;
+
+		public DelayedAction(IAction delegate, int triggerState) {
 			fDelegate = delegate;
+			fTriggerState = triggerState;
 		}
 
-		public void schedule(Node node) {
-			ActionExecutor exec = (ActionExecutor) node.getProtocol(executor);
-			exec.add(1, node, this);
+		public void schedule(SNNode node) {
+			int currentState = node.getFailState();
+			if (fTriggerState == currentState) {
+				this.stateChanged(currentState, currentState, node);
+			} else {
+				node.setStateListener(this);
+				fScheduleTime = CommonState.getTime();
+			}
 		}
 
 		@Override
-		public void execute(Node node) {
-			if (!node.isUp()) {
-				fReschedules++;
-				schedule(node);
-			} else {
-				if (fReschedules > 0) {
-					System.err.println("RESCHEDULES: " + fReschedules);
-				}
-
+		public void stateChanged(int oldState, int newState, SNNode node) {
+			if (newState == Fallible.OK) {
 				// Make uptimes be relative to the tweet time.
-				resetNeighborhoodUptimes((SNNode) node);
+				resetNeighborhoodUptimes(node);
+				// Clears ourselves as listeners.
+				node.clearStateListener();
+				// Executes the delegate action.
 				fDelegate.execute(node);
 			}
 		}
@@ -437,5 +407,6 @@ public class DisseminationExperimentGovernor implements Control {
 				nei.clearUptime();
 			}
 		}
+
 	}
 }

@@ -250,3 +250,25 @@ chkmandatory <- function(args, descs) {
     }
   }
 }
+
+simple_cap <- function(x) {
+	s <- strsplit(x, " ")[[1]]
+	paste(toupper(substring(s, 1,1)), substring(s, 2),
+			sep="", collapse=" ")
+}
+
+checked_divide_vector <- function(a, b, zero_by_zero=1) {
+	division <- a/b
+	nas <- which(is.nan(division))
+	if (length(nas) != 0) {
+		division[nas] <- sapply(nas, function(x) { print(x); return(checked_divide(a[x], b[x], zero_by_zero )); }, simplify=TRUE)
+	}
+	return(division)
+}
+
+checked_divide <- function(a, b, zero_by_zero) {
+	if (a == 0 && b == 0) {
+		return(zero_by_zero)
+	}
+	return(a/b)
+}

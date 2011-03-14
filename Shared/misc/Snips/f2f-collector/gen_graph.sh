@@ -12,3 +12,4 @@ export i=$1
 export SIZE=`cat $GRAPHS_HOME/2hop-samples/remapped/twohop-${1}.al | wc -l`
 
 cat stragplot | analyzer -t python misc.cli.Subst | R --no-save
+

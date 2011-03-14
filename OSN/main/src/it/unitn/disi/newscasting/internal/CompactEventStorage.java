@@ -499,7 +499,7 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			if (!hasNext()) {
 				throw new NoSuchElementException();
 			}
-			Tweet next = new Tweet(fNode, fCurrent++, fVisibility);
+			Tweet next = new Tweet(fNode, fCurrent++, fVisibility, Tweet.UNKNOWN_PARENT);
 			if (fCurrent == fNext) {
 				nextInterval();
 			}

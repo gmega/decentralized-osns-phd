@@ -24,7 +24,7 @@ public class Pair <K1, K2>{
 		fHashCode = hashCode;
 	}
 	
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	public boolean equals(Object otherObj) {
 		if (!(otherObj instanceof Pair)) {
 			return false;

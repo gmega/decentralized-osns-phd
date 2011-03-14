@@ -19,7 +19,7 @@ public interface IEventStorage {
 	 *         {@link Tweet}, or <code>false</code> otherwise.
 	 */
 	public boolean contains(Tweet tweet);
-
+	
 	/**
 	 * @return the number of distinct {@link Tweet} owners being kept by this
 	 *         event storage.

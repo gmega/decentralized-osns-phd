@@ -65,6 +65,29 @@ plot_sent <- function(tbl, root) {
 	return(d)
 }
 
+# Plots sent by root + direct mailing.
+plot_savings <- function(worktbl, degs, experiments, stat="sent") {
+	
+	print(max(worktbl[[stat]]))
+	
+	# Direct mailing line (reference).
+	dm <- curve_data(sort(unique(degs$degree)))
+	
+	pstat <- simple_cap(stat)
+	colors <- c()
+	colors[[pstat]] <- alpha("black", 0.6)
+	colors[["Direct Mailing"]] <- alpha("red", 0.6)
+	
+	worktbl$pstat <- pstat
+	
+	geom_point(data=worktbl, aes(x=degree, y=stat, colour=pstat), size = 1) + 
+	d <- ggplot() +
+	geom_line(data=degs, aes(x=degree, y=degree, colour="Direct Mailing"), lwd=1, lty=2) + 
+	scale_colour_manual(name="Type", colors) +
+	xlab("Degree (log)") + ylab(paste("Messages ",pstat,sep="")) + ylim(c(0, max(rwork[[stat]]))) + coord_trans(xtrans="log1p")
+
+	return(d)			
+}
 
 # Plots neighborhood using igraph.
 plot_neighborhood <- function(graph, root) {
@@ -76,7 +99,6 @@ plot_neighborhood <- function(graph, root) {
 # -----------------------------------------------------------------------------
 # Aggregates plotting.
 # -----------------------------------------------------------------------------
-
 
 send_receive_scatterplot <- function(srdata, degs, alph=0.4, title=NULL, xl=NULL, yl=NULL, log=TRUE) {
 
@@ -116,7 +138,7 @@ add_lim <- function(oplot, lim, value=NULL) {
 # Computation.
 # -----------------------------------------------------------------------------
 
-total_work_stats <- function(ltable) {
+total_work_stats <- function(ltable, experiments=1) {
 	sent <- parallel(by_id(ltable, "sent", sum))
 	recv <- parallel(by_id(ltable, "received", sum))
 	results <- collect(list(sent, recv), wait=TRUE)
@@ -125,7 +147,41 @@ total_work_stats <- function(ltable) {
 	sent <- results[[1]]
 	recv <- results[[2]]
 	
-	return(data.frame(id=sent$id, sent=sent$sent, recv=recv$received))
+	sent <- sent
+	recv <- recv
+	
+	return(data.frame(id=sent$id, sent=sent$sent/experiments, recv=recv$received/experiments))
+}
+
+saved <- function(ltable, degs, experiments=1) {
+	degree <- degs$degree
+	sent <- ltable[which(ltable$id == ltable$root),]
+	sent <- sent[order(sent$id),]
+	sent$sent <- sent$sent/experiments
+	return(data.frame(id=sent$id, saved=(degree - sent$sent)))
+}
+
+spent <- function(ltable, degs, experiments=1) {
+	wstats <- total_work_stats(ltable, experiments)
+	wstats <- wstats[order(wstats$id),]
+	return(data.frame(id=wstats$id, spent=((wstats$recv + wstats$sent) - degs$degree)))
+}
+
+balance <- function(saved, spent) {
+	return(data.frame(id=saved$id, balance=checked_divide_vector(spent$spent, saved$saved, 1)))
+}
+
+gpbalance <- function(ltable, degs, experiments) {
+	root_sent <- ltable[which(ltable$id == ltable$root),]
+	root_sent <- root_sent[order(root_sent$id),]
+	ids <- root_sent$id
+	root_sent <- root_sent$sent/experiments
+	
+	tot_work <- total_work_stats(ltable, experiments)
+	tot_work <- tot_work[order(tot_work$id),]
+	tot_work <- tot_work$sent + tot_work$recv
+	
+	return(data.frame(id=ids, balance=checked_divide_vector(tot_work,root_sent)))
 }
 
 avg_work_stats <- function(ltable, degs, reps) {
@@ -133,6 +189,13 @@ avg_work_stats <- function(ltable, degs, reps) {
 	ttw$sent <- ttw$sent/(reps*(degs$degree + 1))
 	ttw$recv <- ttw$recv/(reps*(degs$degree + 1))
 	return(ttw)
+}
+
+root_sent <- function(ltbl, experiments=1) {
+	# Aggregates root work.
+	rwork <- ltbl[which(ltbl$id == ltbl$root),]
+	rwork <- cbind(rwork, degree=degs$degree)
+	rwork$stat <- rwork$sent/experiments
 }
 
 fairness_stats <- function(lt, selector, grouping) {

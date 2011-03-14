@@ -9,6 +9,8 @@ import peersim.core.Node;
  * picture, song, video, etc.) posted by a user to its profile page.
  */
 public class Tweet {
+	
+	public static final Tweet UNKNOWN_PARENT = new Tweet();
 
 	/**
 	 * The node who produced the content.
@@ -36,6 +38,14 @@ public class Tweet {
 	 * The computed hash code.
 	 */
 	private final int fHashCode;
+	
+	private Tweet() {
+		parent = null;
+		poster = null;
+		sequenceNumber = -1;
+		fDestinations = null;
+		fHashCode = super.hashCode();
+	}
 
 	/**
 	 * Convenience constructor. Equivalent to:
@@ -57,7 +67,7 @@ public class Tweet {
 	 * 
 	 * @param original
 	 *            the {@link Tweet} to which this content is supposed to reply
-	 *            to.
+	 *            to, or <code>null</code> if this {@link Tweet} is not a reply.
 	 */
 	public Tweet(Node poster, int sequenceNumber,
 			IMessageVisibility visibility, Tweet original) {
