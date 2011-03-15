@@ -9,6 +9,8 @@ public class SimpleFSM <T extends Enum<?>>{
 	
 	private T fFrom;
 	
+	private boolean fDeterministic = true;
+	
 	public SimpleFSM(Class<T> klass) {
 		fTransitions = HashMultimap.create();
 	}
@@ -20,11 +22,16 @@ public class SimpleFSM <T extends Enum<?>>{
 	
 	public void to(T...allowedStates) {
 		if (fFrom == null) {
-			throw new IllegalStateException("Need to call #from first.");
+			throw new IllegalStateException("Need to call #allowTransitionFrom first.");
 		}
 		for (T state : allowedStates) {
 			fTransitions.put(fFrom, state);
 		}
+		
+		if (allowedStates.length > 1) {
+			fDeterministic = false;
+		}
+		
 		fFrom = null;
 	}
 	
@@ -34,5 +41,12 @@ public class SimpleFSM <T extends Enum<?>>{
 					+ " => " + "next.");
 		}
 		return next;
+	}
+	
+	public T transition(T current) {
+		if (!fDeterministic) {
+			return null;
+		}
+		return fTransitions.get(current).iterator().next();
 	}
 }
