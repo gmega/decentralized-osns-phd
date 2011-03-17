@@ -36,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import peersim.config.ObjectCreatorTest;
+import peersim.config.PluginContainerTest;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -65,7 +66,8 @@ import peersim.config.ObjectCreatorTest;
 	BFSIterableTest.class,
 	LSGTransformsTest.class,
 	ComponentComputationServiceTest.class,
-	CatalogTest.class
+	CatalogTest.class,
+	PluginContainerTest.class
 })
 
 public class AllTests extends PeerSimTest {
