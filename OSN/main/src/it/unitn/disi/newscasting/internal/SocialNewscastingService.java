@@ -28,6 +28,7 @@ import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
+import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -102,6 +103,8 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	private StrategyEntry[] fStrategies;
 
+	private IResolver fResolver;
+
 	// ----------------------------------------------------------------------
 	// Misc.
 	// ----------------------------------------------------------------------
@@ -110,12 +113,15 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	public SocialNewscastingService(@Attribute(Attribute.PREFIX) String prefix,
+	public SocialNewscastingService(
+			@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("social_neighborhood") int socialNetworkId)
 			throws IOException {
 
 		this(prefix, PeersimUtils.selfPid(prefix), socialNetworkId,
 				configurator(prefix));
+		fResolver = resolver;
 	}
 
 	// ----------------------------------------------------------------------
@@ -133,7 +139,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	private void configure() {
 		this.flushState();
 		try {
-			fConfigurator.configure(this, fPrefix, fProtocolID,
+			fConfigurator.configure(this, fResolver, fPrefix, fProtocolID,
 					fSocialNetworkID);
 			compact();
 		} catch (Exception ex) {
@@ -193,7 +199,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		int idx = MiscUtils.lastDifferentFrom(fStrategies, null);
 		fStrategies[idx + 1] = entry;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void compact() {
@@ -472,7 +478,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 				Node owner = tweet.destination(i);
 				if (owner != tweet.poster) {
 					((SocialNewscastingService) owner.getProtocol(fProtocolID))
-						.countPending();
+							.countPending();
 				}
 			}
 

@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import peersim.config.IResolver;
 import peersim.core.Node;
 
 public class HistoryForwardingTest extends PeerSimTest {
@@ -235,7 +236,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public void configure(SocialNewscastingService app, String prefix, int protocolId,
+		public void configure(SocialNewscastingService app, IResolver resolver, String prefix, int protocolId,
 				int socialNetworkId) {
 			HistoryForwarding fw;
 			if (fUseHistories) {

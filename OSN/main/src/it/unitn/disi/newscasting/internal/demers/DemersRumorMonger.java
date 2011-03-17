@@ -17,7 +17,7 @@ import java.util.ListIterator;
 import java.util.Random;
 
 import peersim.config.IResolver;
-import peersim.config.resolvers.PeerSimResolver;
+import peersim.config.resolvers.ConfigContainerResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -63,13 +63,6 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	private static final ArrayList<Boolean> fResponseBuffer = new ArrayList<Boolean>();
 
 	private RumorList fRumorList;
-
-	// ----------------------------------------------------------------------
-
-	public DemersRumorMonger(String prefix, int protocolId,
-			IReference<Linkable> constraintLinkable, Random rnd) {
-		this(new PeerSimResolver(), prefix, protocolId, constraintLinkable, rnd);
-	}
 
 	// ----------------------------------------------------------------------
 

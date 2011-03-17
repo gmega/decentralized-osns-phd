@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.experiments;
 
-import it.unitn.disi.application.ActionExecutor;
+import it.unitn.disi.application.TrafficScheduler;
 import it.unitn.disi.application.IAction;
 import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.newscasting.IApplicationInterface;
@@ -254,7 +254,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void scheduleTweet(SNNode nextNode) {
-		DelayedAction action = new DelayedAction(ActionExecutor.TWEET,
+		DelayedAction action = new DelayedAction(TrafficScheduler.TWEET,
 				Fallible.OK);
 		action.schedule(nextNode);
 	}

@@ -9,6 +9,9 @@ package peersim.config;
  * resolved.
  */
 public interface IResolver {
+	
+	public static String NULL_KEY = "";
+	
 	public Integer getInt(String prefix, String key);
 
 	public Long getLong(String prefix, String key);

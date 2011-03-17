@@ -1,6 +1,6 @@
-package it.unitn.disi.network;
+package it.unitn.disi.network.churn.tracebased;
 
-import it.unitn.disi.network.TraceEvent.EventType;
+import it.unitn.disi.network.churn.tracebased.TraceEvent.EventType;
 
 import java.io.BufferedReader;
 import java.io.IOException;

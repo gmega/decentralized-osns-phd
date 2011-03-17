@@ -1,6 +1,6 @@
 package peersim.config.resolvers;
 
-import peersim.config.Configuration;
+import peersim.config.ConfigContainer;
 import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
 
@@ -8,21 +8,27 @@ import peersim.config.MissingParameterException;
  * {@link IResolver} implementation backed by PeerSim's {@link Configuration}
  * singleton. Takes PeerSim parameter keys as input.
  */
-public class PeerSimResolver implements IResolver {
+public class ConfigContainerResolver implements IResolver {
 
+	private final ConfigContainer fDelegate;
+	
+	public ConfigContainerResolver(ConfigContainer delegate) {
+		fDelegate = delegate;
+	}
+	
 	@Override
 	public Boolean getBoolean(String prefix, String key) {
-		return Configuration.contains(key(prefix, key));
+		return fDelegate.contains(key(prefix, key));
 	}
 
 	@Override
 	public Double getDouble(String prefix, String key) {
-		return Configuration.getDouble(key(prefix, key));
+		return fDelegate.getDouble(key(prefix, key));
 	}
 
 	@Override
 	public Long getLong(String prefix, String key) {
-		return Configuration.getLong(key(prefix, key));
+		return fDelegate.getLong(key(prefix, key));
 	}
 
 	@Override
@@ -30,7 +36,7 @@ public class PeerSimResolver implements IResolver {
 		// This is not a safe typecast, but it's the best we can do.
 		// Alternatively I could throw an exception if the user tries to
 		// use a float.
-		return (float) Configuration.getDouble(key(prefix, key));
+		return (float) fDelegate.getDouble(key(prefix, key));
 	}
 
 	@Override
@@ -38,7 +44,7 @@ public class PeerSimResolver implements IResolver {
 		int value;
 		Exception original = null;
 		try {
-			value = Configuration.getInt(key(prefix, key));
+			value = fDelegate.getInt(key(prefix, key));
 		}
 		// Tries to resolve as a pId.
 		catch (RuntimeException ex) {
@@ -47,7 +53,7 @@ public class PeerSimResolver implements IResolver {
 			// with a string.
 			original = ex;
 			try {
-				value = Configuration.getPid(key(prefix, key));
+				value = fDelegate.getPid(key(prefix, key));
 			} catch (Exception nested) {
 				// If we have a second exception, then we can (kind of)
 				// assume that the user wasn't trying to get a pid.
@@ -60,7 +66,7 @@ public class PeerSimResolver implements IResolver {
 
 	@Override
 	public String getString(String prefix, String key) {
-		return Configuration.getString(key(prefix, key));
+		return fDelegate.getString(key(prefix, key));
 	}
 	
 	@Override
@@ -69,6 +75,6 @@ public class PeerSimResolver implements IResolver {
 	}
 
 	private String key(String prefix, String key) {
-		return prefix + "." + key;
+		return key == NULL_KEY ? prefix : prefix + "." + key;
 	}
 }

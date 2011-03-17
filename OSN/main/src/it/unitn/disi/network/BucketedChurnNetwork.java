@@ -8,7 +8,7 @@ import peersim.core.GeneralNode;
 import peersim.core.Network;
 import peersim.core.Node;
 
-public abstract class AbstractUniformChurnNetwork implements Control {
+public abstract class BucketedChurnNetwork implements Control {
 
 	protected final NetworkPartition DEAD = new NetworkPartition();
 
@@ -18,7 +18,7 @@ public abstract class AbstractUniformChurnNetwork implements Control {
 
 	private boolean fPartition;
 
-	public AbstractUniformChurnNetwork(
+	public BucketedChurnNetwork(
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("partition") boolean partition) {
 		fReboot = new NodeRebootSupport(prefix);

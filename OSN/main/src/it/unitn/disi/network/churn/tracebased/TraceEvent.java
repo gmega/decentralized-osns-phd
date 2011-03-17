@@ -1,4 +1,4 @@
-package it.unitn.disi.network;
+package it.unitn.disi.network.churn.tracebased;
 
 public class TraceEvent {
 	enum EventType {

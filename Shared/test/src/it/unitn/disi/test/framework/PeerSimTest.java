@@ -6,13 +6,14 @@ import java.net.URL;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import peersim.config.ConfigContainer;
 import peersim.config.Configuration;
 import peersim.config.ParsedProperties;
 import peersim.core.CommonState;
 import peersim.util.ExtendedRandom;
 
 public class PeerSimTest {
-	
+
 	@BeforeClass
 	public static void loadPeersimConfig() throws Exception {
 		URL fileURL = TestUtils.locate("creator_test_config.properties");
@@ -21,15 +22,23 @@ public class PeerSimTest {
 			Configuration.setConfig(new ParsedProperties(f.getAbsolutePath()));
 			CommonState.r = new ExtendedRandom(42);
 		} catch (RuntimeException ex) {
-			if (!ex.getMessage().equals("Setting configuration was attempted twice.")) {
+			if (!ex.getMessage().equals(
+					"Setting configuration was attempted twice.")) {
 				throw ex;
 			}
 		}
 	}
-	
+
+	public ConfigContainer configContainer(String file) throws Exception {
+		URL fileURL = TestUtils.locate("creator_test_config.properties");
+		File f = new File(fileURL.toURI());
+		return new ConfigContainer(new ParsedProperties(f.getAbsolutePath()),
+				false);
+	}
+
 	@Before
 	public void setUp() {
 		CommonState.setTime(0);
 	}
-	
+
 }

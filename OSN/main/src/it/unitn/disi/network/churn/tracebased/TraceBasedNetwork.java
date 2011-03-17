@@ -1,6 +1,8 @@
-package it.unitn.disi.network;
+package it.unitn.disi.network.churn.tracebased;
 
 import it.unitn.disi.SimulationEvents;
+import it.unitn.disi.network.GenericValueHolder;
+import it.unitn.disi.network.RandomInitializer;
 import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.LogManager;

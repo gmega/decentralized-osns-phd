@@ -3,8 +3,10 @@ package it.unitn.disi.application;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import java.util.Iterator;
 
@@ -21,10 +23,12 @@ import peersim.edsim.EDSimulator;
  * @author giuliano
  */
 @AutoConfig
-public class ActionExecutor implements EDProtocol<IAction> {
+public class TrafficScheduler implements EDProtocol<IAction> {
+	
+	private static IReference<IScheduler<IAction>> fScheduler;
 
 	private static int fSelfPid;
-
+	
 	private static int fSnService;
 
 	private static int fNeighborhood;
@@ -50,10 +54,12 @@ public class ActionExecutor implements EDProtocol<IAction> {
 		}
 	};
 
-	private static void oneShotInit(int neighborhood, int snService, int selfPid) {
+	private static void oneShotInit(int neighborhood, int snService,
+			int selfPid, int scheduler) {
 		fNeighborhood = neighborhood;
 		fSnService = snService;
 		fSelfPid = selfPid;
+		fScheduler = new ProtocolReference<IScheduler<IAction>>(scheduler);
 		fCache = new PermutingCache(fNeighborhood);
 	}
 
@@ -88,18 +94,17 @@ public class ActionExecutor implements EDProtocol<IAction> {
 		return (IApplicationInterface) node.getProtocol(fSnService);
 	}
 
-	public ActionExecutor(@Attribute(Attribute.PREFIX) String prefix,
+	public TrafficScheduler(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("neighborhood") int neighborhood,
-			@Attribute("social_newscasting_service") int snService) {
-		oneShotInit(neighborhood, snService, PeersimUtils.selfPid(prefix));
+			@Attribute("social_newscasting_service") int snService,
+			@Attribute("scheduler") int schedulerService) {
+		oneShotInit(neighborhood, snService, PeersimUtils.selfPid(prefix),
+				schedulerService);
 	}
 
 	public void add(long delay, Node node, IAction action) {
-		if (EDSimulator.isConfigurationEventDriven()) {
-			EDSimulator.add(delay, action, node, fSelfPid);
-		} else {
-			CDActionScheduler.add(delay, action, node, fSelfPid);
-		}
+		IScheduler<IAction> scheduler = fScheduler.get(node);
+		scheduler.schedule(delay, fSelfPid, node, action);
 	}
 
 	@Override

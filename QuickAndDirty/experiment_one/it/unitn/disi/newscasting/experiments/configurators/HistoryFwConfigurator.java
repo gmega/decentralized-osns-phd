@@ -24,6 +24,7 @@ import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.core.Linkable;
 import peersim.core.Node;
@@ -80,11 +81,12 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(SocialNewscastingService app, String prefix,
-			int protocolId, int socialNetworkId) throws Exception {
+	public void configure(SocialNewscastingService app, IResolver resolver,
+			String prefix, int protocolId, int socialNetworkId)
+			throws Exception {
 		setApplicationReference(protocolId);
 		setSocialNetworkReference(socialNetworkId);
-		super.configure(app, prefix, protocolId, socialNetworkId);
+		super.configure(app, resolver, prefix, protocolId, socialNetworkId);
 	}
 
 	// ----------------------------------------------------------------------
@@ -257,15 +259,16 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	private IPeerSelector componentSelectorHeuristic(ICoreInterface app,
 			IPeerSelector delegate, String prefix) {
 		return new PredicateHeuristic(new ComponentSelector(prefix, fResolver,
-				new FallThroughReference<IPeerSelector>(delegate), app), delegate);
+				new FallThroughReference<IPeerSelector>(delegate), app),
+				delegate);
 	}
 
 	// ----------------------------------------------------------------------
 
 	private <T> T genericCreate(Class<T> klass, String prefix) {
-		ObjectCreator<T> creator = new ObjectCreator<T>(klass, fResolver);
+		ObjectCreator creator = new ObjectCreator(fResolver);
 		try {
-			return creator.create(prefix);
+			return creator.create(prefix, klass);
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}

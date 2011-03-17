@@ -12,7 +12,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class FixedSizeNetwork extends AbstractUniformChurnNetwork {
+public class RandomBucketedChurn extends BucketedChurnNetwork {
 
 	/**
 	 * Percentage of the network that will be down at all times.
@@ -26,7 +26,7 @@ public class FixedSizeNetwork extends AbstractUniformChurnNetwork {
 	@Attribute("churn_rate")
 	private double fChurnRate;
 
-	public FixedSizeNetwork(@Attribute(Attribute.PREFIX) String prefix) {
+	public RandomBucketedChurn(@Attribute(Attribute.PREFIX) String prefix) {
 		super(prefix, true);
 	}
 

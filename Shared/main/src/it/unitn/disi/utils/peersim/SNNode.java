@@ -8,6 +8,11 @@ import peersim.core.Node;
  * @author giuliano
  */
 public interface SNNode extends Node {
+	
+	/**
+	 * @return the timestamp for the last state change for this {@link SNNode}.
+	 */
+	public long lastStateChange();
 
 	/**
 	 * @return the cumulative uptime for this {@link Node}, from the last call

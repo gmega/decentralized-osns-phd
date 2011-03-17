@@ -1,5 +1,8 @@
 package it.unitn.disi.network;
 
+import it.unitn.disi.network.churn.tracebased.EvtDecoder;
+import it.unitn.disi.network.churn.tracebased.TraceEvent;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;

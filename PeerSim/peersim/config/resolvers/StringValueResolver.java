@@ -1,6 +1,7 @@
-package peersim.config;
+package peersim.config.resolvers;
 
 import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
 
 
 /**

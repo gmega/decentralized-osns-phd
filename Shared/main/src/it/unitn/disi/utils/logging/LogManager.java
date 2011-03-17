@@ -87,7 +87,7 @@ public class LogManager implements Runnable {
 
 			case STDERR:
 				fStreams.put(name, System.err);
-				break;
+				break; 
 
 			case FILE:
 				verify(spec, 3, "output filename");

@@ -236,12 +236,10 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 	private Object create(String className, HashMap<String, Object> config) {
 		try {
-			@SuppressWarnings({ "unchecked", "rawtypes" })
-			ObjectCreator creator = new ObjectCreator(
-					(Class<? extends Object>) Class.forName(className),
-					CompositeResolver.compositeResolver(new HashMapResolver(
-							config), fResolver));
-			return creator.create("");
+			CompositeResolver composite = new CompositeResolver();
+			composite.addResolver(new HashMapResolver(config), fResolver);
+			ObjectCreator creator = new ObjectCreator(composite.asResolver());
+			return creator.create("", (Class<? extends Object>) Class.forName(className));
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}

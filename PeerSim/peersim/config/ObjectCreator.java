@@ -6,10 +6,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
+import peersim.config.DefaultValueResolver.IAttributeSource;
 import peersim.config.resolvers.CompositeResolver;
-import peersim.config.resolvers.DefaultValueResolver;
-import peersim.config.resolvers.DefaultValueResolver.IAttributeSource;
-import peersim.config.resolvers.PeerSimResolver;
+import peersim.config.resolvers.StringValueResolver;
 
 /**
  * {@link ObjectCreator} knows how to instantiate and configure objects. Classes
@@ -28,34 +27,27 @@ import peersim.config.resolvers.PeerSimResolver;
  * @param <T>
  *            the type of the object to be instantiated.
  */
-public class ObjectCreator<T> implements IAttributeSource {
-
-	private final Class<T> fClass;
+public class ObjectCreator implements IAttributeSource {
 
 	private final IResolver fResolver;
 
 	private Attribute fCurrent;
 
 	/**
-	 * Creates a new {@link ObjectCreator}, bound to a class object -- the
-	 * <b>target type</b>.
+	 * Creates a new {@link ObjectCreator}.
 	 * 
-	 * @param klass
-	 *            the target type.
+	 * @param resolver
+	 *            the {@link IResolver} chain to be used for object lookups.
 	 */
-	public ObjectCreator(Class<T> klass) {
-		this(klass, null);
-	}
-
-	public ObjectCreator(Class<T> klass, IResolver resolver) {
-		fClass = klass;
-		if (resolver == null) {
-			fResolver = CompositeResolver.compositeResolver(new IResolver[] {
-					new PeerSimResolver(), new DefaultValueResolver(this),
-					new SpecialValueResolver() });
-		} else {
-			fResolver = resolver;
-		}
+	public ObjectCreator(IResolver...resolvers) {
+		// Adds our own resolver.
+		IResolver [] delegates = new IResolver[resolvers.length + 1];
+		System.arraycopy(resolvers, 0, delegates, 0, resolvers.length);
+		delegates[resolvers.length] = new DefaultValueResolver(this);
+		
+		CompositeResolver composite = new CompositeResolver();
+		composite.addResolver(delegates);
+		fResolver = composite.asResolver();
 	}
 
 	/**
@@ -83,20 +75,20 @@ public class ObjectCreator<T> implements IAttributeSource {
 	 * @throws InvocationTargetException
 	 *             see {@link InvocationTargetException}.
 	 */
-	public T create(String prefix) throws InstantiationException,
+	public <T> T create(String prefix, Class<T> klass) throws InstantiationException,
 			InvocationTargetException {
 
-		AutoConfig config = fClass.getAnnotation(AutoConfig.class);
+		AutoConfig config = klass.getAnnotation(AutoConfig.class);
 
 		try {
 			if (config == null) {
-				return this.classicConfig(prefix);
+				return this.classicConfig(prefix, klass);
 			}
 
-			return this.fieldInject(this.constructorInject(prefix), prefix);
+			return this.fieldInject(klass, this.constructorInject(prefix, klass), prefix);
 		} catch (IllegalAccessException ex) {
 			throw new IllegalArgumentException("Matching constructor in class "
-					+ fClass.getName() + " is not accessible.");
+					+ klass.getName() + " is not accessible.");
 		}
 	}
 
@@ -104,23 +96,23 @@ public class ObjectCreator<T> implements IAttributeSource {
 	 * This simple strategy delegates the configuration work to the object being
 	 * created.
 	 */
-	private T classicConfig(String prefix) throws InstantiationException,
+	private <T> T classicConfig(String prefix, Class <T> klass) throws InstantiationException,
 			IllegalAccessException, InvocationTargetException {
 		try {
-			Constructor<T> ctor = fClass.getConstructor(String.class);
+			Constructor<T> ctor = klass.getConstructor(String.class);
 			return ctor.newInstance(prefix);
 		} catch (NoSuchMethodException ex) {
-			throw noSuitableConstructor("Missing constructor taking a String as parameter " +
-					"(have you forgotten the AutoConfig tag?)");
+			throw noSuitableConstructor("Missing constructor taking a String as parameter "
+					+ "(have you forgotten the AutoConfig tag?)", klass);
 		}
 	}
 
-	private T constructorInject(String prefix) throws InstantiationException,
+	private <T> T constructorInject(String prefix, Class<T> klass) throws InstantiationException,
 			InvocationTargetException, IllegalArgumentException,
 			IllegalAccessException {
 
 		@SuppressWarnings("unchecked")
-		Constructor<T>[] constructors = (Constructor<T>[]) fClass
+		Constructor<T>[] constructors = (Constructor<T>[]) klass
 				.getDeclaredConstructors();
 
 		Constructor<T> constructor = null;
@@ -138,15 +130,15 @@ public class ObjectCreator<T> implements IAttributeSource {
 		// Actually performs the injection, if a suitable
 		// constructor is found.
 		if (constructor == null) {
-			throw noSuitableConstructor(error.toString());
+			throw noSuitableConstructor(error.toString(), klass);
 		}
 
 		// Matches the parameters.
 		return constructor.newInstance(resolveParameters(constructor, prefix));
 	}
 
-	private IllegalArgumentException noSuitableConstructor(String msg) {
-		return new IllegalArgumentException("Class " + fClass.getName()
+	private IllegalArgumentException noSuitableConstructor(String msg, Class<?> klass) {
+		return new IllegalArgumentException("Class " + klass.getName()
 				+ " has no suitable constructors. Further information: \n"
 				+ msg);
 	}
@@ -171,7 +163,7 @@ public class ObjectCreator<T> implements IAttributeSource {
 	 * @return the number of parameters in the constructor, or -1 if it is not
 	 *         eligible.
 	 */
-	private int testEligibility(Constructor<T> candidate, String prefix,
+	private int testEligibility(Constructor<? extends Object> candidate, String prefix,
 			StringBuffer data) {
 		Attribute[] annotations = getAnnotations(candidate);
 		Class<?>[] parameterTypes = candidate.getParameterTypes();
@@ -206,7 +198,7 @@ public class ObjectCreator<T> implements IAttributeSource {
 		return annotations.length;
 	}
 
-	private Object[] resolveParameters(Constructor<T> constructor, String prefix) {
+	private Object[] resolveParameters(Constructor<? extends Object> constructor, String prefix) {
 		Class<?>[] types = constructor.getParameterTypes();
 		Attribute[] annotations = getAnnotations(constructor);
 		Object[] parameters = new Object[annotations.length];
@@ -219,7 +211,7 @@ public class ObjectCreator<T> implements IAttributeSource {
 		return parameters;
 	}
 
-	private Attribute[] getAnnotations(Constructor<T> constructor) {
+	private Attribute[] getAnnotations(Constructor<? extends Object> constructor) {
 		Annotation[][] annotationMatrix = constructor.getParameterAnnotations();
 		Attribute[] annotations = new Attribute[annotationMatrix.length];
 
@@ -240,11 +232,11 @@ public class ObjectCreator<T> implements IAttributeSource {
 		return annotations;
 	}
 
-	private T fieldInject(T instance, String prefix)
+	private <T> T fieldInject(Class <T> klass, T instance, String prefix)
 			throws IllegalArgumentException, IllegalAccessException {
 
 		ArrayList<Field> fields = new ArrayList<Field>();
-		collectInjectableFields(fClass, fields);
+		collectInjectableFields(klass, fields);
 
 		for (Field field : fields) {
 			Attribute attribute = field.getAnnotation(Attribute.class);
@@ -335,10 +327,11 @@ public class ObjectCreator<T> implements IAttributeSource {
 	 *             exception can be recovered by calling
 	 *             {@link RuntimeException#getCause()}.
 	 */
-	public static <K> K createInstance(Class<K> klass, String prefix) {
-		ObjectCreator<K> creator = new ObjectCreator<K>(klass);
+	public static <K> K createInstance(Class<K> klass, String prefix,
+			IResolver resolver) {
+		ObjectCreator creator = new ObjectCreator(resolver);
 		try {
-			return creator.create(prefix);
+			return creator.create(prefix, klass);
 		} catch (Exception ex) {
 			if (!(ex instanceof RuntimeException)) {
 				throw new RuntimeException(ex);
@@ -349,44 +342,29 @@ public class ObjectCreator<T> implements IAttributeSource {
 	}
 }
 
-class SpecialValueResolver implements IResolver {
-
-	@Override
-	public Boolean getBoolean(String prefix, String key) {
-		throw new MissingParameterException(null);
-	}
-
-	@Override
-	public Double getDouble(String prefix, String key) {
-		throw new MissingParameterException(null);
-	}
-
-	@Override
-	public Float getFloat(String prefix, String key) {
-		throw new MissingParameterException(null);
-	}
-
-	@Override
-	public Integer getInt(String prefix, String key) {
-		throw new MissingParameterException(null);
-	}
-
-	@Override
-	public Long getLong(String prefix, String key) {
-		throw new MissingParameterException(null);
+/**
+ * {@link IResolver} which resolves from an {@link Attribute} source.
+ */
+class DefaultValueResolver extends StringValueResolver {
+	
+	private IAttributeSource fSource;
+	
+	public DefaultValueResolver(IAttributeSource source) {
+		fSource = source;
 	}
 
 	@Override
 	public String getString(String prefix, String key) {
-		if (key.equals(Attribute.PREFIX)) {
-			return prefix;
+		Attribute attribute = fSource.attribute(prefix, key);
+		if (attribute.defaultValue().equals(Attribute.VALUE_NONE)) {
+			throw new MissingParameterException(null);
+		} else if (attribute.defaultValue().equals(Attribute.VALUE_NULL)) {
+			return null;
 		}
-
-		throw new MissingParameterException(null);
+		return attribute.defaultValue();
 	}
-
-	@Override
-	public Object getObject(String prefix, String key) {
-		throw new MissingParameterException(key);
+	
+	public static interface IAttributeSource { 
+		public Attribute attribute(String prefix, String key);
 	}
 }

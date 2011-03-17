@@ -11,22 +11,21 @@ import peersim.graph.Graph;
 import peersim.graph.NeighbourListGraph;
 
 public class TestPercolationThresholdEstimator {
-	
-	
+
 	@Test
 	public void testPercolationThresholdEstimate() throws Exception {
 		int DIM = 10;
-		PercolationThresholdEstimator est = new ObjectCreator<PercolationThresholdEstimator>(
-				PercolationThresholdEstimator.class).create("");
-		
+		PercolationThresholdEstimator est = new ObjectCreator().create("",
+				PercolationThresholdEstimator.class);
+
 		Graph largeLattice = mkLattice(DIM);
-		
+
 		Assert.assertTrue(GraphAlgorithms.isConnected(largeLattice));
 		double p_c = est.percolationThresholdEstimate(largeLattice);
 		System.err.println(DIM + " " + p_c);
-		
+
 		Graph percolated = est.randomSubgraph(largeLattice, p_c, null);
-		
+
 		for (int i = 0; i < DIM; i++) {
 			for (int j = 0; j < DIM; j++) {
 				System.out.print("+");
@@ -48,7 +47,7 @@ public class TestPercolationThresholdEstimator {
 			System.out.print("\n");
 		}
 	}
-	
+
 	public static void percolationCompleteGraph(int DIM) throws Exception {
 		BitMatrixGraph g = new BitMatrixGraph(DIM, false);
 		for (int i = 0; i < DIM; i++) {
@@ -57,8 +56,8 @@ public class TestPercolationThresholdEstimator {
 			}
 		}
 
-		PercolationThresholdEstimator est = new ObjectCreator<PercolationThresholdEstimator>(
-				PercolationThresholdEstimator.class).create("");
+		PercolationThresholdEstimator est = new ObjectCreator().create("",
+				PercolationThresholdEstimator.class);
 
 		double p_c = est.percolationThresholdEstimate(g);
 		
@@ -73,9 +72,8 @@ public class TestPercolationThresholdEstimator {
 		System.out.println(DIM + " " + p_c);
 	}
 
-
 	private static Graph mkLattice(int DIM) {
-		Graph largeLattice = new NeighbourListGraph(DIM*DIM, false);
+		Graph largeLattice = new NeighbourListGraph(DIM * DIM, false);
 		for (int i = 0; i < DIM; i++) {
 			for (int j = 0; j < DIM; j++) {
 				largeLattice.setEdge(idxOf(i, j, DIM), idxOf(i, j + 1, DIM));
@@ -86,19 +84,20 @@ public class TestPercolationThresholdEstimator {
 		}
 		return largeLattice;
 	}
-	
+
 	private static int idxOf(int i, int j, int dim) {
 		i = (i < 0) ? (i + dim) : i % dim;
 		j = (j < 0) ? (j + dim) : j % dim;
-		return j*dim + i;		
+		return j * dim + i;
 	}
-	
-	public static void main(String [] args) throws Exception {
-//		PercolationThresholdEstimator est = new PercolationThresholdEstimator(30, 100, 0.1);
-//		for (int i = 2; i < 200; i++) {
-//			Graph g = mkLattice(i);
-//			System.out.println(i + " " + est.percolationThresholdEstimate(g));
-//		}
+
+	public static void main(String[] args) throws Exception {
+		// PercolationThresholdEstimator est = new
+		// PercolationThresholdEstimator(30, 100, 0.1);
+		// for (int i = 2; i < 200; i++) {
+		// Graph g = mkLattice(i);
+		// System.out.println(i + " " + est.percolationThresholdEstimate(g));
+		// }
 		for (int i = 2; i < 200; i++) {
 			percolationCompleteGraph(i);
 		}

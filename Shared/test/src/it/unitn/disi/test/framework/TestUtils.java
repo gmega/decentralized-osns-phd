@@ -24,7 +24,7 @@ import peersim.graph.Graph;
 public class TestUtils {
 	
 	public static URL locate(String name) {
-		return TestUtils.class.getClassLoader().getResource("creator_test_config.properties");
+		return TestUtils.class.getClassLoader().getResource(name);
 	}
 	
 	public static Linkable completeSocialNetwork() {

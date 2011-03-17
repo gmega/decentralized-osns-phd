@@ -11,7 +11,7 @@ import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.graph.large.catalog.CatalogTest;
-import it.unitn.disi.network.EvtDecoderTest;
+import it.unitn.disi.network.churn.tracebased.EvtDecoderTest;
 import it.unitn.disi.newscasting.ComponentComputationServiceTest;
 import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.HistoryForwardingTest;

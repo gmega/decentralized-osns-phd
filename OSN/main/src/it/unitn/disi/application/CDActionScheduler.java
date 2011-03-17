@@ -14,7 +14,7 @@ public class CDActionScheduler implements Control {
 
 	private static PeekableHeap fHeap;
 
-	public static void add(long delay, IAction event, Node node, int pid) {
+	public static void add(long delay, Object event, Node node, int pid) {
 		if (!isActive()) {
 			throw new IllegalStateException("Scheduler control hasn't been " +
 					"installed (configuration error?).");

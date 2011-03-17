@@ -12,16 +12,16 @@ import peersim.core.Node;
 import peersim.edsim.EDSimulator;
 
 /**
- * Simple traffic generator which queues {@link ActionExecutor#TWEET} and
- * {@link ActionExecutor#REPLY_RANDOM} events with equal probability.
+ * Simple traffic generator which queues {@link TrafficScheduler#TWEET} and
+ * {@link TrafficScheduler#REPLY_RANDOM} events with equal probability.
  * 
  * @author giuliano
  */
 @AutoConfig
 public class SimpleTrafficGenerator implements CDProtocol {
 
-	private static final IAction[] fActions = { ActionExecutor.TWEET,
-			ActionExecutor.REPLY_RANDOM };
+	private static final IAction[] fActions = { TrafficScheduler.TWEET,
+			TrafficScheduler.REPLY_RANDOM };
 
 	@Attribute("action_scheduler")
 	private int fActionScheduler;

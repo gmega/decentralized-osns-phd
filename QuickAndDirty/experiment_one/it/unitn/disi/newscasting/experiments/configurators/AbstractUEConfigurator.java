@@ -24,7 +24,7 @@ import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
 import peersim.config.ObjectCreator;
 import peersim.config.resolvers.CompositeResolver;
-import peersim.config.resolvers.PeerSimResolver;
+import peersim.config.resolvers.ConfigContainerResolver;
 
 /**
  * Abstract {@link IApplicationConfigurator} implementation for the unit
@@ -64,8 +64,7 @@ public abstract class AbstractUEConfigurator implements
 	 * the debugger (not sure why, some bug either in the JVM or the JEP used by
 	 * PeerSim).
 	 */
-	protected static IResolver fResolver = CachingResolver
-			.cachingResolver(new CompositeResolver(new PeerSimResolver()));
+	protected IResolver fResolver;
 
 	// ----------------------------------------------------------------------
 
@@ -74,14 +73,14 @@ public abstract class AbstractUEConfigurator implements
 
 	// ----------------------------------------------------------------------
 
-	private void oneShotConfig(String prefix) {
+	private void oneShotConfig(String prefix, IResolver resolver) {
 		if (fConfigured) {
 			return;
 		}
 
 		// And the statistics printer.
 		StatisticsPrinter printer = ObjectCreator.createInstance(
-				StatisticsPrinter.class, prefix);
+				StatisticsPrinter.class, prefix, resolver);
 		DisseminationExperimentGovernor.addExperimentObserver(printer);
 
 		// And the statistics manager. The printer has to come BEFORE
@@ -105,10 +104,15 @@ public abstract class AbstractUEConfigurator implements
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(SocialNewscastingService app, String prefix,
-			int protocolId, int socialNetworkId) throws Exception {
+	public void configure(SocialNewscastingService app, IResolver resolver,
+			String prefix, int protocolId, int socialNetworkId)
+			throws Exception {
 
-		oneShotConfig(prefix);
+		CompositeResolver composite = new CompositeResolver();
+		composite.addResolver(resolver);
+		fResolver = CachingResolver.cachingResolver(composite.asInvocationHandler());
+		
+		oneShotConfig(prefix, fResolver);
 
 		// Application storage.
 		app.setStorage(storage(prefix, protocolId, socialNetworkId));

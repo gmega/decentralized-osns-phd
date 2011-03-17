@@ -217,9 +217,8 @@ public class GenericDriver {
 		@SuppressWarnings("unchecked")
 		Class<Object> klass = (Class<Object>) Class.forName(string);
 
-		ObjectCreator<Object> creator = new ObjectCreator<Object>(klass,
-				resolver);
-		return creator.create(null);
+		ObjectCreator creator = new ObjectCreator(resolver);
+		return creator.create(null, klass);
 	}
 
 	public static void main(String[] args) {
