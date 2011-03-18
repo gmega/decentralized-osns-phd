@@ -13,6 +13,7 @@ import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
 import peersim.config.plugin.IPlugin;
+import peersim.rangesim.TaggedOutputStream;
 
 /**
  * {@link TabularLogManager} manages table logs.
@@ -87,6 +88,7 @@ public class TabularLogManager implements IPlugin {
 			throw new IllegalArgumentException("Duplicate key <<" + key + ">>.");
 		}
 		OutputStream oStream = fStreamManager.get(streamId);
-		fLogs.put(key, new TableWriter(new PrintStream(oStream), fields));
+		String printPrefix = key + ":";
+		fLogs.put(key, new TableWriter(new TaggedOutputStream(printPrefix, new PrintStream(oStream)), fields));
 	}
 }
