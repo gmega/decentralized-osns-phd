@@ -5,16 +5,19 @@ import java.util.NoSuchElementException;
 import it.unitn.disi.random.Exponential;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
+import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.logging.OutputsStructuredLog;
 import peersim.config.Attribute;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
-import peersim.extras.mj.dynamics.ExponentialUptime;
 
 /**
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>.
  */
+@OutputsStructuredLog(key="YaoInit", fields={"id","index","li","di"})
 public class YaoInit implements Control {
 
 	// ------------------------------------------------------------------------
@@ -102,13 +105,19 @@ public class YaoInit implements Control {
 
 	private static final double BETA_DOWNTIME = 2.0;
 
-	private static final String PRINT_PREFIX = YaoInit.class.getName();
-
-	@Attribute("protocol")
 	private int fYaoChurnId;
 
-	@Attribute("mode")
 	private String fMode;
+	
+	private TableWriter fLog;
+	
+	public YaoInit(@Attribute("protocol") int yaoChurnId,
+			@Attribute("mode") String mode, 
+			@Attribute("TabularLogManager") TabularLogManager logManager) {
+		fYaoChurnId = yaoChurnId;
+		fMode = mode;
+		fLog = logManager.get(YaoInit.class);
+	}
 
 	@Override
 	public boolean execute() {
@@ -132,15 +141,11 @@ public class YaoInit implements Control {
 	}
 
 	private void printParameters(int index, Node node, double li, double di) {
-		StringBuffer sb = new StringBuffer(PRINT_PREFIX);
-		sb.append(" ");
-		sb.append(index);
-		sb.append(" ");
-		sb.append(node.getID());
-		sb.append(" ");
-		sb.append(li);
-		sb.append(" ");
-		sb.append(di);
+		fLog.set("index", Integer.toString(index));
+		fLog.set("id", Long.toString(node.getID()));
+		fLog.set("li", Double.toString(li));
+		fLog.set("di", Double.toString(di));
+		fLog.emmitRow();
 	}
 
 	private IMode mode(String modeId) {

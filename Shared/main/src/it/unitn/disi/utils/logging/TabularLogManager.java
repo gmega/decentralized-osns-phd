@@ -3,11 +3,9 @@ package it.unitn.disi.utils.logging;
 import java.io.BufferedWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import it.unitn.disi.utils.PrefixedWriter;
 import it.unitn.disi.utils.TableWriter;
@@ -15,9 +13,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
-import peersim.config.MissingParameterException;
 import peersim.config.plugin.IPlugin;
-import peersim.rangesim.TaggedOutputStream;
 
 /**
  * {@link TabularLogManager} manages table logs.
@@ -33,9 +29,9 @@ public class TabularLogManager implements IPlugin {
 
 	private final String PAR_STREAM = "stream";
 
-	private final String PAR_COLNAMES = "colnames";
-
 	private final StreamManager fStreamManager;
+
+	private final Map<String, String> fStreamAssignments;
 
 	private final Map<String, TableWriter> fLogs;
 
@@ -43,6 +39,7 @@ public class TabularLogManager implements IPlugin {
 			@Attribute("LogManager") StreamManager streamManager) {
 		fStreamManager = streamManager;
 		fLogs = new HashMap<String, TableWriter>();
+		fStreamAssignments = new HashMap<String, String>();
 	}
 
 	@Override
@@ -52,18 +49,11 @@ public class TabularLogManager implements IPlugin {
 
 	@Override
 	public void start(IResolver resolver) {
-
+		// Assigns streams to log ids that have been declared.
 		for (String logId : Configuration.getNames(PAR_LOG)) {
-			String streamId;
-			try {
-				streamId = resolver.getString(logId, PAR_STREAM);
-			} catch (MissingParameterException ex) {
-				streamId = LogWriterType.STDOUT.toString();
-			}
-
-			String[] fields = resolver.getString(logId, PAR_COLNAMES)
-					.split(" ");
-			this.add(logId.substring(PAR_LOG.length() + 1), streamId, fields);
+			String streamId = resolver.getString(logId, PAR_STREAM);
+			fStreamAssignments.put(logId.substring(PAR_LOG.length() + 1),
+					streamId);
 		}
 	}
 
@@ -72,22 +62,27 @@ public class TabularLogManager implements IPlugin {
 
 	}
 
-	/**
-	 * @param id
-	 *            an identifier to a tabular log.
-	 * @return a {@link TableWriter} representing this log.
-	 * @throws NoSuchElementException
-	 *             if a stream under the given id hasn't been registered.
-	 */
-	public TableWriter get(String id) {
-		TableWriter log = fLogs.get(id);
-		if (log == null) {
-			throw new NoSuchElementException(id);
+	public TableWriter get(Class<?> klass) {
+		OutputsStructuredLog annotation = klass.getAnnotation(OutputsStructuredLog.class);
+		if (annotation == null) {
+			return null;
 		}
-		return log;
+		// FIXME I'm not checking whether there are conflicting keys. Not so
+		// serious as it will not fail silently, but will cause a runtime
+		// exception in TableWriter down the line.
+		String logKey = annotation.key();
+		TableWriter writer = fLogs.get(logKey);
+		if (logKey == null) {
+			String streamId = fStreamAssignments.get(logKey);
+			writer = add(logKey,
+					streamId == null ? LogWriterType.STDOUT.toString()
+							: streamId, annotation.fields());
+		}
+
+		return writer;
 	}
 
-	private void add(String key, String streamId, String[] fields) {
+	private TableWriter add(String key, String streamId, String[] fields) {
 		if (fLogs.containsKey(key)) {
 			throw new IllegalArgumentException("Duplicate key <<" + key + ">>.");
 		}
@@ -98,6 +93,8 @@ public class TabularLogManager implements IPlugin {
 				oStream));
 		PrintWriter writer = new PrintWriter(new PrefixedWriter(printPrefix,
 				buffered));
-		fLogs.put(key, new TableWriter(writer, fields));
+		TableWriter tblWriter = new TableWriter(writer, fields);
+		fLogs.put(key, tblWriter);
+		return tblWriter;
 	}
 }

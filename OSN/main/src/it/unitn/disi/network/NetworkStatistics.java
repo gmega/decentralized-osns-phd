@@ -1,6 +1,11 @@
 package it.unitn.disi.network;
 
+import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.logging.OutputsStructuredLog;
+import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.SNNode;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -15,13 +20,17 @@ import peersim.core.Network;
  * 
  * @author giuliano
  */
+@AutoConfig
+@OutputsStructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "timedelta"})
 public class NetworkStatistics implements Control {
-
-	private static final String PRINT_PREFIX = NetworkStatistics.class.getName();
-	
-	private boolean fPrintHeader;
 	
 	private long fLastRun;
+	
+	private TableWriter fLog;
+	
+	public NetworkStatistics(@Attribute("TabularLogManager") TabularLogManager manager) {
+		fLog = manager.get(NetworkStatistics.class);
+	}
 	
 	@Override
 	public boolean execute() {
@@ -38,40 +47,14 @@ public class NetworkStatistics implements Control {
 			}
 		}
 		
-		header();
-		StringBuffer sb = new StringBuffer();
-		sb.append(PRINT_PREFIX);
-		sb.append(":");
-		sb.append(up);
-		sb.append(" ");
-		sb.append(down);
-		sb.append(" ");
-		sb.append(arrivals);
-		sb.append(" ");
-		sb.append(CommonState.getTime() - fLastRun);
-		System.err.println(sb.toString());
+		fLog.set("up", Integer.toString(up));
+		fLog.set("down", Integer.toString(down));
+		fLog.set("arrivals", Integer.toString(arrivals));
+		fLog.set("timedelta", Long.toString(CommonState.getTime() - fLastRun));
+		fLog.emmitRow();
 		
 		fLastRun = CommonState.getTime();
 		
 		return false;
-	}
-
-	private void header() {
-		if (fPrintHeader) {
-			return;
-		}
-		
-		fPrintHeader = true;
-		StringBuffer sb = new StringBuffer();
-		sb.append(PRINT_PREFIX);
-		sb.append(":");
-		sb.append("up");
-		sb.append(" ");
-		sb.append("down");
-		sb.append(" ");
-		sb.append("arrivals");
-		sb.append(" ");
-		sb.append("timedelta");
-		System.err.println(sb.toString());
 	}
 }
