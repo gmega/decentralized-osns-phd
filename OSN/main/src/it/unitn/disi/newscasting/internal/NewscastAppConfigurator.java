@@ -8,18 +8,22 @@ import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.probabrm.ProbabilisticRumorMonger;
 import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.logging.LogManager;
+import it.unitn.disi.utils.logging.StreamManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.resolvers.ConfigContainerResolver;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 
+@AutoConfig
 public class NewscastAppConfigurator implements IApplicationConfigurator {
 
 	/**
@@ -65,14 +69,18 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 
 	private static final String VAL_NONE = "none";
 
-	public NewscastAppConfigurator(String prefix) {
+	private StreamManager fManager;
+
+	public NewscastAppConfigurator(
+			@Attribute("StreamManager") StreamManager manager) {
+		fManager = manager;
 	}
 
 	public void configure(SocialNewscastingService app, IResolver resolver,
 			String prefix, int protocolId, int socialNetworkId)
 			throws Exception {
 		configureStorage(app, prefix, socialNetworkId);
-		configureLogging(app, prefix);
+		configureLogging(app, resolver, prefix);
 		configureAntiEntropy(app, prefix, protocolId, socialNetworkId);
 		configureRumorMongering(app, resolver, prefix, protocolId,
 				socialNetworkId);
@@ -176,13 +184,10 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 	}
 
 	private void configureLogging(SocialNewscastingService service,
-			String prefix) throws IOException {
-		LogManager mgr = LogManager.getInstance();
-		String logId = mgr.addUnique(prefix);
-
-		if (logId != null) {
-			LoggingObserver observer = new LoggingObserver(mgr.get(logId),
-					false);
+			IResolver resolver, String prefix) throws IOException {
+		OutputStream log = fManager.get(resolver, prefix);
+		if (log != null) {
+			LoggingObserver observer = new LoggingObserver(log, false);			
 			service.addSubscriber(observer);
 		}
 	}

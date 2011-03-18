@@ -60,8 +60,11 @@ public class PluginContainer extends NullResolver {
 				fPluginRegistry.put(plugin.id(), plugin);
 
 				// 4. Start.
-				plugin.start();
+				plugin.start(fResolver);
 			} catch (Exception ex) {
+				if (ex instanceof RuntimeException) {
+					throw (RuntimeException) ex;
+				}
 				throw new RuntimeException(ex);
 			}
 		}

@@ -5,7 +5,7 @@ import it.unitn.disi.network.GenericValueHolder;
 import it.unitn.disi.network.RandomInitializer;
 import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 import it.unitn.disi.utils.logging.EventCodec;
-import it.unitn.disi.utils.logging.LogManager;
+import it.unitn.disi.utils.logging.StreamManager;
 
 import java.io.File;
 import java.io.FileReader;
@@ -102,8 +102,6 @@ public class TraceBasedNetwork implements Control {
 	private Set<String> fRemoves = new HashSet<String>();
 
 	private int fActiveNodes = 0;
-	
-	private LogManager fLogManager;
 
 	// ------------------------------------------------------------------
 
@@ -120,9 +118,6 @@ public class TraceBasedNetwork implements Control {
 				+ PAR_TRACEFILE));
 		fStream = new PeekingIteratorAdapter<TraceEvent>(new EvtDecoder(new FileReader(
 				tracefile)));
-		
-		fLogManager = LogManager.getInstance();
-		fLogId = fLogManager.addUnique(prefix);
 	}
 
 	// ------------------------------------------------------------------
@@ -229,13 +224,7 @@ public class TraceBasedNetwork implements Control {
 		// Run initializers for nodes added and re-added, and logs
 		// the node entrance into the network.
 		for (Node joining : added) {
-			log(SimulationEvents.NODE_LOGIN, joining.getID());
 			runInitializers(joining);
-		}
-		
-		// Logs node departure.
-		for (Node departing : removed) {
-			log(SimulationEvents.NODE_DEPART, departing.getID());
 		}
 		
 		fAdds.clear();
@@ -254,17 +243,6 @@ public class TraceBasedNetwork implements Control {
 		// Adds to network.
 		Network.add(newnode);
 		return newnode;
-	}
-	
-	// ------------------------------------------------------------------
-	
-	private void log(SimulationEvents eventType, long nodeId) {
-		try {
-			fCodec.encodeEvent(fBuffer, 0, eventType.magicNumber(), nodeId, CommonState.getTime());
-			fLogManager.get(fLogId).write(fBuffer);
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
 	}
 
 	// ------------------------------------------------------------------

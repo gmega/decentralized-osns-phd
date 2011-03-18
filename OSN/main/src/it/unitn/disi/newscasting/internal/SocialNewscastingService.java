@@ -16,7 +16,6 @@ import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -160,12 +159,9 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	// ----------------------------------------------------------------------
 
 	private static IApplicationConfigurator configurator(String prefix) {
-		if (!Configuration.contains(prefix + "." + CONFIGURATOR)) {
-			return new NewscastAppConfigurator(prefix);
-		} else {
-			return (IApplicationConfigurator) Configuration.getInstance(prefix
-					+ "." + CONFIGURATOR);
-		}
+		String klass = Configuration.getString(prefix + "." + CONFIGURATOR,
+				NewscastAppConfigurator.class.getName());
+		return (IApplicationConfigurator) Configuration.getInstance(klass);
 	}
 
 	// ----------------------------------------------------------------------

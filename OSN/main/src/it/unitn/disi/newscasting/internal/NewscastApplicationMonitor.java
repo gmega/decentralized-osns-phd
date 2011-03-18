@@ -3,12 +3,14 @@ package it.unitn.disi.newscasting.internal;
 import static it.unitn.disi.utils.peersim.PeersimUtils.print;
 import it.unitn.disi.SimulationEvents;
 import it.unitn.disi.utils.logging.EventCodec;
-import it.unitn.disi.utils.logging.LogManager;
+import it.unitn.disi.utils.logging.StreamManager;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
 import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -33,16 +35,17 @@ public class NewscastApplicationMonitor implements Control {
 	
 	private static final byte [] fBuffer = new byte[Long.SIZE/Byte.SIZE + 1];
 	
-	private LogManager fManager = LogManager.getInstance();
-	
 	private EventCodec fCodec = new EventCodec(Byte.class, SimulationEvents.values());
 	
-	private String fLogName;
+	private OutputStream fLog;
 	
 	// --------------------------------------------------------------------------
 	
-	public NewscastApplicationMonitor(@Attribute(Attribute.PREFIX) String prefix) throws IOException {
-		fLogName = fManager.add(prefix).get(0);
+	public NewscastApplicationMonitor(
+			@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute(Attribute.AUTO) String prefix,
+			@Attribute("StreamManager") StreamManager manager) throws IOException {
+		fLog = manager.get(resolver, prefix);
 	}
 
 	public boolean execute() {
@@ -81,7 +84,12 @@ public class NewscastApplicationMonitor implements Control {
 		int len = fCodec.encodeEvent(fBuffer, 0,
 				SimulationEvents.ROUND_ENDED.magicNumber(),
 				CommonState.getTime());
-		fManager.logWrite(fLogName, fBuffer, len);
+		
+		try {
+			fLog.write(fBuffer, 0, len);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
 		
 		return false;
 	}

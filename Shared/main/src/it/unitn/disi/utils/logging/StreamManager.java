@@ -10,60 +10,75 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.zip.GZIPOutputStream;
 
+import peersim.config.AutoConfig;
 import peersim.config.Configuration;
+import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
+import peersim.config.plugin.IPlugin;
 
-public class LogManager implements Runnable {
-	
+@AutoConfig
+public class StreamManager implements IPlugin {
+
 	// ----------------------------------------------------------------------
 	// Parameter keys.
 	// ----------------------------------------------------------------------
-	
-	private static final String PAR_LOGWRITER = "logwriter";
-	
+
+	private static final String PAR_STREAM = "stream";
+
 	// ----------------------------------------------------------------------
 	// Constants and null objects.
 	// ----------------------------------------------------------------------
 
 	private static final OutputStream NULL = new NullOutputStream();
-	
-	// ----------------------------------------------------------------------
-	// Singleton machinery.
+
 	// ----------------------------------------------------------------------
 
-	public static final LogManager fSharedInstance = new LogManager();
-
-	public static LogManager getInstance() {
-		return fSharedInstance;
-	}
-	
-	// ----------------------------------------------------------------------
-	
 	private final Map<String, OutputStream> fStreams = new HashMap<String, OutputStream>();
 
-	public LogManager() {
-		Runtime.getRuntime().addShutdownHook(new Thread(this));
-	}
-	
-	public synchronized String addUnique(String s) throws IOException {
-		ArrayList<String> allLogs = add(s);
-		if (allLogs.size() > 1) {
-			throw new IllegalArgumentException(
-					"Cannot disambiguate: expected 1 registered stream, got "
-							+ allLogs.size() + ".");
-		}
-		
-		if (allLogs.size() == 0) {
-			return null;
-		}
-		
-		return allLogs.get(0);
+	public StreamManager() {
 	}
 
-	public synchronized ArrayList<String> add(String s) throws IOException {
+	@Override
+	public synchronized void start(IResolver resolver) throws IOException {
+		// XXX We still need the Configuration singleton to bootstrap. I need to
+		// fix or change the IResolver interfaces so that we can do this kind of
+		// initialization through them.
+
+		/** Registers all streams. **/
+		for (String streamId : Configuration.getNames(PAR_STREAM)) {
+			this.add(resolver.getString(streamId, IResolver.NULL_KEY));
+		}
+
+		// Default streams.
+		add(LogWriterType.STDOUT + " " + LogWriterType.STDOUT);
+		add(LogWriterType.STDERR + " " + LogWriterType.STDERR);
+	}
+
+	@Override
+	public synchronized void stop() {
+		for (OutputStream stream : fStreams.values()) {
+			try {
+				System.err.print("Closing " + stream.getClass() + "...");
+				stream.flush();
+				stream.close();
+				System.err.println(" [OK]");
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public String id() {
+		return StreamManager.class.getName();
+	}
+
+	private synchronized ArrayList<String> add(String s) throws IOException {
 		String[] data = Configuration.getNames(s);
-		String propName = s + "." + PAR_LOGWRITER;
+		String propName = s + "." + PAR_STREAM;
 		ArrayList<String> added = new ArrayList<String>();
 
 		for (String datum : data) {
@@ -87,13 +102,13 @@ public class LogManager implements Runnable {
 
 			case STDERR:
 				fStreams.put(name, System.err);
-				break; 
+				break;
 
 			case FILE:
 				verify(spec, 3, "output filename");
 				fStreams.put(name, fileOutputStream(spec[2]));
 				break;
-				
+
 			case GZIPFILE:
 				verify(spec, 3, "output filename");
 				fStreams.put(name, gzippedOutputStream(spec[2]));
@@ -125,7 +140,7 @@ public class LogManager implements Runnable {
 	 * @param len
 	 *            data from buffer[0] to buffer[(len - 1)] will be written.
 	 */
-	public void logWrite(String name, byte[] buffer, int len) {
+	public void write(String name, byte[] buffer, int len) {
 		try {
 			get(name).write(buffer, 0, len);
 		} catch (IOException ex) {
@@ -133,21 +148,53 @@ public class LogManager implements Runnable {
 		}
 	}
 
+	/**
+	 * Returns an {@link OutputStream} registered under a given id.
+	 * 
+	 * @param id
+	 *            id of the stream.
+	 * 
+	 * @return the {@link OutputStream} registered under this id.
+	 * @throws NoSuchElementException
+	 *             if a stream under the given id hasn't been registered.
+	 */
+	public synchronized OutputStream get(String id) {
+		OutputStream stream = fStreams.get(id);
+		if (stream == null) {
+			throw new NoSuchElementException(id);
+		}
+		return stream;
+	}
+
+	/**
+	 * This method makes it easier for components to configure their logging.
+	 * TODO write better explanation.
+	 */
+	public OutputStream get(IResolver resolver, String prefix) {
+		try {
+			return this.get(resolver.getString(prefix, PAR_STREAM));
+		} catch (MissingParameterException ex) {
+			return null;
+		}
+	}
+
 	private OutputStream fileOutputStream(String string) throws IOException {
 		OutputStream stream = fStreams.get(string);
 		if (stream == null) {
-			stream = new BufferedOutputStream(new FileOutputStream(file(string)));
+			stream = new BufferedOutputStream(
+					new FileOutputStream(file(string)));
 			fStreams.put(string, stream);
 		}
 
 		return stream;
 	}
-	
+
 	private OutputStream gzippedOutputStream(String string) throws IOException {
 		OutputStream stream = fStreams.get(string);
 		if (stream == null) {
-			// Creates a GZIP output stream with a 512 kb buffer. 
-			stream = new GZIPOutputStream(new FileOutputStream(file(string, "gz")));
+			// Creates a GZIP output stream with a 512 kb buffer.
+			stream = new GZIPOutputStream(new FileOutputStream(file(string,
+					"gz")));
 			fStreams.put(string, stream);
 		}
 
@@ -157,7 +204,7 @@ public class LogManager implements Runnable {
 	private File file(String s) {
 		return file(s, null);
 	}
-	
+
 	private File file(String s, String extension) {
 		String name = (extension == null) ? s : s + "." + extension;
 		return new File(name);
@@ -170,24 +217,4 @@ public class LogManager implements Runnable {
 		}
 	}
 
-	public synchronized OutputStream get(String id) {
-		if (!fStreams.containsKey(id)) {
-			return System.out;
-		} else {
-			return fStreams.get(id);
-		}
-	}
-
-	public synchronized void run() {
-		for (OutputStream stream : fStreams.values()) {
-			try {
-				System.err.print("Closing " + stream.getClass() + "...");
-				stream.flush();
-				stream.close();
-				System.err.println(" [OK]");
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
 }

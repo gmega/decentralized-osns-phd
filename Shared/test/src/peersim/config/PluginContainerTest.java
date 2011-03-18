@@ -65,7 +65,7 @@ abstract class BasePlugin implements IPlugin {
 	}
 
 	@Override
-	public void start() {
+	public void start(IResolver resolver) {
 		fActivation = PluginContainerTest.count++;
 	}
 
