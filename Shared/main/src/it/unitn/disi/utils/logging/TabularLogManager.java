@@ -1,11 +1,15 @@
 package it.unitn.disi.utils.logging;
 
+import java.io.BufferedWriter;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import it.unitn.disi.utils.PrefixedWriter;
 import it.unitn.disi.utils.TableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -87,8 +91,13 @@ public class TabularLogManager implements IPlugin {
 		if (fLogs.containsKey(key)) {
 			throw new IllegalArgumentException("Duplicate key <<" + key + ">>.");
 		}
-		OutputStream oStream = fStreamManager.get(streamId);
 		String printPrefix = key + ":";
-		fLogs.put(key, new TableWriter(new TaggedOutputStream(printPrefix, new PrintStream(oStream)), fields));
+
+		OutputStream oStream = fStreamManager.get(streamId);
+		BufferedWriter buffered = new BufferedWriter(new OutputStreamWriter(
+				oStream));
+		PrintWriter writer = new PrintWriter(new PrefixedWriter(printPrefix,
+				buffered));
+		fLogs.put(key, new TableWriter(writer, fields));
 	}
 }

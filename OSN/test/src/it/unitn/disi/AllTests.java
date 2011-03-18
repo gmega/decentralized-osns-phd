@@ -27,6 +27,7 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.util.RandomSchedulerTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
+import it.unitn.disi.utils.PrefixedOutputStreamTest;
 import it.unitn.disi.utils.TestMiscUtils;
 import it.unitn.disi.utils.TestTableReader;
 
@@ -67,7 +68,8 @@ import peersim.config.PluginContainerTest;
 	LSGTransformsTest.class,
 	ComponentComputationServiceTest.class,
 	CatalogTest.class,
-	PluginContainerTest.class
+	PluginContainerTest.class,
+	PrefixedOutputStreamTest.class
 })
 
 public class AllTests extends PeerSimTest {

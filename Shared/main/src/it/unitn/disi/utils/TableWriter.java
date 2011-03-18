@@ -1,6 +1,7 @@
 package it.unitn.disi.utils;
 
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.Arrays;
 
 public class TableWriter {
@@ -13,15 +14,23 @@ public class TableWriter {
 
 	private boolean fPrintHeader;
 
-	private final PrintStream fOut;
+	private final PrintWriter fOut;
 
 	private final String fSeparator;
 
 	public TableWriter(PrintStream output, String... fields) {
 		this(output, FS, fields);
 	}
-
+	
+	public TableWriter(PrintWriter output, String... fields) {
+		this(output, FS, fields);
+	}
+	
 	public TableWriter(PrintStream output, String separator, String... fields) {
+		this(new PrintWriter(output), separator, fields);
+	}
+
+	public TableWriter(PrintWriter output, String separator, String... fields) {
 		fOut = output;
 		fFields = fields;
 		fSeparator = separator;
