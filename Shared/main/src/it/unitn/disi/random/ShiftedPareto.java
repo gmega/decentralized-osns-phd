@@ -21,7 +21,7 @@ public class ShiftedPareto implements IDistribution {
 
 	@Override
 	public double sample() {
-		return fBeta * (Math.pow((1 - Math.random()), fInverseAlpha) - 1);
+		return fBeta * (Math.pow((1.0 - Math.random()), -fInverseAlpha) - 1);
 	}
 
 }

@@ -9,6 +9,7 @@ import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.logging.OutputsStructuredLog;
 import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -18,6 +19,7 @@ import peersim.core.Node;
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>.
  */
 @OutputsStructuredLog(key="YaoInit", fields={"id","index","li","di"})
+@AutoConfig
 public class YaoInit implements Control {
 
 	// ------------------------------------------------------------------------
@@ -87,7 +89,7 @@ public class YaoInit implements Control {
 
 		@Override
 		public String id() {
-			return "VHT";
+			return "EXP";
 		}
 
 	};
@@ -126,6 +128,7 @@ public class YaoInit implements Control {
 		IDistribution downAverage = new ShiftedPareto(ALPHA_UPTIME,
 				BETA_DOWNTIME);
 		// Assigns different distributions to each node.
+		IMode mode = mode(fMode);
 		for (int i = 0; i < Network.size(); i++) {
 			Node current = Network.get(i);
 			YaoOnOffChurn churn = (YaoOnOffChurn) current
@@ -133,7 +136,6 @@ public class YaoInit implements Control {
 			double li = upAverage.sample();
 			double di = downAverage.sample();
 			printParameters(i, current, li, di);
-			IMode mode = mode(fMode);
 			churn.init(mode.uptimeDistribution(li),
 					mode.downtimeDistribution(di), 1.0, current);
 		}
@@ -150,7 +152,7 @@ public class YaoInit implements Control {
 
 	private IMode mode(String modeId) {
 		for (IMode mode : modes) {
-			if (mode.id().toLowerCase().equals(modeId)) {
+			if (mode.id().toUpperCase().equals(modeId)) {
 				return mode;
 			}
 		}

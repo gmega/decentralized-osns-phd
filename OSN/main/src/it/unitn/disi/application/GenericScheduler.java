@@ -1,6 +1,8 @@
 package it.unitn.disi.application;
 
+import peersim.config.AutoConfig;
 import peersim.core.Node;
+import peersim.core.Protocol;
 import peersim.edsim.EDSimulator;
 
 /**
@@ -11,7 +13,8 @@ import peersim.edsim.EDSimulator;
  * 
  * @author giuliano
  */
-public class GenericScheduler implements IScheduler<Object> {
+@AutoConfig
+public class GenericScheduler implements IScheduler<Object>, Protocol {
 
 	@Override
 	public void schedule(long time, int pid, Node source, Object event) {
@@ -20,6 +23,11 @@ public class GenericScheduler implements IScheduler<Object> {
 		} else {
 			CDActionScheduler.add(time, event, source, pid);
 		}
+	}
+	
+	@Override
+	public Object clone() {
+		return this;
 	}
 
 }

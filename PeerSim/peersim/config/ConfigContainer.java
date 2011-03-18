@@ -984,7 +984,7 @@ public class ConfigContainer {
 		resolver.addResolver(new SpecialValueResolver());
 
 		IResolver asResolver = resolver.asResolver();
-		fPluginContainer = startUserPlugins(asResolver);
+		fPluginContainer = configureUserPlugins(asResolver);
 		resolver.addResolver(fPluginContainer);
 		
 		return asResolver;
@@ -1002,7 +1002,7 @@ public class ConfigContainer {
 	
 	private static final String PAR_DEPS = "depends";
 		
-	private PluginContainer startUserPlugins(IResolver resolver) {
+	private PluginContainer configureUserPlugins(IResolver resolver) {
 		String [] plugins = getNames(Configuration.PAR_PLUGIN);
 		IPluginDescriptor [] descriptors = new IPluginDescriptor[plugins.length];
 		
@@ -1040,8 +1040,6 @@ public class ConfigContainer {
 		}
 		
 		PluginContainer container = new PluginContainer(resolver, descriptors);
-		container.start();
-		
 		return container;
 	}
 	

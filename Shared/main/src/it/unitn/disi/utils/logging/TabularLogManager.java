@@ -23,7 +23,7 @@ import peersim.config.plugin.IPlugin;
 @AutoConfig
 public class TabularLogManager implements IPlugin {
 
-	private final String PLUGIN_ID = TabularLogManager.class.getName();
+	private final String PLUGIN_ID = TabularLogManager.class.getSimpleName();
 
 	private final String PAR_LOG = "log";
 
@@ -36,7 +36,7 @@ public class TabularLogManager implements IPlugin {
 	private final Map<String, TableWriter> fLogs;
 
 	public TabularLogManager(
-			@Attribute("LogManager") StreamManager streamManager) {
+			@Attribute("StreamManager") StreamManager streamManager) {
 		fStreamManager = streamManager;
 		fLogs = new HashMap<String, TableWriter>();
 		fStreamAssignments = new HashMap<String, String>();
@@ -63,7 +63,8 @@ public class TabularLogManager implements IPlugin {
 	}
 
 	public TableWriter get(Class<?> klass) {
-		OutputsStructuredLog annotation = klass.getAnnotation(OutputsStructuredLog.class);
+		OutputsStructuredLog annotation = klass
+				.getAnnotation(OutputsStructuredLog.class);
 		if (annotation == null) {
 			return null;
 		}
@@ -72,11 +73,10 @@ public class TabularLogManager implements IPlugin {
 		// exception in TableWriter down the line.
 		String logKey = annotation.key();
 		TableWriter writer = fLogs.get(logKey);
-		if (logKey == null) {
+		if (writer == null) {
 			String streamId = fStreamAssignments.get(logKey);
-			writer = add(logKey,
-					streamId == null ? LogWriterType.STDOUT.toString()
-							: streamId, annotation.fields());
+			writer = add(logKey, streamId == null ? "stdout" : streamId,
+					annotation.fields());
 		}
 
 		return writer;

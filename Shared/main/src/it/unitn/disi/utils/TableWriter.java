@@ -34,9 +34,11 @@ public class TableWriter {
 		fOut = output;
 		fFields = fields;
 		fSeparator = separator;
+		fCurrentRecord = new String[fFields.length];
 	}
 
 	public void newRow() {
+		fOut.flush();
 		Arrays.fill(fCurrentRecord, null);
 	}
 

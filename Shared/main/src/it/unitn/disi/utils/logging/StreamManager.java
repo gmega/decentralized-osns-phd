@@ -53,8 +53,9 @@ public class StreamManager implements IPlugin {
 		}
 
 		// Default streams.
-		add(LogWriterType.STDOUT + " " + LogWriterType.STDOUT);
-		add(LogWriterType.STDERR + " " + LogWriterType.STDERR);
+		add("stdout " + LogWriterType.STDOUT);
+		add("stderr " + LogWriterType.STDERR);
+		add("null " + LogWriterType.NULL);
 	}
 
 	@Override
@@ -73,59 +74,43 @@ public class StreamManager implements IPlugin {
 
 	@Override
 	public String id() {
-		return StreamManager.class.getName();
+		return StreamManager.class.getSimpleName();
 	}
 
-	private synchronized ArrayList<String> add(String s) throws IOException {
-		String[] data = Configuration.getNames(s);
-		String propName = s + "." + PAR_STREAM;
-		ArrayList<String> added = new ArrayList<String>();
+	private synchronized void add(String descriptor) throws IOException {
 
-		for (String datum : data) {
+		String[] spec = descriptor.split(" ");
+		verify(spec, 2, "name and typespec");
+		String name = spec[0];
+		String typeSpec = spec[1];
+		LogWriterType type = LogWriterType.valueOf(typeSpec.toUpperCase());
 
-			if (!datum.startsWith(propName)) {
-				continue;
-			}
+		switch (type) {
+		case STDOUT:
+			fStreams.put(name, System.out);
+			break;
 
-			String[] spec = Configuration.getString(datum).split(" ");
+		case STDERR:
+			fStreams.put(name, System.err);
+			break;
 
-			verify(spec, 2, "name and typespec");
+		case FILE:
+			verify(spec, 3, "output filename");
+			fStreams.put(name, fileOutputStream(spec[2]));
+			break;
 
-			String name = spec[0];
-			String typeSpec = spec[1];
-			LogWriterType type = LogWriterType.valueOf(typeSpec.toUpperCase());
+		case GZIPFILE:
+			verify(spec, 3, "output filename");
+			fStreams.put(name, gzippedOutputStream(spec[2]));
+			break;
 
-			switch (type) {
-			case STDOUT:
-				fStreams.put(name, System.out);
-				break;
+		case NULL:
+			fStreams.put(name, NULL);
+			break;
 
-			case STDERR:
-				fStreams.put(name, System.err);
-				break;
-
-			case FILE:
-				verify(spec, 3, "output filename");
-				fStreams.put(name, fileOutputStream(spec[2]));
-				break;
-
-			case GZIPFILE:
-				verify(spec, 3, "output filename");
-				fStreams.put(name, gzippedOutputStream(spec[2]));
-				break;
-
-			case NULL:
-				fStreams.put(name, NULL);
-				break;
-
-			default:
-				throw new IllegalArgumentException("Unknown type " + type + ".");
-			}
-
-			added.add(name);
+		default:
+			throw new IllegalArgumentException("Unknown type " + type + ".");
 		}
-
-		return added;
 	}
 
 	/**
@@ -179,26 +164,11 @@ public class StreamManager implements IPlugin {
 	}
 
 	private OutputStream fileOutputStream(String string) throws IOException {
-		OutputStream stream = fStreams.get(string);
-		if (stream == null) {
-			stream = new BufferedOutputStream(
-					new FileOutputStream(file(string)));
-			fStreams.put(string, stream);
-		}
-
-		return stream;
+		return new BufferedOutputStream(new FileOutputStream(file(string)));
 	}
 
 	private OutputStream gzippedOutputStream(String string) throws IOException {
-		OutputStream stream = fStreams.get(string);
-		if (stream == null) {
-			// Creates a GZIP output stream with a 512 kb buffer.
-			stream = new GZIPOutputStream(new FileOutputStream(file(string,
-					"gz")));
-			fStreams.put(string, stream);
-		}
-
-		return stream;
+		return new GZIPOutputStream(new FileOutputStream(file(string, "gz")));
 	}
 
 	private File file(String s) {

@@ -316,6 +316,7 @@ public class Configuration {
 					"Setting configuration was attempted twice.");
 		}
 		config = new ConfigContainer(p, false);
+		config.getPluginContainer().start();
 	}
 
 	// -------------------------------------------------------------------

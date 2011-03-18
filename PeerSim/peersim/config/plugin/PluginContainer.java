@@ -51,6 +51,10 @@ public class PluginContainer extends NullResolver {
 				fDescriptorRegistry.put(descriptor.id() + ".descriptor",
 						descriptor);
 
+				System.err.println(PluginContainer.class.getSimpleName()
+						+ ": start plug-in " + descriptor.id() + " ("
+						+ descriptor.pluginClass().getName() + ").");
+
 				// 2. Create.
 				IPlugin plugin = creator.create(
 						descriptor.configurationPrefix(),
@@ -194,8 +198,9 @@ public class PluginContainer extends NullResolver {
 				Integer neighbor = current.counter.next();
 				// Ooops, cycle found.
 				if (s.processing[neighbor]) {
-					throw new IllegalStateException("Plugin dependencies have cycles: " 
-							+ cycleToString(s.stack, s.graph));
+					throw new IllegalStateException(
+							"Plugin dependencies have cycles: "
+									+ cycleToString(s.stack, s.graph));
 				}
 
 				if (!s.processed[neighbor]) {
@@ -215,7 +220,8 @@ public class PluginContainer extends NullResolver {
 		StringBuffer buffer = new StringBuffer();
 		String first = null;
 		for (DFSFrame dfsFrame : aCycle) {
-			IPluginDescriptor plugin = (IPluginDescriptor) graph.getNode(dfsFrame.id);
+			IPluginDescriptor plugin = (IPluginDescriptor) graph
+					.getNode(dfsFrame.id);
 			buffer.append("(");
 			buffer.append(plugin.id());
 			buffer.append(") <- ");
@@ -223,7 +229,7 @@ public class PluginContainer extends NullResolver {
 				first = plugin.id();
 			}
 		}
-		
+
 		buffer.append("(");
 		buffer.append(first);
 		buffer.append(")");

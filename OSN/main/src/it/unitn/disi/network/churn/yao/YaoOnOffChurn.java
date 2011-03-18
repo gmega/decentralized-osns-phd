@@ -2,6 +2,7 @@ package it.unitn.disi.network.churn.yao;
 
 import it.unitn.disi.random.IDistribution;
 import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.core.Fallible;
 import peersim.core.Node;
@@ -11,6 +12,7 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 
 	private IDistribution fOn;

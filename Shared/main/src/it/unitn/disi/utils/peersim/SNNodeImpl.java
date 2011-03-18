@@ -5,7 +5,7 @@ import peersim.core.GeneralNode;
 
 public class SNNodeImpl extends GeneralNode implements SNNode {
 	
-	private static final String PRINT_PREFIX = SNNodeImpl.class.getName();
+	private static final String PRINT_PREFIX = SNNodeImpl.class.getSimpleName();
 	
 	// Awful. I desperately need a tabular log writing infrastructure.
 	private static boolean fPrintedHeader = false;
