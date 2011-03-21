@@ -13,7 +13,7 @@ public class FakeCycleEngine {
 	
 	private final long fRndSeed;
 	
-	public FakeCycleEngine(Collection<Node> network, long rndSeed) {
+	public FakeCycleEngine(Collection<? extends Node> network, long rndSeed) {
 		fNetwork = network.toArray(new Node[network.size()]);
 		fRndSeed = rndSeed;
 	}

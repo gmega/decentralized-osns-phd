@@ -44,7 +44,7 @@ public class DefaultVisibility implements IMessageVisibility {
 		if (i == 0) {
 			return tweet.profile();
 		}
-		return socialNetwork(tweet).getNeighbor(i - 1);
+		return (Node) socialNetwork(tweet).getNeighbor(i - 1);
 	}
 
 	private Linkable socialNetwork(Tweet tweet) {

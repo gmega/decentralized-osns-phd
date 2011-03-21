@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,7 +126,7 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 	}
 	
 	public static int assignSchedule(TestNetworkBuilder builder, int linkable, Long [][] choices) {
-		List<Node> nodes = builder.getNodes();
+		List<? extends Node> nodes = builder.getNodes();
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
 			Node node = nodes.get(i);

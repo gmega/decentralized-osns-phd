@@ -3,7 +3,7 @@ package it.unitn.disi.utils;
 import java.util.Map;
 
 import peersim.config.MissingParameterException;
-import peersim.config.resolvers.StringValueResolver;
+import peersim.config.StringValueResolver;
 
 public class HashMapResolver extends StringValueResolver {
 	

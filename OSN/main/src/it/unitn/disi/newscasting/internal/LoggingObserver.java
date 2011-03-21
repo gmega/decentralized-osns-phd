@@ -1,10 +1,11 @@
-package it.unitn.disi.newscasting;
+package it.unitn.disi.newscasting.internal;
 
 import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_SINGLE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
-import it.unitn.disi.newscasting.internal.IMergeObserver;
+import it.unitn.disi.newscasting.NewscastEvents;
+import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.peersim.SNNode;
 

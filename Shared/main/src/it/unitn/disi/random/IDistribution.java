@@ -11,4 +11,6 @@ public interface IDistribution {
 	 * @return a number sampled from this distribution.
 	 */
 	public double sample();
+	
+	public double expectation();
 }

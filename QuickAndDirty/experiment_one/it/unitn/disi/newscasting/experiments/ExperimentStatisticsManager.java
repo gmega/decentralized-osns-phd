@@ -136,6 +136,11 @@ class UnitExperimentData {
 	 * Number of messages sent by each node.
 	 */
 	private static final int[] fSent = new int[Network.size()];
+	
+	/**
+	 * Number of messages sent by each node which were duplicates.
+	 */
+	private static final int[] fDuplicatesSent = new int[Network.size()];
 
 	/**
 	 * {@link IncrementalStats} for latency statistics.
@@ -192,7 +197,7 @@ class UnitExperimentData {
 		}
 
 		fLatency.add(receiver.uptime());
-		count(sender.getID(), receiver.getID());
+		count(sender.getID(), receiver.getID(), false);
 		return fPending == 0;
 	}
 
@@ -207,12 +212,15 @@ class UnitExperimentData {
 	 *            the node receiving the message.
 	 */
 	public void duplicateReceived(Node sender, Node receiver) {
-		count(sender.getID(), receiver.getID());
+		count(sender.getID(), receiver.getID(), true);
 	}
 
-	private void count(long sender, long receiver) {
+	private void count(long sender, long receiver, boolean dup) {
 		fSent[(int) sender]++;
 		fReceived[(int) receiver]++;
+		if (dup) {
+			fDuplicatesSent[(int)receiver]++;
+		}
 	}
 
 	/**
@@ -375,6 +383,12 @@ class UnitExperimentData {
 		buffer.append("sent");
 		buffer.append(FIELD_SEPARATOR);
 		buffer.append("received");
+		// FIXME uptime not really a load statistic, but a per-node statistic
+		// (as opposed to the latency aggregates, which are per-experiment
+		// statistic). As long as we don't need more of those, I won't
+		// generalize the implementation.
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("uptime");
 		return buffer.toString();
 	}
 
@@ -382,13 +396,13 @@ class UnitExperimentData {
 		StringBuffer buffer = new StringBuffer();
 		// Appends the statistics.
 		for (int i = 0; i < fTweet.destinations(); i++) {
-			appendLoad(buffer, fTweet.destination(i));
+			appendLoad(buffer, (SNNode) fTweet.destination(i));
 			buffer.append("\n");
 		}
 		return buffer.toString();
 	}
 
-	private void appendLoad(StringBuffer buffer, Node node) {
+	private void appendLoad(StringBuffer buffer, SNNode node) {
 		int i = (int) node.getID();
 		buffer.append(LOAD_PREFIX);
 		// 1 - Originator (identifies the unit experiment).
@@ -404,5 +418,7 @@ class UnitExperimentData {
 		// DUPLICATES.
 		buffer.append(fReceived[i]);
 		buffer.append(FIELD_SEPARATOR);
+		// 5 - Uptime.
+		buffer.append(node.uptime());
 	}
 }

@@ -1,4 +1,4 @@
-package it.unitn.disi.network;
+package it.unitn.disi.network.churn.bucketed;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -41,7 +41,7 @@ public class RandomBucketedChurn extends BucketedChurnNetwork {
 
 		// 1. Takes some random nodes back to life.
 		for (int i = 0; i < turnover && DEAD.size() > 0; i++) {
-			DEAD.getRandom();
+			DEAD.selectRandom();
 			resurrect();
 		}
 
@@ -49,7 +49,7 @@ public class RandomBucketedChurn extends BucketedChurnNetwork {
 		int eligible = ALIVE.size();
 		while(DEAD.size() < deathQuota && eligible > 0) {
 			eligible--;
-			Node candidate = ALIVE.getRandom();
+			Node candidate = ALIVE.selectRandom();
 			if (!canDie(candidate)) {
 				continue;
 			}

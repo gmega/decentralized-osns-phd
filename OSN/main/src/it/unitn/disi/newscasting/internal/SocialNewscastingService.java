@@ -28,6 +28,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -61,7 +62,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	/**
 	 * The node assigned to this instance of the social newscasting service.
 	 */
-	private Node fOwner;
+	private SNNode fOwner;
 
 	/**
 	 * Our configuration prefix.
@@ -119,7 +120,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 			throws IOException {
 
 		this(prefix, PeersimUtils.selfPid(prefix), socialNetworkId,
-				configurator(prefix));
+				configurator(prefix, resolver));
 		fResolver = resolver;
 	}
 
@@ -158,10 +159,18 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	// ----------------------------------------------------------------------
 
-	private static IApplicationConfigurator configurator(String prefix) {
-		String klass = Configuration.getString(prefix + "." + CONFIGURATOR,
-				NewscastAppConfigurator.class.getName());
-		return (IApplicationConfigurator) Configuration.getInstance(klass);
+	private static IApplicationConfigurator configurator(String prefix,
+			IResolver resolver) {
+		@SuppressWarnings("unchecked")
+		Class<? extends IApplicationConfigurator> klass = Configuration
+				.getClass(prefix + "." + CONFIGURATOR,
+						NewscastAppConfigurator.class);
+		ObjectCreator creator = new ObjectCreator(resolver);
+		try {
+			return creator.create(prefix, klass);
+		} catch (Exception ex) {
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 	}
 
 	// ----------------------------------------------------------------------
@@ -429,7 +438,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 
 	@Override
 	public void initialize(Node node) {
-		fOwner = node;
+		fOwner = (SNNode) node;
 		this.configure();
 	}
 

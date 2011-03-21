@@ -1,4 +1,4 @@
-package it.unitn.disi.network;
+package it.unitn.disi.network.churn.bucketed;
 
 import it.unitn.disi.utils.collections.StaticVector;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
@@ -88,7 +88,7 @@ public abstract class BucketedChurnNetwork implements Control {
 			fNeedsShuffling = true;
 		}
 
-		public Node getRandom() {
+		public Node selectRandom() {
 			if (fNeedsShuffling) {
 				compactIfNeeded();
 				fNodes.permute();

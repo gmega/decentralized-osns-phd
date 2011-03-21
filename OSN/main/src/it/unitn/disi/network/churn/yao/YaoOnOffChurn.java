@@ -13,24 +13,24 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
+public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> { 
 
 	private IDistribution fOn;
 
 	private IDistribution fOff;
 
-	private double fScaling;
+	private final double fScaling;
 
 	public YaoOnOffChurn(@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute(Attribute.PREFIX) String prefix) {
+			@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute(value = "timescale") double scaling) {
 		super(prefix, resolver);
+		fScaling = scaling;
 	}
 
-	public void init(IDistribution on, IDistribution off, double scaling,
-			Node node) {
+	public void init(IDistribution on, IDistribution off, Node node) {
 		fOn = on;
 		fOff = off;
-		fScaling = scaling;
 		processState(node, NodeState.OFF);
 	}
 
@@ -71,11 +71,15 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 	}
 
 	private long downtime(Node node) {
-		return Math.round(fScaling * fOff.sample());
+		double dt = fScaling * fOff.sample();
+		System.out.println("D:" + dt);
+		return Math.round(dt);
 	}
 
 	private long uptime(Node node) {
-		return Math.round(fScaling * fOn.sample());
+		double ut = fScaling * fOn.sample();
+		System.out.println("U:" + ut);
+		return Math.round(ut);
 	}
 
 }

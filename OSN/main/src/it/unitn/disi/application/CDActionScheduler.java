@@ -9,41 +9,39 @@ import peersim.edsim.EDProtocol;
 import peersim.edsim.PeekableHeap;
 import peersim.edsim.PriorityQ.Event;
 
+/**
+ * Schedules events for cycle-driven simulations.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class CDActionScheduler implements Control {
 
 	private static PeekableHeap fHeap;
 
 	public static void add(long delay, Object event, Node node, int pid) {
-		if (!isActive()) {
-			throw new IllegalStateException("Scheduler control hasn't been " +
-					"installed (configuration error?).");
-		}
-		fHeap.add(delay + CommonState.getTime(), event, node, (byte) pid);
-	}
-	
-	public static boolean isActive() {
-		return fHeap != null;
+		heap().add(delay + CommonState.getTime(), event, node, (byte) pid);
 	}
 
-	@Attribute("executor")
-	private int fExecutorId;
-	
-	public CDActionScheduler() {
-		if (fHeap != null) {
-			throw new IllegalStateException("Only one instance allowed.");
+	private static PeekableHeap heap() {
+		if (fHeap == null) {
+			fHeap = new PeekableHeap();
 		}
-		fHeap = new PeekableHeap();
+		return fHeap;
+	}
+
+	public CDActionScheduler() {
 	}
 
 	@Override
 	public boolean execute() {
-		while (CommonState.getTime() >= fHeap.peek()) {
-			Event next = fHeap.removeFirst();
+		PeekableHeap heap = heap();
+		while (CommonState.getTime() >= heap.peek()) {
+			Event next = heap.removeFirst();
 			Node node = next.node;
 			@SuppressWarnings("unchecked")
 			EDProtocol<Object> executor = (EDProtocol<Object>) node
-					.getProtocol(fExecutorId);
+					.getProtocol(next.pid);
 			executor.processEvent(node, next.pid, next.event);
 		}
 

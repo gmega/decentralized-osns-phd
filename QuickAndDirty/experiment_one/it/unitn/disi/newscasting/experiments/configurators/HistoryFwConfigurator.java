@@ -11,6 +11,7 @@ import it.unitn.disi.newscasting.experiments.PredicateHeuristic;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
+import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
@@ -55,7 +56,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		RANDOM, CENTRALITY, CENTRALITY_PSI
 	}
 
-	public static final String PAR_HISTORYLESS = "historyless";
+	public static final String PAR_HISTORY_PROTOCOL = "history_protocol";
 
 	// ----------------------------------------------------------------------
 	// Instance-shared storage.
@@ -94,12 +95,19 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	@Override
 	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		if (fResolver.getBoolean(prefix, PAR_HISTORYLESS)) {
+		String protocol = fResolver.getString(prefix, PAR_HISTORY_PROTOCOL);
+		if (protocol.equals("historyless")) {
 			fStrategy = new HistoryForwarding(protocolId, socialNetworkId,
 					fResolver.getInt(prefix, HistoryForwarding.PAR_CHUNK_SIZE));
-		} else {
+		} else if (protocol.equals("bloom")) {
 			fStrategy = new BloomFilterHistoryFw(protocolId, socialNetworkId,
 					fResolver, prefix);
+		} else if (protocol.equals("bitset")) {
+			fStrategy = new BitsetHistoryFw(protocolId, socialNetworkId,
+					fResolver, prefix);
+		} else {
+			throw new IllegalArgumentException(
+					"Invalid history protocol variation <<" + protocol + ">>.");
 		}
 		return fStrategy;
 	}

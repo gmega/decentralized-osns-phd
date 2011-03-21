@@ -184,7 +184,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 		return 0;
 	}
 
-	public void tweeted(Node owner, int sequenceNumber) {
+	public void tweeted(SNNode owner, int sequenceNumber) {
 		// Queue one forwarding op per component.
 		ComponentComputationService css = (ComponentComputationService) owner
 				.getProtocol(fCCSId);
@@ -202,7 +202,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 		}
 	}
 
-	public void eventDelivered(Node sender, Node receiver, Node owner,
+	public void eventDelivered(SNNode sender, SNNode receiver, SNNode owner,
 			int start, int end) {
 
 		// Sanity check.

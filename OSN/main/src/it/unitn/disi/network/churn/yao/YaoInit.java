@@ -10,6 +10,7 @@ import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.logging.OutputsStructuredLog;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -18,7 +19,7 @@ import peersim.core.Node;
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>.
  */
-@OutputsStructuredLog(key="YaoInit", fields={"id","index","li","di"})
+@OutputsStructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli", "edi", "ai" })
 @AutoConfig
 public class YaoInit implements Control {
 
@@ -39,17 +40,17 @@ public class YaoInit implements Control {
 
 		@Override
 		public IDistribution uptimeDistribution(double li) {
-			return new ShiftedPareto(3.0, 2.0 * li);
+			return new ShiftedPareto(3.0, 2.0 * li, CommonState.r);
 		}
 
 		@Override
 		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(3.0, 2.0 * di);
+			return new ShiftedPareto(3.0, 2.0 * di, CommonState.r);
 		}
 
 		@Override
 		public String id() {
-			return "HT";
+			return "H";
 		}
 
 	};
@@ -59,17 +60,17 @@ public class YaoInit implements Control {
 
 		@Override
 		public IDistribution uptimeDistribution(double li) {
-			return new ShiftedPareto(1.5, li / 2.0);
+			return new ShiftedPareto(1.5, li / 2.0, CommonState.r);
 		}
 
 		@Override
 		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(1.5, di / 2.0);
+			return new ShiftedPareto(1.5, di / 2.0, CommonState.r);
 		}
 
 		@Override
 		public String id() {
-			return "VHT";
+			return "VH";
 		}
 
 	};
@@ -79,17 +80,17 @@ public class YaoInit implements Control {
 
 		@Override
 		public IDistribution uptimeDistribution(double li) {
-			return new Exponential(1.0 / li);
+			return new Exponential(1.0 / li, CommonState.r);
 		}
 
 		@Override
 		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(3.0, 2.0 * di);
+			return new ShiftedPareto(3.0, 2.0 * di, CommonState.r);
 		}
 
 		@Override
 		public String id() {
-			return "EXP";
+			return "E";
 		}
 
 	};
@@ -101,7 +102,7 @@ public class YaoInit implements Control {
 	 * Alpha parameters for the shifted Pareto distributions used to generate
 	 * uptime and downtime averages.
 	 */
-	private static final double ALPHA_UPTIME = 3.0;
+	private static final double ALPHA = 3.0;
 
 	private static final double BETA_UPTIME = 1.0;
 
@@ -110,11 +111,11 @@ public class YaoInit implements Control {
 	private int fYaoChurnId;
 
 	private String fMode;
-	
+
 	private TableWriter fLog;
-	
+
 	public YaoInit(@Attribute("protocol") int yaoChurnId,
-			@Attribute("mode") String mode, 
+			@Attribute("mode") String mode,
 			@Attribute("TabularLogManager") TabularLogManager logManager) {
 		fYaoChurnId = yaoChurnId;
 		fMode = mode;
@@ -124,9 +125,10 @@ public class YaoInit implements Control {
 	@Override
 	public boolean execute() {
 		// Distributions used to generate the averages.
-		IDistribution upAverage = new ShiftedPareto(ALPHA_UPTIME, BETA_UPTIME);
-		IDistribution downAverage = new ShiftedPareto(ALPHA_UPTIME,
-				BETA_DOWNTIME);
+		IDistribution upAverage = new ShiftedPareto(ALPHA, BETA_UPTIME,
+				CommonState.r);
+		IDistribution downAverage = new ShiftedPareto(ALPHA, BETA_DOWNTIME,
+				CommonState.r);
 		// Assigns different distributions to each node.
 		IMode mode = mode(fMode);
 		for (int i = 0; i < Network.size(); i++) {
@@ -135,18 +137,27 @@ public class YaoInit implements Control {
 					.getProtocol(fYaoChurnId);
 			double li = upAverage.sample();
 			double di = downAverage.sample();
-			printParameters(i, current, li, di);
-			churn.init(mode.uptimeDistribution(li),
-					mode.downtimeDistribution(di), 1.0, current);
+			IDistribution uptime = mode.uptimeDistribution(li);
+			IDistribution downtime = mode.downtimeDistribution(di);
+			churn.init(uptime, downtime, current);
+			printParameters(i, current, li, di, uptime.expectation(), downtime.expectation());
 		}
 		return false;
 	}
 
-	private void printParameters(int index, Node node, double li, double di) {
+	private void printParameters(int index, Node node, double li, double di, double eli, double edi) {
 		fLog.set("index", Integer.toString(index));
 		fLog.set("id", Long.toString(node.getID()));
 		fLog.set("li", Double.toString(li));
 		fLog.set("di", Double.toString(di));
+		
+		fLog.set("eli", Double.toString(eli)); // Expectation of assigned uptime distribution.
+		fLog.set("edi", Double.toString(edi)); // Expectation of assigned downtime distribution.
+		
+		// Availability.
+		double availability = li/(li + di);
+		fLog.set("ai", Double.toString(availability));
+		
 		fLog.emmitRow();
 	}
 

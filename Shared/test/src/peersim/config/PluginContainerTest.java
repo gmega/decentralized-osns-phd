@@ -26,6 +26,7 @@ public class PluginContainerTest extends PeerSimTest {
 		URL conf = TestUtils.locate("plugintest.properties");
 		ConfigContainer confContainer = new ConfigContainer(new ParsedProperties(
 				new File(conf.toURI()).getAbsolutePath()), false);
+		confContainer.getPluginContainer().start();
 		PluginContainer container = confContainer.getPluginContainer();
 		plAssert(container, "p3", 0);
 		plAssert(container, "p1", 3);
@@ -38,6 +39,7 @@ public class PluginContainerTest extends PeerSimTest {
 		try {
 			ConfigContainer confContainer = new ConfigContainer(new ParsedProperties(
 					new File(conf.toURI()).getAbsolutePath()), false);
+			confContainer.getPluginContainer().start();
 			Assert.fail();
 		} catch (IllegalStateException ex) {
 			

@@ -2,7 +2,6 @@ package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.LoggingObserver;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -19,17 +18,11 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
-import peersim.config.resolvers.ConfigContainerResolver;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
 
 @AutoConfig
 public class NewscastAppConfigurator implements IApplicationConfigurator {
-
-	/**
-	 * Reference to the component computation service.
-	 */
-	private static final String PAR_CCSID = "component_computer";
 
 	/**
 	 * Prefix for parameters related to anti entropy.

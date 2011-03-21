@@ -5,11 +5,9 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
-import it.unitn.disi.utils.MutableSimplePair;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Set;
 
 import peersim.config.IResolver;
@@ -65,8 +63,6 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * receive, as we need to know what to send when we pick a node.
 	 */
 	private HashMultimap<Node, Tweet> fPending = HashMultimap.create();
-
-	private LinkedList<MutableSimplePair<Tweet, Long>> fTimeout = new LinkedList<MutableSimplePair<Tweet, Long>>();
 
 	public HistoryForwarding(int adaptableId, int socialNetworkId,
 			IResolver resolver, String prefix) {

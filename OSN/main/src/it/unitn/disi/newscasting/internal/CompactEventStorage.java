@@ -380,7 +380,7 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 
 		for (int i = start; i <= end; i++) {
 			observer.eventDelivered((SNNode) sender, (SNNode) receiver,
-					new Tweet(key, i, fVisibility), false);
+					new Tweet((SNNode) key, i, fVisibility), false);
 		}
 	}
 
@@ -499,7 +499,8 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			if (!hasNext()) {
 				throw new NoSuchElementException();
 			}
-			Tweet next = new Tweet(fNode, fCurrent++, fVisibility, Tweet.UNKNOWN_PARENT);
+			Tweet next = new Tweet((SNNode) fNode, fCurrent++, fVisibility,
+					Tweet.UNKNOWN_PARENT);
 			if (fCurrent == fNext) {
 				nextInterval();
 			}

@@ -21,7 +21,7 @@ import peersim.core.Network;
  * @author giuliano
  */
 @AutoConfig
-@OutputsStructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "timedelta"})
+@OutputsStructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "departures", "timedelta"})
 public class NetworkStatistics implements Control {
 	
 	private long fLastRun;
@@ -34,7 +34,7 @@ public class NetworkStatistics implements Control {
 	
 	@Override
 	public boolean execute() {
-		int up = 0, down = 0, arrivals = 0;
+		int up = 0, down = 0, arrivals = 0, departures = 0;
 		for (int i = 0; i < Network.size(); i++) {
 			SNNode node = (SNNode) Network.get(i);
 			if (node.isUp()) {
@@ -43,6 +43,9 @@ public class NetworkStatistics implements Control {
 					arrivals++;
 				}
 			} else {
+				if (node.lastStateChange() <= fLastRun) {
+					departures++;
+				}
 				down++;
 			}
 		}
@@ -50,6 +53,7 @@ public class NetworkStatistics implements Control {
 		fLog.set("up", Integer.toString(up));
 		fLog.set("down", Integer.toString(down));
 		fLog.set("arrivals", Integer.toString(arrivals));
+		fLog.set("departures", Integer.toString(departures));
 		fLog.set("timedelta", Long.toString(CommonState.getTime() - fLastRun));
 		fLog.emmitRow();
 		

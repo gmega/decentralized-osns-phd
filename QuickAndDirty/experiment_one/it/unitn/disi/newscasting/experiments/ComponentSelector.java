@@ -46,7 +46,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	private final IReference<IPeerSelector> fDelegate;
 
 	private final IReference<IUtilityFunction<Node, Integer>> fUtility;
-	
+
 	// XXX HACK!!
 	private final ICoreInterface fIntf;
 
@@ -55,7 +55,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	private int[] fRankedComponents;
 
 	public ComponentSelector(String prefix, IResolver resolver,
-			IReference<IPeerSelector> delegate, 
+			IReference<IPeerSelector> delegate,
 			// XXX HACK!!
 			ICoreInterface intf) {
 		this(new ProtocolReference<ComponentComputationService>(
@@ -70,9 +70,8 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			IReference<IPeerSelector> delegate,
 			IReference<IUtilityFunction<Node, Integer>> utility,
 			boolean stopOnceDone,
-			//XXX HACK!
-			ICoreInterface intf
-			) {
+			// XXX HACK!
+			ICoreInterface intf) {
 		fComponents = components;
 		fDelegate = delegate;
 		fUtility = utility;
@@ -94,7 +93,33 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			return fDelegate.get(source).selectPeer(source, filter);
 		}
 		ComponentComputationService service = fComponents.get(source);
-		List<Integer> allowed = service.members(nextComponent(source));
+		int[] rankedComponents = rankedComponents(source);
+
+		// Iterates through all unreached components.
+		Node peer = null;
+		for (int i = 0; i < rankedComponents.length; i++) {
+			if (rankedComponents[i] != ALREADY_SELECTED) {
+				// Tries this one.
+				peer = trySelect(source, rankedComponents[i], filter, service);
+				// Got a peer. Reduces priority for this component.
+				if (peer != null) {
+					rankedComponents[i] = ALREADY_SELECTED;
+					break;
+				}
+			}
+		}
+
+		// Final attempt using the delegate...
+		if (peer == null) {
+			peer = fDelegate.get(source).selectPeer(source, filter);
+		}
+		
+		return peer;
+	}
+
+	private Node trySelect(Node source, int idx, ISelectionFilter filter,
+			ComponentComputationService service) {
+		List<Integer> allowed = service.members(idx);
 		allow(allowed);
 		Node result = fDelegate.get(source).selectPeer(source,
 				composeFilter(this, filter));
@@ -127,21 +152,11 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		return true;
 	}
 
-	private int nextComponent(Node source) {
+	private int [] rankedComponents(Node source) {
 		if (fRankedComponents == null) {
 			fRankedComponents = rankComponents(source);
 		}
-
-		// Picks the next component.
-		for (int i = 0; i < fRankedComponents.length; i++) {
-			if (fRankedComponents[i] != ALREADY_SELECTED) {
-				int selected = fRankedComponents[i];
-				fRankedComponents[i] = ALREADY_SELECTED;
-				return selected;
-			}
-		}
-		// Shouldn't reach here.
-		throw new IllegalStateException("Internal error");
+		return fRankedComponents;
 	}
 
 	private int[] rankComponents(final Node source) {

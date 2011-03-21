@@ -6,9 +6,12 @@ import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
+import it.unitn.disi.newscasting.internal.LoggingObserver;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
+import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
+import it.unitn.disi.newscasting.internal.forwarding.CachingHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.test.framework.EventMatcher;
 import it.unitn.disi.test.framework.FakeCycleEngine;
@@ -31,8 +34,33 @@ import peersim.config.IResolver;
 import peersim.core.Node;
 
 public class HistoryForwardingTest extends PeerSimTest {
+	
+	private int mode;
+	
+	@Test
+	public void bloomFilterIndirectDissemination() {
+		mode = CustomConfigurator.BLOOMFILTERS;
+		this.indirectDissemination();
+	}
+	
+	@Test
+	public void bloomFilterLearnsHistoryFromDuplicate() {
+		mode = CustomConfigurator.BLOOMFILTERS;
+		this.learnsHistoryFromDuplicate();
+	}
 
 	@Test
+	public void bitSetIndirectDissemination() {
+		mode = CustomConfigurator.BITSET;
+		this.indirectDissemination();
+	}
+	
+	@Test
+	public void bitSetLearnsHistoryFromDuplicate() {
+		mode = CustomConfigurator.BITSET;
+		this.learnsHistoryFromDuplicate();
+	}
+
 	public void indirectDissemination(){
 
 		TestNetworkBuilder builder = new TestNetworkBuilder();
@@ -56,14 +84,14 @@ public class HistoryForwardingTest extends PeerSimTest {
 		});
 		
 		ByteArrayOutputStream log = new ByteArrayOutputStream();
-		List <Node> nodes = builder.getNodes(); 
+		List <? extends Node> nodes = builder.getNodes(); 
 		// Creates a root tweet which will be known by everyone.
 		Node profileOwner = nodes.get(0);
 		IMessageVisibility vis = new DefaultVisibility(SOCIAL_NETWORK_ID);
 		Tweet root = new Tweet(profileOwner, 0, vis);
 		
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder, SOCIAL_NETWORK_ID,
-				SELECTOR_PID, log, nodes, root, true);
+				SELECTOR_PID, log, nodes, root, mode);
 		
 		builder.done();
 
@@ -78,7 +106,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		for (Node node : nodes) {
 			ICoreInterface snscore = (ICoreInterface) node.getProtocol(SOCIAL_NEWSCASTING_ID);
 			IContentExchangeStrategy strategy = (IContentExchangeStrategy) snscore
-					.getStrategy(BloomFilterHistoryFw.class);
+					.getStrategy(CachingHistoryFw.class);
 			
 			// All instances should be quiescent.
 			Assert.assertEquals("Node:" + node.getID(), IContentExchangeStrategy.ActivityStatus.QUIESCENT, strategy.status());
@@ -101,48 +129,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		
 		matcher.match(new ByteArrayInputStream(log.toByteArray()));
 	}
-	
-	@Test
-	public void doesntSendBackToSender() {
-		TestNetworkBuilder builder = new TestNetworkBuilder();
-		builder.addNodes(2);
 		
-		final int CYCLES = 4;
-		
-		final int SOCIAL_NETWORK_ID = builder.assignLinkable(new long[][] {
-				{1},
-				{0}
-		});
-				
-		final int SELECTOR_PID = DeterministicSelector.assignSchedule(builder,
-				SOCIAL_NETWORK_ID, new Long[][] {
-			{1L,	null,	1L,		null},
-			{null, 	0L,		null,	0L	}
-		});
-
-		ByteArrayOutputStream log = new ByteArrayOutputStream();
-		List<Node> nodes = builder.getNodes();
-
-		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder,
-				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, false);
-		
-		builder.done();
-		
-		Node root = nodes.get(0);
-		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);
-		Tweet post = snsapp.postToFriends();
-		
-		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
-		engine.run(CYCLES);
-
-		EventMatcher matcher = new EventMatcher(new EventCodec(Byte.class, NewscastEvents.values()));
-		matcher.addEvent(NewscastEvents.TWEETED.magicNumber(), post.poster.getID(), post.sequenceNumber, 0L);
-		matcher.addEvent(NewscastEvents.DELIVER_SINGLE_TWEET.magicNumber(), post.poster.getID(), 0L, 1L, post.sequenceNumber, 0L);
-		
-		matcher.match(new ByteArrayInputStream(log.toByteArray()));
-	}
-		
-	@Test
 	public void learnsHistoryFromDuplicate() {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(4);
@@ -165,10 +152,10 @@ public class HistoryForwardingTest extends PeerSimTest {
 		});
 		
 		ByteArrayOutputStream log = new ByteArrayOutputStream();
-		List<Node> nodes = builder.getNodes();
+		List<? extends Node> nodes = builder.getNodes();
 
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder,
-				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, true);
+				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, mode);
 		
 		builder.done();
 		
@@ -189,17 +176,57 @@ public class HistoryForwardingTest extends PeerSimTest {
 		matcher.addEvent(NewscastEvents.DUPLICATE_TWEET.magicNumber(), post.poster.getID(), 0L, 2L, post.sequenceNumber, 3L);
 		matcher.match(new ByteArrayInputStream(log.toByteArray()));
 	}
+	
+	@Test
+	public void doesntSendBackToSender() {
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+		builder.addNodes(2);
+		
+		final int CYCLES = 4;
+		
+		final int SOCIAL_NETWORK_ID = builder.assignLinkable(new long[][] {
+				{1},
+				{0}
+		});
+				
+		final int SELECTOR_PID = DeterministicSelector.assignSchedule(builder,
+				SOCIAL_NETWORK_ID, new Long[][] {
+			{1L,	null,	1L,		null},
+			{null, 	0L,		null,	0L	}
+		});
+
+		ByteArrayOutputStream log = new ByteArrayOutputStream();
+		List<? extends Node> nodes = builder.getNodes();
+
+		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder,
+				SOCIAL_NETWORK_ID, SELECTOR_PID, log, nodes, null, CustomConfigurator.NOHIST);
+		
+		builder.done();
+		
+		Node root = nodes.get(0);
+		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);
+		Tweet post = snsapp.postToFriends();
+		
+		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
+		engine.run(CYCLES);
+
+		EventMatcher matcher = new EventMatcher(new EventCodec(Byte.class, NewscastEvents.values()));
+		matcher.addEvent(NewscastEvents.TWEETED.magicNumber(), post.poster.getID(), post.sequenceNumber, 0L);
+		matcher.addEvent(NewscastEvents.DELIVER_SINGLE_TWEET.magicNumber(), post.poster.getID(), 0L, 1L, post.sequenceNumber, 0L);
+		
+		matcher.match(new ByteArrayInputStream(log.toByteArray()));
+	}
 
 	private int initSocialNewscasting(TestNetworkBuilder builder,
 			final int SOCIAL_NETWORK_ID, final int SELECTOR_PID,
-			ByteArrayOutputStream log, List<Node> nodes, Tweet root, boolean useHistory) {
+			ByteArrayOutputStream log, List<? extends Node> nodes, Tweet root, int mode) {
 		int pid = -1;
 		for (int i = 0; i < nodes.size(); i++) {
 			SocialNewscastingService sns = new SocialNewscastingService(null,
 					Math.max(SOCIAL_NETWORK_ID, SELECTOR_PID) + 1,
 					SOCIAL_NETWORK_ID, new CustomConfigurator(
 							new ProtocolReference<IPeerSelector>(SELECTOR_PID),
-							useHistory));
+							mode));
 			sns.initialize(nodes.get(i));
 
 			LoggingObserver logger = new LoggingObserver(log, true);
@@ -223,15 +250,21 @@ public class HistoryForwardingTest extends PeerSimTest {
 		}
 	}
 	
-	class CustomConfigurator implements IApplicationConfigurator {
+	static class CustomConfigurator implements IApplicationConfigurator {
+		
+		public static final int NOHIST = 0;
+		
+		public static final int BLOOMFILTERS = 1;
+		
+		public static final int BITSET = 2;
 		
 		private IReference<IPeerSelector> fSelector;
 		
-		private boolean fUseHistories;
+		private int fMode;
 		
-		public CustomConfigurator(IReference<IPeerSelector> selector, boolean useHistories) {
+		public CustomConfigurator(IReference<IPeerSelector> selector, int mode) {
 			fSelector = selector;
-			fUseHistories = useHistories;
+			fMode = mode;
 		}
 
 		@Override
@@ -239,15 +272,34 @@ public class HistoryForwardingTest extends PeerSimTest {
 		public void configure(SocialNewscastingService app, IResolver resolver, String prefix, int protocolId,
 				int socialNetworkId) {
 			HistoryForwarding fw;
-			if (fUseHistories) {
-				fw = new BloomFilterHistoryFw(protocolId, socialNetworkId, 1, 50, 0.001);
-				app.addStrategy(new Class[]{ BloomFilterHistoryFw.class, HistoryForwarding.class }, 
-						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw));
-			} else {
+			switch(fMode) {
+			
+			case BLOOMFILTERS:
+				fw = new BloomFilterHistoryFw(protocolId, socialNetworkId, 1,
+						50, 0.001);
+				app.addStrategy(new Class[] { BloomFilterHistoryFw.class,
+						CachingHistoryFw.class, HistoryForwarding.class }, fw,
+						fSelector, new FallThroughReference<ISelectionFilter>(
+								fw));
+				break;
+			
+			case NOHIST:
 				fw = new HistoryForwarding(protocolId, socialNetworkId, 1);
-				app.addStrategy(new Class[]{ HistoryForwarding.class }, 
-						fw, fSelector, new FallThroughReference<ISelectionFilter>(fw));
-
+				app.addStrategy(new Class[] { HistoryForwarding.class }, fw,
+						fSelector, new FallThroughReference<ISelectionFilter>(
+								fw));
+				break;
+			
+			case BITSET:
+				fw = new BitsetHistoryFw(protocolId, socialNetworkId, 1, 50);
+				app.addStrategy(new Class[] { BitsetHistoryFw.class,
+						CachingHistoryFw.class, HistoryForwarding.class }, fw,
+						fSelector, new FallThroughReference<ISelectionFilter>(
+								fw));
+				break;
+			
+			default:
+				throw new IllegalArgumentException();
 			}
 			app.addSubscriber(fw);
 		}
