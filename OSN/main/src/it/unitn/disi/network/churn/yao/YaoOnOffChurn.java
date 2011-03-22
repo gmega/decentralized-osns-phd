@@ -49,6 +49,7 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 		case ON:
 			scheduleUptime(node);
 			break;
+			
 		}
 	}
 
@@ -71,15 +72,11 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 	}
 
 	private long downtime(Node node) {
-		double dt = fScaling * fOff.sample();
-		System.out.println("D:" + dt);
-		return Math.round(dt);
+		return (long) Math.ceil(fScaling * fOff.sample());
 	}
 
 	private long uptime(Node node) {
-		double ut = fScaling * fOn.sample();
-		System.out.println("U:" + ut);
-		return Math.round(ut);
+		return (long) Math.ceil(fScaling * fOn.sample());
 	}
 
 }
