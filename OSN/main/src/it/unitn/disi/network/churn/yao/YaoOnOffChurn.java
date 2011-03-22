@@ -8,12 +8,25 @@ import peersim.core.Fallible;
 import peersim.core.Node;
 
 /**
- * Yao's on-off churn model.
+ * <a href="http://dx.doi.org/10.1109/ICNP.2006.320196">Yao's on-off churn
+ * model</a> assigns an ON/OFF renewal process to each node in the network.<BR>
+ * <BR>
+ * Downtime and uptime are drawn from separate, arbitrary distributions F_{i}
+ * and G_{i}, which are differ for each node, thus allowing heterogeneity to be
+ * modeled. <BR>
+ * <BR>
+ * Instances of {@link YaoOnOffChurn} must be initialized by calling
+ * {@link #init(IDistribution, IDistribution, Node)} on each nodebefore the
+ * simulation starts. Initializers should supply {@link IDistribution} objects
+ * for uptime and downtime. <BR>
+ * Values returned by {@link IDistribution#sample()} are converted to simulation
+ * time by multiplying it by a time scale parameter, which should be supplied
+ * during initial configuration.
  * 
  * @author giuliano
  */
 @AutoConfig
-public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> { 
+public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 
 	private IDistribution fOn;
 
@@ -49,7 +62,7 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 		case ON:
 			scheduleUptime(node);
 			break;
-			
+
 		}
 	}
 
@@ -59,8 +72,7 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 		// Initializes the node.
 		reinit(node);
 		// Schedules uptime.
-		this.scheduleTransition(uptime(node), node, NodeState.ON,
-				NodeState.OFF);
+		this.scheduleTransition(uptime(node), node, NodeState.ON, NodeState.OFF);
 	}
 
 	private void scheduleDowntime(Node node) {
