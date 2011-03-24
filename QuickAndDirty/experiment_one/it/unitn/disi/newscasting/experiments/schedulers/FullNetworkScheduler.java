@@ -1,6 +1,4 @@
-package it.unitn.disi.util;
-
-import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
+package it.unitn.disi.newscasting.experiments.schedulers;
 
 import java.util.Iterator;
 
@@ -15,7 +13,7 @@ public class FullNetworkScheduler implements Iterable<Integer> {
 
 	@Override
 	public Iterator<Integer> iterator() {
-		return new PeekingIteratorAdapter<Integer>(new Iterator<Integer>() {
+		return new Iterator<Integer>() {
 
 			private int fCurrent = 0;
 
@@ -34,6 +32,6 @@ public class FullNetworkScheduler implements Iterable<Integer> {
 				throw new UnsupportedOperationException();
 			}
 
-		});
+		};
 	}
 }

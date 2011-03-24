@@ -81,8 +81,7 @@ public class TimeoutController implements IEventObserver, EDProtocol<Object> {
 
 	private void startClock(Node node) {
 		IScheduler<Object> scheduler = fSchedulerRef.get(node);
-		scheduler.schedule(getTime() + fTimeReserve, fSelfPid, node,
-				SHUTDOWN_EVT);
+		scheduler.schedule(fTimeReserve, fSelfPid, node, SHUTDOWN_EVT);
 	}
 
 	protected long getTime() {

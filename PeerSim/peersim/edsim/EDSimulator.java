@@ -292,7 +292,7 @@ private static boolean executeNext() {
 		}
 		return ctrl.execute();
 	}
-	else if (ev.node != Network.prototype && ev.node.isUp() )
+	else if (ev.node != Network.prototype)// && ev.node.isUp() )
 	{
 		CommonState.setPid(pid);
 		CommonState.setNode(ev.node);

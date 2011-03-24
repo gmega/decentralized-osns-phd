@@ -1,6 +1,5 @@
 package it.unitn.disi.application;
 
-import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Control;

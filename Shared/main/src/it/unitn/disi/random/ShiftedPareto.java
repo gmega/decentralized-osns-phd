@@ -5,7 +5,13 @@ import java.util.Random;
 /**
  * Generates a stream of numbers distributed according to a "shifted Pareto"
  * distribution, that is, a Pareto distribution whose PDF has been shifted to
- * start at x = 0.
+ * start at x = 0.<BR>
+ * <BR>
+ * Formulas for sampling and expectation taken from the generalized Pareto
+ * distribution on <a href= "http://en.wikipedia.org/wiki/Pareto_distribution"
+ * >Wikipedia</a>, but with parameters properly converted from <a
+ * href="http://dx.doi.org/10.1109/ICNP.2006.320196">Yao's heterogeneous churn
+ * paper</a>.
  * 
  * @author giuliano
  * 
@@ -15,7 +21,7 @@ public class ShiftedPareto implements IDistribution {
 	private final double fAlpha;
 
 	private final double fBeta;
-	
+
 	private final Random fRand;
 
 	public ShiftedPareto(double alpha, double beta, Random r) {
@@ -26,17 +32,12 @@ public class ShiftedPareto implements IDistribution {
 
 	@Override
 	public double sample() {
-		// From Wikipedia. 
-		double sample = fBeta*(Math.pow(fRand.nextDouble(), -1.0/fAlpha) - 1);
-		if (sample < 0) {
-			throw new InternalError();
-		}
-		return sample;
+		return fBeta * (Math.pow(fRand.nextDouble(), -1.0 / fAlpha) - 1);
 	}
 
 	@Override
 	public double expectation() {
-		return fBeta/(fAlpha - 1.0);
+		return fBeta / (fAlpha - 1.0);
 	}
 
 }

@@ -1,4 +1,4 @@
-package it.unitn.disi.network.churn.yao;
+package it.unitn.disi.network.churn;
 
 import it.unitn.disi.application.IScheduler;
 import it.unitn.disi.utils.IReference;
@@ -8,11 +8,12 @@ import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
 import peersim.config.IResolver;
+import peersim.core.Fallible;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 
 @SuppressWarnings("rawtypes")
-public abstract class OnOffChurnNetwork<T extends Enum> implements
+public abstract class SemiMarkovChurnNetwork<T extends Enum> implements
 		EDProtocol<Delta<T>> {
 
 	private static final String PAR_SCHEDULER = "scheduler";
@@ -23,7 +24,7 @@ public abstract class OnOffChurnNetwork<T extends Enum> implements
 
 	private final NodeRebootSupport fRebootSupport;
 
-	protected OnOffChurnNetwork(String prefix, IResolver resolver) {
+	protected SemiMarkovChurnNetwork(String prefix, IResolver resolver) {
 		fSelfPid = PeersimUtils.selfPid(prefix);
 		fScheduler = new ProtocolReference<IScheduler<Object>>(resolver.getInt(
 				prefix, PAR_SCHEDULER));
@@ -42,8 +43,13 @@ public abstract class OnOffChurnNetwork<T extends Enum> implements
 				nextState));
 	}
 
-	protected void reinit(Node node) {
+	protected void restart(Node node) {
+		node.setFailState(Fallible.OK);
 		fRebootSupport.initialize(node);
+	}
+	
+	protected void takedown(Node node) {
+		node.setFailState(Fallible.DOWN);
 	}
 
 	protected abstract void stateChanged(Node node, Delta<T> state);
@@ -55,16 +61,6 @@ public abstract class OnOffChurnNetwork<T extends Enum> implements
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
+
 }
 
-class Delta<T extends Enum> {
-
-	final T current;
-
-	final T next;
-
-	public Delta(T current, T next) {
-		this.current = current;
-		this.next = next;
-	}
-}

@@ -1,5 +1,6 @@
-package it.unitn.disi.util;
+package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.newscasting.experiments.schedulers.DegreeClassScheduler;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 

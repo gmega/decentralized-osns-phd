@@ -1,31 +1,25 @@
 package it.unitn.disi.newscasting.experiments;
 
-import it.unitn.disi.application.TrafficScheduler;
-import it.unitn.disi.application.IAction;
-import it.unitn.disi.application.SimpleTrafficGenerator;
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.INodeRegistry;
-import it.unitn.disi.utils.peersim.INodeStateListener;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
 
+import java.util.Iterator;
 import java.util.Vector;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.Configuration;
-import peersim.core.CommonState;
+import peersim.config.IResolver;
 import peersim.core.Control;
-import peersim.core.Fallible;
 import peersim.core.Linkable;
 import peersim.core.Node;
-
-import com.google.common.collect.PeekingIterator;
 
 /**
  * {@link DisseminationExperimentGovernor} will schedule one node after the
@@ -78,18 +72,6 @@ public class DisseminationExperimentGovernor implements Control {
 	private int sns;
 
 	/**
-	 * {@link SimpleTrafficGenerator} protocol id.
-	 */
-	@Attribute
-	private int executor;
-
-	/**
-	 * The number of times the each experiment should be repeated.
-	 */
-	@Attribute("repetitions")
-	private int repetitions;
-
-	/**
 	 * The {@link IContentExchangeStrategy} being unit experimented.
 	 */
 	private Class<? extends IContentExchangeStrategy> fClass;
@@ -103,10 +85,10 @@ public class DisseminationExperimentGovernor implements Control {
 	// ----------------------------------------------------------------------
 	// State.
 	// ----------------------------------------------------------------------
-
+	
+	private SchedulingState fState = SchedulingState.WAIT;
+	
 	private SNNode fCurrent;
-
-	private int fRepeat = 0;
 
 	private final NodeRebootSupport fRebootSupport;
 
@@ -114,15 +96,16 @@ public class DisseminationExperimentGovernor implements Control {
 	 * The experiment scheduler.
 	 */
 	private Iterable<Integer> fScheduler;
-	private PeekingIterator<Integer> fSchedule;
+	private Iterator<Integer> fSchedule;
 
 	// ----------------------------------------------------------------------
 
 	@SuppressWarnings("unchecked")
 	public DisseminationExperimentGovernor(
+			@Attribute IResolver resolver,
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute(value = "xchg_class", defaultValue = "it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding") String klass) {
-		fScheduler = createScheduler(prefix);
+		fScheduler = createScheduler(resolver, prefix);
 		try {
 			fClass = (Class<? extends IContentExchangeStrategy>) Class
 					.forName(klass);
@@ -130,7 +113,7 @@ public class DisseminationExperimentGovernor implements Control {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 		fRebootSupport = new NodeRebootSupport(prefix);
-		fSchedule = (PeekingIterator<Integer>) fScheduler.iterator();
+		fSchedule = fScheduler.iterator();
 		publishSingleton();
 	}
 
@@ -138,46 +121,51 @@ public class DisseminationExperimentGovernor implements Control {
 
 	@Override
 	public boolean execute() {
-		// Schedules the next experiment.
-		if (isCurrentExperimentOver()) {
-			// Runs post-unit-experiment code.
-			wrapUpExperiment();
-			// Schedules the next one, if any.
-			if (nextUnitExperiment()) {
-				System.err.println("-- Unit experiment schedule done.");
-				return true;
-			}
-		}
-		experimentCycled();
-		return false;
-	}
+		switch(fState) {
+		
+		case WAIT:
+			System.err.println("Wait.");
+			fState = scheduleNext();
+			break;
+			
+		case RUN:
+			if (isCurrentExperimentOver()) {
+				// Runs post-unit-experiment code.
+				wrapUpExperiment();
+				// Schedules the next one, if any.
+				fState = SchedulingState.WAIT;
+			} 
+			break;
 
+		case DONE:
+			break;
+			
+		}
+		
+		experimentCycled();
+		return fState == SchedulingState.DONE;
+	}
+	
 	// ----------------------------------------------------------------------
 
 	/**
-	 * Schedules the next unit experiment, if any.
-	 * 
-	 * @return <code>false</code> if there were still experiments to schedule,
-	 *         or <code>true</code> if no experiment has been scheduled (meaning
-	 *         the simulation should stop).
+	 * Schedules the next unit experiment.
 	 */
-	private boolean nextUnitExperiment() {
-		SNNode nextNode;
-		if (fRepeat != 0) {
-			fRepeat--;
-			nextNode = currentNode();
-		} else if (fSchedule.hasNext()) {
-			fRepeat = repetitions;
-			nextNode = toNode(fSchedule.next());
-		} else {
-			return false;
+	private SchedulingState scheduleNext() {
+		if (!fSchedule.hasNext()) {
+			return SchedulingState.DONE;
+		}
+
+		SNNode nextNode = toNode(fSchedule.next());
+		if (nextNode == null) {
+			return SchedulingState.WAIT;
 		}
 
 		// Starts the next experiment.
 		initializeNextExperiment(nextNode);
 
 		// Simulation should go on.
-		return false;
+		return SchedulingState.RUN;
 	}
 
 	// ----------------------------------------------------------------------
@@ -188,10 +176,6 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	private boolean isCurrentExperimentOver() {
 		Node node = currentNode();
-		if (node == null) {
-			return true;
-		}
-
 		Linkable sn = (Linkable) node.getProtocol(linkable);
 
 		// Check that everyone is quiescent.
@@ -224,10 +208,9 @@ public class DisseminationExperimentGovernor implements Control {
 		return terminated;
 	}
 
-	@SuppressWarnings("unchecked")
-	private Iterable<Integer> createScheduler(String prefix) {
-		return (Iterable<Integer>) Configuration.getInstance(prefix + "."
-				+ SCHEDULER);
+	private Iterable<Integer> createScheduler(IResolver resolver, String prefix) {
+		return SchedulerFactory.getInstance().createScheduler(resolver,
+				prefix + "." + SCHEDULER);
 	}
 
 	private void publishSingleton() {
@@ -245,7 +228,7 @@ public class DisseminationExperimentGovernor implements Control {
 		setCurrentNode(nextNode);
 
 		// Schedules a single tweet (the unit experiment).
-		scheduleTweet(nextNode);
+		tweet(nextNode);
 
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
@@ -253,21 +236,14 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 	}
 
-	private void scheduleTweet(SNNode nextNode) {
-		DelayedAction action = new DelayedAction(TrafficScheduler.TWEET,
-				Fallible.OK);
-		action.schedule(nextNode);
-	}
-
 	private void wrapUpExperiment() {
-		if (fCurrent == null) {
-			return;
-		}
-
 		// Notifies the observers.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
+		
+		// Clears state from the last experiment.
+		clearNeighborhoodState(fCurrent);
 
 		if (verbose && fCurrent != null) {
 			System.err.println("-- Unit experiment " + fCurrent.getID()
@@ -276,21 +252,34 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void experimentCycled() {
+		if (fState != SchedulingState.RUN) {
+			return;
+		}
+		
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentCycled(fCurrent);
 		}
 	}
 
 	private SNNode toNode(Integer id) {
+		if (id == null) {
+			return null;
+		}
 		INodeRegistry registry = NodeRegistry.getInstance();
-		return (SNNode) registry.getNode(id);
+		SNNode node = (SNNode) registry.getNode(id);
+		if (node == null) {
+			throw new IllegalStateException("Missing node with id " + id + ".");
+		}
+		return node;
 	}
 
 	private void setCurrentNode(SNNode node) {
-		// Clears state from the last experiment.
-		if (fCurrent != null) {
-			clearNeighborhoodState(fCurrent);
+		if (!node.isUp()) {
+			throw new IllegalStateException(
+					"Cannot start experiment for a node that is down.");
 		}
+
+		resetNeighborhoodUptimes(node);
 
 		fCurrent = node;
 
@@ -305,6 +294,12 @@ public class DisseminationExperimentGovernor implements Control {
 		}
 	}
 
+	private void tweet(SNNode node) {
+		IApplicationInterface intf = (IApplicationInterface) node
+				.getProtocol(sns);
+		intf.postToFriends();
+	}
+
 	private void clearNeighborhoodState(SNNode node) {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
@@ -312,6 +307,18 @@ public class DisseminationExperimentGovernor implements Control {
 		for (int i = 0; i < degree; i++) {
 			SNNode nei = (SNNode) lnk.getNeighbor(i);
 			clearStorage(nei);
+		}
+	}
+
+	private void resetNeighborhoodUptimes(SNNode node) {
+		Linkable lnk = (Linkable) node.getProtocol(linkable);
+		int degree = lnk.degree();
+		node.clearDowntime();
+		node.clearUptime();
+		for (int i = 0; i < degree; i++) {
+			SNNode nei = (SNNode) lnk.getNeighbor(i);
+			nei.clearDowntime();
+			nei.clearUptime();
 		}
 	}
 
@@ -355,58 +362,7 @@ public class DisseminationExperimentGovernor implements Control {
 		return fCurrent;
 	}
 
-	/**
-	 * Schedules an {@link IAction} based on a predicate over
-	 * {@link Node#getFailState()}.
-	 * 
-	 * @author giuliano
-	 */
-	class DelayedAction implements INodeStateListener {
-
-		private final IAction fDelegate;
-
-		private final int fTriggerState;
-
-		private long fScheduleTime;
-
-		public DelayedAction(IAction delegate, int triggerState) {
-			fDelegate = delegate;
-			fTriggerState = triggerState;
-		}
-
-		public void schedule(SNNode node) {
-			int currentState = node.getFailState();
-			if (fTriggerState == currentState) {
-				this.stateChanged(currentState, currentState, node);
-			} else {
-				node.setStateListener(this);
-				fScheduleTime = CommonState.getTime();
-			}
-		}
-
-		@Override
-		public void stateChanged(int oldState, int newState, SNNode node) {
-			if (newState == Fallible.OK) {
-				// Make uptimes be relative to the tweet time.
-				resetNeighborhoodUptimes(node);
-				// Clears ourselves as listeners.
-				node.clearStateListener();
-				// Executes the delegate action.
-				fDelegate.execute(node);
-			}
-		}
-
-		private void resetNeighborhoodUptimes(SNNode node) {
-			Linkable lnk = (Linkable) node.getProtocol(linkable);
-			int degree = lnk.degree();
-			node.clearDowntime();
-			node.clearUptime();
-			for (int i = 0; i < degree; i++) {
-				SNNode nei = (SNNode) lnk.getNeighbor(i);
-				nei.clearDowntime();
-				nei.clearUptime();
-			}
-		}
-
+	enum SchedulingState {
+		RUN, WAIT, DONE
 	}
 }

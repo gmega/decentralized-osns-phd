@@ -118,4 +118,10 @@ public interface ICoreInterface extends IApplicationInterface, ICachingObject {
 	 * @return the PeerSim protocol id of the implementor.
 	 */
 	public int pid();
+
+	/**
+	 * @return the PeerSim {@link Node} instance bound to this
+	 *         {@link ICoreInterface}.
+	 */
+	public Node node();
 }

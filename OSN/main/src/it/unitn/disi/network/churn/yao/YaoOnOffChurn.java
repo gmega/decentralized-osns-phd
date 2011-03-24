@@ -1,5 +1,7 @@
 package it.unitn.disi.network.churn.yao;
 
+import it.unitn.disi.network.churn.Delta;
+import it.unitn.disi.network.churn.SemiMarkovChurnNetwork;
 import it.unitn.disi.random.IDistribution;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -16,7 +18,7 @@ import peersim.core.Node;
  * modeled. <BR>
  * <BR>
  * Instances of {@link YaoOnOffChurn} must be initialized by calling
- * {@link #init(IDistribution, IDistribution, Node)} on each nodebefore the
+ * {@link #init(IDistribution, IDistribution, Node)} on each node before the
  * simulation starts. Initializers should supply {@link IDistribution} objects
  * for uptime and downtime. <BR>
  * Values returned by {@link IDistribution#sample()} are converted to simulation
@@ -26,7 +28,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
+public class YaoOnOffChurn extends SemiMarkovChurnNetwork<NodeState> {
 
 	private IDistribution fOn;
 
@@ -45,6 +47,20 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 		fOn = on;
 		fOff = off;
 		processState(node, NodeState.OFF);
+	}
+
+	public double availability() {
+		double li = fOn.expectation();
+		double di = fOff.expectation();
+		return (li / (di + li));
+	}
+
+	public IDistribution onDistribution() {
+		return fOn;
+	}
+
+	public IDistribution offDistribution() {
+		return fOff;
 	}
 
 	@Override
@@ -68,16 +84,14 @@ public class YaoOnOffChurn extends OnOffChurnNetwork<NodeState> {
 
 	private void scheduleUptime(Node node) {
 		// Takes the node back up.
-		node.setFailState(Fallible.OK);
-		// Initializes the node.
-		reinit(node);
+		restart(node);
 		// Schedules uptime.
 		this.scheduleTransition(uptime(node), node, NodeState.ON, NodeState.OFF);
 	}
 
 	private void scheduleDowntime(Node node) {
 		// Takes node down.
-		node.setFailState(Fallible.DOWN);
+		takedown(node);
 		// Schedules downtime.
 		this.scheduleTransition(downtime(node), node, NodeState.OFF,
 				NodeState.ON);

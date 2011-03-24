@@ -1,15 +1,15 @@
-package it.unitn.disi.util;
+package it.unitn.disi.newscasting.experiments.schedulers;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.ArrayExchanger;
-import it.unitn.disi.utils.collections.PeekingIteratorAdapter;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -20,8 +20,6 @@ import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.graph.Graph;
-
-import com.google.common.collect.PeekingIterator;
 
 /**
  * 
@@ -57,14 +55,14 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 		this.seed = seed;
 	}
 	
-	public PeekingIterator<Integer> iterator() {
+	public Iterator<Integer> iterator() {
 		if (fSchedule == null) {
 			Node node = Network.get(0);
 			GraphProtocol fgp = (GraphProtocol) node.getProtocol(linkable);
 			initialize(fgp.graph());
 		}
 		
-		return new PeekingIteratorAdapter<Integer>(fSchedule.iterator());
+		return fSchedule.iterator();
 	}
 	
 	void initialize(final Graph graph) {

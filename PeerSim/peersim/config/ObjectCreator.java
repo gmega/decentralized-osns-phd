@@ -8,7 +8,6 @@ import java.util.ArrayList;
 
 import peersim.config.DefaultValueResolver.IAttributeSource;
 import peersim.config.resolvers.CompositeResolver;
-import peersim.config.resolvers.StringValueResolver;
 
 /**
  * {@link ObjectCreator} knows how to instantiate and configure objects. Classes

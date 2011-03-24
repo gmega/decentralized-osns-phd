@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
+import it.unitn.disi.newscasting.experiments.TimeoutController;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -40,6 +41,8 @@ public abstract class AbstractUEConfigurator implements
 
 	public static final String PARAMETER_FILE = "parameters";
 
+	public static final String PARAMETER_TIMEOUT_ID = "timeout_id";
+
 	// ----------------------------------------------------------------------
 	// Instance-shared state.
 	// ----------------------------------------------------------------------
@@ -56,7 +59,7 @@ public abstract class AbstractUEConfigurator implements
 	 * the debugger (not sure why, some bug either in the JVM or the JEP used by
 	 * PeerSim).
 	 */
-	protected IResolver fResolver;
+	protected static IResolver fResolver;
 
 	// ----------------------------------------------------------------------
 
@@ -69,6 +72,12 @@ public abstract class AbstractUEConfigurator implements
 		if (fConfigured) {
 			return;
 		}
+
+		// Sets up the resolver first.
+		CompositeResolver composite = new CompositeResolver();
+		composite.addResolver(resolver);
+		fResolver = CachingResolver.cachingResolver(composite
+				.asInvocationHandler());
 
 		// And the statistics printer.
 		StatisticsPrinter printer = ObjectCreator.createInstance(
@@ -100,11 +109,7 @@ public abstract class AbstractUEConfigurator implements
 			String prefix, int protocolId, int socialNetworkId)
 			throws Exception {
 
-		CompositeResolver composite = new CompositeResolver();
-		composite.addResolver(resolver);
-		fResolver = CachingResolver.cachingResolver(composite.asInvocationHandler());
-		
-		oneShotConfig(prefix, fResolver);
+		oneShotConfig(prefix, resolver);
 
 		// Application storage.
 		app.setStorage(storage(prefix, protocolId, socialNetworkId));
@@ -127,6 +132,16 @@ public abstract class AbstractUEConfigurator implements
 
 		if (strategy instanceof IEventObserver) {
 			app.addSubscriber((IEventObserver) strategy);
+		}
+
+		// And the timeout controller, if installed.
+		try {
+			int pid = fResolver.getInt(prefix, PARAMETER_TIMEOUT_ID);
+			TimeoutController controller = (TimeoutController) app.node()
+					.getProtocol(pid);
+			app.addSubscriber(controller);
+		} catch (MissingParameterException ex) {
+			// Swallows and proceeds.
 		}
 
 		app.addSubscriber(ExperimentStatisticsManager.getInstance());

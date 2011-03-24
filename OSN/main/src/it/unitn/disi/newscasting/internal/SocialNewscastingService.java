@@ -431,6 +431,11 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 		}
 		return entry;
 	}
+	
+	@Override
+	public Node node() {
+		return fOwner;
+	}
 
 	// ----------------------------------------------------------------------
 	// IInitializable interface.
