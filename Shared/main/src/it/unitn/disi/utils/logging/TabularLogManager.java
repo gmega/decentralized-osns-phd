@@ -63,8 +63,8 @@ public class TabularLogManager implements IPlugin {
 	}
 
 	public TableWriter get(Class<?> klass) {
-		OutputsStructuredLog annotation = klass
-				.getAnnotation(OutputsStructuredLog.class);
+		StructuredLog annotation = klass
+				.getAnnotation(StructuredLog.class);
 		if (annotation == null) {
 			return null;
 		}

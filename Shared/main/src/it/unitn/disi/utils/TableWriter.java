@@ -41,7 +41,7 @@ public class TableWriter {
 		fOut.flush();
 		Arrays.fill(fCurrentRecord, null);
 	}
-
+	
 	public boolean set(String key, String value) {
 		int idx = indexOf(key);
 		if (idx == -1) {
@@ -49,6 +49,26 @@ public class TableWriter {
 		}
 		fCurrentRecord[idx] = value;
 		return true;
+	}
+	
+	public boolean set(String key, int value) {
+		return this.set(key, Integer.toString(value));
+	}
+	
+	public boolean set(String key, long value) {
+		return this.set(key, Long.toString(value));
+	}
+	
+	public boolean set(String key, double value) {
+		return this.set(key, Double.toString(value));
+	}
+
+	public boolean set(String key, float value) {
+		return this.set(key, Float.toString(value));
+	}
+	
+	public boolean set(String key, Object object) {
+		return this.set(key, object.toString());
 	}
 
 	public void emmitRow() {

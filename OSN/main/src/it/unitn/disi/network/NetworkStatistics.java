@@ -1,7 +1,7 @@
 package it.unitn.disi.network;
 
 import it.unitn.disi.utils.TableWriter;
-import it.unitn.disi.utils.logging.OutputsStructuredLog;
+import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.SNNode;
 import peersim.config.Attribute;
@@ -21,7 +21,7 @@ import peersim.core.Network;
  * @author giuliano
  */
 @AutoConfig
-@OutputsStructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "departures", "timedelta"})
+@StructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "departures", "timedelta"})
 public class NetworkStatistics implements Control {
 	
 	private long fLastRun;

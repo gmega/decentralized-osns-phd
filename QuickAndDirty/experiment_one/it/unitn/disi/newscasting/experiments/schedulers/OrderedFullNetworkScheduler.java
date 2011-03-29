@@ -11,11 +11,15 @@ public class OrderedFullNetworkScheduler implements Iterable<Integer> {
 
 	private Node[] fPermutation;
 
-	public OrderedFullNetworkScheduler(Comparator<Node> comparator) {
+	public OrderedFullNetworkScheduler() {
 		fPermutation = new Node[networkSize()];
 		for (int i = 0; i < fPermutation.length; i++) {
 			fPermutation[i] = get(i);
 		}
+	}
+	
+	public OrderedFullNetworkScheduler(Comparator<Node> comparator) {
+		this();
 		Arrays.sort(fPermutation, comparator);
 	}
 
@@ -38,7 +42,7 @@ public class OrderedFullNetworkScheduler implements Iterable<Integer> {
 		return fPermutation[index];
 	}
 
-	class Schedule implements Iterator<Integer> {
+	class Schedule implements ISchedule{
 
 		private boolean[] fSelected;
 
@@ -48,6 +52,11 @@ public class OrderedFullNetworkScheduler implements Iterable<Integer> {
 			int size = networkSize();
 			fSelected = new boolean[size];
 			fRemaining = size;
+		}
+		
+		@Override
+		public int remaining() {
+			return fRemaining;
 		}
 
 		@Override

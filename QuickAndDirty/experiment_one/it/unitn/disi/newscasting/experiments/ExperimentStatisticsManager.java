@@ -136,7 +136,7 @@ class UnitExperimentData {
 	 * Number of messages sent by each node.
 	 */
 	private static final int[] fSent = new int[Network.size()];
-	
+
 	/**
 	 * Number of messages sent by each node which were duplicates.
 	 */
@@ -219,7 +219,7 @@ class UnitExperimentData {
 		fSent[(int) sender]++;
 		fReceived[(int) receiver]++;
 		if (dup) {
-			fDuplicatesSent[(int)receiver]++;
+			fDuplicatesSent[(int) receiver]++;
 		}
 	}
 

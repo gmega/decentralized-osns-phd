@@ -28,7 +28,7 @@ public class SchedulerFactory {
 		switch (SchedulerType.valueOf(type.toUpperCase())) {
 
 		case FULL_NETWORK:
-			return new FullNetworkScheduler();
+			return new OrderedFullNetworkScheduler();
 		
 		case ORDERED_FULLNETWORK:
 			@SuppressWarnings("unchecked")

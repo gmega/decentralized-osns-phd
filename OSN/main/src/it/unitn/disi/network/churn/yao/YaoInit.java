@@ -7,7 +7,7 @@ import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.TabularLogManager;
-import it.unitn.disi.utils.logging.OutputsStructuredLog;
+import it.unitn.disi.utils.logging.StructuredLog;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
@@ -19,7 +19,7 @@ import peersim.core.Node;
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>.
  */
-@OutputsStructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli", "edi", "ai" })
+@StructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli", "edi", "ai" })
 @AutoConfig
 public class YaoInit implements Control {
 

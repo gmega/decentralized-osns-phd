@@ -2,16 +2,17 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.experiments.schedulers.ISchedule;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
 
-import java.util.Iterator;
 import java.util.Vector;
 
 import peersim.config.Attribute;
@@ -91,12 +92,14 @@ public class DisseminationExperimentGovernor implements Control {
 	private SNNode fCurrent;
 
 	private final NodeRebootSupport fRebootSupport;
+	
+	private final TimeTracker fTracker;
 
 	/**
 	 * The experiment scheduler.
 	 */
 	private Iterable<Integer> fScheduler;
-	private Iterator<Integer> fSchedule;
+	private ISchedule fSchedule;
 
 	// ----------------------------------------------------------------------
 
@@ -104,6 +107,7 @@ public class DisseminationExperimentGovernor implements Control {
 	public DisseminationExperimentGovernor(
 			@Attribute IResolver resolver,
 			@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute(value = "xchg_class", defaultValue = "it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding") String klass) {
 		fScheduler = createScheduler(resolver, prefix);
 		try {
@@ -113,7 +117,9 @@ public class DisseminationExperimentGovernor implements Control {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 		fRebootSupport = new NodeRebootSupport(prefix);
-		fSchedule = fScheduler.iterator();
+		fSchedule = (ISchedule) fScheduler.iterator();
+		fTracker = new TimeTracker(fSchedule.remaining(), manager);
+		addExperimentObserver(fTracker);
 		publishSingleton();
 	}
 
@@ -241,6 +247,8 @@ public class DisseminationExperimentGovernor implements Control {
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
+		
+		fTracker.printStatistics();
 		
 		// Clears state from the last experiment.
 		clearNeighborhoodState(fCurrent);

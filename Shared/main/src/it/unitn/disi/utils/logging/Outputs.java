@@ -4,7 +4,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OutputsStructuredLog {
-	public String key();
-	public String [] fields();
+public @interface Outputs {
+	public StructuredLog [] logs();
 }
