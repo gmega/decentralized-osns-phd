@@ -21,8 +21,11 @@ import peersim.config.AutoConfig;
 
 /**
  * {@link PeerSimLogDemux} can "demultiplex" PeerSim log files. It's been
- * designed to cope with PeerSim quirks, and to understand certain naming
- * conventions that make handling logs easier.
+ * designed to be fast, to cope with PeerSim quirks, and to understand certain
+ * naming conventions that make handling logs easier.
+ * 
+ * XXX This script was coded in a fast-and-furious way, but by now it is
+ * accumulating too much functionality, and should be refactored.
  * 
  * @author giuliano
  */
@@ -57,11 +60,20 @@ public class PeerSimLogDemux implements ITransformer {
 	private boolean fAllowPartial;
 
 	/**
-	 * If true, omits the first matching line of all files but the first. Useful
-	 * when merging attribute-based logs which contain headers.
+	 * If true, assumes that the files being merged contain headers.<BR>
+	 * FIXME This is broken unless 'discard_parameters' is set to true. I need
+	 * to properly implement it for the case when the original header is to be
+	 * extended.
 	 */
 	@Attribute("single_header")
 	private boolean fSingleHeader;
+
+	/**
+	 * If true, causes the parameter string to be completely removed from the
+	 * log file (not just reformatted).
+	 */
+	@Attribute("discard_parameters")
+	private boolean fDiscardParameters;
 
 	private String[] fParameters;
 
@@ -107,7 +119,7 @@ public class PeerSimLogDemux implements ITransformer {
 			if (!first || !singleHeader) {
 				out.println(line);
 			}
-			
+
 			first = false;
 		}
 	}
@@ -116,9 +128,10 @@ public class PeerSimLogDemux implements ITransformer {
 			String replacement, String line) {
 		line = line.substring(prefix.length());
 		String[] split = line.split(substring);
+		split[0] = split[0].trim();
 		if (split.length == 2) {
 			StringBuffer buffer = new StringBuffer();
-			buffer.append(split[0].trim());
+			buffer.append(split[0]);
 			buffer.append(" ");
 			buffer.append(replacement);
 			buffer.append(" ");
@@ -173,7 +186,7 @@ public class PeerSimLogDemux implements ITransformer {
 		}
 
 		return new Pair<String, String>(parString.toString(),
-				replacementString.toString());
+				fDiscardParameters ? "" : replacementString.toString());
 	}
 
 	private String[] extract(ParameterIterator iterator) {
@@ -200,8 +213,9 @@ public class PeerSimLogDemux implements ITransformer {
 class ParameterIterator {
 	private static final String IDENT = "[A-Z]+";
 	private static final String INT_OR_FLOAT = "[0-9]+(?:\\.[0-9]+)?";
+	private static final String INT_OR_FLOAT_OR_IDENT = "(?:" + IDENT + "|(?:" + INT_OR_FLOAT + "))";
 	private static final String SPLIT_CHAR = "_";
-	private static final String PARAMETER = IDENT + SPLIT_CHAR + INT_OR_FLOAT;
+	private static final String PARAMETER = IDENT + SPLIT_CHAR + INT_OR_FLOAT_OR_IDENT;
 
 	private static final Pattern fPattern = Pattern.compile(PARAMETER);
 

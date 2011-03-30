@@ -10,6 +10,11 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Node;
 
+/**
+ * {@link ScheduleByAvailability} orders node by availability (lowest first).
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class ScheduleByAvailability implements Comparator<Node> {
 

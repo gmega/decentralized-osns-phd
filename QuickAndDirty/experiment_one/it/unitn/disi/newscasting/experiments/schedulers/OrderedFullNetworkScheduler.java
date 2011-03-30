@@ -71,6 +71,7 @@ public class OrderedFullNetworkScheduler implements Iterable<Integer> {
 					Node candidate = getOrdered(i);
 					if (candidate.isUp()) {
 						fRemaining--;
+						fSelected[i] = true;
 						return (int) candidate.getID();
 					}
 				}
