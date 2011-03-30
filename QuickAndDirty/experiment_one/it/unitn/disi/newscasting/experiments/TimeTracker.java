@@ -56,25 +56,29 @@ public class TimeTracker implements IExperimentObserver {
 		fCyclesPerExperiment.add(fEllapsedCycles);
 		fEllapsedExperiments++;
 	}
+	
+	public long experimentTime() {
+		return fEllapsedCycles;
+	}
 
-	public double remainingTime() {
+	public double estimateRemainingTime() {
 		return (fExperiments - fEllapsedExperiments)
 				* fExperimentTime.getAverage();
 	}
 	
-	public double cycleTime() {
+	public double avgCycleTime() {
 		return fCycleTime.getAverage();
 	}
 	
-	public double experimentTime() {
+	public double avgExperimentTime() {
 		return fExperimentTime.getAverage();
 	}
 	
 	public void printStatistics() {
 		fLog.set("completed", Double.toString(((double)fEllapsedExperiments)/fExperiments));
-		fLog.set("experiment_avg", Double.toString(experimentTime()));
-		fLog.set("cycle_avg", Double.toString(cycleTime()));
-		fLog.set("time_remaining", Double.toString(remainingTime()));
+		fLog.set("experiment_avg", Double.toString(avgExperimentTime()));
+		fLog.set("cycle_avg", Double.toString(avgCycleTime()));
+		fLog.set("time_remaining", Double.toString(estimateRemainingTime()));
 		fLog.set("cycles_per_experiment", Double.toString(fCyclesPerExperiment.getAverage()));
 		fLog.emmitRow();
 	}

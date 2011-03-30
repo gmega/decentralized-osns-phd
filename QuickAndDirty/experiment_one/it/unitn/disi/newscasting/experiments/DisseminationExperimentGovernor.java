@@ -154,6 +154,18 @@ public class DisseminationExperimentGovernor implements Control {
 	
 	// ----------------------------------------------------------------------
 
+	public SNNode currentNode() {
+		return fCurrent;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public long experimentTime() {
+		return fTracker.experimentTime();
+	}
+	
+	// ----------------------------------------------------------------------
+
 	/**
 	 * Schedules the next unit experiment.
 	 */
@@ -364,10 +376,6 @@ public class DisseminationExperimentGovernor implements Control {
 		ICoreInterface socialNewscasting = (ICoreInterface) node
 				.getProtocol(sns);
 		return socialNewscasting.storage().elements() != 0;
-	}
-
-	public SNNode currentNode() {
-		return fCurrent;
 	}
 
 	enum SchedulingState {

@@ -12,6 +12,9 @@ import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.logging.StructuredLog;
+import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -23,6 +26,7 @@ import it.unitn.disi.utils.peersim.SNNode;
  * @author giuliano
  */
 @AutoConfig
+@StructuredLog(key="TC", fields={"root", "id", "exptime", "uptime"})
 public class TimeoutController implements IEventObserver, EDProtocol<Object> {
 
 	private static final Object SHUTDOWN_EVT = new Object();
@@ -34,8 +38,11 @@ public class TimeoutController implements IEventObserver, EDProtocol<Object> {
 	private final int fTimeReserve;
 
 	private final int fSelfPid;
+	
+	private final TableWriter fLog;
 
 	public TimeoutController(@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("timeout") int timeout,
 			@Attribute("application") int appid,
 			@Attribute("scheduler") int schedulerId) {
@@ -47,6 +54,7 @@ public class TimeoutController implements IEventObserver, EDProtocol<Object> {
 		fXchgRef = new ExchangeStrategyRef(appid, prefix + ".strategy_id");
 		fSchedulerRef = new ProtocolReference<IScheduler<Object>>(schedulerId);
 		fSelfPid = PeersimUtils.selfPid(prefix);
+		fLog = manager.get(TimeoutController.class);
 	}
 
 	@Override
@@ -77,6 +85,14 @@ public class TimeoutController implements IEventObserver, EDProtocol<Object> {
 	protected void shutdownNode(Node node) {
 		IContentExchangeStrategy strategy = fXchgRef.get(node);
 		strategy.clear(node);
+		
+		//FIXME Argh static, implicit component wiring.
+		DisseminationExperimentGovernor gov = DisseminationExperimentGovernor.singletonInstance();
+		fLog.set("root", gov.currentNode().getID());
+		fLog.set("id", node.getID());
+		fLog.set("exptime", gov.experimentTime());
+		fLog.set("uptime", ((SNNode)node).uptime());
+		fLog.emmitRow();
 	}
 
 	private void startClock(Node node) {
