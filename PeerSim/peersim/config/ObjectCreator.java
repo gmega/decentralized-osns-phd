@@ -300,7 +300,9 @@ public class ObjectCreator implements IAttributeSource {
 			value = fResolver.getInt(prefix, key);
 		} else if (type == String.class) {
 			value = fResolver.getString(prefix, key);
-		} else if (type.isAssignableFrom(IResolver.class)) {
+		} 
+		// Special cases.
+		else if (type.isAssignableFrom(IResolver.class)) {
 			value = fResolver;
 		} else {
 			value = fResolver.getObject(prefix, key);

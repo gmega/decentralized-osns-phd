@@ -32,6 +32,7 @@ import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.PrefixedOutputStreamTest;
 import it.unitn.disi.utils.TestMiscUtils;
 import it.unitn.disi.utils.TestTableReader;
+import it.unitn.disi.utils.tracetools.AVTReplayTest;
 import it.unitn.disi.utils.tracetools.ZoneCrawl2AvtTest;
 
 import org.apache.log4j.BasicConfigurator;
@@ -75,7 +76,8 @@ import peersim.config.PluginContainerTest;
 	PrefixedOutputStreamTest.class,
 	ComponentSelectorTest.class,
 	ClusteringRankingTest.class,
-	ZoneCrawl2AvtTest.class
+	ZoneCrawl2AvtTest.class,
+	AVTReplayTest.class
 })
 
 public class AllTests extends PeerSimTest {
