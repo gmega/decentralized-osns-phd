@@ -19,7 +19,10 @@ import peersim.core.Node;
 /**
  * Initializes an {@link EventStreamChurn} network from <a
  * href="http://www.cs.uiuc.edu/homes/pbg/availability/readme.pdf">AVT</a>
- * traces.
+ * traces.<BR>
+ * Supports looping and cutting of the AVT tracefile.<BR>
+ * Looping might bloat arrival rates at the looping point, especially when
+ * coupled with cutting.
  * 
  * @author giuliano
  */
@@ -81,7 +84,7 @@ public class AVTEventStreamInit implements Control {
 					break;
 				}
 				events.add(start);
-				events.add(end + 1);
+				events.add(Math.min(fCut, end + 1));
 				maxTraceTime = Math.max(end + 1, maxTraceTime);
 			}
 
@@ -97,7 +100,7 @@ public class AVTEventStreamInit implements Control {
 			iterators.add(schedule);
 			churn.init(node, schedule, 0);
 		}
-		
+
 		// Set sync points for looping, if needed.
 		if (fLoop) {
 			for (ArrayIterator schedule : iterators) {
@@ -150,11 +153,11 @@ public class AVTEventStreamInit implements Control {
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
-		
+
 		private boolean hasMoreEvents() {
 			return fIdx != fArray.length;
 		}
-		
+
 		private boolean isInfinite() {
 			return fSync > 0;
 		}
@@ -163,6 +166,7 @@ public class AVTEventStreamInit implements Control {
 			if (fSync < 0) {
 				throw new NoSuchElementException();
 			}
+			// Shifts events to the synchronization point.
 			for (int i = 0; i < fArray.length; i++) {
 				fArray[i] += fSync;
 			}
