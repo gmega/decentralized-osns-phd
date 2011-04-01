@@ -4,6 +4,7 @@ import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IEventStorage;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.IScheduler;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;
@@ -14,7 +15,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
-import peersim.edsim.EDSimulator;
 
 /**
  * Executes pre-scheduled traffic generation actions (or, more generally,

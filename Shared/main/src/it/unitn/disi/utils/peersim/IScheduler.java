@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.utils.peersim;
 
 import peersim.core.Node;
 

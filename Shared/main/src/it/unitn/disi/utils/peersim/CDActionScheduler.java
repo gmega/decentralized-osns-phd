@@ -1,4 +1,4 @@
-package it.unitn.disi.application;
+package it.unitn.disi.utils.peersim;
 
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;

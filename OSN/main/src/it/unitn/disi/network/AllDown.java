@@ -38,7 +38,11 @@ public class AllDown implements Control {
 	public AllDown(@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("StreamManager") StreamManager manager ) throws IOException {
-		fLog = manager.get(resolver, prefix);
+		this(manager.get(resolver, prefix));
+	}
+	
+	public AllDown(OutputStream log) {
+		fLog = log;
 	}
 
 	@Override

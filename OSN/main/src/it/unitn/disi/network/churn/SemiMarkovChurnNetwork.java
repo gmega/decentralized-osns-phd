@@ -1,8 +1,8 @@
 package it.unitn.disi.network.churn;
 
-import it.unitn.disi.application.IScheduler;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.peersim.IScheduler;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
@@ -25,10 +25,15 @@ public abstract class SemiMarkovChurnNetwork<T extends Enum> implements
 	private final NodeRebootSupport fRebootSupport;
 
 	protected SemiMarkovChurnNetwork(String prefix, IResolver resolver) {
-		fSelfPid = PeersimUtils.selfPid(prefix);
+		this(PeersimUtils.selfPid(prefix), prefix, resolver);
+	}
+
+	protected SemiMarkovChurnNetwork(int selfPid, String prefix,
+			IResolver resolver) {
+		fSelfPid = selfPid;
+		fRebootSupport = new NodeRebootSupport(prefix);
 		fScheduler = new ProtocolReference<IScheduler<Object>>(resolver.getInt(
 				prefix, PAR_SCHEDULER));
-		fRebootSupport = new NodeRebootSupport(prefix);
 	}
 
 	@Override
@@ -47,7 +52,7 @@ public abstract class SemiMarkovChurnNetwork<T extends Enum> implements
 		node.setFailState(Fallible.OK);
 		fRebootSupport.initialize(node);
 	}
-	
+
 	protected void takedown(Node node) {
 		node.setFailState(Fallible.DOWN);
 	}
@@ -57,10 +62,9 @@ public abstract class SemiMarkovChurnNetwork<T extends Enum> implements
 	public Object clone() {
 		try {
 			return super.clone();
-		} catch(CloneNotSupportedException ex) {
+		} catch (CloneNotSupportedException ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
 
 }
-

@@ -24,12 +24,16 @@ import peersim.core.Network;
 @StructuredLog(key="NetworkStatistics", fields={"up", "down", "arrivals", "departures", "timedelta"})
 public class NetworkStatistics implements Control {
 	
-	private long fLastRun;
+	private long fLastRun = 0;
 	
 	private TableWriter fLog;
 	
 	public NetworkStatistics(@Attribute("TabularLogManager") TabularLogManager manager) {
-		fLog = manager.get(NetworkStatistics.class);
+		this(manager.get(NetworkStatistics.class));
+	}
+	
+	public NetworkStatistics(TableWriter log) {
+		fLog = log;
 	}
 	
 	@Override
@@ -39,11 +43,11 @@ public class NetworkStatistics implements Control {
 			SNNode node = (SNNode) Network.get(i);
 			if (node.isUp()) {
 				up++;
-				if (node.lastStateChange() <= fLastRun) {
+				if (node.lastStateChange() > fLastRun) {
 					arrivals++;
 				}
 			} else {
-				if (node.lastStateChange() <= fLastRun) {
+				if (node.lastStateChange() > fLastRun) {
 					departures++;
 				}
 				down++;

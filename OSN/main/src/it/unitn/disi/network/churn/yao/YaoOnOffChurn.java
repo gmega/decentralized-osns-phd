@@ -1,12 +1,13 @@
 package it.unitn.disi.network.churn.yao;
 
 import it.unitn.disi.network.churn.Delta;
+import it.unitn.disi.network.churn.RenewalChurnNetwork;
+import it.unitn.disi.network.churn.OnOffState;
 import it.unitn.disi.network.churn.SemiMarkovChurnNetwork;
 import it.unitn.disi.random.IDistribution;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
-import peersim.core.Fallible;
 import peersim.core.Node;
 
 /**
@@ -28,7 +29,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class YaoOnOffChurn extends SemiMarkovChurnNetwork<NodeState> {
+public class YaoOnOffChurn extends RenewalChurnNetwork {
 
 	private IDistribution fOn;
 
@@ -46,7 +47,7 @@ public class YaoOnOffChurn extends SemiMarkovChurnNetwork<NodeState> {
 	public void init(IDistribution on, IDistribution off, Node node) {
 		fOn = on;
 		fOff = off;
-		processState(node, NodeState.OFF);
+		processState(node, OnOffState.OFF);
 	}
 
 	public double availability() {
@@ -64,49 +65,19 @@ public class YaoOnOffChurn extends SemiMarkovChurnNetwork<NodeState> {
 	}
 
 	@Override
-	protected void stateChanged(Node node, Delta<NodeState> state) {
-		processState(node, state.next);
-	}
-
-	private void processState(Node node, NodeState state) {
-		switch (state) {
-
-		case OFF:
-			scheduleDowntime(node);
-			break;
-
-		case ON:
-			scheduleUptime(node);
-			break;
-
-		}
-	}
-
-	private void scheduleUptime(Node node) {
-		// Takes the node back up.
-		restart(node);
-		// Schedules uptime.
-		this.scheduleTransition(uptime(node), node, NodeState.ON, NodeState.OFF);
-	}
-
-	private void scheduleDowntime(Node node) {
-		// Takes node down.
-		takedown(node);
-		// Schedules downtime.
-		this.scheduleTransition(downtime(node), node, NodeState.OFF,
-				NodeState.ON);
-	}
-
-	private long downtime(Node node) {
+	protected long downtime(Node node) {
 		return (long) Math.ceil(fScaling * fOff.sample());
 	}
 
-	private long uptime(Node node) {
+	@Override
+	protected long uptime(Node node) {
 		return (long) Math.ceil(fScaling * fOn.sample());
+	}
+	
+	@Override
+	public boolean hasDeparted(Node node) {
+		return false;
 	}
 
 }
 
-enum NodeState {
-	ON, OFF
-}

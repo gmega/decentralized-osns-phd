@@ -1,7 +1,5 @@
 package test;
 
-
-
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
@@ -11,7 +9,7 @@ import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.graph.large.catalog.CatalogTest;
-import it.unitn.disi.network.churn.tracebased.EvtDecoderTest;
+import it.unitn.disi.network.churn.tracebased.AVTEventChurnNetworkTest;
 import it.unitn.disi.newscasting.ComponentComputationServiceTest;
 import it.unitn.disi.newscasting.EventStorageTest;
 import it.unitn.disi.newscasting.HistoryForwardingTest;
@@ -58,7 +56,6 @@ import peersim.config.PluginContainerTest;
 	TestEventDecoder.class,
 	TestLatencyComputer.class,
 	TestQueueManager.class,
-	EvtDecoderTest.class,
 	TestAntiCentralitySelector.class,
 	ObjectCreatorTest.class,
 	SequentialSchedulerTest.class,
@@ -77,7 +74,8 @@ import peersim.config.PluginContainerTest;
 	ComponentSelectorTest.class,
 	ClusteringRankingTest.class,
 	ZoneCrawl2AvtTest.class,
-	AVTReplayTest.class
+	AVTReplayTest.class,
+	AVTEventChurnNetworkTest.class
 })
 
 public class AllTests extends PeerSimTest {

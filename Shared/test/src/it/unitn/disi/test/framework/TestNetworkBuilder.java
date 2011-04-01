@@ -5,72 +5,59 @@ import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistryInit;
-import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;
 
-import org.easymock.EasyMock;
-
-import peersim.core.GeneralNode;
 import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.NetworkInitializer;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class TestNetworkBuilder implements Iterable<Node> {
+public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 
-	private HashMap<Node, Integer> fNodes = new HashMap<Node, Integer>();
-
-	private ArrayList<Node> fOrderedNodes = new ArrayList<Node>();
-
-	private long fIds = 0;
+	private ArrayList<TestNodeImpl> fOrderedNodes = new ArrayList<TestNodeImpl>();
 
 	public TestNetworkBuilder() {
 		NetworkInitializer.createNodeArray();
+		TestNodeImpl.resetIDCounter();
 		Network.setCapacity(0);
 	}
 
-	public Iterator<Node> iterator() {
-		return fOrderedNodes.iterator();
+	public Iterator<TestNodeImpl> iterator() {
+		return (Iterator<TestNodeImpl>) fOrderedNodes.iterator();
 	}
 
-	public List<Node> getNodes() {
+	public List<? extends Node> getNodes() {
 		return Collections.unmodifiableList(fOrderedNodes);
+	}
+
+	public int size() {
+		return fOrderedNodes.size();
 	}
 
 	public void done() {
 		// Sanity check.
 		Integer pid = null;
-		for (Integer value : fNodes.values()) {
+		for (Node node : fOrderedNodes) {
 			if (pid == null) {
-				pid = value;
+				pid = node.protocolSize();
 			} else {
-				Assert.assertEquals(value, pid);
+				Assert.assertEquals(node.protocolSize(), pid.intValue());
 			}
 		}
-
-		for (int i = 0; i < fOrderedNodes.size(); i++) {
-			Node node = fOrderedNodes.get(i);
-			EasyMock.expect(node.protocolSize()).andReturn(fNodes.get(node))
-					.anyTimes();
-			node.setIndex(i);
-			EasyMock.expectLastCall().once();
-		}
-
-		EasyMock.replay(fNodes.keySet().toArray());
+		
+		// Applies config to PeerSim.
 		NetworkInitializer.createNodeArray();
-
 		for (Node node : fOrderedNodes) {
 			Network.add(node);
 		}
-		
+
 		// Inits the node registry.
 		NodeRegistry.getInstance().clear();
 		NodeRegistryInit init = new NodeRegistryInit(null);
@@ -78,24 +65,13 @@ public class TestNetworkBuilder implements Iterable<Node> {
 	}
 
 	public Node baseNode() {
-		Node node = EasyMock.createMock(SNNode.class);
-		EasyMock.expect(node.getID()).andReturn(fIds++).anyTimes();
-		EasyMock.expect(node.isUp()).andReturn(true).anyTimes();
-		node.setFailState(GeneralNode.DEAD);
-		EasyMock.expectLastCall().once();
-
-		fNodes.put(node, 0);
+		TestNodeImpl node = new TestNodeImpl();
 		fOrderedNodes.add(node);
 		return node;
 	}
 
 	public int addProtocol(Node node, Protocol protocol) {
-		chkNode(node);
-		int pid = fNodes.get(node);
-
-		EasyMock.expect(node.getProtocol(pid)).andReturn(protocol).anyTimes();
-		fNodes.put(node, pid + 1);
-		return pid;
+		return chkNode(node).addProtocol(protocol);
 	}
 
 	public Node[] addNodes(int size) {
@@ -120,7 +96,7 @@ public class TestNetworkBuilder implements Iterable<Node> {
 		int pid = -1;
 		ConstrainedLinkableBuilder builder = new ConstrainedLinkableBuilder(
 				adjacencies);
-		for (int i = 0; i < fNodes.size(); i++) {
+		for (int i = 0; i < fOrderedNodes.size(); i++) {
 			Node node = fOrderedNodes.get(i);
 			pid = addProtocol(fOrderedNodes.get(i),
 					builder.linkableOf(node, i, NodeRegistry.getInstance()));
@@ -128,20 +104,21 @@ public class TestNetworkBuilder implements Iterable<Node> {
 		return pid;
 	}
 
-	private void chkNode(Node node) {
-		if (!fNodes.containsKey(node)) {
+	private TestNodeImpl chkNode(Node node) {
+		if (!fOrderedNodes.contains(node)) {
 			throw new IllegalArgumentException();
 		}
+		return (TestNodeImpl) node;
 	}
 
 	class CompleteLinkable implements Linkable, Protocol {
 
 		public boolean contains(Node neighbor) {
-			return fNodes.containsKey(neighbor);
+			return fOrderedNodes.contains(neighbor);
 		}
 
 		public int degree() {
-			return fNodes.size();
+			return fOrderedNodes.size();
 		}
 
 		public Node getNeighbor(int i) {
@@ -170,7 +147,7 @@ public class TestNetworkBuilder implements Iterable<Node> {
 			int[][] copy = new int[ids.length][];
 			for (int i = 0; i < ids.length; i++) {
 				copy[i] = new int[ids[i].length];
- 				for (int j = 0; j < ids[i].length; j++) {
+				for (int j = 0; j < ids[i].length; j++) {
 					copy[i][j] = (int) ids[i][j];
 				}
 			}
@@ -185,4 +162,5 @@ public class TestNetworkBuilder implements Iterable<Node> {
 		}
 
 	}
+
 }
