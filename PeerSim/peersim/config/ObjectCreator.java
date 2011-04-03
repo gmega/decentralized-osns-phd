@@ -121,12 +121,19 @@ public class ObjectCreator implements IAttributeSource {
 		int longestMatch = -1;
 
 		StringBuffer error = new StringBuffer();
+		int number = 1;
 		for (Constructor<T> candidate : constructors) {
+			error.append("\n");
+			error.append(number);
+			error.append(". Constructor signature:\n\n ");
+			error.append(candidate.toGenericString());
+			error.append(".\n\n Problems:");
 			int match = testEligibility(candidate, prefix, error);
 			if (match > longestMatch) {
 				constructor = candidate;
 				longestMatch = match;
 			}
+			number++;
 		}
 
 		// Actually performs the injection, if a suitable
@@ -141,9 +148,11 @@ public class ObjectCreator implements IAttributeSource {
 
 	private IllegalArgumentException noSuitableConstructor(String msg,
 			Class<?> klass) {
-		return new IllegalArgumentException("Class " + klass.getName()
-				+ " has no suitable constructors. Further information: \n"
-				+ msg);
+		return new IllegalArgumentException(
+				"Class "
+						+ klass.getName()
+						+ " has no suitable constructors. The following contructors were"
+						+ " examined and deemed unsuitable: \n" + msg);
 	}
 
 	/**
@@ -171,13 +180,12 @@ public class ObjectCreator implements IAttributeSource {
 		Attribute[] annotations = getAnnotations(candidate);
 		Class<?>[] parameterTypes = candidate.getParameterTypes();
 
-		data.append("Constructor signature:\n ");
-		data.append(candidate.toGenericString());
-		data.append("\n Non-matched parameter(s):\n");
-
 		if (annotations == null) {
+			data.append("\n * One or more parameters lack the @Attribute annotation.\n");
 			return -1;
 		}
+
+		data.append("\n * Could not match parameter(s) from configuration:\n");
 
 		for (int i = 0; i < annotations.length; i++) {
 			String key = annotations[i].value();
@@ -300,7 +308,7 @@ public class ObjectCreator implements IAttributeSource {
 			value = fResolver.getInt(prefix, key);
 		} else if (type == String.class) {
 			value = fResolver.getString(prefix, key);
-		} 
+		}
 		// Special cases.
 		else if (type.isAssignableFrom(IResolver.class)) {
 			value = fResolver;

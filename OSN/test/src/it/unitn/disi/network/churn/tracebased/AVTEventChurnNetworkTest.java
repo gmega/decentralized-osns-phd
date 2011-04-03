@@ -163,7 +163,7 @@ public class AVTEventChurnNetworkTest extends PeerSimTest {
 
 		// Initializers.
 		AVTEventStreamInit init = new AVTEventStreamInit(null, PROTOCOL_ID,
-				TRACEID_PID, avtCut, loop);
+				TRACEID_PID, 1.0, avtCut, loop, false);
 		init.execute0(new InputStreamReader(new ByteArrayInputStream(avtTrace
 				.getBytes())));
 

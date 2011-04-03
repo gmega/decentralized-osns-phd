@@ -21,6 +21,10 @@ public class TraceIDAssignment {
 		}
 	}
 	
+	public int size() {
+		return fAssignment.size();
+	}
+	
 	public Node get(String id) {
 		return fAssignment.get(id);
 	}

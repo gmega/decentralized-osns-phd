@@ -6,8 +6,9 @@ public class ListExchanger <K> implements IExchanger {
 
 	private List<K> fList;
 	
-	public void setList(List<K> list) {
+	public ListExchanger setList(List<K> list) {
 		fList = list;
+		return this;
 	}
 	
 	public void exchange(int i, int j) {

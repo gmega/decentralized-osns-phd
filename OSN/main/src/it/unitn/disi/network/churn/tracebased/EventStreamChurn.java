@@ -16,8 +16,8 @@ public class EventStreamChurn extends RenewalChurnNetwork {
 
 	private long fBaseTime;
 
-	protected EventStreamChurn(@Attribute(Attribute.AUTO) String prefix,
-			IResolver resolver) {
+	public EventStreamChurn(@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute IResolver resolver) {
 		super(prefix, resolver);
 	}
 	

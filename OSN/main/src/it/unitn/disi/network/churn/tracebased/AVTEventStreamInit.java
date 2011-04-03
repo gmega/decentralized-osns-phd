@@ -1,5 +1,6 @@
 package it.unitn.disi.network.churn.tracebased;
 
+import it.unitn.disi.network.GenericValueHolder;
 import it.unitn.disi.utils.MiscUtils;
 
 import java.io.BufferedReader;
@@ -37,19 +38,47 @@ public class AVTEventStreamInit implements Control {
 
 	private final long fCut;
 
+	private final double fScale;
+
 	private final boolean fLoop;
 
+	private final boolean fAllowUnassigned;
+
+	/**
+	 * @param tracefile
+	 *            absolute path pointing to the AVT trace file.
+	 * 
+	 * @param churnNetId
+	 *            id of the {@link EventStreamChurn} associated to each node.
+	 * 
+	 * @param traceId
+	 *            id of a {@link GenericValueHolder} holding the trace ID (in
+	 *            the AVT file), associated to each node.
+	 * 
+	 * @param cut
+	 *            the point in time in which the AVT file should be cut. If
+	 *            omitted, this defaults to plus infinity.
+	 * 
+	 * @param loop
+	 *            whether to loop the trace file once data runs out or not.
+	 */
 	public AVTEventStreamInit(
 			@Attribute("tracefile") String tracefile,
 			@Attribute("protocol") int churnNetId,
 			@Attribute("trace_id") int traceId,
-			@Attribute(value = "time_cut", defaultValue = "9223372036854775807") int cut,
-			@Attribute(value = "boolean", defaultValue = "true") boolean loop) {
+			@Attribute(value = "timescale", defaultValue = "1.0") double timescale,
+			@Attribute(value = "time_cut", defaultValue = "9223372036854775807") long cut,
+			@Attribute(value = "loop") boolean loop,
+			@Attribute(value = "allow_unassigned") boolean allow) {
 		fTracefile = tracefile;
 		fChurnNetId = churnNetId;
 		fTraceId = traceId;
+		fScale = timescale;
 		fCut = cut;
 		fLoop = loop;
+		fAllowUnassigned = allow;
+		System.out.println("Scaling factor is " + fScale + ", cut time is "
+				+ fCut + ".");
 	}
 
 	@Override
@@ -64,6 +93,7 @@ public class AVTEventStreamInit implements Control {
 	protected boolean execute0(Reader input) throws Exception {
 		TraceIDAssignment map = new TraceIDAssignment(fTraceId);
 
+		int assigned = 0;
 		ArrayList<ArrayIterator> iterators = new ArrayList<ArrayIterator>();
 		BufferedReader reader = new BufferedReader(input);
 		long maxTraceTime = Long.MIN_VALUE;
@@ -72,14 +102,17 @@ public class AVTEventStreamInit implements Control {
 			// Reads header.
 			StringTokenizer strtok = new StringTokenizer(line);
 			String traceId = strtok.nextToken();
+
 			// Discard the event length since we don't use it.
 			strtok.nextToken();
 
 			// Reads events.
 			ArrayList<Long> events = new ArrayList<Long>();
 			while (strtok.hasMoreElements()) {
-				long start = Long.parseLong(strtok.nextToken());
-				long end = Long.parseLong(strtok.nextToken());
+				long start = (long) Math
+						.ceil(Long.parseLong(strtok.nextToken()) * fScale);
+				long end = (long) Math.ceil(Long.parseLong(strtok.nextToken())
+						* fScale);
 				if (start >= fCut) {
 					break;
 				}
@@ -91,14 +124,28 @@ public class AVTEventStreamInit implements Control {
 			// Assign events to node.
 			Node node = map.get(traceId);
 			if (node == null) {
-				throw new IllegalStateException("Trace ID <<" + traceId
-						+ ">> has not been assigned.");
+				if (fAllowUnassigned) {
+					continue;
+				} else {
+					throw new IllegalStateException(
+							"Trace ID <<"
+									+ traceId
+									+ ">> is present in AVT file but has not been assigned to any node.");
+				}
 			}
 			EventStreamChurn churn = (EventStreamChurn) node
 					.getProtocol(fChurnNetId);
 			ArrayIterator schedule = new ArrayIterator(unboxedArray(events));
 			iterators.add(schedule);
 			churn.init(node, schedule, 0);
+			assigned++;
+		}
+
+		// Checks whether all ID assignments were actually fulfilled.
+		if (assigned != map.size()) {
+			throw new IllegalStateException(
+					"ID assignment could not be satisifed (" + assigned
+							+ " != " + map.size() + ").");
 		}
 
 		// Set sync points for looping, if needed.
@@ -149,11 +196,6 @@ public class AVTEventStreamInit implements Control {
 			return fArray[fIdx++];
 		}
 
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-
 		private boolean hasMoreEvents() {
 			return fIdx != fArray.length;
 		}
@@ -173,5 +215,9 @@ public class AVTEventStreamInit implements Control {
 			fIdx = 0;
 		}
 
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
 	}
 }
