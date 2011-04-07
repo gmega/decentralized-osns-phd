@@ -21,20 +21,33 @@ public class PluginContainer extends NullResolver {
 
 	private final IResolver fResolver;
 
-	private final Map<String, IPlugin> fPluginRegistry;
+	private final Map<String, Object> fPluginRegistry;
 
 	private final Map<String, IPluginDescriptor> fDescriptorRegistry;
+
+	private boolean fStarted = false;
 
 	public PluginContainer(IResolver resolver, IPluginDescriptor... descriptors) {
 		fDescriptors = descriptors;
 		fResolver = resolver;
 		fPluginRegistry = Collections
-				.synchronizedMap(new HashMap<String, IPlugin>());
+				.synchronizedMap(new HashMap<String, Object>());
 		fDescriptorRegistry = Collections
 				.synchronizedMap(new HashMap<String, IPluginDescriptor>());
 	}
 
 	public void start() {
+		if (fStarted) {
+			throw new IllegalStateException(
+					"Plugin container cannot be started twice.");
+		}
+		/*
+		 * Well it's not really started yet, but if something goes wrong here
+		 * we're not making provisions to clean up the state anyway, and this
+		 * code is not meant to be thread-safe.
+		 */
+		fStarted = true;
+
 		IPluginDescriptor[] descriptors = topologicalSort(reverseDependencies(fDescriptors));
 
 		CompositeResolver composite = new CompositeResolver();
@@ -51,20 +64,27 @@ public class PluginContainer extends NullResolver {
 				fDescriptorRegistry.put(descriptor.id() + ".descriptor",
 						descriptor);
 
-				System.err.println(PluginContainer.class.getSimpleName()
-						+ ": start plug-in " + descriptor.id() + " ("
-						+ descriptor.pluginClass().getName() + ").");
+				lifecycleMessage("create instance of", descriptor);
 
 				// 2. Create.
-				IPlugin plugin = creator.create(
+				Object object = creator.create(
 						descriptor.configurationPrefix(),
 						descriptor.pluginClass());
 
-				// 3. Registers the plugin.
-				fPluginRegistry.put(plugin.id(), plugin);
+				// 3. Start.
+				String what = what(object);
+				lifecycleMessage("start " + what, descriptor);
+				if (isPlugin(object)) {
+					IPlugin plugin = (IPlugin) object;
+					fPluginRegistry.put(plugin.id(), plugin);
+					plugin.start(fResolver);
+				} else if (isInitializer(object)) {
+					IGenericServiceInitializer initializer = (IGenericServiceInitializer) object;
+					initializer.run(this);
+				} else {
+					throw new InternalError();
+				}
 
-				// 4. Start.
-				plugin.start(fResolver);
 			} catch (Exception ex) {
 				if (ex instanceof RuntimeException) {
 					throw (RuntimeException) ex;
@@ -80,6 +100,38 @@ public class PluginContainer extends NullResolver {
 			return lookup(fDescriptorRegistry, key);
 		} else {
 			return lookup(fPluginRegistry, key);
+		}
+	}
+
+	public void registerObject(String fullName, Object object) {
+		fPluginRegistry.put(fullName, object);
+	}
+
+	private void lifecycleMessage(String message, IPluginDescriptor descriptor) {
+		System.err.println(PluginContainer.class.getSimpleName() + ": "
+				+ message + descriptor.id() + " ("
+				+ descriptor.pluginClass().getName() + ").");
+	}
+
+	private boolean isPlugin(Object obj) {
+		return IPlugin.class.isAssignableFrom(obj.getClass());
+	}
+
+	private boolean isInitializer(Object obj) {
+		return IGenericServiceInitializer.class
+				.isAssignableFrom(obj.getClass());
+	}
+
+	private String what(Object obj) {
+		if (isPlugin(obj)) {
+			return "plug-in";
+		} else if (isInitializer(obj)) {
+			return "initializer";
+		} else {
+			throw new IllegalArgumentException("Class "
+					+ obj.getClass().getName()
+					+ " must implement either plugin "
+					+ "or initializer interfaces.");
 		}
 	}
 
@@ -120,12 +172,16 @@ public class PluginContainer extends NullResolver {
 
 		@Override
 		public void run() {
-			for (IPlugin plugin : fPluginRegistry.values()) {
+			IPlugin current = null;
+			for (Object object : fPluginRegistry.values()) {
 				try {
-					plugin.stop();
+					if (object instanceof IPlugin) {
+						current = (IPlugin) object;
+						current.stop();
+					}
 				} catch (Exception ex) {
 					System.err.println("Error while stopping plugin "
-							+ plugin.id());
+							+ current.id());
 					ex.printStackTrace();
 				}
 			}

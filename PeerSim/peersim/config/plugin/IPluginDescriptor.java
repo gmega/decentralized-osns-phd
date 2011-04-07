@@ -8,6 +8,6 @@ public interface IPluginDescriptor {
 	
 	public String [] depends();
 	
-	public Class<? extends IPlugin> pluginClass();
+	public Class<?> pluginClass();
 	
 }

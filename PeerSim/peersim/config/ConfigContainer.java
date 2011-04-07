@@ -1013,12 +1013,11 @@ public class ConfigContainer {
 			String depString = config.getProperty(prefix + "." + PAR_DEPS);
 			final String [] depArray = depString == null ? new String[] {} : depString.split(" ");
 			
-			@SuppressWarnings("unchecked")
-			final Class<? extends IPlugin> klass = getClass(plugins[i]);
+			final Class<?> klass = getClass(plugins[i]);
 			
 			descriptors[i] = new IPluginDescriptor() {
 				@Override
-				public Class<? extends IPlugin> pluginClass() {
+				public Class<?> pluginClass() {
 					return klass;
 				}
 				

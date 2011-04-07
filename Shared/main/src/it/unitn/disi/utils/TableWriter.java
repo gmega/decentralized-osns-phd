@@ -4,6 +4,11 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
+/**
+ * Utility class which allows tabular data to be written in a simple way.
+ * 
+ * @author giuliano
+ */
 public class TableWriter {
 
 	private static final String FS = " ";

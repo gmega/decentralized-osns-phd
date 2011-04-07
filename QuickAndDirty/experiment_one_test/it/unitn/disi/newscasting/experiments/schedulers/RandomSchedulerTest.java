@@ -57,7 +57,6 @@ public class RandomSchedulerTest extends PeerSimTest{
 			
 		for (int i = 0; i < 200; i++) {
 			DegreeClassScheduler scheduler = new DegreeClassScheduler(pid, 14, "42");
-			scheduler.initialize(graph);
 			for (int klass : classes) { degreeClasses.add(klass); }
 			selected.clear();
 			

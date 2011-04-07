@@ -2,7 +2,7 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.newscasting.IApplicationInterface;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.experiments.schedulers.ISchedule;
+import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -99,7 +99,7 @@ public class DisseminationExperimentGovernor implements Control {
 	 * The experiment scheduler.
 	 */
 	private Iterable<Integer> fScheduler;
-	private ISchedule fSchedule;
+	private IScheduleIterator fSchedule;
 
 	// ----------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ public class DisseminationExperimentGovernor implements Control {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 		fRebootSupport = new NodeRebootSupport(prefix);
-		fSchedule = (ISchedule) fScheduler.iterator();
+		fSchedule = (IScheduleIterator) fScheduler.iterator();
 		fTracker = new TimeTracker(fSchedule.remaining(), manager);
 		addExperimentObserver(fTracker);
 		publishSingleton();
@@ -228,7 +228,7 @@ public class DisseminationExperimentGovernor implements Control {
 
 	private Iterable<Integer> createScheduler(IResolver resolver, String prefix) {
 		return SchedulerFactory.getInstance().createScheduler(resolver,
-				prefix + "." + SCHEDULER);
+				prefix + "." + SCHEDULER, NodeRegistry.getInstance());
 	}
 
 	private void publishSingleton() {

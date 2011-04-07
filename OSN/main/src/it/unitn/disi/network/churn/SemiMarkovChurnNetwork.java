@@ -12,6 +12,14 @@ import peersim.core.Fallible;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 
+/**
+ * Somewhat raw base class for implementing churn models which assign a
+ * semi-Markov chain to each node.
+ * 
+ * @author giuliano
+ * 
+ * @param <T>
+ */
 @SuppressWarnings("rawtypes")
 public abstract class SemiMarkovChurnNetwork<T extends Enum> implements
 		EDProtocol<Delta<T>> {

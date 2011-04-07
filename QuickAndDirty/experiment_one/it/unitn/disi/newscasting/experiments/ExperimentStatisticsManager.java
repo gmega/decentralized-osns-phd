@@ -173,6 +173,7 @@ class UnitExperimentData {
 		for (int i = 0; i < fReceived.length; i++) {
 			fReceived[i] = 0;
 			fSent[i] = 0;
+			fDuplicatesSent[i] = 0;
 		}
 		fLatency.reset();
 	}
@@ -219,7 +220,7 @@ class UnitExperimentData {
 		fSent[(int) sender]++;
 		fReceived[(int) receiver]++;
 		if (dup) {
-			fDuplicatesSent[(int) receiver]++;
+			fDuplicatesSent[(int) sender]++;
 		}
 	}
 
@@ -382,6 +383,8 @@ class UnitExperimentData {
 		buffer.append(FIELD_SEPARATOR);
 		buffer.append("sent");
 		buffer.append(FIELD_SEPARATOR);
+		buffer.append("dups_sent");
+		buffer.append(FIELD_SEPARATOR);
 		buffer.append("received");
 		// FIXME uptime not really a load statistic, but a per-node statistic
 		// (as opposed to the latency aggregates, which are per-experiment
@@ -414,11 +417,14 @@ class UnitExperimentData {
 		// 3 - Messages sent by the node.
 		buffer.append(fSent[i]);
 		buffer.append(FIELD_SEPARATOR);
-		// 4 - Messages received by the node. Note that this is COUNTING
+		// 4 - Messages sent by this node which ended up being duplicates.
+		buffer.append(fDuplicatesSent[i]);
+		buffer.append(FIELD_SEPARATOR);
+		// 5 - Messages received by the node. Note that this is COUNTING
 		// DUPLICATES.
 		buffer.append(fReceived[i]);
 		buffer.append(FIELD_SEPARATOR);
-		// 5 - Uptime.
+		// 6 - Uptime.
 		buffer.append(node.uptime());
 	}
 }

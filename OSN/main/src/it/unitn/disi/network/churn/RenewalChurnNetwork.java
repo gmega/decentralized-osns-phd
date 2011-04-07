@@ -3,15 +3,20 @@ package it.unitn.disi.network.churn;
 import peersim.config.IResolver;
 import peersim.core.Node;
 
+/**
+ * Base class for implementing churn models which assign a renewal process to
+ * each node.
+ * 
+ * @author giuliano
+ */
 public abstract class RenewalChurnNetwork extends
 		SemiMarkovChurnNetwork<OnOffState> {
 
 	protected RenewalChurnNetwork(String prefix, IResolver resolver) {
 		super(prefix, resolver);
 	}
-	
-	protected RenewalChurnNetwork(int selfPid, String prefix,
-			IResolver resolver) {
+
+	protected RenewalChurnNetwork(int selfPid, String prefix, IResolver resolver) {
 		super(selfPid, prefix, resolver);
 	}
 
@@ -56,7 +61,7 @@ public abstract class RenewalChurnNetwork extends
 	protected abstract long downtime(Node node);
 
 	protected abstract long uptime(Node node);
-	
+
 	protected abstract boolean hasDeparted(Node node);
 
 }

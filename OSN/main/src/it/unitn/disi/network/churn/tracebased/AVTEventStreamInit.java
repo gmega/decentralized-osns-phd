@@ -55,12 +55,19 @@ public class AVTEventStreamInit implements Control {
 	 *            id of a {@link GenericValueHolder} holding the trace ID (in
 	 *            the AVT file), associated to each node.
 	 * 
+	 * @param timescale
+	 *            AVT files usually come with time in seconds. This constant
+	 *            gets multiplied by time allowing use of arbitrary units.
+	 * 
 	 * @param cut
 	 *            the point in time in which the AVT file should be cut. If
 	 *            omitted, this defaults to plus infinity.
 	 * 
 	 * @param loop
 	 *            whether to loop the trace file once data runs out or not.
+	 * 
+	 * @param allow_unassigned
+	 *            if true, skips unassigned IDs in the AVT file.
 	 */
 	public AVTEventStreamInit(
 			@Attribute("tracefile") String tracefile,

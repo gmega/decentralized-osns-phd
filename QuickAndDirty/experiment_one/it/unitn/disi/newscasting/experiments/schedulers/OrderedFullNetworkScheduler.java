@@ -7,83 +7,47 @@ import java.util.Iterator;
 import peersim.core.Network;
 import peersim.core.Node;
 
-public class OrderedFullNetworkScheduler implements Iterable<Integer> {
+public class OrderedFullNetworkScheduler implements IStaticSchedule {
 
 	private Node[] fPermutation;
 
 	public OrderedFullNetworkScheduler() {
+		this(new NodeIdOrdering());
+	}
+
+	public OrderedFullNetworkScheduler(Comparator<Node> comparator) {
 		fPermutation = new Node[networkSize()];
 		for (int i = 0; i < fPermutation.length; i++) {
-			fPermutation[i] = get(i);
+			fPermutation[i] = get0(i);
 		}
+		Arrays.sort(fPermutation, comparator);
 	}
 	
-	public OrderedFullNetworkScheduler(Comparator<Node> comparator) {
-		this();
-		Arrays.sort(fPermutation, comparator);
+	public int size() {
+		return fPermutation.length;
 	}
 
 	@Override
 	public Iterator<Integer> iterator() {
-		Schedule sched = new Schedule();
-		sched.initialize();
-		return sched;
+		return new StaticScheduleIterator(this);
 	}
 
 	protected int networkSize() {
 		return Network.size();
 	}
 
-	protected Node get(int index) {
-		return Network.get(index);
+	public int get(int index) {
+		return (int) fPermutation[index].getID();
 	}
 
-	private Node getOrdered(int index) {
-		return fPermutation[index];
+	protected Node get0(int i) {
+		return Network.get(i);
 	}
 
-	class Schedule implements ISchedule{
-
-		private boolean[] fSelected;
-
-		private int fRemaining;
-
-		public void initialize() {
-			int size = networkSize();
-			fSelected = new boolean[size];
-			fRemaining = size;
-		}
-		
+	static class NodeIdOrdering implements Comparator<Node> {
 		@Override
-		public int remaining() {
-			return fRemaining;
+		public int compare(Node o1, Node o2) {
+			return (int) Math.signum(o1.getID() - o2.getID());
 		}
-
-		@Override
-		public boolean hasNext() {
-			return fRemaining != 0;
-		}
-
-		@Override
-		public Integer next() {
-			for (int i = 0; i < fSelected.length; i++) {
-				if (!fSelected[i]) {
-					Node candidate = getOrdered(i);
-					if (candidate.isUp()) {
-						fRemaining--;
-						fSelected[i] = true;
-						return (int) candidate.getID();
-					}
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-
 	}
-
 }

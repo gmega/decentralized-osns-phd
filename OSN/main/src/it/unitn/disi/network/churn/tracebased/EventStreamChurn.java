@@ -9,6 +9,12 @@ import peersim.core.Node;
 import it.unitn.disi.network.churn.OnOffState;
 import it.unitn.disi.network.churn.RenewalChurnNetwork;
 
+/**
+ * {@link RenewalChurnNetwork} in which ON/OFF events are specified by an
+ * {@link Iterator} (event stream) supplied by a third party.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class EventStreamChurn extends RenewalChurnNetwork {
 
@@ -20,9 +26,8 @@ public class EventStreamChurn extends RenewalChurnNetwork {
 			@Attribute IResolver resolver) {
 		super(prefix, resolver);
 	}
-	
-	protected EventStreamChurn(int selfPid, String prefix,
-			IResolver resolver) {
+
+	protected EventStreamChurn(int selfPid, String prefix, IResolver resolver) {
 		super(selfPid, prefix, resolver);
 	}
 
@@ -43,7 +48,7 @@ public class EventStreamChurn extends RenewalChurnNetwork {
 	}
 
 	private long nextEvent() {
-		long nextTime = fSchedule.next(); 
+		long nextTime = fSchedule.next();
 		long nextDelay = nextTime - fBaseTime;
 		fBaseTime = nextTime;
 		return nextDelay;

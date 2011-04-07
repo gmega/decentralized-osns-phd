@@ -26,7 +26,7 @@ import peersim.graph.Graph;
  * @author giuliano
  */
 @AutoConfig
-public class DegreeClassScheduler implements Iterable<Integer>{
+public class DegreeClassScheduler implements IStaticSchedule {
 	
 	static final ArrayExchanger<Integer> xchgr = new ArrayExchanger<Integer>();
 	
@@ -55,17 +55,31 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 		this.seed = seed;
 	}
 	
+	public int size() {
+		return schedule().size();
+	}
+	
+	public int get(int index) {
+		ArrayList<Integer> schedule = schedule();
+		return schedule.get(index);
+	}
+	
 	public Iterator<Integer> iterator() {
+		schedule();
+		return new StaticScheduleIterator(this);
+	}
+
+	private ArrayList<Integer> schedule() {
 		if (fSchedule == null) {
 			Node node = Network.get(0);
 			GraphProtocol fgp = (GraphProtocol) node.getProtocol(linkable);
-			initialize(fgp.graph());
+			fSchedule = createSchedule(fgp.graph());
 		}
-		
-		return fSchedule.iterator();
+		return fSchedule;
 	}
+
 	
-	void initialize(final Graph graph) {
+	ArrayList<Integer> createSchedule(final Graph graph) {
 		ArrayList<Node> schedule = new ArrayList<Node>();
 		Integer [] allNodes = new Integer[graph.size()];
 				
@@ -116,7 +130,7 @@ public class DegreeClassScheduler implements Iterable<Integer>{
 			intSchedule.addAll(neighbors);
 		}
 				
-		fSchedule = intSchedule;
+		return intSchedule;
 	}
 	
 	private Set<Integer> neighborsOf(List<Integer> schedule, Graph graph) {

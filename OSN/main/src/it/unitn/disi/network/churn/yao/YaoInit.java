@@ -1,7 +1,5 @@
 package it.unitn.disi.network.churn.yao;
 
-import java.util.NoSuchElementException;
-
 import it.unitn.disi.random.Exponential;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
@@ -10,6 +8,9 @@ import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.logging.StructuredLog;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.Configuration;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -19,7 +20,8 @@ import peersim.core.Node;
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>.
  */
-@StructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli", "edi", "ai" })
+@StructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli",
+		"edi", "ai" })
 @AutoConfig
 public class YaoInit implements Control {
 
@@ -36,44 +38,12 @@ public class YaoInit implements Control {
 	}
 
 	// -- Heavy tailed
-	private static final IMode HEAVY_TAILED = new IMode() {
-
-		@Override
-		public IDistribution uptimeDistribution(double li) {
-			return new ShiftedPareto(3.0, 2.0 * li, CommonState.r);
-		}
-
-		@Override
-		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(3.0, 2.0 * di, CommonState.r);
-		}
-
-		@Override
-		public String id() {
-			return "H";
-		}
-
-	};
+	private static final IMode HEAVY_TAILED = new DualPareto(3.0, 3.0, 2.0,
+			2.0, "H", CommonState.r);
 
 	// -- Very Heavy tailed
-	private static final IMode VERY_HEAVY_TAILED = new IMode() {
-
-		@Override
-		public IDistribution uptimeDistribution(double li) {
-			return new ShiftedPareto(1.5, li / 2.0, CommonState.r);
-		}
-
-		@Override
-		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(1.5, di / 2.0, CommonState.r);
-		}
-
-		@Override
-		public String id() {
-			return "VH";
-		}
-
-	};
+	private static final IMode VERY_HEAVY_TAILED = new DualPareto(1.5, 1.5,
+			2.0, 2.0, "VH", CommonState.r);
 
 	// -- Exponential System
 	private static final IMode EXPONENTIAL_SYSTEM = new IMode() {
@@ -110,16 +80,18 @@ public class YaoInit implements Control {
 
 	private int fYaoChurnId;
 
-	private String fMode;
-
 	private TableWriter fLog;
 
-	public YaoInit(@Attribute("protocol") int yaoChurnId,
+	private final IMode fMode;
+
+	public YaoInit(@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute IResolver resolver,
+			@Attribute("protocol") int yaoChurnId,
 			@Attribute("mode") String mode,
 			@Attribute("TabularLogManager") TabularLogManager logManager) {
 		fYaoChurnId = yaoChurnId;
-		fMode = mode;
 		fLog = logManager.get(YaoInit.class);
+		fMode = mode(resolver, prefix, mode);
 	}
 
 	@Override
@@ -130,43 +102,47 @@ public class YaoInit implements Control {
 		IDistribution downAverage = new ShiftedPareto(ALPHA, BETA_DOWNTIME,
 				CommonState.r);
 		// Assigns different distributions to each node.
-		IMode mode = mode(fMode);
 		for (int i = 0; i < Network.size(); i++) {
 			Node current = Network.get(i);
 			YaoOnOffChurn churn = (YaoOnOffChurn) current
 					.getProtocol(fYaoChurnId);
 			double li = upAverage.sample();
 			double di = downAverage.sample();
-			IDistribution uptime = mode.uptimeDistribution(li);
-			IDistribution downtime = mode.downtimeDistribution(di);
+			IDistribution uptime = fMode.uptimeDistribution(li);
+			IDistribution downtime = fMode.downtimeDistribution(di);
 			churn.init(uptime, downtime, current);
-			printParameters(i, current, li, di, uptime.expectation(), downtime.expectation());
+			printParameters(i, current, li, di, uptime.expectation(),
+					downtime.expectation());
 		}
 		return false;
 	}
 
-	private void printParameters(int index, Node node, double li, double di, double eli, double edi) {
+	private void printParameters(int index, Node node, double li, double di,
+			double eli, double edi) {
 		fLog.set("index", Integer.toString(index));
 		fLog.set("id", Long.toString(node.getID()));
 		fLog.set("li", Double.toString(li));
 		fLog.set("di", Double.toString(di));
-		
-		fLog.set("eli", Double.toString(eli)); // Expectation of assigned uptime distribution.
-		fLog.set("edi", Double.toString(edi)); // Expectation of assigned downtime distribution.
-		
+		// Expectation of assigned uptime distribution.
+		fLog.set("eli", Double.toString(eli));
+		// Expectation of assigned downtime distribution.
+		fLog.set("edi", Double.toString(edi));
 		// Availability.
-		double availability = li/(li + di);
+		double availability = li / (li + di);
 		fLog.set("ai", Double.toString(availability));
-		
 		fLog.emmitRow();
 	}
 
-	private IMode mode(String modeId) {
+	@SuppressWarnings("unchecked")
+	private IMode mode(IResolver resolver, String prefix, String modeId) {
 		for (IMode mode : modes) {
 			if (mode.id().toUpperCase().equals(modeId)) {
 				return mode;
 			}
 		}
-		throw new NoSuchElementException("Invalid mode " + modeId + ".");
+
+		// Not one of the pre-set modes, interpret as class name.
+		return (IMode) ObjectCreator.createInstance(
+				Configuration.getClass(prefix + ".mode"), prefix, resolver);
 	}
 }
