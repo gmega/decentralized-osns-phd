@@ -182,8 +182,15 @@ add_transitivities <- function(a_table, a_graph) {
 # as well as aggregate variance.
 #
 combine_experiments <- function(a_table) {
-	# Adds the latency sums first.
-	transformed <- add_simple_sum(a_table, "t_avg", "delivered", "latency_sum")
+	transformed <- a_table
+	# Adds the latency sums first, if missing.
+	if(is.null(a_table$latency_sum)) {
+		transformed <- add_simple_sum(a_table, "t_avg", "delivered", "latency_sum")
+	}
+	# Adds average, if missing.
+	if(is.null(a_table$t_avg)) {
+		transformed$t_avg <- checked_divide_vector(transformed$latency_sum, transformed$delivered, 0.0)
+	}
 	# Then the squared sums.
 	transformed <- add_squared_sum(transformed, "t_avg", "t_var", "delivered")
 	# Then the experiment counts.

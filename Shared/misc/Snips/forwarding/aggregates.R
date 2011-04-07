@@ -11,7 +11,6 @@ latency_file <- args[1]
 # Reads the data.
 o_table <- read.table(latency_file, header=TRUE)
 a_table <- table_processing(o_table, NULL)
-
 delivered <- sum(a_table$delivered)
 undelivered <- sum(a_table$undelivered)
 residue <- safe_divide(undelivered, (delivered + undelivered))

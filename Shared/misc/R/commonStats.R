@@ -96,3 +96,32 @@ assortativity <- function(graph)
 	edges <- get.edgelist(graph, names=FALSE) + 1
 	return(cor(degs[edges[,1]],degs[edges[,2]]))
 }
+
+# -----------------------------------------------------------------------------
+# Shifted Pareto number generator.
+# -----------------------------------------------------------------------------
+setConstructorS3("ShiftedPareto", function(alpha, beta) {
+	extend(Object(), "ShiftedPareto",
+			.alpha = alpha,
+			.beta = beta)		
+})
+
+setMethodS3("sample", "ShiftedPareto", function(this, n) {
+	u <- runif(n)
+	boundf <- function(x) {
+		return(.shiftedParetoTransform(this, x))
+	}
+	return(sapply(u, boundf, simplify=TRUE))
+})
+
+setMethodS3(".shiftedParetoTransform", "ShiftedPareto", function(this, u) {
+	return(this$.beta * ((u^(-1.0 / this$.alpha)) - 1));
+});
+
+setMethodS3("variance", "ShiftedPareto", function(this) {
+	xsi <- 1.0/this$.alpha
+	sigma <- this$.beta/this$.alpha
+	a <- (sigma/(1.0 - xsi))^2
+	b <- (1.0 - 2*xsi)
+	return (a/b)
+});

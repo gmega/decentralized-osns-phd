@@ -6,7 +6,7 @@ library(R.oo)
 # Plots correlations with average latency.
 # -----------------------------------------------------------------------------
 
-plot_cor <- function(table, x=800, y=0.6, pos=NULL, lwd=2) {
+plot_cor <- function(table, x=800, y=0.6, pos=NULL, lwd=2, bty="n") {
 	max_deg <- max(table$degree)
 	table <- table[order(table$id),]
 	corr <- sapply(1:1500, function(x) { return(cor(table$t_avg[table$degree > x], fbego$communities[fbego$degree > x])) })
@@ -45,8 +45,9 @@ aggregate_by_featurevalue <- function(table, avg_function, featurebreaks, featur
 # Generic function which allows us to plot aggregate curves by successively 
 # removing classes of points and recomputing.
 # -----------------------------------------------------------------------------
-plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, colors, aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL,...) {
-	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector)) })
+plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extractor, colors, aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL, bty="n", ...) {
+	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector_extractor(x))) })
+	
 	# Finds the maximum
 	if (is.null(ylim)) {
 		coalesced <- c(datasets)
@@ -56,9 +57,11 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, col
 		ylim=c(minimum, maximum)	
 	}
 	rm(coalesced)
+	
 	# First calls plot.
 	first_set <- datasets[,1]
 	plot(first_set ~ featurebreaks, type="l", xlab=xlab, ylab=ylab, col=colors[1], lwd=lwd, lty=1, ylim=ylim,...)
+	
 	# Then lines.
 	for(i in 2:length(tables)) {
 		lines(datasets[,i] ~ featurebreaks, col=colors[i], lwd=lwd, lty=i)
@@ -72,7 +75,7 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector, col
 			x <- lpos
 			y <- NULL
 		}
-		legend(x, y, lnames, col=colors, lwd=lwd, lty=1:length(tables), bty="n")
+		legend(x, y, lnames, col=colors, lwd=lwd, lty=1:length(tables), bty=bty)
 	}
 }
 
