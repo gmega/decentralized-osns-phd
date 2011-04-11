@@ -43,4 +43,16 @@ corr_residue_aggregator <- function(tbl, indexes) {
 
 # ---------------------------------------------------------------------
 
-run(processor)
+deg_filter <- function(tbl) {
+	idx <- tbl$root + 1
+	return(degs[idx])
+}
+
+residue_plot <- function(envir, pat, resfun, tit, ylim=NULL, bty="n") {
+	plot_comparison_by_feature(all_in(envir, pat), featurebreaks=sort(unique(degs)),
+	featurevector_extractor=degfilter, colors=colorRampPalette(c("blue", "green", "yellow", "red"),
+	bias = 1, space="rgb")(length(all_in(envir))), aggregator=resfun, xlab="Degree",
+	ylab=expression(paste("Value nodes with degree ">=" x")), lnames=ls(envir, pattern=pat), 
+	lpos=lpos, ylim=ylim, bty=bty, main=tit)
+}
+

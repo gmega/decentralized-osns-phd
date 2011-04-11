@@ -1,6 +1,6 @@
 package it.unitn.disi.network.churn.yao;
 
-import it.unitn.disi.network.churn.yao.YaoInit.IMode;
+import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
 
@@ -10,7 +10,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 @AutoConfig
-public class DualPareto implements IMode {
+public class DualPareto implements IDistributionGenerator {
 
 	private final double fUptimeAlpha;
 

@@ -46,5 +46,4 @@ public class CDActionScheduler implements Control {
 
 		return false;
 	}
-
 }

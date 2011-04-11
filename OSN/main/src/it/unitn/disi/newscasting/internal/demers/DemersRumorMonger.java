@@ -17,7 +17,6 @@ import java.util.ListIterator;
 import java.util.Random;
 
 import peersim.config.IResolver;
-import peersim.config.resolvers.ConfigContainerResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 

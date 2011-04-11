@@ -99,12 +99,7 @@ public class ComponentComputationService implements Protocol, IInitializable {
 		}
 
 		GraphProtocol lnk = (GraphProtocol) fOwner.getProtocol(fLinkableId);
-		boolean dirty = true;
-
-		dirty = lnk.hasChanged(CommonState.getIntTime());
-		dirty |= (fMappings == null);
-
-		if (dirty) {
+		if (lnk.hasChanged(CommonState.getIntTime()) || fMappings == null) {
 			recomputeComponents(fOwner, lnk);
 		}
 
