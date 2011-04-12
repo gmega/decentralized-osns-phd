@@ -118,7 +118,7 @@ public class YaoInit implements Control {
 			@Attribute IResolver resolver,
 			@Attribute("protocol") int yaoChurnId,
 			@Attribute("mode") String mode,
-			@Attribute(value = "generator", defaultValue = "yao") String generator,
+			@Attribute(value = "generator", defaultValue = "YAO") String generator,
 			@Attribute("TabularLogManager") TabularLogManager logManager) {
 		fYaoChurnId = yaoChurnId;
 		fLog = logManager.get(YaoInit.class);

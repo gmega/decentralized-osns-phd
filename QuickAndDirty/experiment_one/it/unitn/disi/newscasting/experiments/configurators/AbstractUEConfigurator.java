@@ -10,7 +10,7 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
-import it.unitn.disi.newscasting.experiments.TimeoutController;
+import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
@@ -137,9 +137,8 @@ public abstract class AbstractUEConfigurator implements
 		// And the timeout controller, if installed.
 		try {
 			int pid = fResolver.getInt(prefix, PARAMETER_TIMEOUT_ID);
-			TimeoutController controller = (TimeoutController) app.node()
-					.getProtocol(pid);
-			app.addSubscriber(controller);
+			TimeoutReset resetter = new TimeoutReset(pid);
+			app.addSubscriber(resetter);
 		} catch (MissingParameterException ex) {
 			// Swallows and proceeds.
 		}

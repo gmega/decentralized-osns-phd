@@ -10,6 +10,7 @@ import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -59,7 +60,12 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 
 	@Override
 	public Object clone() {
-		return this;
+		try {
+			AbstractTimeoutController cloned = (AbstractTimeoutController) super.clone();
+			return cloned;
+		} catch (CloneNotSupportedException ex) {
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 	}
 
 	private void shutdownNode(Node node) {

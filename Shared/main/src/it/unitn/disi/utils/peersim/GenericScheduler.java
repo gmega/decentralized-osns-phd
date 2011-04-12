@@ -29,5 +29,4 @@ public class GenericScheduler implements IScheduler<Object>, Protocol {
 	public Object clone() {
 		return this;
 	}
-
 }
