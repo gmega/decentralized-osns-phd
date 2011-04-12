@@ -311,14 +311,34 @@ class UnitExperimentData {
 	 * @return the minimum speedup over the naïve dissemination approach.
 	 */
 	public double minimumSpeedup() {
-		return (double) (fTweet.destinations() - 1) / getMax();
+		double n = getMax();
+		double d = delivered() - 2;
+		
+		if (n == 0) {
+			return (d < 0) ? 0 : 1;
+		}
+
+		return n / d;
 	}
 
 	/**
 	 * @return the average speedup over the naïve dissemination approach.
 	 */
 	public double averageSpeedup() {
-		return ((fTweet.destinations()) * delivered()) / (2.0 * getSum());
+		int n = fTweet.destinations() - 2;
+		int d = delivered() - 1;
+
+		// Can't be smaller than two.
+		if (n < 0) {
+			throw new IllegalStateException("Tweet is destined to less than one node.");
+		} 
+		// If it was two, then speedup is either zero or one.
+		else if (n == 0) {
+			return (d < 0) ? 0 : 1;
+		}
+
+		double s = getSum();
+		return (n * d) / (2.0 * s);
 	}
 
 	/**

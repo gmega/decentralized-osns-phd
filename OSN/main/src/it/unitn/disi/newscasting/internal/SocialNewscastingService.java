@@ -143,7 +143,7 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 					fSocialNetworkID);
 			compact();
 		} catch (Exception ex) {
-			throw new RuntimeException(ex);
+			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
 
@@ -445,6 +445,18 @@ public class SocialNewscastingService implements CDProtocol, ICoreInterface,
 	public void initialize(Node node) {
 		fOwner = (SNNode) node;
 		this.configure();
+		for (StrategyEntry entry : fStrategies) {
+			tryInitialize(entry.filter, node);
+			tryInitialize(entry.selector, node);
+			tryInitialize(entry.strategy, node);
+		}
+	}
+	
+	private void tryInitialize(Object object, Node node) {
+		if (object instanceof IInitializable) {
+			IInitializable initializable = (IInitializable) object;
+			initializable.initialize(node);
+		}
 	}
 
 	@Override
