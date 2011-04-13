@@ -102,7 +102,6 @@ public abstract class LSGCreator {
 			sourceCount = fSizes.get(source);
 			fCells++;
 			fSizes.set(source, sourceCount + 1);
-
 		}
 
 		public int cells() {

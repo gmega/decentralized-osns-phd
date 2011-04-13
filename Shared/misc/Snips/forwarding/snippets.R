@@ -89,5 +89,6 @@ pareto_variances <- function(start, end, alphamin, alphamax, alphastep, ...) {
 	}
 }
 
-legend("topright", c("1h","2h","3h","4h","5h","6h","7h","8h","9h","10h"), lty=1:10, col=colorRampPalette(colors=c("red","green","blue"), space="rgb")(10), lwd=2)
+#legend("topright", c("1h","2h","3h","4h","5h","6h","7h","8h","9h","10h"), lty=1:10, col=colorRampPalette(colors=c("red","green","blue"), space="rgb")(10), lwd=2)
+#legend("topright", c("30min","1h","2h","4h","6h"), lty=1:10, col=colorRampPalette(colors=c("red","green","blue"), space="rgb")(5), lwd=2)
 

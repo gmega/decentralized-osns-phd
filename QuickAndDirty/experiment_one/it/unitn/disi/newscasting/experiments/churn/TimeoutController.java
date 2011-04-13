@@ -1,6 +1,5 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
-import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
@@ -20,6 +19,11 @@ public class TimeoutController extends AbstractTimeoutController implements
 			@Attribute("timeout") int timeout,
 			@Attribute("application") int appid) {
 		super(prefix, manager, timeout, appid);
+	}
+	
+	public void reset() {
+		fTimeRemaining = -1;
+		fTotalTime = -1;
 	}
 
 	@Override

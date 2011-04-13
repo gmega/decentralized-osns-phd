@@ -39,4 +39,7 @@ public class ByteGraphDecoder extends AbstractEdgeListDecoder {
 
 		return CodecUtils.decodeInt(fBuf);
 	}
+
+	@Override
+	protected void inputStreamReset(InputStream is) throws IOException { }
 }

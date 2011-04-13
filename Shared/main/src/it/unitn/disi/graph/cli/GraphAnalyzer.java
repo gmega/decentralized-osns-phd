@@ -24,6 +24,7 @@ public abstract class GraphAnalyzer implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		ResettableGraphDecoder decoder = GraphCodecHelper.createDecoder(is, fDecoder);
+		
 		LightweightStaticGraph graph = LightweightStaticGraph.load(decoder);
 		this.transform(graph, oup);
 	}

@@ -8,18 +8,18 @@ import java.io.Reader;
 
 public class TextEdgeListDecoder extends AbstractEdgeListDecoder{
 
-	private final Reader fReader;
+	private Reader fReader;
 	
 	public TextEdgeListDecoder(InputStream is) throws IOException {
 		super(is);
-		fReader = new BufferedReader(new InputStreamReader(is));
+		inputStreamReset(is);
 		init();
 	}
 	
 	@Override
 	protected int readInt(boolean eofAllowed) throws IOException {
-		int val = 0;
 		boolean started = false;
+		StringBuffer buffer = new StringBuffer();
 		while(true) {
 			int next = fReader.read();
 			if (next == -1) {
@@ -27,19 +27,28 @@ public class TextEdgeListDecoder extends AbstractEdgeListDecoder{
 				if (!eofAllowed) {
 					throw new IllegalStateException();
 				}
-				break;
+				
+				if (started) {
+					break;
+				} else {
+					return -1;
+				}
 			}
 			
 			char next_char = (char)next;
 			
 			if(Character.isDigit(next_char)) {
-				val = val*10 + Character.digit(next_char, 10);
+				buffer.append(next_char);
 				started = true;
 			} else if (started) {
 				break;
 			}
 		}
-		
-		return val;
+		return Integer.parseInt(buffer.toString());
+	}
+	
+	@Override
+	protected void inputStreamReset(InputStream is) throws IOException{
+		fReader = new BufferedReader(new InputStreamReader(is));
 	}
 }

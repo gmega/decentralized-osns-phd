@@ -9,8 +9,6 @@ import java.util.NoSuchElementException;
  * {@link AbstractEdgeListDecoder} provides an iterator-like interface to access to 
  * graphs encoded as edge lists.<BR>
  * <BR>
- * <b>Format:</b> a concatenated stream of <source, target> pairs, where each
- * pair is a 32 bit {@link Integer}.
  * 
  * @author giuliano
  */
@@ -60,6 +58,8 @@ public abstract class AbstractEdgeListDecoder implements ResettableGraphDecoder 
 	}
 
 	protected abstract int readInt(boolean eofAllowed) throws IOException;
+	
+	protected abstract void inputStreamReset(InputStream is) throws IOException;
 
 	public int getSource() {
 		return fSource;
@@ -68,6 +68,7 @@ public abstract class AbstractEdgeListDecoder implements ResettableGraphDecoder 
 	public void reset() throws IOException {
 		fIs.reset();
 		fSeenEof = false;
+		inputStreamReset(fIs);
 		fSource = readInt(true);
 	}
 	

@@ -17,6 +17,9 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class PrintDegrees extends GraphAnalyzer {
 	
+	@Attribute
+	boolean no_header;
+	
 	public PrintDegrees(@Attribute("decoder") String decoder) {
 		super(decoder);
 	}
@@ -24,8 +27,11 @@ public class PrintDegrees extends GraphAnalyzer {
 	@Override
 	protected void transform(LightweightStaticGraph graph, OutputStream oup)
 			throws IOException {
-		PrintStream out = new PrintStream(oup);
-		out.println("id degree");
+		PrintStream out = new PrintStream(oup);		
+		if(!no_header) {
+			out.println("id degree");
+		}
+		
 		try {
 			for (int i = 0; i < graph.size(); i++) {
 				out.println(i + " " + graph.degree(i));
