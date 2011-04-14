@@ -132,7 +132,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 			// If the rumor doesn't belong to the profile of a node we know,
 			// then we don't care about it.
-			if (!sn.contains(tweet.profile())) {
+			Node profileOwner = tweet.profile();
+			if (!ours.equals(profileOwner) && !sn.contains(profileOwner)) {
 				// Since the hypothesis is that the sender knows which friends
 				// we share, we have to make it as if the sender had never
 				// sent this rumor.
@@ -350,7 +351,8 @@ class RumorList implements Cloneable {
 		int actual = 0;
 		for (int i = 0; i < size; i++) {
 			Node destination = tweet.destination(i);
-			if (ourNeighborhood.contains(destination)) {
+			if (ourNeighborhood.contains(destination)
+					&& !destination.equals(tweet.poster)) {
 				fDestinations.increment(destination.getID());
 				actual++;
 			}

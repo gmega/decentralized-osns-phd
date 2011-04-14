@@ -41,6 +41,11 @@ corr_residue_aggregator <- function(tbl, indexes) {
 	return(checked_divide(sum(undelivered), sum(receivers), 0.0))
 }
 
+dup_ratio_aggregator <- function(tbl, indexes) {
+	tbl <- tbl[indexes,]
+	return(sum(tbl$dups_received)/sum(tbl$updates))
+}
+
 # ---------------------------------------------------------------------
 
 deg_filter <- function(tbl) {
@@ -56,3 +61,25 @@ residue_plot <- function(envir, pat, resfun, tit, ylim=NULL, bty="n") {
 	lpos=lpos, ylim=ylim, bty=bty, main=tit)
 }
 
+# ---------------------------------------------------------------------
+# Load plots.
+# ---------------------------------------------------------------------
+
+average_load <- function(tbl, degs) {
+	tbl <- tbl[order(tbl$id),]
+	indexes <- tbl$id + 1
+	degs <- degs[indexes]
+	avg <- data.frame(id=tbl$id, degree=degs, avg_load=(tbl$total / tbl$experiments))
+}
+
+average_load_aggreagator <- function(tbl, indexes) {
+	tbl <- tbl[indexes,]
+	return((sum(tbl$total)/sum(tbl$experiments)))
+}
+
+average_load_plot <- function(loads, breaks=c(200, 400, 800, 1500)) {
+	lims <- c(1, max(loads$degree))
+	ggplot(loads) + geom_point(aes(x=degree, y=avg_load), size=1, colour=alpha("black", 0.4)) + 
+			coord_trans(xtrans="log2") + scale_x_continuous(limits = lims, breaks=breaks) + 
+			xlab("Degree (log)") + ylab("Average Load")
+}

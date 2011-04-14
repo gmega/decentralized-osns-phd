@@ -198,15 +198,29 @@ public class DisseminationExperimentGovernor implements Control {
 
 		// Check that everyone is quiescent.
 		boolean terminated = true;
+		int quiescent = 0;
+		int active = 0;
 		for (int i = 0; i < sn.degree(); i++) {
 			Node neighbor = sn.getNeighbor(i);
 			if (!isQuiescent(neighbor)) {
 				terminated = false;
-				break;
+				active++;
+//				break;
+			} else {
+				quiescent++;
 			}
 		}
+		
+		if (isQuiescent(node)) {
+			quiescent++;
+		} else {
+			active++;
+			terminated = false;
+		}
+		
+		System.out.println("STT:Quiescent:" + quiescent + " Active:" + active);
 
-		if (!terminated || !isQuiescent(node)) {
+		if (!terminated) {
 			return false;
 		}
 

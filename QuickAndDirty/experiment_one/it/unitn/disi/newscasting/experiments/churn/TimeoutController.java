@@ -1,14 +1,13 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
 import it.unitn.disi.utils.logging.TabularLogManager;
-import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Node;
+import peersim.core.Protocol;
 
 @AutoConfig
-public class TimeoutController extends AbstractTimeoutController implements
-		CDProtocol {
+public class TimeoutController extends AbstractTimeoutController implements Protocol {
 
 	private int fTimeRemaining = -1;
 
@@ -20,7 +19,7 @@ public class TimeoutController extends AbstractTimeoutController implements
 			@Attribute("application") int appid) {
 		super(prefix, manager, timeout, appid);
 	}
-	
+
 	public void reset() {
 		fTimeRemaining = -1;
 		fTotalTime = -1;
@@ -34,12 +33,15 @@ public class TimeoutController extends AbstractTimeoutController implements
 		}
 	}
 
-	@Override
-	public void nextCycle(Node node, int protocolID) {
-		fTimeRemaining--;
+	public void tick(Node node) {
 		if (fTotalTime >= 0) {
-			fTotalTime++;
+			doTick(node);
 		}
+	}
+
+	private void doTick(Node node) {
+		fTotalTime++;
+		fTimeRemaining--;
 		if (fTimeRemaining == 0) {
 			processEvent(node, fSelfPid, SHUTDOWN_EVT);
 		}

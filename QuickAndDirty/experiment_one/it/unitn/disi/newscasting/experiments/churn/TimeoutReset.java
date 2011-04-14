@@ -9,6 +9,9 @@ import it.unitn.disi.utils.peersim.SNNode;
 
 public class TimeoutReset implements IEventObserver {
 	
+	@Attribute("no_reset_on_send")
+	public boolean fNoReset;
+	
 	private IReference<AbstractTimeoutController> fController;
 	
 	public TimeoutReset(@Attribute("timeout_controller") int id) {
@@ -26,11 +29,13 @@ public class TimeoutReset implements IEventObserver {
 		
 		// Starts the timeout at the receiver, if required.
 		if (!duplicate) {
-			fController.get(receiver).startTimeout(tweet.poster);
+			fController.get(receiver).startTimeout(receiver);
 		}
 		
-		// And restarts the timeout at the sender.
-		fController.get(sender).startTimeout(tweet.poster);
+		if (!fNoReset) {
+			// And restarts the timeout at the sender.
+			fController.get(sender).startTimeout(sender);
+		}
 	}
 
 }
