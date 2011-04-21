@@ -42,6 +42,17 @@ all_in <- function(envir, pat=NULL) {
 }
 
 # -----------------------------------------------------------------------------
+# Applies a function to all objects in an environment, and replaces the 
+# originals with the processed version. Careful as, if it fails midway through,
+# the contents of the environment might be corrupted.
+# -----------------------------------------------------------------------------
+envapply <- function(envir, fun) {
+	for (key in ls(envir)) {
+		assign(key, fun(get(key, envir)), env=envir)
+	}
+}
+
+# -----------------------------------------------------------------------------
 # Loads all files from a given folder into an environment.
 # -----------------------------------------------------------------------------
 load_all <- function(path="./", pattern=NULL, naming=function(x) { return(x); }, envir=environment()) {
@@ -56,7 +67,7 @@ parstring <- function(fname) {
 	p1 <- gsub(".*?-(.*)(\\..*)", replacement="\\1", fname, perl=TRUE);
 	p2 <- gsub("-", replacement="\\.", p1)
 	return(p2)
-} 
+}
 
 # -----------------------------------------------------------------------------
 # Generic driver for batch processing.

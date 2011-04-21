@@ -219,9 +219,14 @@ global_variance <- function(a_table) {
 	return(variance)
 }
 
-global_latency_average <- function(a_table) {
+latency_aggregator <- function(a_table, idx) {
+	a_table <- a_table[idx,]
 	summation <- sum(a_table$latency_sum)
-	n <- sum(a_table$delivered)
+	delivered <- a_table$delivered
+	if (is.null(delivered)) {
+		delivered <- a_table$degree - a_table$undelivered
+	}
+	n <- sum(delivered)
 	return(summation/n)
 }
 

@@ -22,23 +22,34 @@ public class LoadReparse implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		HashMap<Long, Experiment> experiments = new HashMap<Long, Experiment>();
 		TableReader reader = new TableReader(is);
 		TableWriter writer = new TableWriter(new PrintStream(oup),
 				new String[] { "root", "degree", "delivered", "root_uptime",
 						"zero_uptime", "residue", "corrected_residue",
-						"duplicates", "duplicate_ratio" });
+						"duplicates", "copies", "duplicate_ratio"});
 
+		Experiment current = null;
 		while (reader.hasNext()) {
 			reader.next();
 			long root = Long.parseLong(reader.get("root"));
+			current = experiment(root, current, writer);
 			long id = Long.parseLong(reader.get("id"));
-			Experiment exp = getCreate(experiments, root);
-			exp.add(id, Integer.parseInt(reader.get("received")),
-					Integer.parseInt(reader.get("uptime")));
+			// Some older datasets don't have the uptime.
+			String uptimeStr = reader.get("uptime");
+			int uptime = 1;
+			if (uptimeStr != null) {
+				uptime = Integer.parseInt(uptimeStr);
+			}
+
+			current.add(id, Integer.parseInt(reader.get("received")), uptime);
 		}
-		
-		for (Experiment exp : experiments.values()) {
+	}
+
+	private Experiment experiment(long root, Experiment exp, TableWriter writer) {
+		Experiment ret = exp;
+		if (exp == null) {
+			ret = new Experiment(root);
+		} else if (exp.id != root) {
 			writer.set("root", exp.id);
 			writer.set("degree", exp.friends());
 			writer.set("delivered", exp.delivered());
@@ -48,17 +59,11 @@ public class LoadReparse implements ITransformer {
 			writer.set("corrected_residue", exp.correctedResidue());
 			writer.set("duplicates", exp.duplicates());
 			writer.set("duplicate_ratio", exp.duplicateRatio());
+			writer.set("copies", exp.delivered() + exp.duplicates());
 			writer.emmitRow();
+			ret = new Experiment(root);
 		}
-	}
-
-	private Experiment getCreate(HashMap<Long, Experiment> experiments, long id) {
-		Experiment exp = experiments.get(id);
-		if (exp == null) {
-			exp = new Experiment(id);
-			experiments.put(id, exp);
-		}
-		return exp;
+		return ret;
 	}
 
 	static class Experiment {
@@ -73,7 +78,7 @@ public class LoadReparse implements ITransformer {
 		private int fUptime;
 
 		private int fZeroUptime;
-		
+
 		private int fRootUptime;
 
 		public Experiment(long id) {
@@ -82,7 +87,7 @@ public class LoadReparse implements ITransformer {
 
 		public void add(long id, int received, int uptime) {
 			fParticipants++;
-			
+
 			if (id == this.id) {
 				fRootUptime = uptime;
 			}
@@ -104,7 +109,6 @@ public class LoadReparse implements ITransformer {
 		public int friends() {
 			return fParticipants - 1;
 		}
-		
 
 		public int delivered() {
 			return fDelivered;
@@ -119,7 +123,7 @@ public class LoadReparse implements ITransformer {
 		}
 
 		public double duplicateRatio() {
-			return fDuplicates/(double)fParticipants;
+			return fDuplicates / (double) fParticipants;
 		}
 
 		public double residue() {
@@ -133,11 +137,11 @@ public class LoadReparse implements ITransformer {
 		public double avgUptime() {
 			return fUptime / ((double) fParticipants);
 		}
-		
+
 		public int rootUptime() {
 			return fRootUptime;
 		}
-		
+
 		public int correctedParticipants() {
 			return friends() - fZeroUptime;
 		}

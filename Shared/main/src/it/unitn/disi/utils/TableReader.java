@@ -1,5 +1,7 @@
 package it.unitn.disi.utils;
 
+import it.unitn.disi.utils.exception.ParseException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +44,16 @@ public class TableReader {
 		fROHeader = Collections.unmodifiableList(fHeader);
 	}
 
+	private TableReader(BufferedReader reader, String[] header, String next) {
+		fReader = reader;
+		fHeader = new ArrayList<String>();
+		for (String key : header) {
+			fHeader.add(key);
+		}
+		fROHeader = Collections.unmodifiableList(fHeader);
+		fNext = next;
+	}
+
 	public List<String> columns() {
 		return fROHeader;
 	}
@@ -49,12 +61,15 @@ public class TableReader {
 	public boolean hasNext() {
 		return fNext != null;
 	}
-	
+
 	public void next() throws IOException {
 		if (!hasNext()) {
 			throw new NoSuchElementException();
 		}
 		readLine();
+		if (fCurrent.length != fHeader.size()) {
+			throw new ParseException("Table width changed.");
+		}
 	}
 
 	public String get(String key) {
@@ -63,6 +78,10 @@ public class TableReader {
 			return null;
 		}
 		return fCurrent[idx];
+	}
+
+	public TableReader fromCurrentRow() {
+		return new TableReader(fReader, fCurrent, fNext);
 	}
 
 	private ArrayList<String> readHeader() throws IOException {

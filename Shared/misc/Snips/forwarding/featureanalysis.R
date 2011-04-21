@@ -45,8 +45,15 @@ aggregate_by_featurevalue <- function(table, avg_function, featurebreaks, featur
 # Generic function which allows us to plot aggregate curves by successively 
 # removing classes of points and recomputing.
 # -----------------------------------------------------------------------------
-plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extractor, colors, aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, lpos="bottomright", ylim=NULL, bty="n", ...) {
+plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extractor, colors, 
+		aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, 
+		lpos="bottomright", ylim=NULL, bty="n", legend_cex=1, plot=TRUE, ltys=NULL, ...) {
+	
 	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector_extractor(x))) })
+	
+	if (!plot) {
+		return(datasets)
+	}
 	
 	# Finds the maximum
 	if (is.null(ylim)) {
@@ -58,13 +65,17 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extr
 	}
 	rm(coalesced)
 	
+	if (is.null(ltys)) {
+		ltys <- 1:length(datasets)
+	}
+	
 	# First calls plot.
 	first_set <- datasets[,1]
-	plot(first_set ~ featurebreaks, type="l", xlab=xlab, ylab=ylab, col=colors[1], lwd=lwd, lty=1, ylim=ylim,...)
+	plot(first_set ~ featurebreaks, type="l", xlab=xlab, ylab=ylab, col=colors[1], lwd=lwd, lty=ltys[1], ylim=ylim,...)
 	
 	# Then lines.
 	for(i in 2:length(tables)) {
-		lines(datasets[,i] ~ featurebreaks, col=colors[i], lwd=lwd, lty=i)
+		lines(datasets[,i] ~ featurebreaks, col=colors[i], lwd=lwd, lty=ltys[i])
 	}
 
 	if(!is.null(lnames)) {
@@ -75,7 +86,7 @@ plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extr
 			x <- lpos
 			y <- NULL
 		}
-		legend(x, y, lnames, col=colors, lwd=lwd, lty=1:length(tables), bty=bty)
+		legend(x, y, lnames, col=colors, lwd=lwd, lty=ltys, bty=bty, cex=legend_cex)
 	}
 }
 

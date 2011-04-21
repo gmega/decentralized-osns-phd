@@ -2,10 +2,12 @@ package it.unitn.disi.newscasting.experiments;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import peersim.config.IResolver;
+import peersim.core.CommonState;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
@@ -16,6 +18,7 @@ import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
@@ -35,6 +38,9 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 
 	private static final int ALREADY_SELECTED = -1;
 
+	// XXX HACK, sigh.
+	private static boolean fPrint = false;
+
 	private static final BitSet fAllowed = new BitSet();
 
 	private static final BinaryCompositeFilter fFilter = new BinaryCompositeFilter(
@@ -52,6 +58,8 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 
 	private final boolean fStopOnceDone;
 
+	private final boolean fScramble;
+
 	private int[] fRankedComponents;
 
 	public ComponentSelector(String prefix, IResolver resolver,
@@ -62,21 +70,29 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 				resolver.getInt(prefix, "css")), delegate,
 				new ProtocolReference<IUtilityFunction<Node, Integer>>(
 						resolver.getInt(prefix, "ranking")), resolver
-						.getBoolean(prefix, "stop_once_done"), intf);
+						.getBoolean(prefix, "stop_once_done"), resolver
+						.getBoolean(prefix, "scramble"), intf);
 	}
 
 	public ComponentSelector(
 			IReference<ComponentComputationService> components,
 			IReference<IPeerSelector> delegate,
 			IReference<IUtilityFunction<Node, Integer>> utility,
-			boolean stopOnceDone,
+			boolean stopOnceDone, boolean scrambleComponents,
 			// XXX HACK!
 			ICoreInterface intf) {
 		fComponents = components;
 		fDelegate = delegate;
 		fUtility = utility;
 		fStopOnceDone = stopOnceDone;
+		fScramble = scrambleComponents;
+		// XXX HACK!
 		fIntf = intf;
+		if (!fPrint) {
+			System.out.println("Component ordering is "
+					+ ((fScramble) ? "scrambled" : "ordered") + ".");
+			fPrint = true;
+		}
 	}
 
 	@Override
@@ -113,7 +129,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		if (peer == null) {
 			peer = fDelegate.get(source).selectPeer(source, filter);
 		}
-		
+
 		return peer;
 	}
 
@@ -152,7 +168,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 		return true;
 	}
 
-	private int [] rankedComponents(Node source) {
+	private int[] rankedComponents(Node source) {
 		if (fRankedComponents == null) {
 			fRankedComponents = rankComponents(source);
 		}
@@ -166,16 +182,24 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			permutation[i] = i;
 		}
 
-		final IUtilityFunction<Node, Integer> f = (IUtilityFunction<Node, Integer>) fUtility
-				.get(source);
+		// Scrambles.
+		if (fScramble) {
+			OrderingUtils.permute(0, permutation.length, permutation,
+					CommonState.r);
+		}
+		// Ranks.
+		else {
+			final IUtilityFunction<Node, Integer> f = (IUtilityFunction<Node, Integer>) fUtility
+					.get(source);
 
-		// Sorts in descending order of utility.
-		Arrays.sort(permutation, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer o1, Integer o2) {
-				return f.utility(source, o2) - f.utility(source, o1);
-			}
-		});
+			// Sorts in descending order of utility.
+			Arrays.sort(permutation, new Comparator<Integer>() {
+				@Override
+				public int compare(Integer o1, Integer o2) {
+					return f.utility(source, o2) - f.utility(source, o1);
+				}
+			});
+		}
 
 		// Copies the array.
 		int[] asPrimitive = new int[service.components()];

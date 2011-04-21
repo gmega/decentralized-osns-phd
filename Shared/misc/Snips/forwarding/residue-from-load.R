@@ -72,7 +72,7 @@ average_load <- function(tbl, degs) {
 	avg <- data.frame(id=tbl$id, degree=degs, avg_load=(tbl$total / tbl$experiments))
 }
 
-average_load_aggreagator <- function(tbl, indexes) {
+average_load_aggregator <- function(tbl, indexes) {
 	tbl <- tbl[indexes,]
 	return((sum(tbl$total)/sum(tbl$experiments)))
 }

@@ -6,6 +6,7 @@ import java.util.Comparator;
 
 import peersim.config.Configuration;
 import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
 import peersim.config.ObjectCreator;
 import peersim.core.Node;
 
@@ -13,8 +14,10 @@ public class SchedulerFactory {
 
 	private static final String PAR_ORDERING = "ordering";
 
+	private static final String PAR_REPETITIONS = "repetitions";
+
 	enum SchedulerType {
-		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING;
+		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST
 	}
 
 	private static final SchedulerFactory fInstance = new SchedulerFactory();
@@ -29,27 +32,49 @@ public class SchedulerFactory {
 	public Iterable<Integer> createScheduler(IResolver resolver, String prefix,
 			INodeRegistry registry) {
 		String type = resolver.getString(prefix, IResolver.NULL_KEY);
+		Iterable<Integer> base;
 		switch (SchedulerType.valueOf(type.toUpperCase())) {
 
+		case IDLIST:
+			base = ObjectCreator.createInstance(IDListScheduler.class, prefix,
+					resolver);
+			break;
+
 		case FULL_NETWORK:
-			return new AliveBitmapScheduler(new OrderedFullNetworkScheduler(),
+			base = new AliveBitmapScheduler(new OrderedFullNetworkScheduler(),
 					registry);
+			break;
 
 		case ORDERED_FULLNETWORK:
 			@SuppressWarnings("unchecked")
 			Comparator<Node> ordering = (Comparator<Node>) Configuration
 					.getInstance(prefix + "." + PAR_ORDERING);
-			return new AliveBitmapScheduler(new OrderedFullNetworkScheduler(
+			base = new AliveBitmapScheduler(new OrderedFullNetworkScheduler(
 					ordering), registry);
+			break;
 
 		case DEGREE_CLASS_SAMPLING:
-			return new AliveBitmapScheduler(ObjectCreator.createInstance(
+			base = new AliveBitmapScheduler(ObjectCreator.createInstance(
 					DegreeClassScheduler.class, prefix, resolver), registry);
+			break;
 
 		default:
 			throw new IllegalArgumentException("Unknown ordering type " + type
 					+ ".");
 
 		}
+
+		int repetitions = 0;
+		try {
+			repetitions = resolver.getInt(prefix, PAR_REPETITIONS);
+		} catch (MissingParameterException ex) {
+			// Don't care.
+		}
+
+		if (repetitions != 0) {
+			base = new RepetitionDecorator(base, repetitions);
+		}
+
+		return base;
 	}
 }

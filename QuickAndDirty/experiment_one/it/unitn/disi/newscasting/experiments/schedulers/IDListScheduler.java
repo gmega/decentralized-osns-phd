@@ -15,7 +15,7 @@ import peersim.config.AutoConfig;
  * are.
  */
 @AutoConfig
-public class IDListScheduler implements Iterable<Integer> {
+public class IDListScheduler implements IStaticSchedule {
 
 	private ArrayList<Integer> fSchedule;
 
@@ -27,19 +27,34 @@ public class IDListScheduler implements Iterable<Integer> {
 		}
 	}
 
-	private ArrayList<Integer> loadSchedule(String schedule) throws IOException {
-		File schedFile = new File(schedule);
+	private ArrayList<Integer> loadSchedule(String scheduleFileName) throws IOException {
+		File schedFile = new File(scheduleFileName);
 		BufferedReader reader = new BufferedReader(new FileReader(schedFile));
+		ArrayList<Integer> schedule = new ArrayList<Integer>();
 		String line;
 		while ((line = reader.readLine()) != null) {
-			fSchedule.add(Integer.parseInt(line));
+			line = line.trim();
+			if (line.equals("")) {
+				continue;
+			}
+			schedule.add(Integer.parseInt(line));
 		}
-		return fSchedule;
+		return schedule;
 	}
 
 	@Override
 	public Iterator<Integer> iterator() {
-		return fSchedule.iterator();
+		return new StaticScheduleIterator(this);
+	}
+
+	@Override
+	public int size() {
+		return fSchedule.size();
+	}
+
+	@Override
+	public int get(int index) {
+		return fSchedule.get(index);
 	}
 
 }

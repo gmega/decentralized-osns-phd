@@ -11,8 +11,8 @@ public class CommandDescriptor implements Serializable {
 	public final String[] command;
 
 	public final String pwd;
-	public final String input;
 	public final String output;
+	public final String input;
 	public final boolean compressOutput;
 
 	public CommandDescriptor(String[] command, String input, String output,

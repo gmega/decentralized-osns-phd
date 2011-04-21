@@ -56,7 +56,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 		ComponentSelector slktor = new ComponentSelector(ref,
 				new FallThroughReference<IPeerSelector>(checker),
 				new FallThroughReference<IUtilityFunction<Node, Integer>>(
-						ranking), false, null);
+						ranking), false, false, null);
 
 		for (int i = 0; i < service.components(); i++) {
 			Assert.assertNotNull(slktor.selectPeer(root));
