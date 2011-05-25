@@ -19,6 +19,7 @@ import it.unitn.disi.newscasting.TestCentralitySelector;
 import it.unitn.disi.newscasting.experiments.ClusteringRankingTest;
 import it.unitn.disi.newscasting.experiments.ComponentSelectorTest;
 import it.unitn.disi.newscasting.experiments.schedulers.RandomSchedulerTest;
+import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.newscast.TestPeerSelectors;
@@ -75,7 +76,8 @@ import peersim.config.PluginContainerTest;
 	ClusteringRankingTest.class,
 	ZoneCrawl2AvtTest.class,
 	AVTReplayTest.class,
-	AVTEventChurnNetworkTest.class
+	AVTEventChurnNetworkTest.class,
+	DemersRumorMonger.class
 })
 
 public class AllTests extends PeerSimTest {
