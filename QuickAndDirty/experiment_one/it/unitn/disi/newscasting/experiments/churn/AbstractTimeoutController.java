@@ -6,9 +6,10 @@ import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableWriter;
@@ -105,7 +106,7 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 
 		@Override
 		public IContentExchangeStrategy get(Node owner) {
-			ICoreInterface intf = (ICoreInterface) owner.getProtocol(fAppId);
+			IProtocolSet intf = (IProtocolSet) owner.getProtocol(fAppId);
 			return intf.getStrategy(fClass);
 		}
 

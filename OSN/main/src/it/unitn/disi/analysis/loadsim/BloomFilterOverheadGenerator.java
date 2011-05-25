@@ -1,10 +1,10 @@
 package it.unitn.disi.analysis.loadsim;
 
-import com.skjegstad.utils.BloomFilter;
-
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.graph.Graph;
+
+import com.skjegstad.utils.BloomFilter;
 
 /**
  * Generates the bloom filter overhead over messages.

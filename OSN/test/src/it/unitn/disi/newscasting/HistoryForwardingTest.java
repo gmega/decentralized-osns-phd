@@ -1,10 +1,12 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IEventStorage;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
+import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.LoggingObserver;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
@@ -87,7 +89,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		List <? extends Node> nodes = builder.getNodes(); 
 		// Creates a root tweet which will be known by everyone.
 		Node profileOwner = nodes.get(0);
-		IMessageVisibility vis = new DefaultVisibility(SOCIAL_NETWORK_ID);
+		IMessageVisibility vis = new SocialNeighborhoodMulticast(SOCIAL_NETWORK_ID);
 		Tweet root = new Tweet(profileOwner, 0, vis);
 		
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder, SOCIAL_NETWORK_ID,
@@ -97,22 +99,23 @@ public class HistoryForwardingTest extends PeerSimTest {
 
 		// Posts a reply to our tweet.
 		Node replier = nodes.get(1);
-		IApplicationInterface snsapp = (IApplicationInterface) replier.getProtocol(SOCIAL_NEWSCASTING_ID);
+		ISocialNewscasting snsapp = (ISocialNewscasting) replier.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet reply = snsapp.replyToPost(root);
 
 		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
 		engine.run(CYCLES);
 		
 		for (Node node : nodes) {
-			ICoreInterface snscore = (ICoreInterface) node.getProtocol(SOCIAL_NEWSCASTING_ID);
-			IContentExchangeStrategy strategy = (IContentExchangeStrategy) snscore
+			IProtocolSet protocols = (IProtocolSet) node.getProtocol(SOCIAL_NEWSCASTING_ID);
+			IApplicationInterface app = (IApplicationInterface) protocols;
+			IContentExchangeStrategy strategy = (IContentExchangeStrategy) protocols
 					.getStrategy(CachingHistoryFw.class);
 			
 			// All instances should be quiescent.
 			Assert.assertEquals("Node:" + node.getID(), IContentExchangeStrategy.ActivityStatus.QUIESCENT, strategy.status());
 			
 			// All instances should know the two tweets.
-			IEventStorage storage = snscore.storage();
+			IEventStorage storage = app.storage();
 			Assert.assertEquals(2, storage.elements());
 			Assert.assertTrue(storage.contains(root));
 			Assert.assertTrue(storage.contains(reply));
@@ -160,7 +163,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		builder.done();
 		
 		Node root = nodes.get(0);
-		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);
+		ISocialNewscasting snsapp = (ISocialNewscasting) root.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet post = snsapp.postToFriends();
 		
 		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
@@ -204,7 +207,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		builder.done();
 		
 		Node root = nodes.get(0);
-		IApplicationInterface snsapp = (IApplicationInterface) root.getProtocol(SOCIAL_NEWSCASTING_ID);
+		ISocialNewscasting snsapp = (ISocialNewscasting) root.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet post = snsapp.postToFriends();
 		
 		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
@@ -226,7 +229,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 					Math.max(SOCIAL_NETWORK_ID, SELECTOR_PID) + 1,
 					SOCIAL_NETWORK_ID, new CustomConfigurator(
 							new ProtocolReference<IPeerSelector>(SELECTOR_PID),
-							mode));
+							mode, SOCIAL_NETWORK_ID));
 			sns.initialize(nodes.get(i));
 
 			LoggingObserver logger = new LoggingObserver(log, true);
@@ -262,37 +265,39 @@ public class HistoryForwardingTest extends PeerSimTest {
 		
 		private int fMode;
 		
-		public CustomConfigurator(IReference<IPeerSelector> selector, int mode) {
+		private int fSnId;
+		
+		public CustomConfigurator(IReference<IPeerSelector> selector, int mode, int snid) {
 			fSelector = selector;
 			fMode = mode;
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public void configure(SocialNewscastingService app, IResolver resolver, String prefix, int protocolId,
-				int socialNetworkId) {
+		public void configure(IProtocolSet app, IResolver resolver, String prefix) {
 			HistoryForwarding fw;
+			SocialNewscastingService sns = (SocialNewscastingService) app;
 			switch(fMode) {
 			
 			case BLOOMFILTERS:
-				fw = new BloomFilterHistoryFw(protocolId, socialNetworkId, 1,
+				fw = new BloomFilterHistoryFw(sns.pid(), fSnId, 1,
 						50, 0.001);
-				app.addStrategy(new Class[] { BloomFilterHistoryFw.class,
+				sns.addStrategy(new Class[] { BloomFilterHistoryFw.class,
 						CachingHistoryFw.class, HistoryForwarding.class }, fw,
 						fSelector, new FallThroughReference<ISelectionFilter>(
 								fw));
 				break;
 			
 			case NOHIST:
-				fw = new HistoryForwarding(protocolId, socialNetworkId, 1);
-				app.addStrategy(new Class[] { HistoryForwarding.class }, fw,
+				fw = new HistoryForwarding(sns.pid(), fSnId, 1);
+				sns.addStrategy(new Class[] { HistoryForwarding.class }, fw,
 						fSelector, new FallThroughReference<ISelectionFilter>(
 								fw));
 				break;
 			
 			case BITSET:
-				fw = new BitsetHistoryFw(protocolId, socialNetworkId, 1, 50);
-				app.addStrategy(new Class[] { BitsetHistoryFw.class,
+				fw = new BitsetHistoryFw(sns.pid(), fSnId, 1, 50);
+				sns.addStrategy(new Class[] { BitsetHistoryFw.class,
 						CachingHistoryFw.class, HistoryForwarding.class }, fw,
 						fSelector, new FallThroughReference<ISelectionFilter>(
 								fw));
@@ -301,7 +306,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 			default:
 				throw new IllegalArgumentException();
 			}
-			app.addSubscriber(fw);
+			sns.addSubscriber(fw);
 		}
 		
 		public Object clone () {

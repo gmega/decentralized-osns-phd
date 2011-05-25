@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
@@ -105,9 +106,12 @@ public abstract class AbstractUEConfigurator implements
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(SocialNewscastingService app, IResolver resolver,
-			String prefix, int protocolId, int socialNetworkId)
+	public void configure(IProtocolSet set, IResolver resolver, String prefix)
 			throws Exception {
+
+		SocialNewscastingService app = (SocialNewscastingService) set;
+		int protocolId = app.pid();
+		int socialNetworkId = app.socialNetworkId();
 
 		oneShotConfig(prefix, resolver);
 

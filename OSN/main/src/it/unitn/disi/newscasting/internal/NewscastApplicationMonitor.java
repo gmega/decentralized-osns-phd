@@ -62,7 +62,7 @@ public class NewscastApplicationMonitor implements Control {
 				continue;
 			}
 			
-			ICoreInterface app = (ICoreInterface) node.getProtocol(fAppId);
+			SocialNewscastingService app = (SocialNewscastingService) node.getProtocol(fAppId);
 			drift += app.pendingReceives();
 			aeLists.add(app.storage().distinctNodes());
 			aeElements.add(app.storage().elements());

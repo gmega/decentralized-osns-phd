@@ -3,7 +3,6 @@ package it.unitn.disi.newscasting.internal.selectors;
 import it.unitn.disi.graph.GraphUtils;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.core.Protocol;
 

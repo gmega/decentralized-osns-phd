@@ -1,6 +1,8 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.ComponentSelector;
@@ -8,7 +10,6 @@ import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 import it.unitn.disi.newscasting.experiments.OneThanTheOther;
 import it.unitn.disi.newscasting.experiments.PredicateHeuristic;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
@@ -64,7 +65,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	private static IReference<Linkable> fLinkable;
 
-	private static IReference<ICoreInterface> fApplication;
+	private static IReference<IProtocolSet> fApplication;
 
 	// ----------------------------------------------------------------------
 	// State and per-instance parameters.
@@ -82,12 +83,12 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(SocialNewscastingService app, IResolver resolver,
-			String prefix, int protocolId, int socialNetworkId)
+	public void configure(IProtocolSet set, IResolver resolver, String prefix)
 			throws Exception {
-		setApplicationReference(protocolId);
-		setSocialNetworkReference(socialNetworkId);
-		super.configure(app, resolver, prefix, protocolId, socialNetworkId);
+		SocialNewscastingService app = (SocialNewscastingService) set;
+		setApplicationReference(app.pid());
+		setSocialNetworkReference(app.socialNetworkId());
+		super.configure(set, resolver, prefix);
 	}
 
 	// ----------------------------------------------------------------------
@@ -243,7 +244,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	private void setApplicationReference(int id) {
 		if (fApplication == null) {
-			fApplication = new ProtocolReference<ICoreInterface>(id);
+			fApplication = new ProtocolReference<IProtocolSet>(id);
 		}
 	}
 
@@ -264,7 +265,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 
 	// ----------------------------------------------------------------------
 
-	private IPeerSelector componentSelectorHeuristic(ICoreInterface app,
+	private IPeerSelector componentSelectorHeuristic(IProtocolSet app,
 			IPeerSelector delegate, String prefix) {
 		return new PredicateHeuristic(new ComponentSelector(prefix, fResolver,
 				new FallThroughReference<IPeerSelector>(delegate), app),
@@ -294,16 +295,17 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
  * {@link ParameterUpdater} subclass specialized for {@link IPeerSelector}s.
  */
 abstract class SelectorUpdater extends ParameterUpdater {
-	private IReference<ICoreInterface> fAppRef;
+	
+	private IReference<IProtocolSet> fAppRef;
 
-	public SelectorUpdater(IReference<ICoreInterface> appRef,
+	public SelectorUpdater(IReference<IProtocolSet> appRef,
 			IReference<Linkable> neighborhood, TableReader reader) {
 		super(neighborhood, reader);
 		fAppRef = appRef;
 	}
 
 	protected IPeerSelector getSelector(Node node) {
-		ICoreInterface intf = fAppRef.get(node);
+		IProtocolSet intf = fAppRef.get(node);
 		return (IPeerSelector) intf.getSelector(HistoryForwarding.class).get(
 				node);
 	}
@@ -324,7 +326,7 @@ abstract class SelectorUpdater extends ParameterUpdater {
  */
 class CentralityUpdater extends SelectorUpdater {
 
-	public CentralityUpdater(IReference<ICoreInterface> appRef,
+	public CentralityUpdater(IReference<IProtocolSet> appRef,
 			IReference<Linkable> neighborhood, TableReader reader) {
 		super(appRef, neighborhood, reader);
 	}
@@ -348,7 +350,7 @@ class OneThanTheOtherUpdater extends SelectorUpdater {
 
 	private final SelectorUpdater fSecond;
 
-	public OneThanTheOtherUpdater(IReference<ICoreInterface> appRef,
+	public OneThanTheOtherUpdater(IReference<IProtocolSet> appRef,
 			IReference<Linkable> neighborhood, TableReader reader,
 			SelectorUpdater first, SelectorUpdater second) {
 		super(appRef, neighborhood, reader);

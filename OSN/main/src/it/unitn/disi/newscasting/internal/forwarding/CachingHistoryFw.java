@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
-import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.collections.BoundedHashMap;
 
 import java.util.Map;
@@ -40,7 +40,7 @@ public abstract class CachingHistoryFw<T> extends HistoryForwarding {
 	 * Since we cannot keep histories for every message in memory, we keep a
 	 * window.
 	 */
-	private Map<Tweet, T> fWindow;
+	private Map<IGossipMessage, T> fWindow;
 
 	public CachingHistoryFw(int adaptableId, int socialNetworkId,
 			IResolver resolver, String prefix) {
@@ -55,15 +55,15 @@ public abstract class CachingHistoryFw<T> extends HistoryForwarding {
 			int chunkSize, int windowSize) {
 		super(adaptableId, socialNetworkId, chunkSize);
 		fWindowSize = windowSize;
-		fWindow = new BoundedHashMap<Tweet, T>(fWindowSize);
+		fWindow = new BoundedHashMap<IGossipMessage, T>(fWindowSize);
 	}
 
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected T historyGet(Tweet tweet) {
+	protected T historyGet(IGossipMessage message) {
 		fCacheAccesses++;
-		T cached = fWindow.get(tweet);
+		T cached = fWindow.get(message);
 		if (cached != null) {
 			fCacheHits++;
 		}
@@ -89,13 +89,13 @@ public abstract class CachingHistoryFw<T> extends HistoryForwarding {
 
 	// ----------------------------------------------------------------------
 
-	protected T cache(Tweet tweet, T history) {
-		if (fWindow.containsKey(tweet)) {
+	protected T cache(IGossipMessage message, T history) {
+		if (fWindow.containsKey(message)) {
 			throw new IllegalStateException(
-					"Attempt to cache a duplicate tweet.");
+					"Attempt to cache a duplicate message.");
 		}
 
-		fWindow.put(tweet, history);
+		fWindow.put(message, history);
 		return history;
 	}
 

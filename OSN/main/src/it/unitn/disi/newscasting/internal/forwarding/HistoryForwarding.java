@@ -1,9 +1,10 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -37,7 +38,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// Parameter storage.
 	// ----------------------------------------------------------------------
 	/**
-	 * ID for the {@link ICoreInterface} implementor (the social newscast
+	 * ID for the {@link IApplicationInterface} implementor (the social newscast
 	 * application).
 	 */
 	protected final int fAdaptableId;
@@ -62,7 +63,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * We need to keep track of which nodes still have pending messages to
 	 * receive, as we need to know what to send when we pick a node.
 	 */
-	private HashMultimap<Node, Tweet> fPending = HashMultimap.create();
+	private HashMultimap<Node, IGossipMessage> fPending = HashMultimap.create();
 
 	public HistoryForwarding(int adaptableId, int socialNetworkId,
 			IResolver resolver, String prefix) {
@@ -87,7 +88,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 		}
 
 		/** Picks a message to send to the peer. **/
-		Tweet message = removeAny(peer);
+		IGossipMessage message = removeAny(peer);
 		Object history = historyGetCreate(source, message);
 
 		/** Sends message + history to the peer. **/
@@ -106,7 +107,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	}
 
 	public int throttling(SNNode target) {
-		Set<Tweet> pendings = fPending.get(target);
+		Set<IGossipMessage> pendings = fPending.get(target);
 		if (pendings == null) {
 			return 0;
 		}
@@ -136,23 +137,23 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * exchange strategy</b>. We need to add those to our forwarding queues.
 	 */
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
-			boolean duplicate) {
+	public void delivered(SNNode sender, SNNode receiver,
+			IGossipMessage message, boolean duplicate) {
 
 		// Not duplicate, we forward it.
 		if (!duplicate) {
-			this.addPending(sender, receiver, tweet, null);
+			this.addPending(sender, receiver, message, null);
 		}
 
 		// Otherwise tries to merge the history object "piggybacked" with the
 		// message, if any.
 		else {
-			Object history = diffusionObject(sender).historyGet(tweet);
+			Object history = diffusionObject(sender).historyGet(message);
 			// If it's null, nevermind.
 			if (history != null) {
 				Object ourHistory = diffusionObject(receiver).historyGetCreate(
-						receiver, tweet);
-				this.mergeHistories(receiver, sender, tweet, ourHistory,
+						receiver, message);
+				this.mergeHistories(receiver, sender, message, ourHistory,
 						history);
 			}
 		}
@@ -161,8 +162,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void tweeted(Tweet tweet) {
-		addPending(tweet.poster, tweet.poster, tweet, null);
+	public void localDelivered(IGossipMessage message) {
+		addPending(message.originator(), message.originator(), message, null);
 	}
 
 	// ----------------------------------------------------------------------
@@ -190,10 +191,10 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * providing us with extra history data to help us avoid further duplicates.
 	 * 
 	 * This method is rather similar to
-	 * {@link #addPending(Node, Node, Tweet, Object)}.
+	 * {@link #addPending(Node, Node, IGossipMessage, Object)}.
 	 */
-	private void mergeHistories(Node ourNode, Node feedbackNode, Tweet tweet,
-			Object ourHistory, Object foreignHistory) {
+	private void mergeHistories(Node ourNode, Node feedbackNode,
+			IGossipMessage message, Object ourHistory, Object foreignHistory) {
 		Linkable ourSn = (Linkable) ourNode.getProtocol(fSocialNetworkId);
 
 		// First, merges the neighbor's history into ours.
@@ -215,11 +216,11 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 			}
 			// Checks if the neighbor is a destination for the message, AND
 			// it is contained in the history.
-			else if (tweet.isDestination(neighbor)
+			else if (message.isDestination(neighbor)
 					&& historyContains(ourHistory, neighbor)) {
 				// Cancels the scheduling. Note that this might not result
 				// in a real removal.
-				fwTableDelete(neighbor, tweet);
+				fwTableDelete(neighbor, message);
 			}
 		}
 	}
@@ -232,25 +233,25 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * <BR>
 	 * This makes no modifications to the sender's history.
 	 */
-	private Object receiveMessage(SNNode sender, SNNode receiver, Tweet tweet,
-			Object history) {
+	private Object receiveMessage(SNNode sender, SNNode receiver,
+			IGossipMessage message, Object history) {
 
-		ICoreInterface app = (ICoreInterface) getApplication(receiver);
+		IApplicationInterface app = (IApplicationInterface) getApplication(receiver);
 		Object ourHistory = null;
 
 		/**
 		 * Hands the message over to the application layer. If the message isn't
 		 * a duplicate, we need to forward it as well.
 		 */
-		if (app.receiveTweet(sender, receiver, tweet, this)) {
-			addPending(sender, receiver, tweet, history);
+		if (app.deliver(sender, receiver, message, this)) {
+			addPending(sender, receiver, message, history);
 		}
 		/**
 		 * Message is a duplicate. Tries to return or learn something useful.
 		 */
 		else {
-			ourHistory = historyGetCreate(receiver, tweet);
-			mergeHistories(receiver, sender, tweet, ourHistory, history);
+			ourHistory = historyGetCreate(receiver, message);
+			mergeHistories(receiver, sender, message, ourHistory, history);
 		}
 
 		// Note that if the history has been just created then we're returning
@@ -264,15 +265,15 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * Method called whenever a <b>new</b> message, which needs to be forwarded,
 	 * is received <b>for the first time</b> by the application.
 	 */
-	private void addPending(Node sender, Node receiver, Tweet tweet,
+	private void addPending(Node sender, Node receiver, IGossipMessage message,
 			Object history) {
 
-		/** We need our social network, and the Tweet itself. **/
+		/** We need our social network, and the message itself. **/
 		Linkable ourSn = (Linkable) receiver.getProtocol(fSocialNetworkId);
 
 		// Initializes the history for this message from what we just received.
-		Object ourHistory = (history == null) ? historyCreate(tweet)
-				: historyClone(tweet, history);
+		Object ourHistory = (history == null) ? historyCreate(message)
+				: historyClone(message, history);
 
 		// Add ourselves to the history.
 		historyAdd(ourHistory, receiver);
@@ -281,7 +282,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 		 * Determines to which of our neighbors we need to forward this message
 		 * to. This is determined by the set:
 		 * 
-		 * ({tweet destinations} ∩ f(receiver)) - (history ∪ {sender} ∪ <false
+		 * ({message destinations} ∩ f(receiver)) - (history ∪ {sender} ∪ <false
 		 * positives>))
 		 */
 		for (int i = 0; i < ourSn.degree(); i++) {
@@ -292,8 +293,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 				continue;
 			}
 
-			if (shouldForward(sender, neighbor, tweet, ourHistory)) {
-				fwTableAdd(neighbor, tweet);
+			if (shouldForward(sender, neighbor, message, ourHistory)) {
+				fwTableAdd(neighbor, message);
 			}
 		}
 	}
@@ -305,28 +306,28 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * <ol>
 	 * <li>the neighbor is a destination for the message;</li>
 	 * <li>the neighbor is not the sender;</li>
-	 * <li>the neighbor is not the posted of the message;</li>
+	 * <li>the neighbor is not the originator of the message;</li>
 	 * <li>the neighbor isn't already in the message history.</li>
 	 * 
 	 * Note that (2) might be redundant, but the idea is that we never send a
 	 * message back to the sender, no matter what the underlying history
 	 * implementation does.
 	 **/
-	private boolean shouldForward(Node sender, Node neighbor, Tweet tweet,
-			Object ourHistory) {
-		return tweet.isDestination(neighbor) && !sender.equals(neighbor)
+	private boolean shouldForward(Node sender, Node neighbor,
+			IGossipMessage message, Object ourHistory) {
+		return message.isDestination(neighbor) && !sender.equals(neighbor)
 				&& !historyContains(ourHistory, neighbor)
-				&& !tweet.poster.equals(neighbor);
+				&& !message.originator().equals(neighbor);
 	}
 
 	// ----------------------------------------------------------------------
 	// Read/Write handling of the forwarding table.
 	// ----------------------------------------------------------------------
 
-	private Tweet removeAny(Node peer) {
-		Set<Tweet> pendings = fPending.get(peer);
-		Iterator<Tweet> it = pendings.iterator();
-		Tweet toReturn = it.next();
+	private IGossipMessage removeAny(Node peer) {
+		Set<IGossipMessage> pendings = fPending.get(peer);
+		Iterator<IGossipMessage> it = pendings.iterator();
+		IGossipMessage toReturn = it.next();
 		it.remove();
 		recomputeStatus();
 		return toReturn;
@@ -334,15 +335,15 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-	private void fwTableAdd(Node destination, Tweet message) {
+	private void fwTableAdd(Node destination, IGossipMessage message) {
 		fPending.put(destination, message);
 		recomputeStatus();
 	}
 
 	// ----------------------------------------------------------------------
 
-	private void fwTableDelete(Node destination, Tweet tweet) {
-		fPending.remove(destination, tweet);
+	private void fwTableDelete(Node destination, IGossipMessage message) {
+		fPending.remove(destination, message);
 		recomputeStatus();
 	}
 
@@ -364,8 +365,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// Fancy accessors.
 	// ----------------------------------------------------------------------
 
-	private ICoreInterface getApplication(Node peer) {
-		return (ICoreInterface) peer.getProtocol(fAdaptableId);
+	private IProtocolSet getApplication(Node peer) {
+		return (IProtocolSet) peer.getProtocol(fAdaptableId);
 	}
 
 	// ----------------------------------------------------------------------
@@ -388,10 +389,10 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	/**
-	 * Retrieves a history object using {@link #historyGet(Tweet)}, creating a
-	 * new one and adding the current node if it returns null.
+	 * Retrieves a history object using {@link #historyGet(IGossipMessage)},
+	 * creating a new one and adding the current node if it returns null.
 	 */
-	private Object historyGetCreate(SNNode current, Tweet message) {
+	private Object historyGetCreate(SNNode current, IGossipMessage message) {
 		Object history = historyGet(message);
 		if (history == null) {
 			history = historyCreate(message);
@@ -404,12 +405,12 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	/**
-	 * @return the history object associated with a {@link Tweet}, or
+	 * @return the history object associated with a {@link IGossipMessage}, or
 	 *         <code>null</code> if the object cannot be returned (either
 	 *         because this node has never seen the message, or perhaps because
 	 *         the history object has been evicted from an internal cache).
 	 */
-	protected Object historyGet(Tweet tweet) {
+	protected Object historyGet(IGossipMessage message) {
 		return null;
 	}
 
@@ -456,20 +457,20 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	/**
-	 * Clones a history object. Subsequent calls to {@link #historyGet(Tweet)}
-	 * should return this object.
+	 * Clones a history object. Subsequent calls to
+	 * {@link #historyGet(IGossipMessage)} should return this object.
 	 */
-	protected Object historyClone(Tweet tweet, Object history) {
+	protected Object historyClone(IGossipMessage message, Object history) {
 		return null;
 	}
 
 	// ----------------------------------------------------------------------
 
 	/**
-	 * Creates a history object for a {@link Tweet}. Subsequent calls to
-	 * {@link #historyGet(Tweet)} should return this object.
+	 * Creates a history object for a {@link IGossipMessage}. Subsequent calls
+	 * to {@link #historyGet(IGossipMessage)} should return this object.
 	 */
-	protected Object historyCreate(Tweet tweet) {
+	protected Object historyCreate(IGossipMessage message) {
 		return null;
 	}
 

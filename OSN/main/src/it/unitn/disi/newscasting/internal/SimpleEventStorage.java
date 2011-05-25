@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
-import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.epidemics.IGossipMessage;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -12,23 +12,23 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 /**
- * Non-scalable, simple event storage which simply stores all {@link Tweet}
- * objects in-memory.
+ * Non-scalable, simple event storage which simply stores all
+ * {@link IGossipMessage} objects in-memory.
  * 
  * @author giuliano
  */
 public class SimpleEventStorage implements IWritableEventStorage {
-	
-	private Multimap<Node, Tweet> fStore = HashMultimap.create();
+
+	private Multimap<Node, IGossipMessage> fStore = HashMultimap.create();
 
 	@Override
-	public boolean add(Tweet tweet) {
-		return fStore.put(tweet.poster, tweet);
+	public boolean add(IGossipMessage m) {
+		return fStore.put(m.originator(), m);
 	}
 
 	@Override
-	public boolean contains(Tweet tweet) {
-		return fStore.containsEntry(tweet.poster, tweet);
+	public boolean contains(IGossipMessage m) {
+		return fStore.containsEntry(m.originator(), m);
 	}
 
 	@Override
@@ -47,15 +47,16 @@ public class SimpleEventStorage implements IWritableEventStorage {
 	}
 
 	@Override
-	public Iterator<Tweet> tweetsFor(Node node) {
-		return Collections.unmodifiableCollection(fStore.get(node)).iterator();
+	public Iterator<IGossipMessage> tweetsFor(Node node) {
+		return (Iterator<IGossipMessage>) Collections.unmodifiableCollection(
+				fStore.get(node)).iterator();
 	}
-	
+
 	@Override
 	public void clear() {
 		fStore.clear();
 	}
-	
+
 	@Override
 	public Object clone() {
 		try {

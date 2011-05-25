@@ -8,9 +8,10 @@ import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IInitializable;
@@ -29,22 +30,22 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 
 	private IReference<Linkable> fStaticOneHop;
 
-	private IReference<ICoreInterface> fApp;
+	private IReference<IApplicationInterface> fApp;
 
 	private final BitSet fSeen = new BitSet();
 
 	private Node fRoot;
 
-	private Tweet fCurrentMessage;
+	private IGossipMessage fCurrentMessage;
 
 	public DirectMailingUE(@Attribute("linkable") int linkable,
 			@Attribute("newscasting") int appId) {
 		this(new ProtocolReference<Linkable>(linkable),
-				new ProtocolReference<ICoreInterface>(appId));
+				new ProtocolReference<IApplicationInterface>(appId));
 	}
 
 	public DirectMailingUE(ProtocolReference<Linkable> linkable,
-			ProtocolReference<ICoreInterface> app) {
+			ProtocolReference<IApplicationInterface> app) {
 		fStaticOneHop = linkable;
 		fApp = app;
 	}
@@ -57,7 +58,7 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 	public boolean doExchange(SNNode source, SNNode peer) {
 		check(source);
 		fSeen.set(indexOf(peer));
-		fApp.get(peer).receiveTweet(source, peer, fCurrentMessage, this);
+		fApp.get(peer).deliver(source, peer, fCurrentMessage, this);
 		if (fSeen.cardinality() == fStaticOneHop.get(fRoot).degree()) {
 			// Oops, seen everyone, we're done.
 			clear(source);
@@ -84,13 +85,13 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void tweeted(Tweet tweet) {
-		check(tweet.poster);
+	public void localDelivered(IGossipMessage tweet) {
+		check(tweet.originator());
 		fCurrentMessage = tweet;
 	}
 
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
+	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (duplicate) {
 			throw new IllegalStateException(
@@ -156,7 +157,8 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 
 	private void check(Node node) {
 		if (fRoot != null && !node.equals(fRoot)) {
-			throw new IllegalArgumentException(fRoot.getID() + " != " + node.getID());
+			throw new IllegalArgumentException(fRoot.getID() + " != "
+					+ node.getID());
 		}
 	}
 }

@@ -1,8 +1,9 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
+import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.OrderingUtils;
@@ -35,7 +36,7 @@ public class EventStorageTest extends PeerSimTest{
 		
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		DefaultVisibility vis = new DefaultVisibility(pid);
+		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
 		
 		builder.done();
 
@@ -66,7 +67,7 @@ public class EventStorageTest extends PeerSimTest{
 	public void sameSizeLists() {
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		DefaultVisibility vis = new DefaultVisibility(pid);
+		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
 		
 		CompactEventStorage s1 = new CompactEventStorage(vis);
 		CompactEventStorage s2 = new CompactEventStorage(vis);
@@ -90,7 +91,7 @@ public class EventStorageTest extends PeerSimTest{
 	public void testObserver() {
 		Node[] array = builder.addNodes(10);
 		int pid = builder.assignCompleteLinkable();
-		DefaultVisibility vis = new DefaultVisibility(pid);
+		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
 
 		final CompactEventStorage s1 = new CompactEventStorage(vis);
 		final CompactEventStorage s2 = new CompactEventStorage(vis);
@@ -125,17 +126,17 @@ public class EventStorageTest extends PeerSimTest{
 			final AtomicInteger o2 = new AtomicInteger();
 			
 			s1.merge(null, null, s2, new IMergeObserver() {
-				public void eventDelivered(SNNode sender, SNNode receiver,
-						Tweet tweet, boolean duplicate) {
+				public void delivered(SNNode sender, SNNode receiver,
+						IGossipMessage tweet, boolean duplicate) {
 					c1.incrementAndGet();
-					s1Clone.add(tweet.poster, tweet.sequenceNumber);
+					s1Clone.add(tweet.originator(), tweet.sequenceNumber());
 					o1.addAndGet(1);
 				}
 
 				public void sendDigest(Node sender, Node receiver, Node owner,
 						List<Integer> holes) { }
 
-				public void tweeted(Tweet t) { }
+				public void localDelivered(IGossipMessage t) { }
 			}, sn);
 
 			for (Node node : array) {
@@ -143,10 +144,10 @@ public class EventStorageTest extends PeerSimTest{
 			}
 
 			s2.merge(null, null, s1, new IMergeObserver() {
-				public void eventDelivered(SNNode sender, SNNode receiver,
-						Tweet tweet, boolean duplicate) {
+				public void delivered(SNNode sender, SNNode receiver,
+						IGossipMessage tweet, boolean duplicate) {
 					c2.incrementAndGet();
-					s2Clone.add(tweet.poster, tweet.sequenceNumber);
+					s2Clone.add(tweet.originator(), tweet.sequenceNumber());
 
 					o2.addAndGet(1);
 				}
@@ -154,10 +155,10 @@ public class EventStorageTest extends PeerSimTest{
 				public void sendDigest(Node sender, Node receiver, Node owner,
 						List<Integer> holes) { }
 
-				public void tweeted(Tweet t) {
+				public void localDelivered(IGossipMessage t) {
 					
 				}
-
+	
 			}, sn);
 
 			for (Node node : array) {

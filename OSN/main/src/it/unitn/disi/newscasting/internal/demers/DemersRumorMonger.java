@@ -1,9 +1,10 @@
 package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MultiCounter;
@@ -94,9 +95,12 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 			return false;
 		}
 
-		ICoreInterface application = (ICoreInterface) receiver
+		IApplicationInterface application = (IApplicationInterface) receiver
 				.getProtocol(fProtocolId);
-		DemersRumorMonger rApp = (DemersRumorMonger) application
+
+		// Not exactly a great assumption to make.
+		IProtocolSet set = (IProtocolSet) application;
+		DemersRumorMonger rApp = (DemersRumorMonger) set
 				.getStrategy(DemersRumorMonger.class);
 
 		// Rumor mongering entails picking a certain number of the
@@ -112,62 +116,59 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	private int receiveRumor(SNNode ours, SNNode sender,
-			List<Tweet> outsideRumors, ArrayList<Boolean> responseBuffer,
-			int protocolID, ICoreInterface application) {
+			List<IGossipMessage> outsideRumors,
+			ArrayList<Boolean> responseBuffer, int protocolID,
+			IApplicationInterface application) {
 
-		ListIterator<Tweet> it = outsideRumors.listIterator();
+		ListIterator<IGossipMessage> it = outsideRumors.listIterator();
 		Linkable sn = fConstraintLinkable.get(ours);
-
-		int bufSize = responseBuffer.size();
 		int total = 0;
 		int i = 0;
-
 		/**
 		 * Goes through the list of "receivable" rumors. We won't decide to
 		 * receive a rumor until we know that it might be useful.
 		 */
 		for (i = 0; it.hasNext() && total < fRumorTransmitSize; i++) {
-			Tweet tweet = it.next();
-			Boolean wasNew;
-
-			// If the rumor doesn't belong to the profile of a node we know,
-			// then we don't care about it.
-			Node profileOwner = tweet.profile();
-			if (!ours.equals(profileOwner) && !sn.contains(profileOwner)) {
-				// Since the hypothesis is that the sender knows which friends
-				// we share, we have to make it as if the sender had never
-				// sent this rumor.
-				//
-				// Setting the response flag to true, in this case, gets us
-				// exactly that effect.
-				wasNew = true;
-			}
-
-			else {
-				// We know the node.
-				// Delivers message to application.
-				wasNew = application.receiveTweet(sender, ours, tweet, this);
-				// Was it a duplicate?
-				if (wasNew) {
-					// Nope. Make it a hot rumor.
-					fRumorList.add(sn, tweet);
+			IGossipMessage message = it.next();
+			// Is this rumor already known?
+			if (application.storage().contains(message)) {
+				// Delivers if we're not the originator.
+				if (!message.originator().equals(ours)) {
+					application.deliver(sender, ours, message, this);
+					responseBufferAppend(responseBuffer, i, false);
+					total++;
+				} else {
+					responseBufferAppend(responseBuffer, i, true);
 				}
+				continue;
+			}
+			// Rumor is not known.
+			responseBufferAppend(responseBuffer, i, true);
+			// Is there an intersection between our constraint graph and
+			// the set of destinations for the message?
+			if (fRumorList.add(sn, message)) {
+				// Yes. Delivers message to application.
+				application.deliver(sender, ours, message, this);
 				total++;
 			}
-
-			if (i >= bufSize) {
-				responseBuffer.add(wasNew);
-			} else {
-				responseBuffer.set(i, wasNew);
-			}
 		}
-
 		return i;
 	}
 
 	// ----------------------------------------------------------------------
 
-	private void addTweet(Node ours, Tweet tweet) {
+	private void responseBufferAppend(ArrayList<Boolean> responseBuffer, int i,
+			boolean value) {
+		if (i >= responseBuffer.size()) {
+			responseBuffer.add(value);
+		} else {
+			responseBuffer.set(i, value);
+		}
+	}
+
+	// ----------------------------------------------------------------------
+
+	private void addTweet(Node ours, IGossipMessage tweet) {
 		fRumorList.add(fConstraintLinkable.get(ours), tweet);
 	}
 
@@ -214,7 +215,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
+	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (!duplicate) {
 			addTweet(receiver, tweet);
@@ -224,8 +225,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void tweeted(Tweet tweet) {
-		addTweet(tweet.poster, tweet);
+	public void localDelivered(IGossipMessage message) {
+		addTweet(message.originator(), message);
 	}
 
 	// ----------------------------------------------------------------------
@@ -243,8 +244,9 @@ class RumorList implements Cloneable {
 	/**
 	 * The rumors we are currently transmitting.
 	 */
-	private LinkedList<Tweet> fHotRumors = new LinkedList<Tweet>();
-	private List<Tweet> fRoHotRumors = Collections.unmodifiableList(fHotRumors);
+	private LinkedList<IGossipMessage> fHotRumors = new LinkedList<IGossipMessage>();
+	private List<IGossipMessage> fRoHotRumors = Collections
+			.unmodifiableList(fHotRumors);
 
 	/**
 	 * Keeps track of destinations for messages.
@@ -275,17 +277,19 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public void add(Linkable ourSn, Tweet evt) {
+	public boolean add(Linkable ourSn, IGossipMessage evt) {
 		if (addDestinations(ourSn, evt) == 0) {
-			return;
+			return false;
 		}
 
 		// Hottest rumors are at the END of the list.
 		fHotRumors.addLast(evt);
 		if (fMaxSize > 0 && fHotRumors.size() > fMaxSize) {
-			Tweet discarded = fHotRumors.removeFirst();
+			IGossipMessage discarded = fHotRumors.removeFirst();
 			removeDestinations(discarded);
 		}
+
+		return true;
 	}
 
 	// ----------------------------------------------------------------------
@@ -296,21 +300,21 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public List<Tweet> getList() {
+	public List<IGossipMessage> getList() {
 		return fRoHotRumors;
 	}
 
 	// ----------------------------------------------------------------------
 
 	public void demote(ArrayList<Boolean> mask, int size) {
-		ListIterator<Tweet> it = fHotRumors.listIterator(start(size));
+		ListIterator<IGossipMessage> it = fHotRumors.listIterator(start(size));
 
 		for (int i = 0; it.hasNext() && i < size; i++) {
 			// Rumor didn't help.
 			if (!mask.get(i)) {
 				// Either discards ...
 				if (fRandom.nextDouble() < fGiveupProbability) {
-					Tweet discarded = it.next();
+					IGossipMessage discarded = it.next();
 					it.remove();
 					removeDestinations(discarded);
 				}
@@ -322,9 +326,9 @@ class RumorList implements Cloneable {
 					 * is to be efficient with the linked list implementation,
 					 * and avoid O(n) access.
 					 */
-					Tweet evt = it.next();
+					IGossipMessage evt = it.next();
 					it.previous();
-					Tweet previous = it.previous();
+					IGossipMessage previous = it.previous();
 					it.set(evt);
 					it.next();
 					it.next();
@@ -346,13 +350,13 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	private int addDestinations(Linkable ourNeighborhood, Tweet tweet) {
+	private int addDestinations(Linkable ourNeighborhood, IGossipMessage tweet) {
 		int size = tweet.destinations();
 		int actual = 0;
 		for (int i = 0; i < size; i++) {
 			Node destination = tweet.destination(i);
 			if (ourNeighborhood.contains(destination)
-					&& !destination.equals(tweet.poster)) {
+					&& !destination.equals(tweet.originator())) {
 				fDestinations.increment(destination.getID());
 				actual++;
 			}
@@ -362,7 +366,7 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	private void removeDestinations(Tweet tweet) {
+	private void removeDestinations(IGossipMessage tweet) {
 		int size = tweet.destinations();
 		for (int i = 0; i < size; i++) {
 			Long destination = tweet.destination(i).getID();
@@ -383,7 +387,7 @@ class RumorList implements Cloneable {
 	public Object clone() {
 		try {
 			RumorList cloned = (RumorList) super.clone();
-			cloned.fHotRumors = new LinkedList<Tweet>(fHotRumors);
+			cloned.fHotRumors = new LinkedList<IGossipMessage>(fHotRumors);
 			cloned.fRoHotRumors = Collections
 					.unmodifiableList(cloned.fHotRumors);
 

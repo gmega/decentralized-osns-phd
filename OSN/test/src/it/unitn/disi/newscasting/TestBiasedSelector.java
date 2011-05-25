@@ -6,7 +6,6 @@ import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.newscasting.internal.selectors.BiasedComponentSelector;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 
 import java.io.ByteArrayInputStream;

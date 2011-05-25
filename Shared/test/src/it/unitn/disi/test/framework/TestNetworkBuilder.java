@@ -73,6 +73,10 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 	public int addProtocol(Node node, Protocol protocol) {
 		return chkNode(node).addProtocol(protocol);
 	}
+	
+	public int nextProtocolId(Node node) {
+		return chkNode(node).protocolSize();
+	}
 
 	public Node[] addNodes(int size) {
 		Node[] nodes = new Node[size];

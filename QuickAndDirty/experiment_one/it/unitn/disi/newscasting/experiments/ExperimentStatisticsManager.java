@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -70,7 +71,7 @@ public class ExperimentStatisticsManager implements IEventObserver,
 	}
 
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
+	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (duplicate) {
 			fCurrentExperiment.duplicateReceived(sender, receiver);
@@ -80,11 +81,11 @@ public class ExperimentStatisticsManager implements IEventObserver,
 	}
 
 	@Override
-	public void tweeted(Tweet tweet) {
+	public void localDelivered(IGossipMessage tweet) {
 		if (fCurrentExperiment != null) {
 			throw new IllegalArgumentException();
 		}
-		fCurrentExperiment = new UnitExperimentData(tweet);
+		fCurrentExperiment = new UnitExperimentData((Tweet) tweet);
 	}
 
 	@Override
@@ -429,7 +430,7 @@ class UnitExperimentData {
 		int i = (int) node.getID();
 		buffer.append(LOAD_PREFIX);
 		// 1 - Originator (identifies the unit experiment).
-		buffer.append(fTweet.poster.getID());
+		buffer.append(fTweet.profile().getID());
 		buffer.append(FIELD_SEPARATOR);
 		// 2 - The node for which the statistics we are about to printed.
 		buffer.append(i);

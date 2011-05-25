@@ -1,8 +1,5 @@
 package it.unitn.disi.analysis.loadsim;
 
-import it.unitn.disi.utils.collections.Pair;
-
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;

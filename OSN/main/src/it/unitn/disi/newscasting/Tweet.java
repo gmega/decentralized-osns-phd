@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.epidemics.BaseGossipMessage;
 import peersim.core.Node;
 
 //----------------------------------------------------------------------
@@ -8,43 +9,15 @@ import peersim.core.Node;
  * A {@link Tweet} represents an <i>immutable</i> piece of content (text,
  * picture, song, video, etc.) posted by a user to its profile page.
  */
-public class Tweet {
+public class Tweet extends BaseGossipMessage {
 	
 	public static final Tweet UNKNOWN_PARENT = new Tweet();
-
-	/**
-	 * The node who produced the content.
-	 */
-	public final Node poster;
-
-	/**
-	 * If this is a reply tweet, then this field should contain the
-	 * {@link Tweet} to which this {@link Tweet} is replying to.
-	 */
-	public final Tweet parent;
-
-	/**
-	 * The producer-relative sequence number for this content.
-	 */
-	public final int sequenceNumber;
-
-	/**
-	 * An {@link IMessageVisibility} instance, which computes the intended
-	 * destinations for this message.
-	 */
-	private final IMessageVisibility fDestinations;
-
-	/**
-	 * The computed hash code.
-	 */
-	private final int fHashCode;
 	
+	public final Tweet parent;	
+
 	private Tweet() {
-		parent = null;
-		poster = null;
-		sequenceNumber = -1;
-		fDestinations = null;
-		fHashCode = super.hashCode();
+		super();
+		this.parent = null;
 	}
 
 	/**
@@ -71,38 +44,22 @@ public class Tweet {
 	 */
 	public Tweet(Node poster, int sequenceNumber,
 			IMessageVisibility visibility, Tweet original) {
-		this.poster = poster;
-		this.sequenceNumber = sequenceNumber;
+		super(poster, sequenceNumber, visibility);
 		this.parent = original;
-		this.fDestinations = visibility;
-
-		fHashCode = computeHash();
 	}
-
-	/**
-	 * @return the number of destinations for this {@link Tweet}.
-	 */
-	public int destinations() {
-		return fDestinations.size(this);
+	
+	// ------------------------------------------------------------------------
+	// IGossipMessage methods.
+	// ------------------------------------------------------------------------
+	
+	@Override
+	public Tweet payload() {
+		return this;
 	}
-
-	/**
-	 * @return the i-th destination for this {@link Tweet}.
-	 * 
-	 * @throws ArrayIndexOutOfBoundsException
-	 *             if i >= {@link #destinations()}.
-	 */
-	public Node destination(int i) {
-		return fDestinations.get(this, i);
-	}
-
-	/**
-	 * @return <code>true</code> if a {@link Node} is a destination for this
-	 *         {@link Tweet}, or <code>false</code> otherwise.
-	 */
-	public boolean isDestination(Node node) {
-		return fDestinations.isDestination(this, node);
-	}
+	
+	// ------------------------------------------------------------------------
+	// Methods specific to Tweets.
+	// ------------------------------------------------------------------------
 
 	/**
 	 * @return the node owning the profile to which this {@link Tweet} was
@@ -110,9 +67,8 @@ public class Tweet {
 	 */
 	public Node profile() {
 		if (parent == null) {
-			return this.poster;
+			return this.originator();
 		}
-
 		return parent.profile();
 	}
 
@@ -135,11 +91,6 @@ public class Tweet {
 	}
 
 	@Override
-	public int hashCode() {
-		return fHashCode;
-	}
-
-	@Override
 	public String toString() {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("(p:");
@@ -156,14 +107,11 @@ public class Tweet {
 		return buffer.toString();
 	}
 
-	private int computeHash() {
-		int result = 47;
-		result = 37 * result + poster.hashCode();
-		result = 37 * result + sequenceNumber;
+	protected int computeHash() {
+		int result = super.computeHash();
 		if (parent != null) {
 			result = 37 * result + parent.hashCode();
 		}
-
 		return result;
 	}
 }

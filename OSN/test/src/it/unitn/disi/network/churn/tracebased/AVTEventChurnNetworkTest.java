@@ -1,12 +1,5 @@
 package it.unitn.disi.network.churn.tracebased;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStreamReader;
-import java.util.List;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.network.GenericValueHolder;
 import it.unitn.disi.network.NetworkStatistics;
 import it.unitn.disi.test.framework.ControlEvent;
@@ -15,6 +8,13 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.TestNodeImpl;
 import it.unitn.disi.utils.TableReader;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.util.List;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

@@ -2,7 +2,6 @@ package it.unitn.disi.newscasting;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.List;

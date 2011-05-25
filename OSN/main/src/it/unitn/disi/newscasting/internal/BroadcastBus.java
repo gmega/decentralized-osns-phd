@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
-import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class BroadcastBus implements IMergeObserver {
 	public void addSubscriber(IEventObserver observer) {
 		fDelegates.add(observer);
 	}
-	
+
 	public void removeSubscriber(IEventObserver observer) {
 		fDelegates.remove(observer);
 	}
@@ -38,20 +38,20 @@ public class BroadcastBus implements IMergeObserver {
 		fCurrentBroadcaster = null;
 	}
 
-	public void tweeted(Tweet tweet) {
+	public void localDelivered(IGossipMessage message) {
 		for (IEventObserver observer : fDelegates) {
 			if (fCurrentBroadcaster != observer) {
-				observer.tweeted(tweet);
+				observer.localDelivered(message);
 			}
 		}
 		fCurrentBroadcaster = null;
 	}
 
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
-			boolean duplicate) {
+	public void delivered(SNNode sender, SNNode receiver,
+			IGossipMessage message, boolean duplicate) {
 		for (IEventObserver observer : fDelegates) {
 			if (fCurrentBroadcaster != observer) {
-				observer.eventDelivered(sender, receiver, tweet, duplicate);
+				observer.delivered(sender, receiver, message, duplicate);
 			}
 		}
 		fCurrentBroadcaster = null;

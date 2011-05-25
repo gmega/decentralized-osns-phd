@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IEventObserver;
@@ -24,7 +25,7 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	/**
 	 * The single {@link Tweet} that's being propagated.
 	 */
-	private static Tweet fTweet;
+	private static IGossipMessage fTweet;
 
 	/**
 	 * Shared counters to facilitate programming.
@@ -85,7 +86,7 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	}
 
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
+	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (fTweet != null && tweet != fTweet) {
 			throw new IllegalSelectorException();
@@ -97,9 +98,9 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	}
 
 	@Override
-	public void tweeted(Tweet tweet) {
+	public void localDelivered(IGossipMessage tweet) {
 		fTweet = tweet;
-		fCounters[(int) tweet.poster.getID()] = 0;
+		fCounters[(int) tweet.originator().getID()] = 0;
 	}
 
 	public IPeerSelector first() {

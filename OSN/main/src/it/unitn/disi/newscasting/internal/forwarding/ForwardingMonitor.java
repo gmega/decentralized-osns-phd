@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
-import it.unitn.disi.newscasting.internal.ICoreInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
@@ -32,7 +32,7 @@ public class ForwardingMonitor implements Control {
 		
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
-			ICoreInterface intf = (ICoreInterface) node.getProtocol(fAdaptableId);
+			IProtocolSet intf = (IProtocolSet) node.getProtocol(fAdaptableId);
 			HistoryForwarding hf = intf.getStrategy(HistoryForwarding.class);
 			fw.add(hf.queueSize());
 			totalEntries += hf.queueSize();
@@ -55,7 +55,7 @@ public class ForwardingMonitor implements Control {
 			
 			for (int i = 0; i < Network.size(); i++) {
 				Node node = Network.get(i);
-				ICoreInterface intf = (ICoreInterface) node.getProtocol(fAdaptableId);				
+				IProtocolSet intf = (IProtocolSet) node.getProtocol(fAdaptableId);				
 				BloomFilterHistoryFw gd = (BloomFilterHistoryFw) intf.getStrategy(HistoryForwarding.class);
 				System.out.println(node.getID() + " " + gd.cacheHitRate());
 			}
@@ -74,7 +74,7 @@ public class ForwardingMonitor implements Control {
 
 		public void add(Node node) {
 			
-			ICoreInterface intf = (ICoreInterface) node
+			IProtocolSet intf = (IProtocolSet) node
 					.getProtocol(fAdaptableId);
 			HistoryForwarding fw = intf.getStrategy(HistoryForwarding.class);
 

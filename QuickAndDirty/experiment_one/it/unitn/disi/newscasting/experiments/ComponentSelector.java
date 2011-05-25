@@ -10,10 +10,11 @@ import peersim.config.IResolver;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
@@ -54,7 +55,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	private final IReference<IUtilityFunction<Node, Integer>> fUtility;
 
 	// XXX HACK!!
-	private final ICoreInterface fIntf;
+	private final IProtocolSet fIntf;
 
 	private final boolean fStopOnceDone;
 
@@ -65,7 +66,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	public ComponentSelector(String prefix, IResolver resolver,
 			IReference<IPeerSelector> delegate,
 			// XXX HACK!!
-			ICoreInterface intf) {
+			IProtocolSet intf) {
 		this(new ProtocolReference<ComponentComputationService>(
 				resolver.getInt(prefix, "css")), delegate,
 				new ProtocolReference<IUtilityFunction<Node, Integer>>(
@@ -80,7 +81,7 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 			IReference<IUtilityFunction<Node, Integer>> utility,
 			boolean stopOnceDone, boolean scrambleComponents,
 			// XXX HACK!
-			ICoreInterface intf) {
+			IProtocolSet intf) {
 		fComponents = components;
 		fDelegate = delegate;
 		fUtility = utility;

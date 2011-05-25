@@ -1,7 +1,8 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.epidemics.BaseGossipMessage;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IMessageVisibility;
-import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.Collections;
@@ -18,8 +19,11 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**
- * {@link CompactEventStorage} can efficiently store {@link Tweet}s, but won't
- * preserve all of their information.
+ * {@link CompactEventStorage} can efficiently store {@link IGossipMessage}s,
+ * but will only preserve the sequence numbers and the originator. This means
+ * that {@link #add(Node, int)} operations can accept any subclass of
+ * {@link IGossipMessage}, but semantics for {@link #tweetsFor(Node)} and
+ * {@link #contains(IGossipMessage)} are different from expected.
  * 
  * @author giuliano
  */
@@ -153,8 +157,9 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public boolean contains(Tweet tweet) {
-		return contains(tweet.poster, tweet.sequenceNumber);
+	@Override
+	public boolean contains(IGossipMessage msg) {
+		return contains(msg.originator(), msg.sequenceNumber());
 	}
 
 	// ----------------------------------------------------------------------
@@ -379,8 +384,8 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 			Node key, int start, int end) {
 
 		for (int i = start; i <= end; i++) {
-			observer.eventDelivered((SNNode) sender, (SNNode) receiver,
-					new Tweet((SNNode) key, i, fVisibility), false);
+			observer.delivered((SNNode) sender, (SNNode) receiver,
+					new SimpleMessage((SNNode) key, i, fVisibility), false);
 		}
 	}
 
@@ -408,15 +413,15 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 	// ----------------------------------------------------------------------
 
 	@Override
-	public Iterator<Tweet> tweetsFor(Node node) {
+	public Iterator<IGossipMessage> tweetsFor(Node node) {
 		return new TweetIterator(node);
 	}
 
 	// ----------------------------------------------------------------------
 
 	@Override
-	public boolean add(Tweet tweet) {
-		return this.add(tweet.poster, tweet.sequenceNumber);
+	public boolean add(IGossipMessage msg) {
+		return this.add(msg.originator(), msg.sequenceNumber());
 	}
 
 	// ----------------------------------------------------------------------
@@ -470,7 +475,7 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	private class TweetIterator implements Iterator<Tweet> {
+	private class TweetIterator implements Iterator<IGossipMessage> {
 
 		private Node fNode;
 
@@ -495,12 +500,12 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 		}
 
 		@Override
-		public Tweet next() {
+		public SimpleMessage next() {
 			if (!hasNext()) {
 				throw new NoSuchElementException();
 			}
-			Tweet next = new Tweet((SNNode) fNode, fCurrent++, fVisibility,
-					Tweet.UNKNOWN_PARENT);
+			SimpleMessage next = new SimpleMessage(fNode, fCurrent++,
+					fVisibility);
 			if (fCurrent == fNext) {
 				nextInterval();
 			}
@@ -517,6 +522,20 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 				fCurrent = fIntervalIterator.next();
 				fNext = fIntervalIterator.next();
 			}
+		}
+	}
+
+	static class SimpleMessage extends BaseGossipMessage {
+
+		protected SimpleMessage(Node originator, int sequence,
+				IMessageVisibility vis) {
+			super(originator, sequence, vis);
+		}
+
+		@Override
+		public Object payload() {
+			throw new UnsupportedOperationException(
+					"Can't use compact storage if payload access is required.");
 		}
 
 	}

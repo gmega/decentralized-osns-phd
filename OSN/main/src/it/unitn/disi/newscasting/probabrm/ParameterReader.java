@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.probabrm;
 
-import it.unitn.disi.newscasting.internal.ICoreInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -73,7 +73,7 @@ public class ParameterReader implements NodeInitializer, Control {
 	}
 
 	public void initialize(Node node) {
-		ICoreInterface adaptable = (ICoreInterface) node.getProtocol(fAdaptableId);
+		IProtocolSet adaptable = (IProtocolSet) node.getProtocol(fAdaptableId);
 		ProbabilisticRumorMonger prm = (ProbabilisticRumorMonger) adaptable
 				.getStrategy(ProbabilisticRumorMonger.class);
 		

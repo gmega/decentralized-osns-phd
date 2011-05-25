@@ -59,11 +59,16 @@ public class UnitExperiment {
 	 * Number of participants in the {@link UnitExperiment}.
 	 */
 	private final int fDegree;
-	
+
 	/**
 	 * Number of infected participants.
 	 */
 	private final BitSet fInfected;
+
+	/**
+	 * When set to true, causes only the last round of information to be saved.
+	 */
+	private final boolean fLastOnly;
 
 	/**
 	 * Constructed a new unit experiment.
@@ -76,15 +81,28 @@ public class UnitExperiment {
 	 * @param cumulative
 	 *            whether the data passed to {@link #addData(int, int, int)}
 	 *            represents cumulative figures or not.
+	 * @param lastOnly
+	 *            if <code>true</code>, saves only the last round of
+	 *            information.
 	 */
-	public UnitExperiment(int id, int degree, boolean cumulative) {
+	public UnitExperiment(int id, int degree, boolean cumulative,
+			boolean lastOnly) {
 		fId = id;
 		fDegree = degree;
 		fInfected = new BitSet(degree);
 		if (cumulative) {
 			fCumSum = newRow();
 		}
+		fLastOnly = lastOnly;
 		this.newRound();
+	}
+
+	/**
+	 * Convenience constructor. Shorthand for:<BR>
+	 * <code>UnitExperiment(id, degree, cumulative, false);</code>
+	 */
+	public UnitExperiment(int id, int degree, boolean cumulative) {
+		this(id, degree, cumulative, false);
 	}
 
 	/**
@@ -124,7 +142,7 @@ public class UnitExperiment {
 		row[sentIndex(j)] += deltaSent;
 		row[receivedIndex(j)] += deltaReceived;
 		fSeen.add(nodeId);
-		
+
 		// Computes node infection.
 		if (received > 0 && nodeId != fId) {
 			fInfected.set(j);
@@ -210,7 +228,7 @@ public class UnitExperiment {
 	 *         after the call to {@link #done()} has been performed).
 	 */
 	public double residue() {
-		return undelivered() / ((double)fDegree);
+		return undelivered() / ((double) fDegree);
 	}
 
 	/**
@@ -263,9 +281,12 @@ public class UnitExperiment {
 	}
 
 	private void newRound() {
-		int[] row = newRow();
+		boolean newRow = !fLastOnly || fData.size() == 0;
+		int[] row = newRow ? newRow() : topRow();
 		Arrays.fill(row, 0);
-		fData.add(row);
+		if (newRow) {
+			fData.add(row);
+		}
 		fSeen.clear();
 	}
 

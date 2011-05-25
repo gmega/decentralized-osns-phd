@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 
@@ -10,10 +11,10 @@ import peersim.core.Node;
 
 public class SingleEventStorage implements IWritableEventStorage{
 
-	private Tweet fTweet;
+	private IGossipMessage fTweet;
 	
 	@Override
-	public boolean add(Tweet tweet) {
+	public boolean add(IGossipMessage tweet) {
 		if (fTweet == null) {
 			fTweet = tweet;
 			return true;
@@ -32,7 +33,7 @@ public class SingleEventStorage implements IWritableEventStorage{
 	}
 
 	@Override
-	public boolean contains(Tweet tweet) {
+	public boolean contains(IGossipMessage tweet) {
 		return tweet.equals(fTweet);
 	}
 
@@ -52,7 +53,7 @@ public class SingleEventStorage implements IWritableEventStorage{
 	}
 
 	@Override
-	public Iterator<Tweet> tweetsFor(Node node) {
+	public Iterator<IGossipMessage> tweetsFor(Node node) {
 		throw new UnsupportedOperationException();
 	}
 	

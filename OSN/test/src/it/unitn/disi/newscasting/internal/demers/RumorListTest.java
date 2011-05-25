@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
+import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class RumorListTest {
 
 		for (int i = 0; i < 8; i++) {
 			rList.add((Linkable) node.getProtocol(pid), new Tweet(node, i,
-					new DefaultVisibility(pid)));
+					new SocialNeighborhoodMulticast(pid)));
 		}
 
 		ArrayList<Boolean> demotion = new ArrayList<Boolean>();
@@ -55,7 +55,7 @@ public class RumorListTest {
 
 		for (int i = 0; i < rList.size(); i++) {
 			Assert.assertEquals(expected[i],
-					rList.getList().get(i).sequenceNumber);
+					rList.getList().get(i).sequenceNumber());
 		}
 	}
 
@@ -84,11 +84,11 @@ public class RumorListTest {
 
 		for (int i = 0; i < 19; i++) {
 			rList.add((Linkable) node.getProtocol(pid), new Tweet(node, i,
-					new DefaultVisibility(pid)));
+					new SocialNeighborhoodMulticast(pid)));
 		}
 
 		for (int i = 0; i < rList.getList().size(); i++) {
-			Assert.assertEquals(9 + i, rList.getList().get(i).sequenceNumber);
+			Assert.assertEquals(9 + i, rList.getList().get(i).sequenceNumber());
 		}
 
 		ArrayList<Boolean> demotion = new ArrayList<Boolean>();
@@ -107,7 +107,7 @@ public class RumorListTest {
 		rList.demote(demotion, rList.getList().size());
 		for (int i = 0; i < rList.size(); i++) {
 			Assert.assertEquals(expected[i],
-					rList.getList().get(i).sequenceNumber);
+					rList.getList().get(i).sequenceNumber());
 		}
 	}
 

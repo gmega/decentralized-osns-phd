@@ -4,6 +4,7 @@ import static it.unitn.disi.newscasting.NewscastEvents.DELIVER_SINGLE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.DUPLICATE_TWEET;
 import static it.unitn.disi.newscasting.NewscastEvents.EXCHANGE_DIGESTS;
 import static it.unitn.disi.newscasting.NewscastEvents.TWEETED;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.logging.EventCodec;
@@ -44,7 +45,8 @@ public class LoggingObserver implements IMergeObserver {
 	
 	// ----------------------------------------------------------------------
 	
-	public void tweeted(Tweet tweet) {
+	public void localDelivered(IGossipMessage message) {
+		Tweet tweet = (Tweet) message;
 		log(fBuffer, TWEETED.magicNumber(), // event type
 				tweet.poster.getID(), // tweeting node (us)
 				tweet.sequenceNumber, // sequence number
@@ -53,8 +55,9 @@ public class LoggingObserver implements IMergeObserver {
 	
 	// ----------------------------------------------------------------------
 	
-	public void eventDelivered(SNNode sending, SNNode receiving, Tweet tweet,
+	public void delivered(SNNode sending, SNNode receiving, IGossipMessage message,
 			boolean duplicate) {
+		Tweet tweet = (Tweet) message;
 		if (!duplicate) {
 			log(fBuffer, DELIVER_SINGLE_TWEET.magicNumber(),// event type
 					tweet.poster.getID(), // node owning the tweet

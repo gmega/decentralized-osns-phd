@@ -5,7 +5,6 @@ import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import peersim.config.IResolver;
-import peersim.config.resolvers.ConfigContainerResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.core.Protocol;

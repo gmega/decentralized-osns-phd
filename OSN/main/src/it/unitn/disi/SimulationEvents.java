@@ -2,8 +2,8 @@ package it.unitn.disi;
 
 import it.unitn.disi.newscasting.NewscastEvents;
 import it.unitn.disi.utils.logging.CodecUtils;
-import it.unitn.disi.utils.logging.RecordTypeSet;
 import it.unitn.disi.utils.logging.IBinaryRecordType;
+import it.unitn.disi.utils.logging.RecordTypeSet;
 
 import java.util.List;
 

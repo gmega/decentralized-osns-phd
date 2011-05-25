@@ -32,8 +32,12 @@ public class UnitExperimentReader {
 		fInput = input;
 		fGraph = graph;
 	}
-
+	
 	public Map<Integer, UnitExperiment> load() throws IOException {
+		return load(true, false);
+	}
+
+	public Map<Integer, UnitExperiment> load(boolean cumulative, boolean lastOnly) throws IOException {
 
 		System.err.print("Reading unit experiment data ... ");
 
@@ -57,7 +61,7 @@ public class UnitExperimentReader {
 
 			UnitExperiment experiment = experiments.get(id);
 			if (experiment == null) {
-				experiment = new UnitExperiment(id, fGraph.degree(id), true);
+				experiment = new UnitExperiment(id, fGraph.degree(id), cumulative, lastOnly);
 				experiments.put(id, experiment);
 			}
 

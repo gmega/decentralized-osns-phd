@@ -1,10 +1,11 @@
 package it.unitn.disi.newscasting.experiments;
 
-import it.unitn.disi.newscasting.IApplicationInterface;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -67,7 +68,7 @@ public class DisseminationExperimentGovernor implements Control {
 	private int linkable;
 
 	/**
-	 * {@link IApplicationInterface} protocol id.
+	 * {@link ISocialNewscasting} protocol id.
 	 */
 	@Attribute("social_newscasting")
 	private int sns;
@@ -329,7 +330,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void tweet(SNNode node) {
-		IApplicationInterface intf = (IApplicationInterface) node
+		ISocialNewscasting intf = (ISocialNewscasting) node
 				.getProtocol(sns);
 		intf.postToFriends();
 	}
@@ -367,7 +368,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void clearStorage(Node source) {
-		ICoreInterface intf = (ICoreInterface) source.getProtocol(sns);
+		IApplicationInterface intf = (IApplicationInterface) source.getProtocol(sns);
 		IWritableEventStorage store = (IWritableEventStorage) intf.storage();
 		store.clear();
 
@@ -376,7 +377,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private boolean isQuiescent(Node node) {
-		ICoreInterface intf = (ICoreInterface) node.getProtocol(sns);
+		IProtocolSet intf = (IProtocolSet) node.getProtocol(sns);
 		IContentExchangeStrategy strategy = (IContentExchangeStrategy) intf
 				.getStrategy(fClass);
 		if (strategy.status() != IContentExchangeStrategy.ActivityStatus.QUIESCENT) {
@@ -387,7 +388,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private boolean hasSomething(Node node) {
-		ICoreInterface socialNewscasting = (ICoreInterface) node
+		IApplicationInterface socialNewscasting = (IApplicationInterface) node
 				.getProtocol(sns);
 		return socialNewscasting.storage().elements() != 0;
 	}

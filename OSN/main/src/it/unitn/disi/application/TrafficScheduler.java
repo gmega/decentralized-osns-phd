@@ -1,7 +1,8 @@
 package it.unitn.disi.application;
 
-import it.unitn.disi.newscasting.IApplicationInterface;
-import it.unitn.disi.newscasting.IEventStorage;
+import it.unitn.disi.epidemics.IEventStorage;
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IScheduler;
@@ -81,17 +82,19 @@ public class TrafficScheduler implements EDProtocol<IAction> {
 
 		for (int i = 0; i < fCache.size(); i++) {
 			Node friend = fCache.get(i);
-			Iterator<Tweet> twIt = storage.tweetsFor(friend);
+			Iterator<IGossipMessage> twIt = storage.tweetsFor(friend);
 			if (twIt.hasNext()) {
-				return twIt.next();
+				// This should cause a ClassCastException if configuration
+				// is incorrect and we don't get a Tweet.
+				return (Tweet) twIt;
 			}
 		}
 
 		return null;
 	}
 
-	private static IApplicationInterface newscastingService(Node node) {
-		return (IApplicationInterface) node.getProtocol(fSnService);
+	private static ISocialNewscasting newscastingService(Node node) {
+		return (ISocialNewscasting) node.getProtocol(fSnService);
 	}
 
 	public TrafficScheduler(@Attribute(Attribute.PREFIX) String prefix,

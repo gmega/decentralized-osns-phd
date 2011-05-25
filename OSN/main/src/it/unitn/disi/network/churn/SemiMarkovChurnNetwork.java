@@ -6,7 +6,6 @@ import it.unitn.disi.utils.peersim.IScheduler;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
-
 import peersim.config.IResolver;
 import peersim.core.Fallible;
 import peersim.core.Node;

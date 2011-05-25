@@ -1,12 +1,13 @@
 package it.unitn.disi.network.churn.yao;
 
+import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
+import it.unitn.disi.random.DiscreteExponential;
+import it.unitn.disi.random.IDistribution;
+
 import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
-import it.unitn.disi.random.DiscreteExponential;
-import it.unitn.disi.random.IDistribution;
 
 @AutoConfig
 public class DualDiscreteExponential implements IDistributionGenerator {

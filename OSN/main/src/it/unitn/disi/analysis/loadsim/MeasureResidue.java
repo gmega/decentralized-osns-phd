@@ -1,15 +1,16 @@
 package it.unitn.disi.analysis.loadsim;
 
-import java.io.PrintStream;
-import java.util.Map;
-
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+
+import java.io.PrintStream;
+import java.util.Map;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 
 /**
  * Utility for measuring residue from unit experiment data.

@@ -1,11 +1,12 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.test.framework.PeerSimTest;
+import it.unitn.disi.test.framework.TestNetworkBuilder;
+
 import java.util.Collections;
 import java.util.List;
 
 import junit.framework.Assert;
-import it.unitn.disi.test.framework.PeerSimTest;
-import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Test;
 

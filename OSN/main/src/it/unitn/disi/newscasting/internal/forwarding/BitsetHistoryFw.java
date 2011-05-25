@@ -1,10 +1,7 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
-import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.collections.FastGetBitset;
-
-import java.util.BitSet;
-
 import peersim.config.IResolver;
 import peersim.core.Node;
 
@@ -42,13 +39,13 @@ public class BitsetHistoryFw extends CachingHistoryFw<FastGetBitset> {
 	}
 
 	@Override
-	protected Object historyClone(Tweet tweet, Object history) {
-		return cache(tweet, (FastGetBitset) bitSet(history).clone());
+	protected Object historyClone(IGossipMessage message, Object history) {
+		return cache(message, (FastGetBitset) bitSet(history).clone());
 	}
 
 	@Override
-	protected Object historyCreate(Tweet tweet) {
-		return cache(tweet, new FastGetBitset());
+	protected Object historyCreate(IGossipMessage message) {
+		return cache(message, new FastGetBitset());
 	}
 
 	private FastGetBitset bitSet(Object history) {

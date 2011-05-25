@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
-
 import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
@@ -73,7 +73,7 @@ public class BloomFilterHistoryFw extends CachingHistoryFw<BloomFilter<Long>> {
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected BloomFilter<Long> historyCreate(Tweet tweet) {
+	protected BloomFilter<Long> historyCreate(IGossipMessage message) {
 		// Determines the size of the neighborhood over which we are
 		// disseminating.
 		/*
@@ -81,12 +81,12 @@ public class BloomFilterHistoryFw extends CachingHistoryFw<BloomFilter<Long>> {
 		 * merge bloom filters for different messages, and therefore will only
 		 * merge filters of the same size.
 		 */
-		Node central = tweet.poster;
+		Tweet tweet = (Tweet) message;
+		Node central = tweet.profile();
 		Linkable socialNeighborhood = (Linkable) central
 				.getProtocol(fSocialNetworkId);
 		int bloomFilterSize = (int) BloomFilter.requiredBitSetSizeFor(
 				fBFFalsePositive, socialNeighborhood.degree());
-
 		BloomFilter<Long> bloom = new BloomFilter<Long>(bloomFilterSize,
 				socialNeighborhood.degree());
 		return cache(tweet, bloom);
@@ -95,12 +95,13 @@ public class BloomFilterHistoryFw extends CachingHistoryFw<BloomFilter<Long>> {
 	// ----------------------------------------------------------------------
 
 	@Override
-	protected BloomFilter<Long> historyClone(Tweet tweet, Object other) {
+	protected BloomFilter<Long> historyClone(IGossipMessage message,
+			Object other) {
 		BloomFilter<Long> otherHistory = bloom(other);
 		BloomFilter<Long> clone = new BloomFilter<Long>(otherHistory.size(),
 				otherHistory.getExpectedNumberOfElements());
 		clone.merge(otherHistory);
-		return cache(tweet, clone);
+		return cache(message, clone);
 	}
 
 	// ----------------------------------------------------------------------

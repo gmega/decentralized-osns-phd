@@ -1,10 +1,8 @@
 package it.unitn.disi.analysis.loadsim;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 

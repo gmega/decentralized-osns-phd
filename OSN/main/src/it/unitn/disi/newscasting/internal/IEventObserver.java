@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
-import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.peersim.SNNode;
 
 /**
@@ -8,28 +8,29 @@ import it.unitn.disi.utils.peersim.SNNode;
  * are relevant to the parts of the {@link SocialNewscastingService}.
  * 
  * @author giuliano
- * 
  */
 public interface IEventObserver {
 
 	/**
-	 * Caller has tweeted.
+	 * Caller has produced some content locally. Semantically equivalent to have
+	 * the application delivering a message to itself.
 	 */
-	public void tweeted(Tweet tweet);
+	public void localDelivered(IGossipMessage message);
 
 	/**
-	 * Caller has received a tweet.
+	 * Application has received a message.
 	 * 
 	 * @param sender
-	 *            Node sending the tweet.
+	 *            Node sending the message.
 	 * @param receiver
-	 *            Node receiving the tweet (caller node).
-	 * @param tweet
+	 *            Node receiving the message (caller node). Has to be different
+	 *            from the sender.
+	 * @param message
 	 *            the actual message.
 	 * @param duplicate
 	 *            <code>true</code> if the received message was a duplicate, or
 	 *            <code>false</code> otherwise.
 	 */
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
-			boolean duplicate);
+	public void delivered(SNNode sender, SNNode receiver,
+			IGossipMessage message, boolean duplicate);
 }

@@ -1,5 +1,6 @@
-package it.unitn.disi.epidemics;
+package it.unitn.disi.sps.cyclon;
 
+import it.unitn.disi.epidemics.NodeDescriptor;
 import peersim.extras.am.epidemic.AbstractMessage;
 import peersim.extras.am.epidemic.xtman.ViewMessage;
 

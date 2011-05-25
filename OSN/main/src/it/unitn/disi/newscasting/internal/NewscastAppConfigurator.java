@@ -1,6 +1,8 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
@@ -69,14 +71,17 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 		fManager = manager;
 	}
 
-	public void configure(SocialNewscastingService app, IResolver resolver,
-			String prefix, int protocolId, int socialNetworkId)
+	public void configure(IProtocolSet app, IResolver resolver, String prefix)
 			throws Exception {
-		configureStorage(app, prefix, socialNetworkId);
-		configureLogging(app, resolver, prefix);
-		configureAntiEntropy(app, prefix, protocolId, socialNetworkId);
-		configureRumorMongering(app, resolver, prefix, protocolId,
-				socialNetworkId);
+		int snid = resolver.getInt(prefix, "linkable");
+		int pid = ((IApplicationInterface) app).pid();
+
+		SocialNewscastingService sncast = (SocialNewscastingService) app;
+
+		configureStorage(sncast, prefix, snid);
+		configureLogging(sncast, resolver, prefix);
+		configureAntiEntropy(sncast, prefix, pid, snid);
+		configureRumorMongering(sncast, resolver, prefix, pid, snid);
 	}
 
 	private void configureRumorMongering(SocialNewscastingService app,
@@ -110,14 +115,9 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 			return;
 		}
 
-		// Configures the anti-entropy strategy.
-		// XXX Anti-entropy is too coupled to the newscast application. This is
-		// so by historical reasons (they
-		// were the same thing at the beginning) but that should change with
-		// time.
-		DemersAntiEntropy dae = new DemersAntiEntropy(protocolId,
-				socialNetworkId);
-		app.addStrategy(new Class[] { DemersAntiEntropy.class }, dae,
+		CompactStorageAntiEntropy dae = new CompactStorageAntiEntropy(
+				protocolId, socialNetworkId);
+		app.addStrategy(new Class[] { CompactStorageAntiEntropy.class }, dae,
 				selector(PAR_ANTI_ENTROPY), filter(PAR_ANTI_ENTROPY));
 	}
 
@@ -166,7 +166,8 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 
 		IWritableEventStorage storage;
 		if (type.equals(VAL_COMPACT)) {
-			storage = new CompactEventStorage(new DefaultVisibility(snId));
+			storage = new CompactEventStorage(new SocialNeighborhoodMulticast(
+					snId));
 		} else if (type.equals(VAL_SIMPLE)) {
 			storage = new SimpleEventStorage();
 		} else {
@@ -176,11 +177,11 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 		service.setStorage(storage);
 	}
 
-	private void configureLogging(SocialNewscastingService service,
+	private void configureLogging(IApplicationInterface service,
 			IResolver resolver, String prefix) throws IOException {
 		OutputStream log = fManager.get(resolver, prefix);
 		if (log != null) {
-			LoggingObserver observer = new LoggingObserver(log, false);			
+			LoggingObserver observer = new LoggingObserver(log, false);
 			service.addSubscriber(observer);
 		}
 	}

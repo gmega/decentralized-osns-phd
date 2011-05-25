@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
+import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
 import org.junit.Assert;
@@ -16,7 +16,7 @@ public class TestTweet {
 		Node B = builder.baseNode();
 		
 		int pid = builder.assignCompleteLinkable();
-		DefaultVisibility vis = new DefaultVisibility(pid);
+		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
 		builder.done();
 		
 		Tweet root = new Tweet(A, 1, vis);

@@ -1,13 +1,14 @@
 package it.unitn.disi.network.churn.tracebased;
 
+import it.unitn.disi.network.churn.OnOffState;
+import it.unitn.disi.network.churn.RenewalChurnNetwork;
+
 import java.util.Iterator;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.core.Node;
-import it.unitn.disi.network.churn.OnOffState;
-import it.unitn.disi.network.churn.RenewalChurnNetwork;
 
 /**
  * {@link RenewalChurnNetwork} in which ON/OFF events are specified by an

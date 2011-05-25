@@ -1,13 +1,14 @@
 package it.unitn.disi.newscasting.probabrm;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.DefaultVisibility;
-import it.unitn.disi.newscasting.internal.ICoreInterface;
 import it.unitn.disi.newscasting.internal.IEventObserver;
+import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
@@ -164,10 +165,10 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 			return false;
 		}
 
-		ICoreInterface peerAdaptable = (ICoreInterface) actualPeer
+		IApplicationInterface peerAdaptable = (IApplicationInterface) actualPeer
 				.getProtocol(fParentProtocolId);
 		peerAdaptable
-				.receiveTweet(source, actualPeer, pending.getTweet(), this);
+				.deliver(source, actualPeer, pending.getTweet(), this);
 		return true;
 	}
 
@@ -188,7 +189,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 		// Queue one forwarding op per component.
 		ComponentComputationService css = (ComponentComputationService) owner
 				.getProtocol(fCCSId);
-		Tweet msg = new Tweet(owner, sequenceNumber, new DefaultVisibility(
+		Tweet msg = new Tweet(owner, sequenceNumber, new SocialNeighborhoodMulticast(
 				fNeighborhoodId));
 		for (int i = 0; i < css.components(); i++) {
 			// The send probabilities are the same for connected components,
@@ -225,7 +226,7 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 
 		int i = (start == -1) ? end : start;
 		for (; i <= end; i++) {
-			Tweet msg = new Tweet(owner, i, new DefaultVisibility(
+			Tweet msg = new Tweet(owner, i, new SocialNeighborhoodMulticast(
 					fNeighborhoodId));
 			fPendings.add(makeStrategy(receiver, msg, fParentProtocolId,
 					fNeighborhoodId, probability, intersection));
@@ -312,14 +313,14 @@ public class ProbabilisticRumorMonger implements IContentExchangeStrategy,
 	}
 
 	@Override
-	public void eventDelivered(SNNode sender, SNNode receiver, Tweet tweet,
+	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void tweeted(Tweet tweet) {
+	public void localDelivered(IGossipMessage tweet) {
 		// TODO Auto-generated method stub
 
 	}
