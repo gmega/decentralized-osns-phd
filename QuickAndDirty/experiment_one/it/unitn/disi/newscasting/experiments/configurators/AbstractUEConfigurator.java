@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.CachingConfigurator;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
@@ -33,8 +34,7 @@ import peersim.config.resolvers.CompositeResolver;
  * @author giuliano
  */
 @AutoConfig
-public abstract class AbstractUEConfigurator implements
-		IApplicationConfigurator {
+public abstract class AbstractUEConfigurator extends CachingConfigurator {
 
 	// ----------------------------------------------------------------------
 	// Parameter keys.
@@ -45,41 +45,13 @@ public abstract class AbstractUEConfigurator implements
 	public static final String PARAMETER_TIMEOUT_ID = "timeout_id";
 
 	// ----------------------------------------------------------------------
-	// Instance-shared state.
-	// ----------------------------------------------------------------------
-
-	/**
-	 * Flag used to see if {@link #oneShotConfig(String)} has been called
-	 * already or not. It's a hackish PeerSim idiom.
-	 */
-	private static boolean fConfigured = false;
-
-	/**
-	 * Adds a caching layer on top of the PeerSim {@link Configuration}
-	 * singleton, otherwise performance becomes unbearable, particularly under
-	 * the debugger (not sure why, some bug either in the JVM or the JEP used by
-	 * PeerSim).
-	 */
-	protected static IResolver fResolver;
-
-	// ----------------------------------------------------------------------
 
 	public AbstractUEConfigurator() {
 	}
 
 	// ----------------------------------------------------------------------
 
-	private void oneShotConfig(String prefix, IResolver resolver) {
-		if (fConfigured) {
-			return;
-		}
-
-		// Sets up the resolver first.
-		CompositeResolver composite = new CompositeResolver();
-		composite.addResolver(resolver);
-		fResolver = CachingResolver.cachingResolver(composite
-				.asInvocationHandler());
-
+	protected void oneShotConfig(String prefix, IResolver resolver) {
 		// And the statistics printer.
 		StatisticsPrinter printer = ObjectCreator.createInstance(
 				StatisticsPrinter.class, prefix, resolver);
@@ -99,21 +71,16 @@ public abstract class AbstractUEConfigurator implements
 		} else {
 			System.err.println("No parameter files specified.");
 		}
-
-		fConfigured = true;
 	}
 
 	// ----------------------------------------------------------------------
 
-	@Override
-	public void configure(IProtocolSet set, IResolver resolver, String prefix)
+	public void configure0(IProtocolSet set, IResolver resolver, String prefix)
 			throws Exception {
 
 		SocialNewscastingService app = (SocialNewscastingService) set;
 		int protocolId = app.pid();
 		int socialNetworkId = app.socialNetworkId();
-
-		oneShotConfig(prefix, resolver);
 
 		// Application storage.
 		app.setStorage(storage(prefix, protocolId, socialNetworkId));

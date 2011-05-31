@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.streams;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

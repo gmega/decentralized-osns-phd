@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.streams;
 
 public class EOFException extends RuntimeException {
 

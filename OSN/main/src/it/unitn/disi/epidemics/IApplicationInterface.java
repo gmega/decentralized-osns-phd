@@ -52,12 +52,6 @@ public interface IApplicationInterface extends ICachingObject {
 	public int pid();
 
 	/**
-	 * @return the PeerSim {@link Node} instance bound to this
-	 *         {@link IApplicationInterface}.
-	 */
-	public Node node();
-
-	/**
 	 * @return a reference to the underlying {@link IEventStorage}.
 	 */
 	public IEventStorage storage();

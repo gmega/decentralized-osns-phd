@@ -1,8 +1,8 @@
 package it.unitn.disi.graph;
 
-import it.unitn.disi.utils.IInputStreamProvider;
 import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.INodeRegistry;
+import it.unitn.disi.utils.streams.IInputStreamProvider;
 
 import java.io.File;
 import java.io.FileInputStream;

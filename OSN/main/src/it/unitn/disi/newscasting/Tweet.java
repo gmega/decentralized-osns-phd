@@ -10,7 +10,7 @@ import peersim.core.Node;
  * picture, song, video, etc.) posted by a user to its profile page.
  */
 public class Tweet extends BaseGossipMessage {
-	
+
 	public static final Tweet UNKNOWN_PARENT = new Tweet();
 	
 	public final Tweet parent;	
@@ -49,15 +49,6 @@ public class Tweet extends BaseGossipMessage {
 	}
 	
 	// ------------------------------------------------------------------------
-	// IGossipMessage methods.
-	// ------------------------------------------------------------------------
-	
-	@Override
-	public Tweet payload() {
-		return this;
-	}
-	
-	// ------------------------------------------------------------------------
 	// Methods specific to Tweets.
 	// ------------------------------------------------------------------------
 
@@ -71,23 +62,10 @@ public class Tweet extends BaseGossipMessage {
 		}
 		return parent.profile();
 	}
-
+	
 	@Override
-	public boolean equals(Object other) {
-		boolean equals = false;
-		if (other instanceof Tweet) {
-			Tweet evt = (Tweet) other;
-			// Base test.
-			equals = evt.poster.equals(poster)
-					&& evt.sequenceNumber == sequenceNumber;
-
-			if (this.parent != null) {
-				equals &= (this.parent.equals(evt.parent));
-			} else {
-				equals &= (evt.parent == null);
-			}
-		}
-		return equals;
+	public boolean canFlyweight() {
+		return true;
 	}
 
 	@Override
@@ -106,7 +84,27 @@ public class Tweet extends BaseGossipMessage {
 
 		return buffer.toString();
 	}
-
+	
+	// ------------------------------------------------------------------------
+	// Equals and computeHash.
+	// ------------------------------------------------------------------------
+	
+	@Override
+	public boolean equals(Object other) {
+		boolean equals = false;
+		if (other instanceof Tweet) {
+			Tweet evt = (Tweet) other;
+			equals = super.equals(evt);
+			if (this.parent != null) {
+				equals &= (this.parent.equals(evt.parent));
+			} else {
+				equals &= (evt.parent == null);
+			}
+		}
+		return equals;
+	}
+	
+	@Override
 	protected int computeHash() {
 		int result = super.computeHash();
 		if (parent != null) {

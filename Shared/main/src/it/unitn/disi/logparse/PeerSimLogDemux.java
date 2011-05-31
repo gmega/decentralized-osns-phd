@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.BaseFormatDecoder;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.streams.BaseFormatDecoder;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 

@@ -5,7 +5,8 @@ import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.MultiCounter;
+import it.unitn.disi.utils.IMultiCounter;
+import it.unitn.disi.utils.SparseMultiCounter;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
@@ -48,7 +49,7 @@ public class TestAntiCentralitySelector {
 
 		Linkable lnk = (Linkable) node.getProtocol(pid);
 
-		MultiCounter<Node> counter = new MultiCounter<Node>();
+		IMultiCounter<Node> counter = new SparseMultiCounter<Node>();
 
 		for (int i = 0; i < 20000; i++) {
 			Node selected = slktor.selectPeer(node, ISelectionFilter.UP_FILTER);

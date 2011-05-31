@@ -46,6 +46,16 @@ public class SingleEventStorage implements IWritableEventStorage{
 	public int elements() {
 		return (fTweet == null) ? 0 : 1;
 	}
+	
+	@Override
+	public boolean remove(IGossipMessage msg) {
+		if (msg.equals(fTweet)) {
+			fTweet = null;
+			return true;
+		}
+		
+		return false;
+	}
 
 	@Override
 	public Set<Node> nodes() {

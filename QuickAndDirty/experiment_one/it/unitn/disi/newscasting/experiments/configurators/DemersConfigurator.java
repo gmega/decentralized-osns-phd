@@ -11,6 +11,7 @@ import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Linkable;
+import peersim.core.Node;
 
 /**
  * Configuration for Demers Rumor mongering under the unit experiment framework.
@@ -33,10 +34,8 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	@Override
 	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
-		fStrategy = new DemersRumorMonger(fResolver, prefix, protocolId,
-				new ProtocolReference<Linkable>(fResolver.getInt(prefix,
-						"linkable")), CommonState.r);
-
+		Node node = app.node();
+		fStrategy = new DemersRumorMonger(fResolver, prefix, protocolId, node, CommonState.r);
 		return fStrategy;
 	}
 

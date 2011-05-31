@@ -3,7 +3,9 @@ package it.unitn.disi.newscasting.internal;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.internal.demers.CompactStorageAntiEntropy;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -150,8 +152,7 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 			IResolver resolver, String prefix, int protocolId,
 			int socialNetworkId) {
 		DemersRumorMonger demersRm = new DemersRumorMonger(resolver, prefix
-				+ "." + PAR_RUMOR_MONGER, protocolId,
-				new ProtocolReference<Linkable>(socialNetworkId), CommonState.r);
+				+ "." + PAR_RUMOR_MONGER, protocolId, app.node(), CommonState.r);
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, demersRm,
 				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER));
 
@@ -166,10 +167,9 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 
 		IWritableEventStorage storage;
 		if (type.equals(VAL_COMPACT)) {
-			storage = new CompactEventStorage(new SocialNeighborhoodMulticast(
-					snId));
+			storage = new CompactEventStorage(new NeighborhoodMulticast(snId));
 		} else if (type.equals(VAL_SIMPLE)) {
-			storage = new SimpleEventStorage();
+			storage = new SimpleEventStorage(Integer.MAX_VALUE);
 		} else {
 			throw new IllegalArgumentException();
 		}

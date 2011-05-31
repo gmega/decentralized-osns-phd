@@ -7,17 +7,23 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
+/**
+ * Given an {@link IndexedNeighborGraph} and a seed vertex, iterates in BFS
+ * order over the graph.
+ * 
+ * @author giuliano
+ */
 public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 
 	private final IndexedNeighborGraph fGraph;
-	
+
 	private final int fRoot;
 
 	public BFSIterable(IndexedNeighborGraph graph, int root) {
 		fGraph = graph;
 		fRoot = root;
 	}
-	
+
 	public Iterator<Pair<Integer, Integer>> iterator() {
 		return new BFSIterator(fGraph, fRoot);
 	}
@@ -28,7 +34,6 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 
 		private final LinkedList<Pair<Integer, Integer>> fQueue;
 
-		
 		private final BitSet fQueued;
 
 		public BFSIterator(IndexedNeighborGraph graph, int root) {
@@ -61,7 +66,7 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 		private void process(Pair<Integer, Integer> pair) {
 			int id = pair.a;
 			int depth = pair.b;
-			
+
 			int degree = fGraph.degree(id);
 			for (int i = 0; i < degree; i++) {
 				int neighbor = fGraph.getNeighbor(id, i);

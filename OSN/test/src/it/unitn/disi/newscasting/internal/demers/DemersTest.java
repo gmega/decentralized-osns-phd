@@ -51,7 +51,7 @@ public class DemersTest extends PeerSimTest {
 	public void residueDuplicateTest() {
 		double[] p = { 1.0, 0.5, 0.33, 0.25, 0.2 };
 		double[] r = { 0.96, 0.205, 0.060, 0.021, 0.008 };
- 
+
 		final int REPS = 10;
 		final double DUP_EPSILON = 0.4;
 
@@ -66,7 +66,7 @@ public class DemersTest extends PeerSimTest {
 			System.err.println("Residue for p = " + p[i] + " is " + residue
 					+ ", dups are " + dups + ".");
 			Assert.assertTrue(residue <= r[i]);
-			Assert.assertTrue(Math.abs(1.0/p[i] - dups) <= DUP_EPSILON);
+			Assert.assertTrue(Math.abs(1.0 / p[i] - dups) <= DUP_EPSILON);
 		}
 	}
 
@@ -96,8 +96,8 @@ public class DemersTest extends PeerSimTest {
 
 			// Rumor mongering protocol.
 			DemersRumorMonger drm = new DemersRumorMonger(p, Integer.MAX_VALUE,
-					fProtocolId, new ProtocolReference<Linkable>(fLinkableId),
-					fRand);
+					fProtocolId, node,
+					(Linkable) node.getProtocol(fLinkableId), fRand);
 
 			// Selector.
 			RandomSelectorOverLinkable selector = new RandomSelectorOverLinkable(

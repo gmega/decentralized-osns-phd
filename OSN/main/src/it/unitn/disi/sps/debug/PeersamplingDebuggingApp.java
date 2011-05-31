@@ -1,7 +1,7 @@
 package it.unitn.disi.sps.debug;
 
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.utils.MultiCounter;
+import it.unitn.disi.utils.SparseMultiCounter;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,7 +67,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 	/**
 	 * Tracks which neighbor has been contacted and how many times.
 	 */
-	private MultiCounter<Node> fCounter = new MultiCounter<Node>();
+	private SparseMultiCounter<Node> fCounter = new SparseMultiCounter<Node>();
 
 	private int fSeen;
 
@@ -154,7 +154,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 		try {
 			PeersamplingDebuggingApp clone = (PeersamplingDebuggingApp) super
 					.clone();
-			clone.fCounter = (MultiCounter<Node>) fCounter.clone();
+			clone.fCounter = (SparseMultiCounter<Node>) fCounter.clone();
 
 			return clone;
 		} catch (CloneNotSupportedException ex) {

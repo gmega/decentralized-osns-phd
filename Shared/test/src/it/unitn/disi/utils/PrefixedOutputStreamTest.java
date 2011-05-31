@@ -1,5 +1,7 @@
 package it.unitn.disi.utils;
 
+import it.unitn.disi.utils.streams.PrefixedWriter;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

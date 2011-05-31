@@ -2,7 +2,7 @@
  * Sucked from: http://www.cs.berkeley.edu/~jrs/61bs00/hw/hw9/set/DisjointSets.java 
  */
 
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.streams;
 
 /**
  *  A disjoint sets ADT.  Performs union-by-rank and path compression.

@@ -1,6 +1,6 @@
 package it.unitn.disi.utils.logging;
 
-import it.unitn.disi.utils.EOFException;
+import it.unitn.disi.utils.streams.EOFException;
 
 import java.io.DataInputStream;
 import java.io.DataOutput;

@@ -5,10 +5,10 @@ import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IEventStorage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
-import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.LoggingObserver;
+import it.unitn.disi.newscasting.internal.ProfilePageMulticast;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
@@ -89,7 +89,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		List <? extends Node> nodes = builder.getNodes(); 
 		// Creates a root tweet which will be known by everyone.
 		Node profileOwner = nodes.get(0);
-		IMessageVisibility vis = new SocialNeighborhoodMulticast(SOCIAL_NETWORK_ID);
+		IMessageVisibility vis = new ProfilePageMulticast(SOCIAL_NETWORK_ID);
 		Tweet root = new Tweet(profileOwner, 0, vis);
 		
 		final int SOCIAL_NEWSCASTING_ID = initSocialNewscasting(builder, SOCIAL_NETWORK_ID,

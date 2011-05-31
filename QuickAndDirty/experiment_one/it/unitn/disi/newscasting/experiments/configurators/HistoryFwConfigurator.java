@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
@@ -83,7 +82,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	// ----------------------------------------------------------------------
 
 	@Override
-	public void configure(IProtocolSet set, IResolver resolver, String prefix)
+	public void configure0(IProtocolSet set, IResolver resolver, String prefix)
 			throws Exception {
 		SocialNewscastingService app = (SocialNewscastingService) set;
 		setApplicationReference(app.pid());

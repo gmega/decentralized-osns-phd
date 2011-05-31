@@ -1,7 +1,7 @@
 package it.unitn.disi.graph.codecs;
 
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.ResettableFileInputStream;
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.File;
 import java.io.IOException;

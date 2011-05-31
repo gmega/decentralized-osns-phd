@@ -7,8 +7,8 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import it.unitn.disi.utils.PrefixedWriter;
 import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.streams.PrefixedWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;

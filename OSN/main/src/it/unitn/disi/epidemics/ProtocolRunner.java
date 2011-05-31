@@ -117,6 +117,7 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 			@Attribute(Attribute.PREFIX) String prefix) {
 		this(prefix, PeersimUtils.selfPid(prefix), configurator(prefix,
 				resolver));
+		fResolver = resolver;
 	}
 
 	// ----------------------------------------------------------------------
@@ -155,8 +156,7 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 			IResolver resolver) {
 		@SuppressWarnings("unchecked")
 		Class<? extends IApplicationConfigurator> klass = Configuration
-				.getClass(prefix + "." + CONFIGURATOR,
-						NewscastAppConfigurator.class);
+				.getClass(prefix + "." + CONFIGURATOR);
 		ObjectCreator creator = new ObjectCreator(resolver);
 		try {
 			return creator.create(prefix, klass);
@@ -434,8 +434,7 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 	public Object clone() {
 		// Cloning here is tricky because of loose coupling.
 		try {
-			SocialNewscastingService cloned = (SocialNewscastingService) super
-					.clone();
+			ProtocolRunner cloned = (ProtocolRunner) super.clone();
 			return cloned;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e); // Should never happen...

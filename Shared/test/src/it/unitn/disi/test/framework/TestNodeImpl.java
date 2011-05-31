@@ -90,6 +90,10 @@ public class TestNodeImpl implements SNNode {
 		return result;
 	}
 
+	public String toString() {
+		return "ID: " + fId + ", " + (isUp() ? "UP" : "DOWN");
+	}
+
 	// ------------------------------------------------------------------------
 	// UGLY: This is copy-and-pasted code from SNNodeImpl. Ideally we should be
 	// able to use SNNodeImpl, but it subclasses GeneralNode, and is thus

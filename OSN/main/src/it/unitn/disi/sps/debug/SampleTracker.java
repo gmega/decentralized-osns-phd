@@ -1,6 +1,7 @@
 package it.unitn.disi.sps.debug;
 
-import it.unitn.disi.utils.MultiCounter;
+import it.unitn.disi.utils.IMultiCounter;
+import it.unitn.disi.utils.SparseMultiCounter;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
@@ -18,7 +19,7 @@ public class SampleTracker implements Control {
 	
 	private final int fProtocolId;
 	
-	private MultiCounter<Node> fCounter = new MultiCounter<Node>();
+	private SparseMultiCounter<Node> fCounter = new SparseMultiCounter<Node>();
 	
 	public SampleTracker(String prefix) {
 		fProtocolId = Configuration.getPid(prefix + "." + PAR_PROTOCOL);

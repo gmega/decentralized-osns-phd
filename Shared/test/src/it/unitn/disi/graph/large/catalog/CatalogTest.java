@@ -21,7 +21,7 @@ import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.IdMapper;
-import it.unitn.disi.utils.ResettableFileInputStream;
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import org.junit.Before;
 import org.junit.BeforeClass;

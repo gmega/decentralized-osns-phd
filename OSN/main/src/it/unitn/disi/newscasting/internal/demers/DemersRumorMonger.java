@@ -6,8 +6,10 @@ import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.IEventObserver;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.MultiCounter;
+import it.unitn.disi.utils.DenseMultiCounter;
+import it.unitn.disi.utils.IKey;
+import it.unitn.disi.utils.IMultiCounter;
+import it.unitn.disi.utils.SparseMultiCounter;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -46,13 +48,20 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	 */
 	public static final String PAR_TRANSMIT_SIZE = "chunk_size";
 
+	/**
+	 * {@link Linkable} constraining dissemination for this protocol.
+	 */
+	public static final String PAR_LINKABLE = "linkable";
+
 	// ----------------------------------------------------------------------
 	// Parameter storage.
 	// ----------------------------------------------------------------------
 
-	private IReference<Linkable> fConstraintLinkable;
-
 	private int fRumorTransmitSize;
+
+	private double fGiveup;
+
+	private Random fRandom;
 
 	private final int fProtocolId;
 
@@ -67,20 +76,23 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public DemersRumorMonger(IResolver resolver, String prefix, int protocolId,
-			IReference<Linkable> constraintLinkable, Random rnd) {
+			Node source, Random rnd) {
 		this(resolver.getDouble(prefix, PAR_GIVEUP_PROBABILITY), resolver
-				.getInt(prefix, PAR_TRANSMIT_SIZE), protocolId,
-				constraintLinkable, rnd);
+				.getInt(prefix, PAR_TRANSMIT_SIZE), protocolId, source,
+				(Linkable) source.getProtocol(resolver.getInt(prefix,
+						PAR_LINKABLE)), rnd);
 	}
 
-	// ----------------------------------------------------------------------
+	// ------------------------------------------------------------------------
 
 	public DemersRumorMonger(double giveUp, int rumorTransmitSize,
-			int protocolId, IReference<Linkable> constraintLinkable, Random rnd) {
-		fRumorList = new RumorList(Integer.MAX_VALUE, giveUp, rnd);
+			int protocolId, Node source, Linkable constraintLinkable, Random rnd) {
 		fRumorTransmitSize = rumorTransmitSize;
 		fProtocolId = protocolId;
-		fConstraintLinkable = constraintLinkable;
+		fGiveup = giveUp;
+		fRandom = rnd;
+		fRumorList = new RumorList(Integer.MAX_VALUE, constraintLinkable,
+				fGiveup, fRandom);
 	}
 
 	// ----------------------------------------------------------------------
@@ -109,7 +121,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 				fResponseBuffer, fProtocolId, application);
 
 		// Feedback is used to adjust the "hotness" of the rumors.
-		fRumorList.demote(fResponseBuffer, size);
+		fRumorList.demote(fResponseBuffer, size, sender);
 		return true;
 	}
 
@@ -121,7 +133,6 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 			IApplicationInterface application) {
 
 		ListIterator<IGossipMessage> it = outsideRumors.listIterator();
-		Linkable sn = fConstraintLinkable.get(ours);
 		int total = 0;
 		int i = 0;
 		/**
@@ -130,27 +141,28 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 		 */
 		for (i = 0; it.hasNext() && total < fRumorTransmitSize; i++) {
 			IGossipMessage message = it.next();
-			// Is this rumor already known?
-			if (application.storage().contains(message)) {
-				// Delivers if we're not the originator.
-				if (!message.originator().equals(ours)) {
-					application.deliver(sender, ours, message, this);
-					responseBufferAppend(responseBuffer, i, false);
-					total++;
-				} else {
-					responseBufferAppend(responseBuffer, i, true);
+			boolean wasNew = true;
+			boolean deliver = false;
+			if (!message.originator().equals(ours)) {
+				deliver = true;
+				// Is this rumor already known?
+				if (!application.storage().contains(message)) {
+					// Nope, tries to add to rumor list.
+					deliver = fRumorList.add(message);
 				}
-				continue;
+
+				if (deliver) {
+					wasNew = application.deliver(sender, ours, message, this);
+					// Flags the original message as forwarded.
+					message.forwarded(sender, ours);
+					total++;
+				}
 			}
-			// Rumor is not known.
-			responseBufferAppend(responseBuffer, i, true);
-			// Is there an intersection between our constraint graph and
-			// the set of destinations for the message?
-			if (fRumorList.add(sn, message)) {
-				// Yes. Delivers message to application.
-				application.deliver(sender, ours, message, this);
-				total++;
-			}
+
+			// Note that if we don't deliver the message, wasNew will be true,
+			// which means the rumor won't be demoted at the sender and it will
+			// be as if he never sent it.
+			responseBufferAppend(responseBuffer, i, wasNew);
 		}
 		return i;
 	}
@@ -168,8 +180,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-	private void addTweet(Node ours, IGossipMessage tweet) {
-		fRumorList.add(fConstraintLinkable.get(ours), tweet);
+	private void addTweet(IGossipMessage tweet) {
+		fRumorList.add(tweet);
 	}
 
 	// ----------------------------------------------------------------------
@@ -218,7 +230,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (!duplicate) {
-			addTweet(receiver, tweet);
+			addTweet(tweet);
 		}
 	}
 
@@ -226,7 +238,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	@Override
 	public void localDelivered(IGossipMessage message) {
-		addTweet(message.originator(), message);
+		addTweet(message);
 	}
 
 	// ----------------------------------------------------------------------
@@ -241,6 +253,13 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
  */
 class RumorList implements Cloneable {
 
+	private static IKey<Node> fKeyer = new IKey<Node>() {
+		@Override
+		public int key(Node element) {
+			return (int) element.getID();
+		}
+	};
+
 	/**
 	 * The rumors we are currently transmitting.
 	 */
@@ -251,7 +270,9 @@ class RumorList implements Cloneable {
 	/**
 	 * Keeps track of destinations for messages.
 	 */
-	private MultiCounter<Long> fDestinations = new MultiCounter<Long>();
+	private IMultiCounter<Node> fDestinations;
+
+	private Linkable fConstraint;
 
 	/**
 	 * See {@link DemersRumorMonger#PAR_GIVEUP_PROBABILITY}.
@@ -269,21 +290,30 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public RumorList(int maxSize, double giveupProbability, Random rnd) {
+	public RumorList(int maxSize, Linkable linkable, double giveupProbability,
+			Random rnd) {
 		fMaxSize = maxSize;
 		fGiveupProbability = giveupProbability;
 		fRandom = rnd;
+		fConstraint = linkable;
+
+		Node[] neighbors = new Node[linkable.degree()];
+		for (int i = 0; i < neighbors.length; i++) {
+			neighbors[i] = linkable.getNeighbor(i);
+		}
+		
+		fDestinations = new SparseMultiCounter<Node>();
 	}
 
 	// ----------------------------------------------------------------------
 
-	public boolean add(Linkable ourSn, IGossipMessage evt) {
-		if (addDestinations(ourSn, evt) == 0) {
+	public boolean add(IGossipMessage evt) {
+		if (addDestinations(evt) == 0) {
 			return false;
 		}
 
 		// Hottest rumors are at the END of the list.
-		fHotRumors.addLast(evt);
+		fHotRumors.addLast(evt.cloneIfNeeded());
 		if (fMaxSize > 0 && fHotRumors.size() > fMaxSize) {
 			IGossipMessage discarded = fHotRumors.removeFirst();
 			removeDestinations(discarded);
@@ -306,7 +336,7 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	public void demote(ArrayList<Boolean> mask, int size) {
+	public void demote(ArrayList<Boolean> mask, int size, Node node) {
 		ListIterator<IGossipMessage> it = fHotRumors.listIterator(start(size));
 
 		for (int i = 0; it.hasNext() && i < size; i++) {
@@ -316,6 +346,7 @@ class RumorList implements Cloneable {
 				if (fRandom.nextDouble() < fGiveupProbability) {
 					IGossipMessage discarded = it.next();
 					it.remove();
+					discarded.dropped(node);
 					removeDestinations(discarded);
 				}
 				// .. or demotes the Tweet.
@@ -350,14 +381,14 @@ class RumorList implements Cloneable {
 
 	// ----------------------------------------------------------------------
 
-	private int addDestinations(Linkable ourNeighborhood, IGossipMessage tweet) {
+	private int addDestinations(IGossipMessage tweet) {
 		int size = tweet.destinations();
 		int actual = 0;
 		for (int i = 0; i < size; i++) {
 			Node destination = tweet.destination(i);
-			if (ourNeighborhood.contains(destination)
+			if (fConstraint.contains(destination)
 					&& !destination.equals(tweet.originator())) {
-				fDestinations.increment(destination.getID());
+				fDestinations.increment(destination);
 				actual++;
 			}
 		}
@@ -369,15 +400,18 @@ class RumorList implements Cloneable {
 	private void removeDestinations(IGossipMessage tweet) {
 		int size = tweet.destinations();
 		for (int i = 0; i < size; i++) {
-			Long destination = tweet.destination(i).getID();
-			fDestinations.decrement(destination);
+			Node destination = tweet.destination(i);
+			if (fConstraint.contains(destination)
+					&& !destination.equals(tweet.originator())) {
+				fDestinations.decrement(destination);
+			}
 		}
 	}
 
 	// ----------------------------------------------------------------------
 
-	public int messagesFor(Node node) {
-		return fDestinations.count(node.getID());
+	public int messagesFor(Node neighbor) {
+		return fDestinations.count(neighbor);
 	}
 
 	// ----------------------------------------------------------------------

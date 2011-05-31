@@ -1,8 +1,11 @@
-package it.unitn.disi.newscasting.internal;
+package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.internal.CompactEventStorage;
+import it.unitn.disi.newscasting.internal.IMergeObserver;
+import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.List;

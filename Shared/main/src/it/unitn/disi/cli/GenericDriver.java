@@ -1,7 +1,7 @@
 package it.unitn.disi.cli;
 
 import it.unitn.disi.utils.HashMapResolver;
-import it.unitn.disi.utils.ResettableFileInputStream;
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;

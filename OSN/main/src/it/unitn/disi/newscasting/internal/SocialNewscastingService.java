@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.epidemics.ProtocolRunner;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.ISocialNewscasting;
@@ -62,7 +63,7 @@ public class SocialNewscastingService extends ProtocolRunner implements
 	
 	private void init(int socialNetworkId) {
 		fSocialNetworkID = socialNetworkId;
-		fVisibility = new SocialNeighborhoodMulticast(fSocialNetworkID);
+		fVisibility = new ProfilePageMulticast(fSocialNetworkID);
 	}
 
 	// ----------------------------------------------------------------------

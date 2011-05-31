@@ -206,7 +206,6 @@ public class DisseminationExperimentGovernor implements Control {
 			if (!isQuiescent(neighbor)) {
 				terminated = false;
 				active++;
-//				break;
 			} else {
 				quiescent++;
 			}

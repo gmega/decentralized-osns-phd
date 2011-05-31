@@ -89,9 +89,8 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 
 	public int assignCompleteLinkable() {
 		int pid = -1;
-		Protocol singleton = new CompleteLinkable();
 		for (Node node : fOrderedNodes) {
-			pid = addProtocol(node, singleton);
+			pid = addProtocol(node, new CompleteLinkable(node));
 		}
 		return pid;
 	}
@@ -116,17 +115,30 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 	}
 
 	class CompleteLinkable implements Linkable, Protocol {
+		
+		private final Node fReference;
+		
+		private final int fRefIndex;
+		
+		public CompleteLinkable(Node reference) {
+			fReference = reference;
+			fRefIndex = fOrderedNodes.indexOf(reference);
+		}
 
 		public boolean contains(Node neighbor) {
+			if (neighbor.equals(fReference)) {
+				return false;
+			}
 			return fOrderedNodes.contains(neighbor);
 		}
 
 		public int degree() {
-			return fOrderedNodes.size();
+			return fOrderedNodes.size() - 1;
 		}
 
 		public Node getNeighbor(int i) {
-			return fOrderedNodes.get(i);
+			int index = i < fRefIndex ? i : i + 1; 
+			return fOrderedNodes.get(index);
 		}
 
 		public boolean addNeighbor(Node neighbour) {

@@ -7,7 +7,17 @@ import it.unitn.disi.utils.IReference;
 
 import java.util.Collection;
 
+import peersim.core.Node;
+
 public interface IProtocolSet {
+
+	/**
+	 * @return the PeerSim {@link Node} instance bound to this
+	 *         {@link IProtocolSet}.
+	 */
+
+	public Node node();
+	
 	/**
 	 * @return a set with the concrete types of all of the configured
 	 *         {@link IContentExchangeStrategy}s.

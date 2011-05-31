@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.newscasting.internal.CompactEventStorage;
 import it.unitn.disi.newscasting.internal.IMergeObserver;
-import it.unitn.disi.newscasting.internal.SocialNeighborhoodMulticast;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.OrderingUtils;
@@ -36,7 +36,7 @@ public class EventStorageTest extends PeerSimTest{
 		
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
+		NeighborhoodMulticast vis = new NeighborhoodMulticast(pid);
 		
 		builder.done();
 
@@ -67,7 +67,7 @@ public class EventStorageTest extends PeerSimTest{
 	public void sameSizeLists() {
 		Node node = builder.baseNode();
 		int pid = builder.assignCompleteLinkable();
-		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
+		NeighborhoodMulticast vis = new NeighborhoodMulticast(pid);
 		
 		CompactEventStorage s1 = new CompactEventStorage(vis);
 		CompactEventStorage s2 = new CompactEventStorage(vis);
@@ -91,7 +91,7 @@ public class EventStorageTest extends PeerSimTest{
 	public void testObserver() {
 		Node[] array = builder.addNodes(10);
 		int pid = builder.assignCompleteLinkable();
-		SocialNeighborhoodMulticast vis = new SocialNeighborhoodMulticast(pid);
+		NeighborhoodMulticast vis = new NeighborhoodMulticast(pid);
 
 		final CompactEventStorage s1 = new CompactEventStorage(vis);
 		final CompactEventStorage s2 = new CompactEventStorage(vis);

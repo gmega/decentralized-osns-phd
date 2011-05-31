@@ -2,7 +2,7 @@ package it.unitn.disi.graph.analysis;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.DisjointSets;
+import it.unitn.disi.utils.streams.DisjointSets;
 
 import java.util.BitSet;
 

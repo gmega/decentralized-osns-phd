@@ -161,6 +161,13 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 	public boolean contains(IGossipMessage msg) {
 		return contains(msg.originator(), msg.sequenceNumber());
 	}
+	
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public boolean remove(IGossipMessage msg) {
+		throw new UnsupportedOperationException();
+	}
 
 	// ----------------------------------------------------------------------
 
@@ -530,12 +537,6 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 		protected SimpleMessage(Node originator, int sequence,
 				IMessageVisibility vis) {
 			super(originator, sequence, vis);
-		}
-
-		@Override
-		public Object payload() {
-			throw new UnsupportedOperationException(
-					"Can't use compact storage if payload access is required.");
 		}
 
 	}
