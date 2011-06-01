@@ -190,4 +190,16 @@ public class TestNodeImpl implements SNNode {
 		public void stateChanged(int oldState, int newState, SNNode node) {
 		}
 	};
+
+	@Override
+	public boolean isActive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void active(boolean active) {
+		// TODO Auto-generated method stub
+		
+	}
 }

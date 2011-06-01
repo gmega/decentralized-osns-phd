@@ -1,16 +1,6 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import peersim.config.IResolver;
-import peersim.core.CommonState;
-import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
@@ -22,6 +12,15 @@ import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.List;
+
+import peersim.config.IResolver;
+import peersim.core.CommonState;
+import peersim.core.Node;
 
 /**
  * {@link ComponentSelector} is a selection heuristics which constrains a

@@ -35,7 +35,8 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	protected IContentExchangeStrategy strategy(SocialNewscastingService app,
 			String prefix, int protocolId, int socialNetworkId) {
 		Node node = app.node();
-		fStrategy = new DemersRumorMonger(fResolver, prefix, protocolId, node, CommonState.r);
+		fStrategy = new DemersRumorMonger(fResolver, prefix, protocolId, node,
+				CommonState.r, true);
 		return fStrategy;
 	}
 

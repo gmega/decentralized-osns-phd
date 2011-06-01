@@ -269,7 +269,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void wrapUpExperiment() {
-		// Notifies the observers.
+		// Notifies the observers before cleaning any state.
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
@@ -338,9 +338,11 @@ public class DisseminationExperimentGovernor implements Control {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
 		clearStorage(node);
+		node.active(false);
 		for (int i = 0; i < degree; i++) {
 			SNNode nei = (SNNode) lnk.getNeighbor(i);
 			clearStorage(nei);
+			nei.active(false);
 		}
 	}
 
@@ -360,9 +362,11 @@ public class DisseminationExperimentGovernor implements Control {
 		Linkable lnk = (Linkable) node.getProtocol(linkable);
 		int degree = lnk.degree();
 		fRebootSupport.initialize(node);
+		node.active(true);
 		for (int i = 0; i < degree; i++) {
 			SNNode nei = (SNNode) lnk.getNeighbor(i);
 			fRebootSupport.initialize(nei);
+			nei.active(true);
 		}
 	}
 

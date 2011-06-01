@@ -8,7 +8,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 public interface SNNode extends Node {
-	
+
 	/**
 	 * @return the timestamp for the last state change for this {@link SNNode}.
 	 */
@@ -53,4 +53,23 @@ public interface SNNode extends Node {
 	 */
 	public void clearStateListener();
 
+	/*
+	 * XXX these active/isActive methods aren't exactly great. I still got to
+	 * properly decide whether to introduce unit experiment concepts or not, and
+	 * where.
+	 */
+	/**
+	 * 
+	 * @return whether this {@link SNNode} is active from an
+	 *         application-specific point of view or not. Protocols are free to
+	 *         ignore this.
+	 * 
+	 */
+	public boolean isActive();
+
+	/**
+	 * @param active
+	 *            the active status for this node.
+	 */
+	public void active(boolean active);
 }

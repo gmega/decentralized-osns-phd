@@ -152,7 +152,8 @@ public class NewscastAppConfigurator implements IApplicationConfigurator {
 			IResolver resolver, String prefix, int protocolId,
 			int socialNetworkId) {
 		DemersRumorMonger demersRm = new DemersRumorMonger(resolver, prefix
-				+ "." + PAR_RUMOR_MONGER, protocolId, app.node(), CommonState.r);
+				+ "." + PAR_RUMOR_MONGER, protocolId, app.node(),
+				CommonState.r, false);
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, demersRm,
 				selector(PAR_RUMOR_MONGER), filter(PAR_RUMOR_MONGER));
 

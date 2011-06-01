@@ -97,7 +97,7 @@ public class DemersTest extends PeerSimTest {
 			// Rumor mongering protocol.
 			DemersRumorMonger drm = new DemersRumorMonger(p, Integer.MAX_VALUE,
 					fProtocolId, node,
-					(Linkable) node.getProtocol(fLinkableId), fRand);
+					(Linkable) node.getProtocol(fLinkableId), fRand, false);
 
 			// Selector.
 			RandomSelectorOverLinkable selector = new RandomSelectorOverLinkable(

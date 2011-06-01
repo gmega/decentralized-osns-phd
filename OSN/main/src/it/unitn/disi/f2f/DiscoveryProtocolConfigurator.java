@@ -58,7 +58,7 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 			String prefix) {
 		// Configures the multicast service.
 		DemersRumorMonger drm = new DemersRumorMonger(resolver, prefix,
-				app.pid(), app.node(), CommonState.r);
+				app.pid(), app.node(), CommonState.r, false);
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, drm,
 				new FallThroughReference<IPeerSelector>(
 						new RandomSelectorOverLinkable(fMembershipPid)),

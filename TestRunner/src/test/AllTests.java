@@ -29,6 +29,7 @@ import it.unitn.disi.sps.newscast.TestView;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
+import it.unitn.disi.utils.MultiCounterTest;
 import it.unitn.disi.utils.PrefixedOutputStreamTest;
 import it.unitn.disi.utils.TestMiscUtils;
 import it.unitn.disi.utils.TestTableReader;
@@ -78,7 +79,8 @@ import peersim.config.PluginContainerTest;
 	ZoneCrawl2AvtTest.class,
 	AVTReplayTest.class,
 	AVTEventChurnNetworkTest.class,
-	DemersTest.class
+	DemersTest.class,
+	MultiCounterTest.class
 })
 
 public class AllTests extends PeerSimTest {

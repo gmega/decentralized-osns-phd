@@ -6,9 +6,9 @@ import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
-import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
@@ -71,16 +71,18 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 
 	private void shutdownNode(Node node) {
 		IContentExchangeStrategy strategy = fXchgRef.get(node);
-		strategy.clear(node);
+		if (strategy.status() == ActivityStatus.ACTIVE) {
+			strategy.clear(node);
 		
-		//FIXME Argh static, implicit component wiring.
-		DisseminationExperimentGovernor gov = DisseminationExperimentGovernor.singletonInstance();
-		fLog.set("root", gov.currentNode().getID());
-		fLog.set("id", node.getID());
-		fLog.set("exptime", gov.experimentTime());
-		fLog.set("uptime", ((SNNode)node).uptime());
-		fLog.set("disstime", timeoutTime());
-		fLog.emmitRow();
+			//FIXME Argh static, implicit component wiring.
+			DisseminationExperimentGovernor gov = DisseminationExperimentGovernor.singletonInstance();
+			fLog.set("root", gov.currentNode().getID());
+			fLog.set("id", node.getID());
+			fLog.set("exptime", gov.experimentTime());
+			fLog.set("uptime", ((SNNode)node).uptime());
+			fLog.set("disstime", timeoutTime());
+			fLog.emmitRow();
+		}
 	}
 
 	public abstract void startTimeout(Node node);

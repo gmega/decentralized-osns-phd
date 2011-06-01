@@ -6,15 +6,9 @@ import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.internal.IEventObserver;
-import it.unitn.disi.utils.DenseMultiCounter;
-import it.unitn.disi.utils.IKey;
-import it.unitn.disi.utils.IMultiCounter;
-import it.unitn.disi.utils.SparseMultiCounter;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
@@ -51,7 +45,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	/**
 	 * {@link Linkable} constraining dissemination for this protocol.
 	 */
-	public static final String PAR_LINKABLE = "linkable";
+	public static final String PAR_LINKABLE = "constraint_linkable";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -76,23 +70,26 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public DemersRumorMonger(IResolver resolver, String prefix, int protocolId,
-			Node source, Random rnd) {
+			Node source, Random rnd, boolean unitOptimized) {
 		this(resolver.getDouble(prefix, PAR_GIVEUP_PROBABILITY), resolver
 				.getInt(prefix, PAR_TRANSMIT_SIZE), protocolId, source,
 				(Linkable) source.getProtocol(resolver.getInt(prefix,
-						PAR_LINKABLE)), rnd);
+						PAR_LINKABLE)), rnd, unitOptimized);
 	}
 
 	// ------------------------------------------------------------------------
 
 	public DemersRumorMonger(double giveUp, int rumorTransmitSize,
-			int protocolId, Node source, Linkable constraintLinkable, Random rnd) {
+			int protocolId, Node source, Linkable constraintLinkable,
+			Random rnd, boolean unitOptimized) {
 		fRumorTransmitSize = rumorTransmitSize;
 		fProtocolId = protocolId;
 		fGiveup = giveUp;
 		fRandom = rnd;
-		fRumorList = new RumorList(Integer.MAX_VALUE, constraintLinkable,
-				fGiveup, fRandom);
+		fRumorList = unitOptimized ? new UEOptimizedRumorList(
+				Integer.MAX_VALUE, fGiveup, constraintLinkable, fRandom)
+				: new CountingRumorList(Integer.MAX_VALUE, fGiveup,
+						constraintLinkable, fRandom);
 	}
 
 	// ----------------------------------------------------------------------
@@ -193,7 +190,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public ActivityStatus status() {
-		return (fRumorList.size() == 0) ? ActivityStatus.QUIESCENT
+		return (fRumorList.size == 0) ? ActivityStatus.QUIESCENT
 				: ActivityStatus.ACTIVE;
 	}
 
@@ -219,7 +216,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	@Override
 	public void clear(Node source) {
-		// No cache to clear.
+		fRumorList.dropAll(source);
 	}
 
 	// ----------------------------------------------------------------------
@@ -243,193 +240,6 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-}
-
-// ----------------------------------------------------------------------
-
-/**
- * Rumor list is an auxiliary object which helps the rumor mongering protocol
- * maintain and update its list of rumors.
- */
-class RumorList implements Cloneable {
-
-	private static IKey<Node> fKeyer = new IKey<Node>() {
-		@Override
-		public int key(Node element) {
-			return (int) element.getID();
-		}
-	};
-
-	/**
-	 * The rumors we are currently transmitting.
-	 */
-	private LinkedList<IGossipMessage> fHotRumors = new LinkedList<IGossipMessage>();
-	private List<IGossipMessage> fRoHotRumors = Collections
-			.unmodifiableList(fHotRumors);
-
-	/**
-	 * Keeps track of destinations for messages.
-	 */
-	private IMultiCounter<Node> fDestinations;
-
-	private Linkable fConstraint;
-
-	/**
-	 * See {@link DemersRumorMonger#PAR_GIVEUP_PROBABILITY}.
-	 */
-	private double fGiveupProbability;
-
-	/**
-	 * Maximum size for the hot rumor list. If the list overgrows this, the
-	 * "coldest" rumors start being evicted.
-	 */
-	private int fMaxSize;
-
-	/** Random number generator. */
-	private Random fRandom;
-
-	// ----------------------------------------------------------------------
-
-	public RumorList(int maxSize, Linkable linkable, double giveupProbability,
-			Random rnd) {
-		fMaxSize = maxSize;
-		fGiveupProbability = giveupProbability;
-		fRandom = rnd;
-		fConstraint = linkable;
-
-		Node[] neighbors = new Node[linkable.degree()];
-		for (int i = 0; i < neighbors.length; i++) {
-			neighbors[i] = linkable.getNeighbor(i);
-		}
-		
-		fDestinations = new SparseMultiCounter<Node>();
-	}
-
-	// ----------------------------------------------------------------------
-
-	public boolean add(IGossipMessage evt) {
-		if (addDestinations(evt) == 0) {
-			return false;
-		}
-
-		// Hottest rumors are at the END of the list.
-		fHotRumors.addLast(evt.cloneIfNeeded());
-		if (fMaxSize > 0 && fHotRumors.size() > fMaxSize) {
-			IGossipMessage discarded = fHotRumors.removeFirst();
-			removeDestinations(discarded);
-		}
-
-		return true;
-	}
-
-	// ----------------------------------------------------------------------
-
-	public int size() {
-		return fHotRumors.size();
-	}
-
-	// ----------------------------------------------------------------------
-
-	public List<IGossipMessage> getList() {
-		return fRoHotRumors;
-	}
-
-	// ----------------------------------------------------------------------
-
-	public void demote(ArrayList<Boolean> mask, int size, Node node) {
-		ListIterator<IGossipMessage> it = fHotRumors.listIterator(start(size));
-
-		for (int i = 0; it.hasNext() && i < size; i++) {
-			// Rumor didn't help.
-			if (!mask.get(i)) {
-				// Either discards ...
-				if (fRandom.nextDouble() < fGiveupProbability) {
-					IGossipMessage discarded = it.next();
-					it.remove();
-					discarded.dropped(node);
-					removeDestinations(discarded);
-				}
-				// .. or demotes the Tweet.
-				else if (it.hasPrevious()) {
-					/**
-					 * This piece of code simply pushes an element one position
-					 * back into the list. The painful dance with the iterators
-					 * is to be efficient with the linked list implementation,
-					 * and avoid O(n) access.
-					 */
-					IGossipMessage evt = it.next();
-					it.previous();
-					IGossipMessage previous = it.previous();
-					it.set(evt);
-					it.next();
-					it.next();
-					it.set(previous);
-				} else {
-					it.next();
-				}
-			} else {
-				it.next();
-			}
-		}
-	}
-
-	// ----------------------------------------------------------------------
-
-	private int start(int size) {
-		return Math.max(0, fHotRumors.size() - size);
-	}
-
-	// ----------------------------------------------------------------------
-
-	private int addDestinations(IGossipMessage tweet) {
-		int size = tweet.destinations();
-		int actual = 0;
-		for (int i = 0; i < size; i++) {
-			Node destination = tweet.destination(i);
-			if (fConstraint.contains(destination)
-					&& !destination.equals(tweet.originator())) {
-				fDestinations.increment(destination);
-				actual++;
-			}
-		}
-		return actual;
-	}
-
-	// ----------------------------------------------------------------------
-
-	private void removeDestinations(IGossipMessage tweet) {
-		int size = tweet.destinations();
-		for (int i = 0; i < size; i++) {
-			Node destination = tweet.destination(i);
-			if (fConstraint.contains(destination)
-					&& !destination.equals(tweet.originator())) {
-				fDestinations.decrement(destination);
-			}
-		}
-	}
-
-	// ----------------------------------------------------------------------
-
-	public int messagesFor(Node neighbor) {
-		return fDestinations.count(neighbor);
-	}
-
-	// ----------------------------------------------------------------------
-	// Protocol interface.
-	// ----------------------------------------------------------------------
-
-	public Object clone() {
-		try {
-			RumorList cloned = (RumorList) super.clone();
-			cloned.fHotRumors = new LinkedList<IGossipMessage>(fHotRumors);
-			cloned.fRoHotRumors = Collections
-					.unmodifiableList(cloned.fHotRumors);
-
-			return cloned;
-		} catch (CloneNotSupportedException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
 }
 
 // ----------------------------------------------------------------------

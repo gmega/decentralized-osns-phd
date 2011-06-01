@@ -36,6 +36,8 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	private long fLastChange;
 
 	private final boolean fLogSessions;
+	
+	private boolean fActive = false;
 
 	public SNNodeImpl(String prefix) {
 		super(prefix);
@@ -100,6 +102,15 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	@Override
 	public long lastStateChange() {
 		return fLastChange;
+	}
+	
+	@Override
+	public boolean isActive() {
+		return fActive;
+	}
+	
+	public void active(boolean stats) {
+		fActive = stats;
 	}
 
 	private void logEvent(String type) {
