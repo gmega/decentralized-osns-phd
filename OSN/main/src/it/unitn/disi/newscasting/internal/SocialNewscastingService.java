@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.epidemics.ProtocolRunner;
 import it.unitn.disi.newscasting.IMessageVisibility;

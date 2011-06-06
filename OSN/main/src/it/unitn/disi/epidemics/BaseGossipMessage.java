@@ -6,6 +6,15 @@ import peersim.core.Node;
 
 public abstract class BaseGossipMessage implements IGossipMessage, Cloneable {
 
+	// 8 bytes for sequence numbers (even if in simulations we use 4).
+	public static final int SEQNUMBER_SIZE = 8;
+
+	// 4 bytes for an IPV4 address.
+	public static final int IPV4_SIZE = 4;
+
+	// 8 for a social network ID.
+	public static final int SNID_SIZE = 8;
+
 	/**
 	 * The node who produced the content.
 	 */
@@ -114,6 +123,12 @@ public abstract class BaseGossipMessage implements IGossipMessage, Cloneable {
 		} catch (CloneNotSupportedException ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
+	}
+
+	public int sizeOf() {
+		// Only the sequence number and the destinations enter
+		// the computation. The rest are implementation artifacts.
+		return SEQNUMBER_SIZE + SNID_SIZE;
 	}
 
 	protected int computeHash() {

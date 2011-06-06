@@ -33,26 +33,27 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 		fTracker = tracker;
 	}
 
-	public boolean add(Node node) {
-		int index = PeersimUtils.indexOf(node, linkable());
-		if (index == -1) {
-			return false;
-		}
-		fSeen.set(index);
-		return true;
-	}
-
-	public int seen() {
-		return fSeen.cardinality();
-	}
-
-	public void or(BitSet other) {
-		other.or(fSeen);
-	}
-
 	private Linkable linkable() {
 		return ((Linkable) fOriginator.getProtocol(fLinkable));
 	}
+
+	// ------------------------------------------------------------------------
+	// IGossipMessage interface.
+	// ------------------------------------------------------------------------
+
+	@Override
+	public void forwarded(Node from, Node to) {
+		fForwarded = true;
+	}
+
+	@Override
+	public void dropped(Node at) {
+		fTracker.dropped(this, at);
+	}
+
+	// ------------------------------------------------------------------------
+	// Iterator interface.
+	// ------------------------------------------------------------------------
 
 	@Override
 	public boolean hasNext() {
@@ -91,17 +92,45 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 	}
 
 	@Override
-	public void forwarded(Node from, Node to) {
-		fForwarded = true;
+	public int sizeOf() {
+		Linkable onehop = (Linkable) fOriginator.getProtocol(fLinkable);
+		return super.sizeOf() + (onehop.degree() * SNID_SIZE)
+				+ (fSeen.cardinality() * IPV4_SIZE);
+	}
+
+	// ------------------------------------------------------------------------
+	// Other methods.
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Adds a node descriptor into this message.
+	 * 
+	 * @return <code>true</code> if the node was a part of the list of
+	 *         advertised ids, or <code>false</code> otherwise.
+	 */
+	public boolean add(Node node) {
+		int index = PeersimUtils.indexOf(node, linkable());
+		if (index == -1) {
+			return false;
+		}
+		fSeen.set(index);
+		return true;
+	}
+
+	public int seen() {
+		return fSeen.cardinality();
+	}
+
+	public void addAllInto(BitSet set) {
+		set.or(fSeen);
 	}
 
 	public boolean wasForwarded() {
 		return fForwarded;
 	}
-
-	@Override
-	public void dropped(Node at) {
-		fTracker.dropped(this, at);
+	
+	BitSet bitset() {
+		return fSeen;
 	}
 
 }

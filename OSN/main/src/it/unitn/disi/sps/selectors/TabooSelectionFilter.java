@@ -22,13 +22,13 @@ public class TabooSelectionFilter implements ISelectionFilter, Protocol {
 		fTabooList = new Node[r];
 	}
 
-	public Node selected(Node peer) {
+	public Node selected(Node source, Node peer) {
 		fTabooList[fCounter] = peer;
 		fCounter = (fCounter + 1) % fTabooList.length;
 		return peer;
 	}
 
-	public boolean canSelect(Node peer) {
+	public boolean canSelect(Node source, Node peer) {
 
 		if (!peer.isUp()) {
 			return false;

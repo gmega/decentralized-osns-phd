@@ -6,6 +6,7 @@ import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 
@@ -18,7 +19,7 @@ import org.junit.Test;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
-public class TestCentralitySelector {
+public class TestCentralitySelector extends PeerSimTest {
 	
 	@Test public void selectPeer() throws Exception{
 		Set<Integer> selectedSet = runTest(false);

@@ -2,10 +2,10 @@ package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -199,13 +199,13 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public boolean canSelect(Node node) {
-		return fRumorList.messagesFor(node) != 0;
+	public boolean canSelect(Node source, Node target) {
+		return fRumorList.messagesFor(target) != 0;
 	}
 
 	// ----------------------------------------------------------------------
 
-	public Node selected(Node node) {
+	public Node selected(Node source, Node node) {
 		// Don't care.
 		return node;
 	}

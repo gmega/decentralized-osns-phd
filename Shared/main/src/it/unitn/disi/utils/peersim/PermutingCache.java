@@ -51,7 +51,7 @@ public class PermutingCache implements IExchanger, Cloneable {
 	public PermutingCache(int linkableId) {
 		this(new ProtocolReference<Linkable>(linkableId));
 	}
-	
+
 	public PermutingCache(IReference<Linkable> linkable) {
 		fLinkable = linkable;
 	}
@@ -88,19 +88,19 @@ public class PermutingCache implements IExchanger, Cloneable {
 		}
 
 		if (fInternalCache.length < size) {
-			fInternalCache = new Node[(int) Math.abs(Math.pow(2.0, Math
-					.ceil(Math.log(size) / Math.log(2.0))))];
+			fInternalCache = new Node[(int) Math.abs(Math.pow(2.0,
+					Math.ceil(Math.log(size) / Math.log(2.0))))];
 		}
 
 		// Copies "viable" neighbors into cache.
 		int k = 0;
 		for (int i = 0; i < size; i++) {
 			Node neighbor = linkable.getNeighbor(i);
-			if (neighbor != null && filter.canSelect(neighbor)) {
+			if (neighbor != null && filter.canSelect(source, neighbor)) {
 				fInternalCache[k++] = neighbor;
-			} 
+			}
 		}
-		
+
 		fSize = k;
 	}
 
@@ -132,7 +132,7 @@ public class PermutingCache implements IExchanger, Cloneable {
 	}
 
 	/**
-	 * @return the current number of cached elements. 
+	 * @return the current number of cached elements.
 	 */
 	public int size() {
 		check();
@@ -175,7 +175,7 @@ public class PermutingCache implements IExchanger, Cloneable {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	public void exchange(int i, int j) {
 		Node temp = fInternalCache[i];
 		fInternalCache[i] = fInternalCache[j];
@@ -186,11 +186,11 @@ public class PermutingCache implements IExchanger, Cloneable {
 		// We're immutable, so we can return ourselves.
 		return this;
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Linkable view for permuting cache.
 	// ----------------------------------------------------------------------
-	
+
 	private final Linkable fLinkableView = new Linkable() {
 
 		@Override
@@ -207,20 +207,22 @@ public class PermutingCache implements IExchanger, Cloneable {
 		public boolean contains(Node neighbor) {
 			return PermutingCache.this.contains(neighbor);
 		}
-		
+
 		@Override
 		public boolean addNeighbor(Node neighbour) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public void onKill() { }
+		public void onKill() {
+		}
 
 		@Override
-		public void pack() { }
-	
+		public void pack() {
+		}
+
 	};
-	
+
 	public Linkable asLinkable() {
 		return fLinkableView;
 	}

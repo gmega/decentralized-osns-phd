@@ -29,8 +29,8 @@ public class RandomSelector extends AbstractPeerSelector {
 
 		for (int i = 0; i < fView.size(); i++) {
 			Node peer = fView.getNode(i);
-			if (filter.canSelect(peer)) {
-				return filter.selected(peer);
+			if (filter.canSelect(null, peer)) {
+				return filter.selected(null, peer);
 			}
 		}
 

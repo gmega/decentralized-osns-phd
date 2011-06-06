@@ -50,12 +50,12 @@ public class PermutingCacheTest extends PeerSimTest {
 	public void filteredNeighborhood() {
 		ISelectionFilter oddFilter = new ISelectionFilter() {
 			@Override
-			public boolean canSelect(Node node) {
+			public boolean canSelect(Node source, Node node) {
 				return (node.getID() % 2) == 0;
 			}
 			
 			@Override
-			public Node selected(Node node) {
+			public Node selected(Node source, Node node) {
 				return node;
 			}
 		};
@@ -70,12 +70,12 @@ public class PermutingCacheTest extends PeerSimTest {
 		ISelectionFilter nayFilter = new ISelectionFilter() {
 			
 			@Override
-			public Node selected(Node node) {
+			public Node selected(Node source, Node node) {
 				return node;
 			}
 			
 			@Override
-			public boolean canSelect(Node node) {
+			public boolean canSelect(Node source, Node node) {
 				return false;
 			}
 		};

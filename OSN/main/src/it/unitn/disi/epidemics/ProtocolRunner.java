@@ -5,9 +5,6 @@ import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.BroadcastBus;
-import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
-import it.unitn.disi.newscasting.internal.IEventObserver;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.NewscastAppConfigurator;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.IReference;
@@ -323,7 +320,7 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 
 			SNNode peer = selectPeer(ourNode, entry.selector.get(ourNode),
 					entry.filter);
-
+			
 			performExchange((SNNode) ourNode, peer, entry.strategy);
 		}
 	}
@@ -334,14 +331,12 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 			BinaryCompositeFilter filter) {
 
 		// Selects a peer using the preconfigured filter.
-		filter.bind(ourNode);
 		Node peer;
 		if (selector.supportsFiltering()) {
 			peer = selector.selectPeer(ourNode, filter);
 		} else {
 			peer = selector.selectPeer(ourNode);
 		}
-		filter.clear();
 		return (SNNode) peer;
 	}
 
@@ -450,7 +445,6 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 		// ----------------------------------------------------------------------
 
 		@Override
-		@SuppressWarnings("unchecked")
 		public void localDelivered(IGossipMessage message) {
 
 			fStorage.add(message);

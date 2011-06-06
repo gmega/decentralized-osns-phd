@@ -82,8 +82,8 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 
 		RouletteWheel wheel = result.a;
 		ArrayList<MutableSimplePair<Integer, Integer>> friends = result.b;
-		return filter.selected(neighborhood.getNeighbor(friends.get(wheel
-				.spin()).b));
+		return filter.selected(source,
+				neighborhood.getNeighbor(friends.get(wheel.spin()).b));
 	}
 
 	public boolean supportsFiltering() {
@@ -98,7 +98,7 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 		int total = 0;
 		for (int i = 0; i < neighborhood.degree(); i++) {
 			Node neighbor = neighborhood.getNeighbor(i);
-			if (!filter.canSelect(neighbor)) {
+			if (!filter.canSelect(source, neighbor)) {
 				continue;
 			}
 			// Translates scores by 1 cause we cannot deal very well

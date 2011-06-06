@@ -68,8 +68,8 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 		// Performs the selection.
 		for (int i = 0; i < fCache.size(); i++) {
 			Node candidate = fCache.get(i);
-			if (filter.canSelect(candidate)) {
-				return filter.selected(candidate);
+			if (filter.canSelect(source, candidate)) {
+				return filter.selected(source, candidate);
 			}
 		}
 

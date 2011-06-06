@@ -8,13 +8,13 @@ public class HollowFilter implements ISelectionFilter {
 	private ISelectionFilter fDelegate;
 
 	@Override
-	public Node selected(Node node) {
-		return fDelegate.selected(node);
+	public Node selected(Node source, Node node) {
+		return fDelegate.selected(source, node);
 	}
 
 	@Override
-	public boolean canSelect(Node node) {
-		return fDelegate.canSelect(node);
+	public boolean canSelect(Node source, Node node) {
+		return fDelegate.canSelect(source, node);
 	}
 
 	public void bind(ISelectionFilter delegate) {

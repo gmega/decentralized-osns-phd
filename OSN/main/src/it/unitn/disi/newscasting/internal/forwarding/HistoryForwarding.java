@@ -2,10 +2,10 @@ package it.unitn.disi.newscasting.internal.forwarding;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.Iterator;
@@ -83,7 +83,7 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	public boolean doExchange(SNNode source, SNNode peer) {
-		if (!canSelect(peer)) {
+		if (!canSelect(source, peer)) {
 			throw new IllegalArgumentException("Illegal peer selected.");
 		}
 
@@ -170,15 +170,15 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// ISelectionFilter interface.
 	// ----------------------------------------------------------------------
 
-	public boolean canSelect(Node candidate) {
+	public boolean canSelect(Node source, Node candidate) {
 		/** Only allows nodes with pending messages to be selected. **/
 		return fPending.containsKey(candidate);
 	}
 
 	// ----------------------------------------------------------------------
 
-	public Node selected(Node node) {
-		return node;
+	public Node selected(Node source, Node peer) {
+		return peer;
 	}
 
 	// ----------------------------------------------------------------------

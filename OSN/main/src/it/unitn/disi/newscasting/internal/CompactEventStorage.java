@@ -2,6 +2,7 @@ package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.epidemics.BaseGossipMessage;
 import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.peersim.SNNode;
 

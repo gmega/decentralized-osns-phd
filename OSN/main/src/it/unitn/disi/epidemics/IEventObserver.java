@@ -1,6 +1,6 @@
-package it.unitn.disi.newscasting.internal;
+package it.unitn.disi.epidemics;
 
-import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.peersim.SNNode;
 
 /**
@@ -10,7 +10,7 @@ import it.unitn.disi.utils.peersim.SNNode;
  * @author giuliano
  */
 public interface IEventObserver {
-
+	
 	/**
 	 * Caller has produced some content locally. Semantically equivalent to have
 	 * the application delivering a message to itself.

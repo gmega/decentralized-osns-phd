@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.utils.collections.BoundedHashMap;
 
 import java.util.ArrayList;

@@ -2,13 +2,13 @@ package it.unitn.disi.newscasting.probabrm;
 
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.graph.GraphUtils;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
@@ -430,7 +430,7 @@ class DynamicDissemination implements ISend {
 		for (int i = fCurrentSize - 1; i >= 0; i--) {
 			if (fToSend[i] != null) {
 				Node toSend = fToSend[i];
-				if (filter.canSelect(toSend)) {
+				if (filter.canSelect(null, toSend)) {
 					/**
 					 * This operation works like a Taboo list. Previously
 					 * sampled nodes won't be re-considered.
@@ -439,7 +439,7 @@ class DynamicDissemination implements ISend {
 					fToSend[i] = null;
 					fRemaining--;
 					fCurrentSize = MiscUtils.compact(fToSend, fCurrentSize);
-					return (SNNode) filter.selected(toSend);
+					return (SNNode) filter.selected(null, toSend);
 				}
 			}
 		}

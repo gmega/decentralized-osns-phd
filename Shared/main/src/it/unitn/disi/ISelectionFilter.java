@@ -14,7 +14,7 @@ public interface ISelectionFilter {
 	 * @return <code>true</code> if {@link Node} can be selected, or
 	 *         <code>false</code> otherwise.
 	 */
-	public boolean canSelect(Node node);
+	public boolean canSelect(Node source, Node candidate);
 
 	/**
 	 * Informs the filter that a given node has been selected.
@@ -25,7 +25,7 @@ public interface ISelectionFilter {
 	 * 
 	 * @return for convenience, the same node passed as argument.
 	 */
-	public Node selected(Node node);
+	public Node selected(Node source, Node candidate);
 	
 	// ----------------------------------------------------------------------
 	// Convenience filter implementations.
@@ -34,12 +34,12 @@ public interface ISelectionFilter {
 	 * A filter that returns always true. 
 	 */
 	public static final ISelectionFilter ALWAYS_TRUE_FILTER = new ISelectionFilter() {
-		public boolean canSelect(Node node) {
+		public boolean canSelect(Node source, Node candidate) {
 			return true;
 		}
 		
-		public Node selected(Node node) {
-			return node;
+		public Node selected(Node source, Node candidate) {
+			return candidate;
 		}
 		
 		public Object clone() {
@@ -52,12 +52,12 @@ public interface ISelectionFilter {
 	 * {@link Node#isUp()} returns <code>true</code>.
 	 */
 	public static final ISelectionFilter UP_FILTER = new ISelectionFilter() {
-		public boolean canSelect(Node node) {
-			return node.isUp();
+		public boolean canSelect(Node source, Node candidate) {
+			return candidate.isUp();
 		}
 		
-		public Node selected(Node node) {
-			return node;
+		public Node selected(Node source, Node candidate) {
+			return candidate;
 		}
 		
 		public Object clone() {

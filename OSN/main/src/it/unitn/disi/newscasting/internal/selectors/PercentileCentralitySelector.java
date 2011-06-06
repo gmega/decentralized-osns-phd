@@ -131,7 +131,7 @@ public class PercentileCentralitySelector implements IPeerSelector, Protocol {
 		fFriends.invalidate();
 		fCentralityComparator.set(null);
 		
-		return filter.selected(selected);
+		return filter.selected(source, selected);
 	}
 
 	// ----------------------------------------------------------------------

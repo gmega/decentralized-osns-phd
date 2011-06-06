@@ -43,11 +43,11 @@ public class PeerSelector implements ISelectionFilter {
 		fInView.clear();
 	}
 
-	public boolean canSelect(Node node) {
+	public boolean canSelect(Node source, Node node) {
 		return !fVetoed.contains(node);
 	}
 
-	public Node selected(Node node) {
+	public Node selected(Node source, Node node) {
 		fVetoed.add(node);
 		return node;
 	}

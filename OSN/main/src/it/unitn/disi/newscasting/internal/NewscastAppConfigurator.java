@@ -1,8 +1,10 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.demers.CompactStorageAntiEntropy;

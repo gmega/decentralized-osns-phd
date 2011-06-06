@@ -1,6 +1,6 @@
-package it.unitn.disi.newscasting.internal;
+package it.unitn.disi.epidemics;
 
-import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import peersim.config.IResolver;
 import peersim.core.Protocol;
 

@@ -8,28 +8,21 @@ import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.CachingConfigurator;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.epidemics.ProtocolRunner;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
-import it.unitn.disi.utils.peersim.INodeRegistry;
-import it.unitn.disi.utils.peersim.NodeRegistry;
 
 @AutoConfig
 public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 
-	private static JoinExperimentGovernor fController;
-
-	public static JoinExperimentGovernor controller() {
-		return fController;
-	}
-
 	private static int fAppPid;
+
+	private static GarbageCollector fCollector;
 
 	@Attribute("discovery_pid")
 	private int fDiscoveryPid;
@@ -37,9 +30,7 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 	@Attribute("membership_pid")
 	private int fMembershipPid;
 
-	public DiscoveryProtocolConfigurator() {
-
-	}
+	public DiscoveryProtocolConfigurator() { }
 
 	@Override
 	protected void configure0(IProtocolSet app, IResolver resolver,
@@ -70,14 +61,11 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 		DiscoveryProtocol discovery = (DiscoveryProtocol) sns.node()
 				.getProtocol(fDiscoveryPid);
 		sns.addSubscriber(discovery);
-		discovery.setJoinListener(fController);
+		discovery.addJoinListener(fCollector);
 	}
 
 	@Override
 	protected void oneShotConfig(String prefix, IResolver resolver) {
-		INodeRegistry registry = NodeRegistry.getInstance();
-		SchedulerFactory factory = SchedulerFactory.getInstance();
-
 		IReference<IWritableEventStorage> ref = new IReference<IWritableEventStorage>() {
 			@Override
 			public IWritableEventStorage get(Node owner) {
@@ -87,8 +75,6 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 			}
 		};
 
-		fController = new JoinExperimentGovernor(registry,
-				factory.createScheduler(resolver, prefix + ".scheduler",
-						registry), fDiscoveryPid, new GarbageCollector(ref));
+		fCollector = new GarbageCollector(ref);
 	}
 }

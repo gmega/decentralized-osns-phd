@@ -29,7 +29,7 @@ public interface IGossipMessage {
 	 * @return the i-th destination for this {@link IGossipMessage}.
 	 */
 	public Node destination(int i);
-	
+
 	/**
 	 * @param node
 	 *            a {@link Node}.
@@ -42,11 +42,16 @@ public interface IGossipMessage {
 	 * Called when this message gets forwarded to another node.
 	 */
 	public void forwarded(Node from, Node to);
-	
+
 	/**
 	 * Called when this message gets dropped by the current node.
 	 */
 	public void dropped(Node at);
+
+	/**
+	 * @return the estimated size in bytes of this message.
+	 */
+	public int sizeOf();
 
 	/**
 	 * A message can be "flyweighted" if its content is immutable. This means a

@@ -82,11 +82,11 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		for(int i = 0; i < Network.size(); i++) {
 			Node candidate = Network.get(i);
 			if (nextId == candidate.getID()) {
-				if (!filter.canSelect(candidate)) {
+				if (!filter.canSelect(null, candidate)) {
 					return null;
 				}
 				
-				return filter.selected(candidate);
+				return filter.selected(null, candidate);
 			}
 		}
 		
@@ -99,11 +99,11 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		for (int i = 0; i < size; i++) {
 			Node candidate = linkable.getNeighbor(i);
 			if (nextId == candidate.getID()) {
-				if (!filter.canSelect(candidate)) {
+				if (!filter.canSelect(null, candidate)) {
 					return null;
 				}
 				
-				return filter.selected(candidate);
+				return filter.selected(null, candidate);
 			}
 		}
 		

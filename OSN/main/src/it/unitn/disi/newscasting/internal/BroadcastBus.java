@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal;
 
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.peersim.SNNode;
 

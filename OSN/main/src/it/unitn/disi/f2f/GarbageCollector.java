@@ -1,9 +1,18 @@
 package it.unitn.disi.f2f;
 
+import java.util.BitSet;
+
+import peersim.core.Linkable;
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.utils.IReference;
 
+/**
+ * {@link GarbageCollector} removes messages from the underlying storage when
+ * the join process is known to be over. 
+ * 
+ * @author giuliano
+ */
 public class GarbageCollector implements IJoinListener {
 
 	private final IReference<IWritableEventStorage> fStorage;
@@ -14,6 +23,10 @@ public class GarbageCollector implements IJoinListener {
 
 	@Override
 	public void joinStarted(IGossipMessage message) {
+	}
+	
+	@Override
+	public void descriptorsReceived(Linkable linkable, BitSet indices) {
 	}
 
 	@Override
@@ -27,7 +40,6 @@ public class GarbageCollector implements IJoinListener {
 				expected--;
 			}
 		}
-
 		if (expected != 0) {
 			throw new IllegalStateException(
 					"Garbage collector could not locate all message copies.");

@@ -1,7 +1,5 @@
-package it.unitn.disi.newscasting.internal;
+package it.unitn.disi.epidemics;
 
-import it.unitn.disi.epidemics.IEventStorage;
-import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
 import peersim.core.Protocol;
 

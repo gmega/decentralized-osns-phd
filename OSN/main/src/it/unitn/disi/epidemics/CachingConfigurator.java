@@ -1,6 +1,5 @@
 package it.unitn.disi.epidemics;
 
-import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.CachingResolver;
 import peersim.config.Configuration;

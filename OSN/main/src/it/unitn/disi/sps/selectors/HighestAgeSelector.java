@@ -26,11 +26,11 @@ public class HighestAgeSelector extends AbstractPeerSelector {
 		}
 
 		Node node = fView.getNode(max_idx);
-		if (filter.canSelect(node)) {
-			return filter.selected(node);
+		if (filter.canSelect(null, node)) {
+			return filter.selected(null, node);
 		}
 
-		return filter.selected(null);
+		return filter.selected(null, null);
 	}
 }
 
