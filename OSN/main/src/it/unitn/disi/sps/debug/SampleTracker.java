@@ -1,6 +1,5 @@
 package it.unitn.disi.sps.debug;
 
-import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.SparseMultiCounter;
 import peersim.config.Configuration;
 import peersim.core.CommonState;

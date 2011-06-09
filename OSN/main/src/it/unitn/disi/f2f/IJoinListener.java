@@ -1,9 +1,10 @@
 package it.unitn.disi.f2f;
 
+import it.unitn.disi.epidemics.IGossipMessage;
+
 import java.util.BitSet;
 
 import peersim.core.Linkable;
-import it.unitn.disi.epidemics.IGossipMessage;
 
 public interface IJoinListener {
 	

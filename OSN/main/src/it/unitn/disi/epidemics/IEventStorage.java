@@ -26,6 +26,15 @@ public interface IEventStorage {
 	public boolean contains(IGossipMessage msg);
 
 	/**
+	 * Retrieves an {@link IGossipMessage} copy which corresponds to the
+	 * {@link IGossipMessage} being passed as key.
+	 * 
+	 * @param key
+	 * @return
+	 */
+	public IGossipMessage retrieve(IGossipMessage key);
+
+	/**
 	 * @return the number of distinct {@link IGossipMessage} owners being kept
 	 *         by this event storage.
 	 */

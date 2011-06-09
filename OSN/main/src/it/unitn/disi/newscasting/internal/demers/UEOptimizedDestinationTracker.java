@@ -3,8 +3,6 @@ package it.unitn.disi.newscasting.internal.demers;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.peersim.SNNode;
 
-import java.util.Random;
-
 import peersim.core.Linkable;
 import peersim.core.Node;
 
@@ -14,44 +12,43 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class UEOptimizedRumorList extends RumorList {
+public class UEOptimizedDestinationTracker implements IDestinationTracker {
 
+	private final Linkable fConstraint;
+	
 	private IGossipMessage fCurrent;
 
-	public UEOptimizedRumorList(int maxSize, double giveupProbability,
-			Linkable constraint, Random rnd) {
-		super(maxSize, giveupProbability, constraint, rnd);
+	public UEOptimizedDestinationTracker(Linkable constraint) {
+		fConstraint = constraint;
 	}
 
 	@Override
-	protected boolean addDestinations(IGossipMessage message) {
+	public Result track(IGossipMessage message) {
 		if (fCurrent != null) {
 			throw new IllegalStateException();
 		}
 		/*
 		 * We know we get only one "dissemination session" at a time, so all we
-		 * have to do is check whether we have ONE destination that's possibly
-		 * valid.
+		 * have to do is check whether we have ONE destination that's active.
 		 */
-		Linkable lnk = constraintLinkable();
-		int degree = lnk.degree();
+		int degree = fConstraint.degree();
 		for (int i = 0; i < degree; i++) {
-			SNNode neighbor = (SNNode) lnk.getNeighbor(i);
+			SNNode neighbor = (SNNode) fConstraint.getNeighbor(i);
 			if (neighbor.isActive()) {
 				fCurrent = message;
-				return true;
+				return Result.forward;
 			}
 		}
-		return false;
+		return Result.no_intersection;
 	}
 
 	@Override
-	protected void removeDestinations(IGossipMessage message) {
+	public void drop(IGossipMessage message) {
 		fCurrent = null;
 	}
 
 	@Override
-	protected int messagesFor(Node node) {
+	public int count(Node node) {
 		if (fCurrent == null) {
 			return 0;
 		}
@@ -60,9 +57,14 @@ public class UEOptimizedRumorList extends RumorList {
 		 * active and and we have a message, then it's for that node.
 		 */
 		SNNode snode = (SNNode) node;
-		if (snode.isActive() && size > 0 && !node.equals(fCurrent.originator())) {
+		if (snode.isActive() && !node.equals(fCurrent.originator())) {
 			return 1;
 		}
 		return 0;
+	}
+	
+	@Override
+	public Linkable constraint() {
+		return fConstraint;
 	}
 }

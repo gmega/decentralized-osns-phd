@@ -1,10 +1,5 @@
 package it.unitn.disi.f2f;
 
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.config.IResolver;
-import peersim.core.CommonState;
-import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.CachingConfigurator;
 import it.unitn.disi.epidemics.IProtocolSet;
@@ -16,6 +11,11 @@ import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.core.CommonState;
+import peersim.core.Node;
 
 @AutoConfig
 public class DiscoveryProtocolConfigurator extends CachingConfigurator {

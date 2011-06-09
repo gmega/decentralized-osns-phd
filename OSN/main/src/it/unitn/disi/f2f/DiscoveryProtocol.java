@@ -1,19 +1,22 @@
 package it.unitn.disi.f2f;
 
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.MulticastService;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -34,9 +37,22 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
+@StructuredLog(key = "DP", fields = { "event", "sender", "receiver", "extra" })
 public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		CDProtocol {
-
+	
+	// ------------------------------------------------------------------------
+	// Constants for event tracking.
+	// ------------------------------------------------------------------------
+	
+	public static final String SF_CREATE = "S";
+	
+	public static final String SF_DISCARD = "D";
+	
+	public static final String LEAF = "L";
+	
+	public static final String TRANSFER = "T";
+	
 	// ------------------------------------------------------------------------
 	// Parameter storage.
 	// ------------------------------------------------------------------------
@@ -54,8 +70,12 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 	private static int fCollectPeriod;
 
 	private static int fSoftStateTimeout;
-
+	
+	private static TableWriter fWriter;
+	
 	private static IMessageVisibility fVisibility;
+	
+	private static boolean track;
 
 	// ------------------------------------------------------------------------
 	// Protocol state.
@@ -79,14 +99,23 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 			@Attribute("multicast") int multicast,
 			@Attribute("collect_period") int collect,
 			@Attribute("soft_state_timeout") int softStateTimeout) {
+		this(PeersimUtils.selfPid(prefix), oneHop, twoHop, membership,
+				multicast, collect, softStateTimeout, null);
+	}
+
+	public DiscoveryProtocol(int selfPid, int oneHop, int twoHop,
+			int membership, int multicast, int collect, int softStateTimeout,
+			TableWriter writer) {
 		fOneHop = oneHop;
 		fTwoHop = twoHop;
 		fMembership = membership;
 		fMulticast = multicast;
 		fCollectPeriod = collect;
-		fSelfPid = PeersimUtils.selfPid(prefix);
+		fSelfPid = selfPid;
 		fSoftStateTimeout = softStateTimeout;
 		fVisibility = new NeighborhoodMulticast(fTwoHop);
+		fWriter = writer;
+		track = fWriter != null;
 	}
 
 	// ------------------------------------------------------------------------
@@ -141,21 +170,34 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 
 		AdvertisementMessage adv = (AdvertisementMessage) message;
+
+		// Tries to add, if useful:
+		// 1. ourselves;
+		adv.add(fNode);
+		// 2. neighbors we've seen;
 		fromCurrentView(adv);
+		// 3. neighbors in the peersampling view.
 		fromPeerSampling(receiver, adv);
 
 		// Creates tree soft state entry, but don't activate it yet.
 		create(sender, adv.originator(), adv.sequenceNumber(), adv.bitset());
 	}
 
+	// ------------------------------------------------------------------------
+
 	public void dropped(IGossipMessage msg) {
 		// When a message is dropped, this might precipitate the
 		// beginning of the aggregation phase if we're a leaf
 		// node in the dissemination tree.
 		AdvertisementMessage message = (AdvertisementMessage) msg;
-		if (message.wasForwarded()) {
+		if (message.wasForwarded() || msg.originator().equals(fNode)) {
 			return;
 		}
+
+		if (track) {
+			track(LEAF, "none", fNode.getID(), "none");
+		}
+
 		// We're leaf, start sending stuff back.
 		TreeState state = lookup(msg.originator(), msg.sequenceNumber());
 		if (state == null) {
@@ -164,6 +206,8 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 		enqueue(state);
 	}
+
+	// ------------------------------------------------------------------------
 
 	private void aggregate() {
 		TreeState tree = peek();
@@ -197,6 +241,8 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 	}
 
+	// ------------------------------------------------------------------------
+
 	/**
 	 * A node is contacting ours with some advertisement results.
 	 * 
@@ -208,7 +254,10 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		// Are we the final destination for this message?
 		if (homed.originator().equals(fNode)) {
 			// Merges all into our view.
-			homed.transfer(fSeen);
+			int transferred = homed.transfer(fSeen);
+			if (track) {
+				track(TRANSFER, sender.getID(), fNode.getID(), transferred);
+			}
 			return;
 		}
 
@@ -219,7 +268,11 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		boolean activate = false;
 		if (tree != null) {
 			// Yes we do, refreshes the soft state.
-			activate = tree.refresh(homed);
+			int transferred = tree.refresh(homed);
+			if (track) {
+				track(TRANSFER, sender.getID(), fNode.getID(), transferred);
+			}
+			activate = transferred != 0;
 		} else {
 			// No we don't, need to (re-)creates the soft state. Note that
 			// when we have to re-create the soft state we shortcut the
@@ -236,17 +289,24 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 	}
 
+	// ------------------------------------------------------------------------
+
 	private TreeState treeShortcut(Node originator, int sequenceNumber,
 			BitSet bootstrap) {
 		System.out.println("DP: Tree shortcutted.");
 		return create(null, originator, sequenceNumber, bootstrap);
 	}
 
+	// ------------------------------------------------------------------------
+
 	private void discardStaleTrees() {
 		Iterator<TreeState> it = fSoftState.iterator();
 		while (it.hasNext()) {
 			TreeState state = it.next();
 			if (state.age() >= fSoftStateTimeout) {
+				if (track) {
+					track(SF_DISCARD, state.originator(), fNode.getID(), state.sequenceNumber());
+				}
 				// Soft-state cleanup.
 				it.remove();
 				// If dirty, however, enqueue it so we send the
@@ -256,15 +316,17 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 	}
 
-	@Override
-	public void localDelivered(IGossipMessage message) {
-		// Makes no sense in our case.
-	}
+	// ------------------------------------------------------------------------
 
 	public void joinDone(IGossipMessage msg, JoinTracker tracker) {
 		for (IJoinListener listener : fListeners) {
 			listener.joinDone((AdvertisementMessage) msg, tracker.copies());
 		}
+	}
+
+	@Override
+	public void localDelivered(IGossipMessage message) {
+		// Makes no sense in our case.
 	}
 
 	public int size() {
@@ -279,16 +341,6 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		return fSeen.get(idx);
 	}
 
-	@Override
-	public void initialize(Node node) {
-		fNode = node;
-	}
-
-	@Override
-	public void reinitialize() {
-		advertise();
-	}
-
 	private void advertise() {
 		// Multicasts an advertisement to our group.
 		MulticastService mcast = (MulticastService) fNode
@@ -296,6 +348,22 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		AdvertisementMessage msg = new AdvertisementMessage(fNode, fSequence++,
 				fOneHop, new JoinTracker(this), fVisibility);
 		mcast.multicast(msg);
+	}
+
+	// ------------------------------------------------------------------------
+	// IInitializable interface.
+	// ------------------------------------------------------------------------
+
+	@Override
+	public void initialize(Node node) {
+		fNode = node;
+	}
+
+	// ------------------------------------------------------------------------
+
+	@Override
+	public void reinitialize() {
+		advertise();
 	}
 
 	// ------------------------------------------------------------------------
@@ -308,9 +376,14 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		if (state == null) {
 			state = new TreeState(parent, originator, sequenceNumber, bootstrap);
 			fSoftState.add(state);
+			if (track) {
+				track(SF_CREATE, parent.getID(), fNode.getID(), sequenceNumber);
+			}
 		}
 		return state;
 	}
+
+	// ------------------------------------------------------------------------
 
 	private TreeState lookup(Node originator, int sequenceNumber) {
 		for (TreeState candidate : fSoftState) {
@@ -333,11 +406,15 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		state.setQueued(true);
 	}
 
+	// ------------------------------------------------------------------------
+
 	public TreeState dequeue() {
 		TreeState state = fActiveQueue.removeFirst();
 		state.setQueued(false);
 		return state;
 	}
+
+	// ------------------------------------------------------------------------
 
 	public TreeState peek() {
 		return fActiveQueue.getFirst();
@@ -354,6 +431,8 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 	}
 
+	// ------------------------------------------------------------------------
+
 	private void fromPeerSampling(Node ours, AdvertisementMessage adv) {
 		Linkable membership = (Linkable) ours.getProtocol(fMembership);
 		int members = membership.degree();
@@ -363,8 +442,22 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 		}
 	}
 
+	// ------------------------------------------------------------------------
+
 	public Linkable onehop() {
 		return (Linkable) fNode.getProtocol(fOneHop);
+	}
+	
+	public int pid() {
+		return fSelfPid;
+	}
+
+	private void track(String type, Object sender, Object receiver, Object value) {
+		fWriter.set("event", type);
+		fWriter.set("sender", sender.toString());
+		fWriter.set("receiver", receiver.toString());
+		fWriter.set("extra", value.toString());
+		fWriter.emmitRow();
 	}
 
 	// ------------------------------------------------------------------------
@@ -384,6 +477,9 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 			DiscoveryProtocol theClone = (DiscoveryProtocol) super.clone();
 			theClone.fSeen = new BitSet();
 			theClone.fSeen.or(fSeen);
+			theClone.fSoftState = new LinkedList<TreeState>();
+			theClone.fListeners = new ArrayList<IJoinListener>();
+			theClone.fActiveQueue = new LinkedList<TreeState>();
 			return theClone;
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
@@ -415,17 +511,19 @@ class TreeState {
 		fOriginator = originator;
 		fParent = parent;
 		fSequence = sequence;
+		fTryParent = (parent != null);
 		refresh(bootstrap);
 	}
 
-	public boolean refresh(TreeState other) {
+	public int refresh(TreeState other) {
 		return this.refresh(other.fAggregate);
 	}
 
-	private boolean refresh(BitSet state) {
+	private int refresh(BitSet state) {
 		fAge = CommonState.getIntTime();
-		fDirty = transfer(state, fAggregate) != 0;
-		return fDirty;
+		int transferred = transfer(state, fAggregate);
+		fDirty = (transferred != 0);
+		return transferred;
 	}
 
 	public int transfer(BitSet other) {

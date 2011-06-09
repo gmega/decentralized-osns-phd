@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.internal.demers;
 
 import it.unitn.disi.epidemics.IGossipMessage;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -9,14 +10,29 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 
-import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**
  * Rumor list is an auxiliary object which helps the rumor mongering protocol
  * maintain and update its list of rumors.
  */
-public abstract class RumorList {
+public class RumorList {
+
+	public static interface IDemotionObserver {
+		public void demoted(IGossipMessage msg);
+
+		public void dropped(IGossipMessage msg);
+	}
+
+	public static final IDemotionObserver NULL_OBSERVER = new IDemotionObserver() {
+		@Override
+		public void dropped(IGossipMessage msg) {
+		}
+
+		@Override
+		public void demoted(IGossipMessage msg) {
+		}
+	};
 
 	/**
 	 * The rumors we are currently transmitting.
@@ -35,45 +51,55 @@ public abstract class RumorList {
 	 * "coldest" rumors start being evicted.
 	 */
 	private final int fMaxSize;
-	
+
 	/**
-	 * Made a public field for efficiency reasons (this is accessed so frequently that
-	 * encapsulating it makes simulation 10% slower).
+	 * Made a public field for efficiency reasons (this is accessed so
+	 * frequently that encapsulating it makes simulation 10% slower).
 	 */
 	public int size;
 
 	/** Random number generator. */
 	private final Random fRandom;
-
-	private final Linkable fConstraint;
-
+	
+	private IDemotionObserver fObserver;
+	
 	// ----------------------------------------------------------------------
 
-	public RumorList(int maxSize, double giveupProbability,
-			Linkable constraint, Random rnd) {
+	public RumorList(int maxSize, double giveupProbability, Random rnd) {
+		this(maxSize, giveupProbability, rnd, NULL_OBSERVER);
+	}
+	// ----------------------------------------------------------------------
+
+	public RumorList(int maxSize, double giveupProbability, Random rnd,
+			IDemotionObserver observer) {
 		fMaxSize = maxSize;
 		fGiveupProbability = giveupProbability;
 		fRandom = rnd;
-		fConstraint = constraint;
+		fObserver = observer;
 	}
 
 	// ----------------------------------------------------------------------
 
-	public boolean add(IGossipMessage evt) {
-		if (!addDestinations(evt)) {
-			return false;
-		}
-
+	public void add(Node source, IGossipMessage evt) {
 		// Hottest rumors are at the END of the list.
 		fHotRumors.addLast(evt.cloneIfNeeded());
 		size++;
 		if (fMaxSize > 0 && size > fMaxSize) {
 			IGossipMessage discarded = fHotRumors.removeFirst();
-			removeDestinations(discarded);
-			size--;
+			drop(source, discarded);
 		}
+	}
 
-		return true;
+	// ----------------------------------------------------------------------
+
+	public IGossipMessage getLast() {
+		return fHotRumors.getLast();
+	}
+
+	// ----------------------------------------------------------------------
+
+	public void dropLast(Node source) {
+		drop(source, fHotRumors.removeLast());
 	}
 
 	// ----------------------------------------------------------------------
@@ -98,7 +124,7 @@ public abstract class RumorList {
 	private void drop(Node node, IGossipMessage discarded) {
 		size--;
 		discarded.dropped(node);
-		removeDestinations(discarded);
+		fObserver.dropped(discarded);
 	}
 
 	// ----------------------------------------------------------------------
@@ -130,6 +156,7 @@ public abstract class RumorList {
 					it.next();
 					it.next();
 					it.set(previous);
+					fObserver.demoted(evt);
 				} else {
 					it.next();
 				}
@@ -146,20 +173,4 @@ public abstract class RumorList {
 	}
 
 	// ----------------------------------------------------------------------
-
-	protected abstract boolean addDestinations(IGossipMessage message);
-	
-	// ----------------------------------------------------------------------
-
-	protected abstract void removeDestinations(IGossipMessage message);
-
-	// ----------------------------------------------------------------------
-
-	protected abstract int messagesFor(Node node);
-	
-	// ----------------------------------------------------------------------
-
-	protected Linkable constraintLinkable() {
-		return fConstraint;
-	}
 }

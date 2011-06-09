@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.internal;
 
-import peersim.core.Node;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
 import it.unitn.disi.newscasting.Tweet;
+import peersim.core.Node;
 
 public class ProfilePageMulticast extends NeighborhoodMulticast {
 

@@ -1,11 +1,12 @@
 package it.unitn.disi.f2f;
 
-import java.util.BitSet;
-
-import peersim.core.Linkable;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.utils.IReference;
+
+import java.util.BitSet;
+
+import peersim.core.Linkable;
 
 /**
  * {@link GarbageCollector} removes messages from the underlying storage when

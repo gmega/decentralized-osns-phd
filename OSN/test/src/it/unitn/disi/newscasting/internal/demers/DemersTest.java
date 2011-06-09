@@ -6,14 +6,12 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
-import it.unitn.disi.epidemics.IApplicationConfigurator;
+import it.unitn.disi.NullConfigurator;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
@@ -24,22 +22,9 @@ import it.unitn.disi.test.framework.FakeCycleEngine;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.FallThroughReference;
-import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
 
 public class DemersTest extends PeerSimTest {
-
-	private static final IApplicationConfigurator NULL_CONFIGURATOR = new IApplicationConfigurator() {
-		@Override
-		public void configure(IProtocolSet app, IResolver resolver,
-				String prefix) throws Exception {
-
-		}
-
-		public Object clone() {
-			return this;
-		}
-	};
 
 	private final Random fRand = new Random(42);
 
@@ -106,7 +91,7 @@ public class DemersTest extends PeerSimTest {
 			// Social Newscasting service.
 			SocialNewscastingService sns = new SocialNewscastingService(null,
 					builder.nextProtocolId(node), fLinkableId,
-					NULL_CONFIGURATOR);
+					new NullConfigurator());
 
 			sns.initialize(node);
 			sns.flushState();

@@ -5,8 +5,6 @@ import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.BroadcastBus;
-import it.unitn.disi.newscasting.internal.NewscastAppConfigurator;
-import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;

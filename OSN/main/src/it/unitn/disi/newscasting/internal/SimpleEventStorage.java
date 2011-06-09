@@ -25,25 +25,33 @@ import peersim.core.Node;
  */
 public class SimpleEventStorage implements IWritableEventStorage {
 
-	private static final Object IN_SET = new Object();
-
 	/**
 	 * Set where we store events. Using a {@link Map} looks bad but it's
 	 * actually what {@link LinkedHashSet} does under the covers.
 	 */
-	private BoundedHashMap<IGossipMessage, Object> fStore;
+	private BoundedHashMap<IGossipMessage, IGossipMessage> fStore;
 
 	public SimpleEventStorage() {
 		this(Integer.MAX_VALUE);
 	}
 
 	public SimpleEventStorage(int windowSize) {
-		fStore = new BoundedHashMap<IGossipMessage, Object>(windowSize);
+		fStore = new BoundedHashMap<IGossipMessage, IGossipMessage>(windowSize);
 	}
 
 	@Override
 	public boolean add(IGossipMessage m) {
-		return fStore.put(m, IN_SET) != IN_SET;
+		IGossipMessage current = fStore.get(m);
+		if (current == null) {
+			fStore.put(m, m);
+			return true;
+		}
+		return false;
+	}
+	
+	@Override
+	public IGossipMessage retrieve(IGossipMessage key) {
+		return fStore.get(key);
 	}
 
 	@Override
@@ -88,14 +96,14 @@ public class SimpleEventStorage implements IWritableEventStorage {
 
 	@Override
 	public boolean remove(IGossipMessage msg) {
-		return fStore.remove(msg) == IN_SET;
+		return fStore.remove(msg) != null;
 	}
 
 	@Override
 	public Object clone() {
 		try {
 			SimpleEventStorage clone = (SimpleEventStorage) super.clone();
-			clone.fStore = new BoundedHashMap<IGossipMessage, Object>(
+			clone.fStore = new BoundedHashMap<IGossipMessage, IGossipMessage>(
 					fStore.maxSize());
 			return clone;
 		} catch (CloneNotSupportedException ex) {

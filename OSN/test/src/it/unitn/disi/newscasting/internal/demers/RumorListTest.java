@@ -33,12 +33,12 @@ public class RumorListTest extends PeerSimTest {
 		int pid = builder.assignCompleteLinkable();
 		builder.done();
 		Node node = builder.getNodes().get(0);
-		Linkable linkable = (Linkable) node.getProtocol(pid);
 
-		RumorList rList = new CountingRumorList(10, 0.0, linkable, new Random());
+		RumorList rList = new RumorList(10, 0.0, new Random());
 
 		for (int i = 0; i < 8; i++) {
-			rList.add(new Tweet(node, i, new NeighborhoodMulticast(pid)));
+			rList.add(null, new Tweet(node, i, new NeighborhoodMulticast(
+					pid)));
 		}
 
 		Assert.assertEquals(8, rList.size);
@@ -74,7 +74,7 @@ public class RumorListTest extends PeerSimTest {
 		Node node = builder.getNodes().get(0);
 		Linkable linkable = (Linkable) node.getProtocol(pid);
 
-		RumorList rList = new CountingRumorList(10, 0.5, linkable, new Random() {
+		RumorList rList = new RumorList(10, 0.5, new Random() {
 			int i = 0;
 
 			@Override
@@ -91,7 +91,7 @@ public class RumorListTest extends PeerSimTest {
 		});
 
 		for (int i = 0; i < 19; i++) {
-			rList.add(new Tweet(node, i, new NeighborhoodMulticast(pid)));
+			rList.add(null, new Tweet(node, i, new NeighborhoodMulticast(pid)));
 		}
 
 		Assert.assertEquals(10, rList.size);

@@ -1,16 +1,15 @@
 package it.unitn.disi.newscasting.internal.demers;
 
-import java.util.Random;
-
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.DenseMultiCounter;
 import it.unitn.disi.utils.IKey;
 import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.peersim.SNNode;
+
 import peersim.core.Linkable;
 import peersim.core.Node;
 
-public class CountingRumorList extends RumorList {
+public class CountingDestinationTracker implements IDestinationTracker {
 
 	private static IKey<Node> fKeyer = new IKey<Node>() {
 		@Override
@@ -23,43 +22,51 @@ public class CountingRumorList extends RumorList {
 	 * Keeps track of destinations for messages.
 	 */
 	private IMultiCounter<Node> fDestinations;
+	
+	private Linkable fConstraint;
 
-	public CountingRumorList(int maxSize, double giveupProbability,
-			Linkable constraint, Random rnd) {
-
-		super(maxSize, giveupProbability, constraint, rnd);
-
+	public CountingDestinationTracker(Linkable constraint) {
 		Node[] neighbors = new Node[constraint.degree()];
 		for (int i = 0; i < neighbors.length; i++) {
 			neighbors[i] = constraint.getNeighbor(i);
 		}
 		fDestinations = new DenseMultiCounter<Node>(neighbors, fKeyer);
+		fConstraint = constraint;
 	}
 
 	// ----------------------------------------------------------------------
 
-	protected boolean addDestinations(IGossipMessage tweet) {
-		int size = constraintLinkable().degree();
+	public Result track(IGossipMessage tweet) {
+		int size = fConstraint.degree();
 		int actual = 0;
+		boolean originator = false;
 
 		for (int i = 0; i < size; i++) {
-			SNNode candidate = (SNNode) constraintLinkable().getNeighbor(i);
-			if (!candidate.equals(tweet.originator())
-					&& tweet.isDestination(candidate)) {
-				fDestinations.increment(candidate);
-				actual++;
+			SNNode candidate = (SNNode) fConstraint.getNeighbor(i);
+			if (tweet.isDestination(candidate)) {
+				if (candidate.equals(tweet.originator())) {
+					originator = true;
+				} else {
+					fDestinations.increment(candidate);
+					actual++;
+				}
 			}
 		}
-		return actual != 0;
+
+		if (actual == 0) {
+			return originator ? Result.originator_only : Result.no_intersection;
+		} else {
+			return Result.forward;
+		}
 	}
 
 	// ----------------------------------------------------------------------
 
-	protected void removeDestinations(IGossipMessage tweet) {
-		int size = constraintLinkable().degree();
+	public void drop(IGossipMessage tweet) {
+		int size = fConstraint.degree();
 
 		for (int i = 0; i < size; i++) {
-			SNNode candidate = (SNNode) constraintLinkable().getNeighbor(i);
+			SNNode candidate = (SNNode) fConstraint.getNeighbor(i);
 			if (!candidate.equals(tweet.originator())
 					&& tweet.isDestination(candidate)) {
 				fDestinations.decrement(candidate);
@@ -69,8 +76,13 @@ public class CountingRumorList extends RumorList {
 
 	// ----------------------------------------------------------------------
 
-	public int messagesFor(Node neighbor) {
+	public int count(Node neighbor) {
 		return fDestinations.count(neighbor);
+	}
+
+	@Override
+	public Linkable constraint() {
+		return fConstraint;
 	}
 
 }

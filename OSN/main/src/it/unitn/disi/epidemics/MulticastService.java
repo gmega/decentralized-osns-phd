@@ -11,6 +11,11 @@ public class MulticastService extends ProtocolRunner {
 			@Attribute(Attribute.PREFIX) String prefix) {
 		super(resolver, prefix);
 	}
+	
+	public MulticastService(String prefix, int protocolID,
+			IApplicationConfigurator configurator) {
+		super(prefix, protocolID, configurator);
+	}
 
 	public void multicast(IGossipMessage message) {
 		fObserver.localDelivered(message);

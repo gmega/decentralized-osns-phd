@@ -1,10 +1,10 @@
 package it.unitn.disi.f2f;
 
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.utils.logging.StructuredLog;
 import peersim.core.CommonState;
 import peersim.core.Node;
 import peersim.util.IncrementalStats;
-import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.utils.logging.StructuredLog;
 
 /**
  * {@link JoinTracker} keeps track of individual join processes. The object
@@ -38,11 +38,13 @@ public class JoinTracker {
 
 	public void dropped(IGossipMessage copy, Node location) {
 		fDrops++;
+		// Notify the proper protocol.
+		DiscoveryProtocol protocol = (DiscoveryProtocol) location
+				.getProtocol(fParent.pid());
+		protocol.dropped(copy);
 		if (fCopies == fDrops) {
 			notifyJoinDone(copy);
 		}
-
-		// Prints the statistics.
 	}
 
 	private void notifyJoinDone(IGossipMessage copy) {

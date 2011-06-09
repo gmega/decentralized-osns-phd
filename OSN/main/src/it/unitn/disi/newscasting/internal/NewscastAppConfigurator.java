@@ -25,7 +25,6 @@ import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.core.CommonState;
-import peersim.core.Linkable;
 
 @AutoConfig
 public class NewscastAppConfigurator implements IApplicationConfigurator {

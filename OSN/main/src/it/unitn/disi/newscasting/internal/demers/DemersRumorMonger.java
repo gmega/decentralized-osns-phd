@@ -3,9 +3,12 @@ package it.unitn.disi.newscasting.internal.demers;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IEventObserver;
+import it.unitn.disi.epidemics.IEventStorage;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.newscasting.internal.demers.IDestinationTracker.Result;
+import it.unitn.disi.newscasting.internal.demers.RumorList.IDemotionObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -59,6 +62,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	private final int fProtocolId;
 
+	private Node fNode;
+
 	// ----------------------------------------------------------------------
 	// Protocol state.
 	// ----------------------------------------------------------------------
@@ -66,6 +71,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	private static final ArrayList<Boolean> fResponseBuffer = new ArrayList<Boolean>();
 
 	private RumorList fRumorList;
+
+	private IDestinationTracker fTracker;
 
 	// ----------------------------------------------------------------------
 
@@ -86,10 +93,22 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 		fProtocolId = protocolId;
 		fGiveup = giveUp;
 		fRandom = rnd;
-		fRumorList = unitOptimized ? new UEOptimizedRumorList(
-				Integer.MAX_VALUE, fGiveup, constraintLinkable, fRandom)
-				: new CountingRumorList(Integer.MAX_VALUE, fGiveup,
-						constraintLinkable, fRandom);
+		fNode = source;
+		fRumorList = new RumorList(Integer.MAX_VALUE, fGiveup, fRandom,
+				new IDemotionObserver() {
+					@Override
+					public void dropped(IGossipMessage msg) {
+						fTracker.drop(msg);
+					}
+
+					@Override
+					public void demoted(IGossipMessage msg) {
+					}
+				});
+
+		fTracker = unitOptimized ? new UEOptimizedDestinationTracker(
+				constraintLinkable) : new CountingDestinationTracker(
+				constraintLinkable);
 	}
 
 	// ----------------------------------------------------------------------
@@ -138,28 +157,50 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 		 */
 		for (i = 0; it.hasNext() && total < fRumorTransmitSize; i++) {
 			IGossipMessage message = it.next();
-			boolean wasNew = true;
-			boolean deliver = false;
+			boolean isNew = true;
 			if (!message.originator().equals(ours)) {
-				deliver = true;
+				IGossipMessage ourMessage = null;
 				// Is this rumor already known?
-				if (!application.storage().contains(message)) {
-					// Nope, tries to add to rumor list.
-					deliver = fRumorList.add(message);
+				IEventStorage storage = application.storage();
+				isNew = !storage.contains(message);
+				Result result = null;
+				if (isNew) {
+					// Nope. Asks the destination tracker to tell us
+					// whether it's useful or not.
+					result = fTracker.track(message);
+					if (result != Result.no_intersection) {
+						message.forwarded(sender, ours);
+						ourMessage = message.cloneIfNeeded();
+					}
+
+					if (result == Result.forward) {
+						fRumorList.add(ours, ourMessage);
+					}
+
+				} else {
+					ourMessage = storage.retrieve(message);
+					if (ourMessage == null) {
+						throw new InternalError();
+					}
 				}
 
-				if (deliver) {
-					wasNew = application.deliver(sender, ours, message, this);
-					// Flags the original message as forwarded.
-					message.forwarded(sender, ours);
+				// Delivers only if there's something to deliver.
+				if (ourMessage != null) {
+					application.deliver(sender, ours, ourMessage, this);
 					total++;
+				}
+				
+				// Finally, emulates the drop if we're not adding because
+				// we won't send back to originator.
+				if (result == Result.originator_only) {
+					ourMessage.dropped(fNode);
 				}
 			}
 
 			// Note that if we don't deliver the message, wasNew will be true,
 			// which means the rumor won't be demoted at the sender and it will
 			// be as if he never sent it.
-			responseBufferAppend(responseBuffer, i, wasNew);
+			responseBufferAppend(responseBuffer, i, isNew);
 		}
 		return i;
 	}
@@ -177,8 +218,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-	private void addTweet(IGossipMessage tweet) {
-		fRumorList.add(tweet);
+	private void addTweet(Node sender, IGossipMessage tweet) {
+		fRumorList.add(fNode, tweet);
 	}
 
 	// ----------------------------------------------------------------------
@@ -200,7 +241,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	@Override
 	public boolean canSelect(Node source, Node target) {
-		return fRumorList.messagesFor(target) != 0;
+		return fTracker.count(target) != 0;
 	}
 
 	// ----------------------------------------------------------------------
@@ -227,7 +268,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	public void delivered(SNNode sender, SNNode receiver, IGossipMessage tweet,
 			boolean duplicate) {
 		if (!duplicate) {
-			addTweet(tweet);
+			addTweet(sender, tweet);
 		}
 	}
 
@@ -235,7 +276,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 
 	@Override
 	public void localDelivered(IGossipMessage message) {
-		addTweet(message);
+		addTweet(fNode, message);
 	}
 
 	// ----------------------------------------------------------------------
