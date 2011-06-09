@@ -7,6 +7,7 @@ import it.unitn.disi.utils.logging.TabularLogManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ public class PeerSimTest {
 		resolverContents().put(key, value);
 	}
 	
-	public TableWriter tableWriter(ByteArrayOutputStream stream, Class<?> klass) {
+	public TableWriter tableWriter(OutputStream stream, Class<?> klass) {
 		StructuredLog logConfig = klass.getAnnotation(StructuredLog.class);
 		String [] fields = logConfig.fields();
 		return new TableWriter(new PrintStream(stream), fields);

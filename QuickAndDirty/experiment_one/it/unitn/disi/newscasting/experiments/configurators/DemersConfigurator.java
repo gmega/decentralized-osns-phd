@@ -1,16 +1,19 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
+import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
+import it.unitn.disi.newscasting.experiments.f2f.CoverageAnalyzer;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
-import it.unitn.disi.utils.peersim.ProtocolReference;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
+import peersim.config.ObjectCreator;
 import peersim.core.CommonState;
-import peersim.core.Linkable;
 import peersim.core.Node;
 
 /**
@@ -27,6 +30,21 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 	// ----------------------------------------------------------------------
 
 	public DemersConfigurator() {
+	}
+
+	// ----------------------------------------------------------------------
+
+	@Override
+	protected void oneShotConfig(String prefix, IResolver resolver) {
+		super.oneShotConfig(prefix, resolver);
+		try {
+			resolver.getString(prefix, "use_ca");
+		} catch (MissingParameterException ex) {
+			return;
+		}
+		CoverageAnalyzer analyzer = ObjectCreator.createInstance(
+				CoverageAnalyzer.class, prefix + ".ca", fResolver);
+		DisseminationExperimentGovernor.addExperimentObserver(analyzer);
 	}
 
 	// ----------------------------------------------------------------------

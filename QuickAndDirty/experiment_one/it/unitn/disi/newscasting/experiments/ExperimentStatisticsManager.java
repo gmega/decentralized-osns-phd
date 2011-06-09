@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.PrintStream;
@@ -83,7 +83,7 @@ public class ExperimentStatisticsManager implements IEventObserver,
 	@Override
 	public void localDelivered(IGossipMessage tweet) {
 		if (fCurrentExperiment != null) {
-			throw new IllegalArgumentException();
+			throw new IllegalStateException();
 		}
 		fCurrentExperiment = new UnitExperimentData((Tweet) tweet);
 	}
@@ -103,6 +103,10 @@ public class ExperimentStatisticsManager implements IEventObserver,
 
 	@Override
 	public void experimentCycled(Node root) {
+	}
+
+	public void noSelection(Node node) {
+		fCurrentExperiment.selectionFailed(node);
 	}
 }
 
@@ -144,6 +148,11 @@ class UnitExperimentData {
 	private static final int[] fDuplicatesSent = new int[Network.size()];
 
 	/**
+	 * Numbers of selection attempts that failed for each node.
+	 */
+	private static final int[] fFailed = new int[Network.size()];
+
+	/**
 	 * {@link IncrementalStats} for latency statistics.
 	 */
 	private static final IncrementalStats fLatency = new IncrementalStats();
@@ -175,6 +184,7 @@ class UnitExperimentData {
 			fReceived[i] = 0;
 			fSent[i] = 0;
 			fDuplicatesSent[i] = 0;
+			fFailed[i] = 0;
 		}
 		fLatency.reset();
 	}
@@ -223,6 +233,14 @@ class UnitExperimentData {
 		if (dup) {
 			fDuplicatesSent[(int) sender]++;
 		}
+	}
+
+	/**
+	 * Called when the peer selector for this node couldn't find any viable
+	 * peers.
+	 */
+	public void selectionFailed(Node node) {
+		fFailed[(int) node.getID()]++;
 	}
 
 	/**
@@ -314,7 +332,7 @@ class UnitExperimentData {
 	public double minimumSpeedup() {
 		double n = getMax();
 		double d = delivered() - 2;
-		
+
 		if (n == 0) {
 			return (d < 0) ? 0 : 1;
 		}
@@ -331,8 +349,9 @@ class UnitExperimentData {
 
 		// Can't be smaller than two.
 		if (n < 0) {
-			throw new IllegalStateException("Tweet is destined to less than one node.");
-		} 
+			throw new IllegalStateException(
+					"Tweet is destined to less than one node.");
+		}
 		// If it was two, then speedup is either zero or one.
 		else if (n == 0) {
 			return (d < 0) ? 0 : 1;
@@ -413,6 +432,8 @@ class UnitExperimentData {
 		// generalize the implementation.
 		buffer.append(FIELD_SEPARATOR);
 		buffer.append("uptime");
+		buffer.append(FIELD_SEPARATOR);
+		buffer.append("selection_failures");
 		return buffer.toString();
 	}
 
@@ -447,5 +468,8 @@ class UnitExperimentData {
 		buffer.append(FIELD_SEPARATOR);
 		// 6 - Uptime.
 		buffer.append(node.uptime());
+		buffer.append(FIELD_SEPARATOR);
+		// 7 - Selection failures.
+		buffer.append(fFailed[i]);
 	}
 }

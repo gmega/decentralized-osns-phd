@@ -144,13 +144,13 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	}
 
 	@Override
-	public boolean canSelect(Node node) {
-		return fAllowed.get((int) node.getID());
+	public boolean canSelect(Node source, Node candidate) {
+		return fAllowed.get((int) candidate.getID());
 	}
 
 	@Override
-	public Node selected(Node node) {
-		return node;
+	public Node selected(Node source, Node peer) {
+		return peer;
 	}
 
 	@Override

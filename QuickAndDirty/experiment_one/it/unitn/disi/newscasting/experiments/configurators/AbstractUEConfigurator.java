@@ -1,31 +1,30 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.CachingConfigurator;
+import it.unitn.disi.epidemics.IApplicationConfigurator;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
+import it.unitn.disi.newscasting.experiments.SelectionFailureTracker;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
 import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
-import it.unitn.disi.newscasting.internal.IApplicationConfigurator;
-import it.unitn.disi.newscasting.internal.IEventObserver;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.peersim.CachingResolver;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
 import peersim.config.AutoConfig;
-import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
 import peersim.config.ObjectCreator;
-import peersim.config.resolvers.CompositeResolver;
 
 /**
  * Abstract {@link IApplicationConfigurator} implementation for the unit
@@ -43,6 +42,8 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 	public static final String PARAMETER_FILE = "parameters";
 
 	public static final String PARAMETER_TIMEOUT_ID = "timeout_id";
+
+	public static final String PAR_TRACK_SELECT_FAILURES = "selection_failures";
 
 	// ----------------------------------------------------------------------
 
@@ -96,6 +97,11 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 		// And the selection filter.
 		ISelectionFilter filter = filter(app, prefix, protocolId,
 				socialNetworkId);
+
+		if (fResolver.getBoolean(prefix, PAR_TRACK_SELECT_FAILURES)) {
+			filter = new SelectionFailureTracker(
+					new FallThroughReference<ISelectionFilter>(filter));
+		}
 
 		app.addStrategy(classes(), strategy,
 				new FallThroughReference<IPeerSelector>(selector),

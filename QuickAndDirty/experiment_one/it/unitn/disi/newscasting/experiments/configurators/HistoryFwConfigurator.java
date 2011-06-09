@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
@@ -9,7 +10,6 @@ import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 import it.unitn.disi.newscasting.experiments.OneThanTheOther;
 import it.unitn.disi.newscasting.experiments.PredicateHeuristic;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;

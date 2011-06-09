@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -74,6 +74,14 @@ public class SingleEventStorage implements IWritableEventStorage {
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+
+	@Override
+	public IGossipMessage retrieve(IGossipMessage key) {
+		if (key.equals(fTweet)) {
+			return fTweet;
+		}
+		return null;
 	}
 
 }

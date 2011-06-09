@@ -2,11 +2,11 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
-import it.unitn.disi.newscasting.internal.IWritableEventStorage;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
@@ -74,6 +74,13 @@ public class DisseminationExperimentGovernor implements Control {
 	private int sns;
 
 	/**
+	 * Waits for 'warmup' rounds before starting scheduling the unit
+	 * experiments.
+	 */
+	@Attribute(value = "warmup", defaultValue = "0")
+	private int warmup;
+
+	/**
 	 * The {@link IContentExchangeStrategy} being unit experimented.
 	 */
 	private Class<? extends IContentExchangeStrategy> fClass;
@@ -87,13 +94,13 @@ public class DisseminationExperimentGovernor implements Control {
 	// ----------------------------------------------------------------------
 	// State.
 	// ----------------------------------------------------------------------
-	
+
 	private SchedulingState fState = SchedulingState.WAIT;
-	
+
 	private SNNode fCurrent;
 
 	private final NodeRebootSupport fRebootSupport;
-	
+
 	private final TimeTracker fTracker;
 
 	/**
@@ -122,49 +129,56 @@ public class DisseminationExperimentGovernor implements Control {
 		fTracker = new TimeTracker(fSchedule.remaining(), manager);
 		addExperimentObserver(fTracker);
 		publishSingleton();
+		System.err.println("-- Unit experiment mode active.");
 	}
 
 	// ----------------------------------------------------------------------
 
 	@Override
 	public boolean execute() {
-		switch(fState) {
-		
+		if (warmup > 0) {
+			warmup--;
+			System.err.println("-- Warmup rounds left: " + warmup);
+			return false;
+		}
+
+		switch (fState) {
+
 		case WAIT:
 			System.err.println("Wait.");
 			fState = scheduleNext();
 			break;
-			
+
 		case RUN:
 			if (isCurrentExperimentOver()) {
 				// Runs post-unit-experiment code.
 				wrapUpExperiment();
 				// Schedules the next one, if any.
 				fState = SchedulingState.WAIT;
-			} 
+			}
 			break;
 
 		case DONE:
 			break;
-			
+
 		}
-		
+
 		experimentCycled();
 		return fState == SchedulingState.DONE;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	public SNNode currentNode() {
 		return fCurrent;
 	}
-	
+
 	// ----------------------------------------------------------------------
-	
+
 	public long experimentTime() {
 		return fTracker.experimentTime();
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	/**
@@ -172,6 +186,7 @@ public class DisseminationExperimentGovernor implements Control {
 	 */
 	private SchedulingState scheduleNext() {
 		if (!fSchedule.hasNext()) {
+			System.err.println("-- Schedule done.");
 			return SchedulingState.DONE;
 		}
 
@@ -210,15 +225,13 @@ public class DisseminationExperimentGovernor implements Control {
 				quiescent++;
 			}
 		}
-		
+
 		if (isQuiescent(node)) {
 			quiescent++;
 		} else {
 			active++;
 			terminated = false;
 		}
-		
-		System.out.println("STT:Quiescent:" + quiescent + " Active:" + active);
 
 		if (!terminated) {
 			return false;
@@ -273,9 +286,9 @@ public class DisseminationExperimentGovernor implements Control {
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
-		
+
 		fTracker.printStatistics();
-		
+
 		// Clears state from the last experiment.
 		clearNeighborhoodState(fCurrent);
 
@@ -289,7 +302,7 @@ public class DisseminationExperimentGovernor implements Control {
 		if (fState != SchedulingState.RUN) {
 			return;
 		}
-		
+
 		for (IExperimentObserver observer : fObservers) {
 			observer.experimentCycled(fCurrent);
 		}
@@ -329,8 +342,7 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void tweet(SNNode node) {
-		ISocialNewscasting intf = (ISocialNewscasting) node
-				.getProtocol(sns);
+		ISocialNewscasting intf = (ISocialNewscasting) node.getProtocol(sns);
 		intf.postToFriends();
 	}
 
@@ -371,7 +383,8 @@ public class DisseminationExperimentGovernor implements Control {
 	}
 
 	private void clearStorage(Node source) {
-		IApplicationInterface intf = (IApplicationInterface) source.getProtocol(sns);
+		IApplicationInterface intf = (IApplicationInterface) source
+				.getProtocol(sns);
 		IWritableEventStorage store = (IWritableEventStorage) intf.storage();
 		store.clear();
 

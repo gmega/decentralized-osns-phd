@@ -94,10 +94,10 @@ public class ComponentSelectorTest extends PeerSimTest {
 			}
 			int component = firstAllowedComponent(source, filter, service);
 			List<Integer> members = service.members(component);
-			assertAllow(filter, members, true);
+			assertAllow(source, filter, members, true);
 			for (int i = 0; i < service.components(); i++) {
 				if (i != component) {
-					assertAllow(filter, service.members(i), false);
+					assertAllow(source, filter, service.members(i), false);
 				}
 			}
 
@@ -109,7 +109,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 			boolean allowed = true;
 			Linkable neighbors = fNeighborhood.get(source);
 			for (int i = 0; i < neighbors.degree(); i++) {
-				allowed &= filter.canSelect(neighbors.getNeighbor(i));
+				allowed &= filter.canSelect(source, neighbors.getNeighbor(i));
 			}
 			return allowed;
 		}
@@ -119,7 +119,7 @@ public class ComponentSelectorTest extends PeerSimTest {
 			Linkable neighbors = fNeighborhood.get(source);
 			for (int i = 0; i < neighbors.degree(); i++) {
 				Node neighbor = neighbors.getNeighbor(i);
-				if (filter.canSelect(neighbor)) {
+				if (filter.canSelect(source, neighbor)) {
 					return checkOrder(source,
 							service.componentOf((int) neighbor.getID()));
 				}
@@ -148,11 +148,13 @@ public class ComponentSelectorTest extends PeerSimTest {
 			return allowedComponent;
 		}
 
-		private void assertAllow(ISelectionFilter filter,
+		private void assertAllow(Node source, ISelectionFilter filter,
 				List<Integer> members, boolean allow) {
 			for (int member : members) {
-				Assert.assertEquals(allow,
-						filter.canSelect(fRegistry.getNode((long) member)));
+				Assert.assertEquals(
+						allow,
+						filter.canSelect(source,
+								fRegistry.getNode((long) member)));
 			}
 		}
 

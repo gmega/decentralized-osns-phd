@@ -9,10 +9,10 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.ProtocolReference;
@@ -107,17 +107,17 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	@Override
-	public boolean canSelect(Node node) {
+	public boolean canSelect(Node source, Node target) {
 		if (fCurrentMessage == null) {
 			return false;
 		}
-		return !fSeen.get(indexOf(node));
+		return !fSeen.get(indexOf(target));
 	}
 
 	@Override
-	public Node selected(Node node) {
-		fSeen.set(indexOf(node));
-		return node;
+	public Node selected(Node source, Node peer) {
+		fSeen.set(indexOf(peer));
+		return peer;
 	}
 
 	@Override

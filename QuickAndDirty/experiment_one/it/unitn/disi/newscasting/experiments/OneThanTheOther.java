@@ -1,10 +1,10 @@
 package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.nio.channels.IllegalSelectorException;

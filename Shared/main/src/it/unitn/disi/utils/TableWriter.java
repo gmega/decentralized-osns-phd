@@ -91,6 +91,12 @@ public class TableWriter {
 		fOut.println(rb.toString());
 		this.newRow();
 	}
+	
+	public String [] fields() {
+		String [] copy = new String[fFields.length];
+		System.arraycopy(fFields, 0, copy, 0, fFields.length);
+		return copy;
+	}
 
 	private void emmitHeader() {
 		if (fPrintHeader) {

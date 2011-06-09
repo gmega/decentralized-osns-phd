@@ -4,7 +4,6 @@ import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
-import it.unitn.disi.utils.peersim.NodeRegistryInit;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +26,8 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 		NetworkInitializer.createNodeArray();
 		TestNodeImpl.resetIDCounter();
 		Network.setCapacity(0);
+		NetworkInitializer.createNodeArray();
+		NodeRegistry.getInstance().clear();
 	}
 
 	public Iterator<TestNodeImpl> iterator() {
@@ -51,22 +52,13 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 				Assert.assertEquals(node.protocolSize(), pid.intValue());
 			}
 		}
-		
-		// Applies config to PeerSim.
-		NetworkInitializer.createNodeArray();
-		for (Node node : fOrderedNodes) {
-			Network.add(node);
-		}
-
-		// Inits the node registry.
-		NodeRegistry.getInstance().clear();
-		NodeRegistryInit init = new NodeRegistryInit(null);
-		init.execute();
 	}
 
 	public Node baseNode() {
 		TestNodeImpl node = new TestNodeImpl();
 		fOrderedNodes.add(node);
+		Network.add(node);
+		NodeRegistry.getInstance().registerNode(node);
 		return node;
 	}
 

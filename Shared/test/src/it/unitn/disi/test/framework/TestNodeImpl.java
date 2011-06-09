@@ -131,14 +131,14 @@ public class TestNodeImpl implements SNNode {
 		switch (newState) {
 		case GeneralNode.DEAD:
 		case GeneralNode.DOWN:
-			System.out.println("Node " + getID() + " DOWN @"
-					+ CommonState.getTime());
+//			System.out.println("Node " + getID() + " DOWN @"
+//					+ CommonState.getTime());
 			fUptime += delta();
 			break;
 
 		case GeneralNode.OK:
-			System.out.println("Node " + getID() + " OK @"
-					+ CommonState.getTime());
+//			System.out.println("Node " + getID() + " OK @"
+//					+ CommonState.getTime());
 			fDownTime += delta();
 			fSessionCount++;
 			break;

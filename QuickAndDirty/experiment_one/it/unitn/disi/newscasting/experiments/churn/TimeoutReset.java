@@ -1,16 +1,18 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
 import peersim.config.Attribute;
+import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.newscasting.internal.IEventObserver;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
 
 public class TimeoutReset implements IEventObserver {
 	
-	@Attribute("no_reset_on_send")
+	/**
+	 * Doesn't reset the timeout upon a successful transmission.
+	 */
+	@Attribute("no_reset")
 	public boolean fNoReset;
 	
 	private IReference<AbstractTimeoutController> fController;
