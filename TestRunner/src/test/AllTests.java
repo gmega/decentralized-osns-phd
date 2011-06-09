@@ -4,6 +4,8 @@ import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestEventDecoder;
+import it.unitn.disi.f2f.DiscoveryProtocol;
+import it.unitn.disi.f2f.DiscoveryProtocolTest;
 import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
@@ -80,7 +82,8 @@ import peersim.config.PluginContainerTest;
 	AVTReplayTest.class,
 	AVTEventChurnNetworkTest.class,
 	DemersTest.class,
-	MultiCounterTest.class
+	MultiCounterTest.class,
+	DiscoveryProtocolTest.class
 })
 
 public class AllTests extends PeerSimTest {
