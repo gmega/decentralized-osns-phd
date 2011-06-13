@@ -1,12 +1,13 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventStorage;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;
-import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
+import it.unitn.disi.epidemics.IContentExchangeStrategy.ActivityStatus;
 import it.unitn.disi.newscasting.internal.LoggingObserver;
 import it.unitn.disi.newscasting.internal.ProfilePageMulticast;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;

@@ -1,8 +1,6 @@
 package it.unitn.disi.epidemics;
 
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
-import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.BroadcastBus;
 import it.unitn.disi.utils.IReference;

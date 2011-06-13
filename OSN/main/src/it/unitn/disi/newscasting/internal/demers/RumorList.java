@@ -82,7 +82,7 @@ public class RumorList {
 
 	public void add(Node source, IGossipMessage evt) {
 		// Hottest rumors are at the END of the list.
-		fHotRumors.addLast(evt.cloneIfNeeded());
+		fHotRumors.addLast(evt);
 		size++;
 		if (fMaxSize > 0 && size > fMaxSize) {
 			IGossipMessage discarded = fHotRumors.removeFirst();

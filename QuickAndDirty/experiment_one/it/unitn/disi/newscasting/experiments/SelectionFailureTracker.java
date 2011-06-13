@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
 import peersim.core.Node;
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.utils.IReference;
 
 /**

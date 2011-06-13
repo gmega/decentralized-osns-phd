@@ -1,10 +1,10 @@
 package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
-import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.utils.MiscUtils;

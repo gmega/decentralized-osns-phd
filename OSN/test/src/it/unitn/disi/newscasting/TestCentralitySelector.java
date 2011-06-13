@@ -2,7 +2,7 @@ package it.unitn.disi.newscasting;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;

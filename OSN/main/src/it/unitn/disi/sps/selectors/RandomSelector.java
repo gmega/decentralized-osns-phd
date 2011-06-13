@@ -1,6 +1,6 @@
 package it.unitn.disi.sps.selectors;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.sps.newscast.IView;
 
 import java.util.Random;

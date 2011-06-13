@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Random;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,6 +23,8 @@ import peersim.core.CommonState;
 import peersim.util.ExtendedRandom;
 
 public class PeerSimTest {
+	
+	protected Random fRandom;
 
 	@BeforeClass
 	public static void loadPeersimConfig() throws Exception {
@@ -76,6 +79,7 @@ public class PeerSimTest {
 	@Before
 	public void setUp() {
 		CommonState.setTime(0);
+		fRandom = new Random();
 	}
 
 }

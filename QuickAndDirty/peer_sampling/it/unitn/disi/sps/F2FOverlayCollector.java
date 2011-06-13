@@ -1,6 +1,6 @@
 package it.unitn.disi.sps;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;

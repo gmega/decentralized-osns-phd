@@ -8,11 +8,11 @@ import junit.framework.Assert;
 
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.NullConfigurator;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.newscasting.IContentExchangeStrategy.ActivityStatus;
+import it.unitn.disi.epidemics.ISelectionFilter;
+import it.unitn.disi.epidemics.IContentExchangeStrategy.ActivityStatus;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;

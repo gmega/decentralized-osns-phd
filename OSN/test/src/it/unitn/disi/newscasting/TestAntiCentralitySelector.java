@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;

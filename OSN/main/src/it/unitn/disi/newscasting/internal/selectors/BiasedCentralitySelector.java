@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;

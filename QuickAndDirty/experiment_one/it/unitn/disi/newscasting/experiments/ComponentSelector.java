@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.experiments;
 
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.IPeerSelector;

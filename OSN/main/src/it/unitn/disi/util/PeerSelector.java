@@ -1,6 +1,6 @@
 package it.unitn.disi.util;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 
 import java.util.HashSet;
 import java.util.Iterator;

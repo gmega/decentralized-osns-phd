@@ -1,6 +1,6 @@
 package it.unitn.disi.sps.newscast;
 
-import it.unitn.disi.ISelectionFilter;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.sps.newscast.View.BufferHandler;
 import it.unitn.disi.sps.selectors.ISelector;

@@ -44,9 +44,11 @@ public class TabularLogMatcher {
 		StringBuffer matching = new StringBuffer();
 		matching.append("- ");
 		for (int i = 0; i < fKeys.length; i++) {
-			matching.append(fKeys[i]);
+			matching.append(reader.get(fKeys[i]));
 			if (!reader.get(fKeys[i]).equals(event[i])) {
-				matching.append("*");
+				matching.append("[");
+				matching.append(event[i]);
+				matching.append("]");
 				return matching.toString();
 			} else {
 				matching.append(",");

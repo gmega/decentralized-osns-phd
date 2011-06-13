@@ -1,12 +1,12 @@
 package it.unitn.disi.newscasting.internal.demers;
 
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IEventStorage;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
-import it.unitn.disi.newscasting.IContentExchangeStrategy;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.demers.IDestinationTracker.Result;
 import it.unitn.disi.newscasting.internal.demers.RumorList.IDemotionObserver;
 import it.unitn.disi.utils.peersim.SNNode;

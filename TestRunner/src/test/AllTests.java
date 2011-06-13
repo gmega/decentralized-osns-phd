@@ -4,7 +4,6 @@ import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.cli.TestEventDecoder;
-import it.unitn.disi.f2f.DiscoveryProtocol;
 import it.unitn.disi.f2f.DiscoveryProtocolTest;
 import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
@@ -21,7 +20,6 @@ import it.unitn.disi.newscasting.TestCentralitySelector;
 import it.unitn.disi.newscasting.experiments.ClusteringRankingTest;
 import it.unitn.disi.newscasting.experiments.ComponentSelectorTest;
 import it.unitn.disi.newscasting.experiments.schedulers.RandomSchedulerTest;
-import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.demers.DemersTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.sps.TestGraphWrapper;
@@ -30,6 +28,7 @@ import it.unitn.disi.sps.newscast.TestQueueManager;
 import it.unitn.disi.sps.newscast.TestView;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
+import it.unitn.disi.util.peersim.BitSetNeighborhoodTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
 import it.unitn.disi.utils.MultiCounterTest;
 import it.unitn.disi.utils.PrefixedOutputStreamTest;
@@ -83,7 +82,8 @@ import peersim.config.PluginContainerTest;
 	AVTEventChurnNetworkTest.class,
 	DemersTest.class,
 	MultiCounterTest.class,
-	DiscoveryProtocolTest.class
+	DiscoveryProtocolTest.class, 
+	BitSetNeighborhoodTest.class
 })
 
 public class AllTests extends PeerSimTest {

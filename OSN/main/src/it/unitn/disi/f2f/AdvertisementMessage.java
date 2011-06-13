@@ -2,39 +2,37 @@ package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.BaseGossipMessage;
 import it.unitn.disi.newscasting.IMessageVisibility;
-import it.unitn.disi.utils.peersim.PeersimUtils;
+import it.unitn.disi.utils.peersim.BitSetNeighborhood;
 
-import java.util.BitSet;
 import java.util.Iterator;
 
 import peersim.core.Linkable;
 import peersim.core.Node;
 
 public class AdvertisementMessage extends BaseGossipMessage implements
-		Iterator<Node> {
-
-	private final Node fOriginator;
-
-	private final int fLinkable;
+		Iterable<Node> {
 
 	private boolean fForwarded;
 
-	private BitSet fSeen = new BitSet();
-
-	private int fIndex = 0;
+	private BitSetNeighborhood fNeighborhood;
 
 	private JoinTracker fTracker;
 
 	public AdvertisementMessage(Node originator, int sequence, int linkable,
 			JoinTracker tracker, IMessageVisibility visibility) {
 		super(originator, sequence, visibility);
-		fOriginator = originator;
-		fLinkable = linkable;
+		fNeighborhood = new BitSetNeighborhood(
+				(Linkable) originator.getProtocol(linkable));
 		fTracker = tracker;
 	}
 
-	private Linkable linkable() {
-		return ((Linkable) fOriginator.getProtocol(fLinkable));
+	// ------------------------------------------------------------------------
+	// Iterable interface.
+	// ------------------------------------------------------------------------
+
+	public Iterator<Node> iterator() {
+		fNeighborhood.reset();
+		return fNeighborhood;
 	}
 
 	// ------------------------------------------------------------------------
@@ -56,22 +54,6 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 	// ------------------------------------------------------------------------
 
 	@Override
-	public boolean hasNext() {
-		return fSeen.nextSetBit(fIndex) != -1;
-	}
-
-	@Override
-	public Node next() {
-		fIndex = fSeen.nextSetBit(fIndex);
-		return linkable().getNeighbor(fIndex);
-	}
-
-	@Override
-	public void remove() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean canFlyweight() {
 		return false;
 	}
@@ -79,8 +61,7 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 	@Override
 	public Object clone() {
 		AdvertisementMessage msg = (AdvertisementMessage) super.clone();
-		msg.fSeen = new BitSet();
-		msg.fSeen.or(this.fSeen);
+		msg.fNeighborhood = new BitSetNeighborhood(fNeighborhood);
 		msg.fForwarded = false;
 		msg.fTracker = this.fTracker;
 		fTracker.copied();
@@ -88,14 +69,13 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 	}
 
 	public void reset() {
-		fIndex = 0;
+		fNeighborhood.reset();
 	}
 
 	@Override
 	public int sizeOf() {
-		Linkable onehop = (Linkable) fOriginator.getProtocol(fLinkable);
-		return super.sizeOf() + (onehop.degree() * SNID_SIZE)
-				+ (fSeen.cardinality() * IPV4_SIZE);
+		return super.sizeOf() + (fNeighborhood.linkable().degree() * SNID_SIZE)
+				+ (fNeighborhood.degree() * IPV4_SIZE);
 	}
 
 	// ------------------------------------------------------------------------
@@ -109,28 +89,18 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 	 *         advertised ids, or <code>false</code> otherwise.
 	 */
 	public boolean add(Node node) {
-		int index = PeersimUtils.indexOf(node, linkable());
-		if (index == -1) {
-			return false;
-		}
-		fSeen.set(index);
-		return true;
+		return fNeighborhood.addNeighbor(node, true);
 	}
 
 	public int seen() {
-		return fSeen.cardinality();
-	}
-
-	public void addAllInto(BitSet set) {
-		set.or(fSeen);
+		return fNeighborhood.degree();
 	}
 
 	public boolean wasForwarded() {
 		return fForwarded;
 	}
-	
-	BitSet bitset() {
-		return fSeen;
-	}
 
+	public BitSetNeighborhood neighborhood() {
+		return fNeighborhood;
+	}
 }

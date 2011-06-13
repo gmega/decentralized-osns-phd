@@ -1,5 +1,6 @@
-package it.unitn.disi.newscasting;
+package it.unitn.disi.epidemics;
 
+import it.unitn.disi.newscasting.ICachingObject;
 import it.unitn.disi.utils.peersim.SNNode;
 import peersim.core.Node;
 

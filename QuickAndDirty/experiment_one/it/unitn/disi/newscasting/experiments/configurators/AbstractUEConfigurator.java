@@ -1,12 +1,12 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
-import it.unitn.disi.ISelectionFilter;
 import it.unitn.disi.epidemics.CachingConfigurator;
 import it.unitn.disi.epidemics.IApplicationConfigurator;
+import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;
-import it.unitn.disi.newscasting.IContentExchangeStrategy;
 import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
