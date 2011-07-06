@@ -162,21 +162,20 @@ public class CompactEventStorage implements IWritableEventStorage, Cloneable {
 	public boolean contains(IGossipMessage msg) {
 		return contains(msg.originator(), msg.sequenceNumber());
 	}
-	
-	// ----------------------------------------------------------------------
-	
-	@Override
-	public boolean remove(IGossipMessage msg) {
-		throw new UnsupportedOperationException();
-	}
-	
+
 	// ----------------------------------------------------------------------
 
 	@Override
-	public IGossipMessage retrieve(IGossipMessage key) {
-		if (this.contains(key.originator(), key.sequenceNumber())) {
-			return new SimpleMessage(key.originator(), key.sequenceNumber(),
-					fVisibility);
+	public boolean remove(Node node, int sequence) {
+		throw new UnsupportedOperationException();
+	}
+
+	// ----------------------------------------------------------------------
+
+	@Override
+	public IGossipMessage retrieve(Node originator, int sequence) {
+		if (this.contains(originator, sequence)) {
+			return new SimpleMessage(originator, sequence, fVisibility);
 		}
 		return null;
 	}

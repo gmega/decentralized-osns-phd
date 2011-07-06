@@ -32,7 +32,7 @@ public class Client {
 	@Option(name = "-o", aliases = { "--output" }, usage = "Output file to connect to the standard output. Defaults to none.", required = false)
 	private String fOutput = CommandDescriptor.NONE;
 
-	@Option(name = "m", aliases = { "--compress" }, usage = "Compresses output using GZIP.")
+	@Option(name = "-m", aliases = { "--compress" }, usage = "Compresses output using GZIP.")
 	private boolean fCompress;
 
 	@Option(name = "-w", aliases = { "--pwd" }, usage = "Working directory for the command. Defaults to the current directory.", required = false)

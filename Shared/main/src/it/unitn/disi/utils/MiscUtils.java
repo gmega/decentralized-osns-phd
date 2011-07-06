@@ -5,7 +5,6 @@ import it.unitn.disi.utils.collections.IExchanger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 
 
 /**

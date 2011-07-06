@@ -1,19 +1,11 @@
 package it.unitn.disi.epidemics;
 
+import it.unitn.disi.network.SizeConstants;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.MiscUtils;
 import peersim.core.Node;
 
-public abstract class BaseGossipMessage implements IGossipMessage, Cloneable {
-
-	// 8 bytes for sequence numbers (even if in simulations we use 4).
-	public static final int SEQNUMBER_SIZE = 8;
-
-	// 4 bytes for an IPV4 address.
-	public static final int IPV4_SIZE = 4;
-
-	// 8 for a social network ID.
-	public static final int SNID_SIZE = 8;
+public class BaseGossipMessage implements IGossipMessage, Cloneable {
 
 	/**
 	 * The node who produced the content.
@@ -128,7 +120,7 @@ public abstract class BaseGossipMessage implements IGossipMessage, Cloneable {
 	public int sizeOf() {
 		// Only the sequence number and the destinations enter
 		// the computation. The rest are implementation artifacts.
-		return SEQNUMBER_SIZE + SNID_SIZE;
+		return SizeConstants.SEQNUMBER_SIZE + SizeConstants.SNID_SIZE;
 	}
 
 	protected int computeHash() {

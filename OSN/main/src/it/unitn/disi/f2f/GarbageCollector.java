@@ -7,10 +7,11 @@ import it.unitn.disi.utils.IReference;
 import java.util.BitSet;
 
 import peersim.core.Linkable;
+import peersim.core.Node;
 
 /**
  * {@link GarbageCollector} removes messages from the underlying storage when
- * the join process is known to be over. 
+ * the join process is known to be over.
  * 
  * @author giuliano
  */
@@ -25,26 +26,32 @@ public class GarbageCollector implements IJoinListener {
 	@Override
 	public void joinStarted(IGossipMessage message) {
 	}
-	
+
 	@Override
 	public void descriptorsReceived(Linkable linkable, BitSet indices) {
 	}
 
 	@Override
-	public void joinDone(IGossipMessage message, int copies) {
-		int destinations = message.destinations();
-		int expected = copies;
+	public boolean joinDone(IGossipMessage starting, JoinTracker tracker) {
+		int destinations = starting.destinations();
+		int expected = tracker.propagators();
+		expected = remove(starting, starting.originator(), expected);
 		for (int i = 0; i < destinations; i++) {
-			IWritableEventStorage storage = fStorage
-					.get(message.destination(i));
-			if (storage.remove(message)) {
-				expected--;
-			}
+			expected = remove(starting, starting.destination(i), expected);
 		}
+
 		if (expected != 0) {
-			throw new IllegalStateException(
-					"Garbage collector could not locate all message copies.");
+			throw new IllegalStateException("Garbage collection failed ("
+					+ expected + ").");
 		}
+
+		return false;
+	}
+
+	private int remove(IGossipMessage starting, Node node, int expected) {
+		IWritableEventStorage storage = fStorage.get(node);
+		return storage.remove(starting.originator(), starting.sequenceNumber()) ? expected - 1
+				: expected;
 	}
 
 }

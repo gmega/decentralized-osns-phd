@@ -8,6 +8,7 @@ import java.util.Random;
 import junit.framework.Assert;
 
 import it.unitn.disi.NullConfigurator;
+import it.unitn.disi.analysis.online.NodeStatistic;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.MulticastService;
 import it.unitn.disi.newscasting.DeterministicSelector;
@@ -18,6 +19,7 @@ import it.unitn.disi.test.framework.FakeCycleEngine;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TabularLogMatcher;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
+import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
@@ -104,35 +106,34 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 				new TeeOutputStream(log, System.out), DiscoveryProtocol.class);
 		TestNetworkBuilder builder = sparseCollectFixture(logWriter);
 		TabularLogMatcher matcher = runTest(builder, 11, logWriter);
-		
-		
+
 		// 1
 		matcher.add(DiscoveryProtocol.SF_CREATE, 0, 6, 0);
-		
+
 		// 2
 		matcher.add(DiscoveryProtocol.SF_CREATE, 6, 8, 0);
-		
+
 		// 3
 		matcher.add(DiscoveryProtocol.LEAF, "none", 8, "none");
 		matcher.add(DiscoveryProtocol.TRANSFER, 8, 6, 1);
-		
+
 		// 4
 		matcher.add(DiscoveryProtocol.TRANSFER, 6, 0, 1);
 		matcher.add(DiscoveryProtocol.SF_CREATE, 6, 7, 0);
-		
+
 		matcher.add(DiscoveryProtocol.SF_CREATE, 6, 9, 0);
 		matcher.add(DiscoveryProtocol.LEAF, "none", 7, "none");
 		matcher.add(DiscoveryProtocol.TRANSFER, 7, 6, 1);
 		matcher.add(DiscoveryProtocol.TRANSFER, 6, 0, 1);
-		
+
 		matcher.add(DiscoveryProtocol.SF_CREATE, 9, 10, 0);
-		
+
 		matcher.add(DiscoveryProtocol.LEAF, "none", 10, "none");
 		matcher.add(DiscoveryProtocol.TRANSFER, 10, 9, 1);
-		
+
 		matcher.add(DiscoveryProtocol.TRANSFER, 9, 6, 4);
 		matcher.add(DiscoveryProtocol.TRANSFER, 6, 0, 3);
-		
+
 		matcher.match(new ByteArrayInputStream(log.toByteArray()));
 	}
 
@@ -141,11 +142,15 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 		Node zero = builder.getNodes().get(0);
 		DiscoveryProtocol protocol = (DiscoveryProtocol) zero
 				.getProtocol(fDiscoveryProtocol);
+		DummyJoinTracker djt = new DummyJoinTracker(cycles);
+		protocol.addJoinListener(djt);
 		protocol.reinitialize();
 
 		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(),
 				System.currentTimeMillis());
 		engine.run(cycles);
+
+		// djt.assertDone();
 
 		return new TabularLogMatcher(logWriter.fields());
 	}
@@ -186,7 +191,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 
 		return builder;
 	}
-	
+
 	private TestNetworkBuilder sparseCollectFixture(TableWriter log) {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(11);
@@ -241,25 +246,26 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 
 		configureProtocols(builder, fSelectorId, fDemersMembership,
 				fDiscoveryMembership, fNeighborId, VISIBILITY_ID, log);
-		
+
 		// Bootstraps the discovery protocols.
 		// 7 knows 1 and 3.
 		DiscoveryProtocol p7 = getD(builder, 7);
 		knows(builder, p7, 1, 3);
-		
+
 		DiscoveryProtocol p8 = getD(builder, 8);
 		knows(builder, p8, 3);
-		
+
 		DiscoveryProtocol p9 = getD(builder, 9);
 		knows(builder, p9, 1, 2, 3, 4);
-		
+
 		DiscoveryProtocol p10 = getD(builder, 10);
 		knows(builder, p10, 2, 4, 5);
-		
-		return builder;	
+
+		return builder;
 	}
 
-	private void knows(TestNetworkBuilder builder, DiscoveryProtocol disc, int...neis) {
+	private void knows(TestNetworkBuilder builder, DiscoveryProtocol disc,
+			int... neis) {
 		for (int nei : neis) {
 			disc.addNeighbor(builder.getNodes().get(nei));
 		}
@@ -283,23 +289,27 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 
 	@SuppressWarnings("unchecked")
 	private void configureProtocols(TestNetworkBuilder builder, int selector,
-			int membership, int discoveryMembership, int neighbors, int visibility,
-			TableWriter log) {
+			int membership, int discoveryMembership, int neighbors,
+			int visibility, TableWriter log) {
 
 		int dpid = -1;
 		for (Node node : builder.getNodes()) {
 			int mcast_id = builder.nextProtocolId(node);
 			dpid = mcast_id + 1;
 
+			NodeStatistic stats = new NodeStatistic();
+			IReference<NodeStatistic> ref = new FallThroughReference<NodeStatistic>(
+					stats);
+
 			// Rumor mongering protocol.
 			DemersRumorMonger drm = new DemersRumorMonger(GIVEUP,
-					Integer.MAX_VALUE, mcast_id, node,
+					Integer.MAX_VALUE, mcast_id, ref, node,
 					(Linkable) node.getProtocol(membership), fRand, false);
 
 			// Discovery protocol.
 			DiscoveryProtocol dp = new DiscoveryProtocol(dpid, neighbors,
 					visibility, discoveryMembership, mcast_id,
-					Integer.MAX_VALUE, Integer.MAX_VALUE, log);
+					Integer.MAX_VALUE, Integer.MAX_VALUE, ref, log);
 			dp.initialize(node);
 
 			// Multicast service.

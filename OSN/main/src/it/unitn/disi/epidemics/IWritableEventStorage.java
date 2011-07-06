@@ -1,6 +1,7 @@
 package it.unitn.disi.epidemics;
 
 import it.unitn.disi.newscasting.Tweet;
+import peersim.core.Node;
 import peersim.core.Protocol;
 
 public interface IWritableEventStorage extends IEventStorage, Protocol {
@@ -14,14 +15,15 @@ public interface IWritableEventStorage extends IEventStorage, Protocol {
 	public boolean add(IGossipMessage tweet);
 
 	/**
-	 * Removes a {@link Tweet} from the event storage. Optional operation.
+	 * Removes a {@link IGossipMessage} from the event storage. Optional
+	 * operation.
 	 * 
 	 * @return <code>true</code> if the event was removed, or <code>false</code>
 	 *         if it were not in the event storage.
 	 * @throws UnsupportedOperationException
 	 *             if not supported.
 	 */
-	public boolean remove(IGossipMessage tweet);
+	public boolean remove(Node id, int sequence);
 
 	/**
 	 * Removes all of the content inside of the storage.

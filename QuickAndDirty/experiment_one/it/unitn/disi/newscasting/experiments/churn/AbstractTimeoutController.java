@@ -76,12 +76,14 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 		
 			//FIXME Argh static, implicit component wiring.
 			DisseminationExperimentGovernor gov = DisseminationExperimentGovernor.singletonInstance();
-			fLog.set("root", gov.currentNode().getID());
-			fLog.set("id", node.getID());
-			fLog.set("exptime", gov.experimentTime());
-			fLog.set("uptime", ((SNNode)node).uptime());
-			fLog.set("disstime", timeoutTime());
-			fLog.emmitRow();
+			if (gov != null) {
+				fLog.set("root", gov.currentNode().getID());
+				fLog.set("id", node.getID());
+				fLog.set("exptime", gov.experimentTime());
+				fLog.set("uptime", ((SNNode) node).uptime());
+				fLog.set("disstime", timeoutTime());
+				fLog.emmitRow();
+			}
 		}
 	}
 

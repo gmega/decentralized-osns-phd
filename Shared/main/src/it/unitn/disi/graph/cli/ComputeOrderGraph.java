@@ -22,8 +22,8 @@ public class ComputeOrderGraph implements ITransformer {
 	
 	public ComputeOrderGraph(
 			@Attribute("order") int order,
-			@Attribute(value = "decoder", defaultValue = "it.unitn.disi.codecs.AdjListGraphDecoder") String decoder,
-			@Attribute(value = "encoder", defaultValue = "it.unitn.disi.codecs.AdjListGraphEncoder") String encoder
+			@Attribute(value = "decoder", defaultValue = "it.unitn.disi.graph.codecs.AdjListGraphDecoder") String decoder,
+			@Attribute(value = "encoder", defaultValue = "it.unitn.disi.graph.codecs.AdjListGraphEncoder") String encoder
 			) {
 		fEncoderClass = encoder;
 		fDecoderClass = decoder;

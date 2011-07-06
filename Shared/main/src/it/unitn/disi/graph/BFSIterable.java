@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
+import peersim.core.Node;
+
 /**
  * Given an {@link IndexedNeighborGraph} and a seed vertex, iterates in BFS
  * order over the graph.
@@ -48,6 +50,13 @@ public class BFSIterable implements Iterable<Pair<Integer, Integer>> {
 			return !fQueue.isEmpty();
 		}
 
+		/**
+		 * {@link #next()} returns a {@link Pair} containing:
+		 * <ol>
+		 * <li>the ID of the {@link Node} in the <i>a</i> field</li>;
+		 * <li>the BFS distance of the {@link Node} to the seed as the <i>b</i> field</li>.
+		 * </ol>
+		 */
 		@Override
 		public Pair<Integer, Integer> next() {
 			if (!hasNext()) {

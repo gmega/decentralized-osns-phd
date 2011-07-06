@@ -1,6 +1,7 @@
 package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.BaseGossipMessage;
+import it.unitn.disi.network.SizeConstants;
 import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.peersim.BitSetNeighborhood;
 
@@ -24,6 +25,7 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 		fNeighborhood = new BitSetNeighborhood(
 				(Linkable) originator.getProtocol(linkable));
 		fTracker = tracker;
+		fTracker.joinPropagation();
 	}
 
 	// ------------------------------------------------------------------------
@@ -46,7 +48,7 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 
 	@Override
 	public void dropped(Node at) {
-		fTracker.dropped(this, at);
+		fTracker.propagationStop(this, at);
 	}
 
 	// ------------------------------------------------------------------------
@@ -64,7 +66,7 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 		msg.fNeighborhood = new BitSetNeighborhood(fNeighborhood);
 		msg.fForwarded = false;
 		msg.fTracker = this.fTracker;
-		fTracker.copied();
+		fTracker.joinPropagation();
 		return msg;
 	}
 
@@ -74,8 +76,8 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 
 	@Override
 	public int sizeOf() {
-		return super.sizeOf() + (fNeighborhood.linkable().degree() * SNID_SIZE)
-				+ (fNeighborhood.degree() * IPV4_SIZE);
+		return super.sizeOf() + (fNeighborhood.linkable().degree() * SizeConstants.SNID_SIZE)
+				+ (fNeighborhood.degree() * SizeConstants.IPV4_ADDRESS_SIZE);
 	}
 
 	// ------------------------------------------------------------------------
@@ -102,5 +104,9 @@ public class AdvertisementMessage extends BaseGossipMessage implements
 
 	public BitSetNeighborhood neighborhood() {
 		return fNeighborhood;
+	}
+	
+	JoinTracker tracker() {
+		return fTracker;
 	}
 }

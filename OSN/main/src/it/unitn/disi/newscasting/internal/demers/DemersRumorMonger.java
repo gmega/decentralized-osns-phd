@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.internal.demers;
 
+import it.unitn.disi.analysis.online.NodeStatistic;
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
@@ -9,6 +10,8 @@ import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.demers.IDestinationTracker.Result;
 import it.unitn.disi.newscasting.internal.demers.RumorList.IDemotionObserver;
+import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
@@ -49,6 +52,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	 * {@link Linkable} constraining dissemination for this protocol.
 	 */
 	public static final String PAR_LINKABLE = "constraint_linkable";
+	
+	public static final String PAR_STATS = "statistics";
 
 	// ----------------------------------------------------------------------
 	// Parameter storage.
@@ -63,6 +68,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	private final int fProtocolId;
 
 	private Node fNode;
+
+	private final IReference<NodeStatistic> fStats;
 
 	// ----------------------------------------------------------------------
 	// Protocol state.
@@ -79,16 +86,18 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	public DemersRumorMonger(IResolver resolver, String prefix, int protocolId,
 			Node source, Random rnd, boolean unitOptimized) {
 		this(resolver.getDouble(prefix, PAR_GIVEUP_PROBABILITY), resolver
-				.getInt(prefix, PAR_TRANSMIT_SIZE), protocolId, source,
-				(Linkable) source.getProtocol(resolver.getInt(prefix,
-						PAR_LINKABLE)), rnd, unitOptimized);
+				.getInt(prefix, PAR_TRANSMIT_SIZE), protocolId,
+				new ProtocolReference<NodeStatistic>(resolver.getInt(prefix,
+						PAR_STATS)), source, (Linkable) source
+						.getProtocol(resolver.getInt(prefix, PAR_LINKABLE)),
+				rnd, unitOptimized);
 	}
 
 	// ------------------------------------------------------------------------
 
 	public DemersRumorMonger(double giveUp, int rumorTransmitSize,
-			int protocolId, Node source, Linkable constraintLinkable,
-			Random rnd, boolean unitOptimized) {
+			int protocolId, IReference<NodeStatistic> stats, Node source,
+			Linkable constraintLinkable, Random rnd, boolean unitOptimized) {
 		fRumorTransmitSize = rumorTransmitSize;
 		fProtocolId = protocolId;
 		fGiveup = giveUp;
@@ -109,6 +118,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 		fTracker = unitOptimized ? new UEOptimizedDestinationTracker(
 				constraintLinkable) : new CountingDestinationTracker(
 				constraintLinkable);
+
+		fStats = stats;
 	}
 
 	// ----------------------------------------------------------------------
@@ -151,6 +162,7 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 		ListIterator<IGossipMessage> it = outsideRumors.listIterator();
 		int total = 0;
 		int i = 0;
+		int transferred = 0;
 		/**
 		 * Goes through the list of "receivable" rumors. We won't decide to
 		 * receive a rumor until we know that it might be useful.
@@ -178,7 +190,8 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 					}
 
 				} else {
-					ourMessage = storage.retrieve(message);
+					ourMessage = storage.retrieve(message.originator(),
+							message.sequenceNumber());
 					if (ourMessage == null) {
 						throw new InternalError();
 					}
@@ -187,9 +200,10 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 				// Delivers only if there's something to deliver.
 				if (ourMessage != null) {
 					application.deliver(sender, ours, ourMessage, this);
+					transferred += message.sizeOf();
 					total++;
 				}
-				
+
 				// Finally, emulates the drop if we're not adding because
 				// we won't send back to originator.
 				if (result == Result.originator_only) {
@@ -202,6 +216,14 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 			// be as if he never sent it.
 			responseBufferAppend(responseBuffer, i, isNew);
 		}
+		
+		if (transferred != 0 && fStats != null) {
+			NodeStatistic sendStats = fStats.get(sender);
+			NodeStatistic recvStats = fStats.get(ours);
+			sendStats.messageSent(transferred);
+			recvStats.messageReceived(transferred);
+		}
+		
 		return i;
 	}
 
@@ -219,7 +241,9 @@ public class DemersRumorMonger implements IContentExchangeStrategy,
 	// ----------------------------------------------------------------------
 
 	private void addTweet(Node sender, IGossipMessage tweet) {
-		fRumorList.add(fNode, tweet);
+		if (fTracker.track(tweet) == Result.forward) {
+			fRumorList.add(fNode, tweet);
+		}
 	}
 
 	// ----------------------------------------------------------------------

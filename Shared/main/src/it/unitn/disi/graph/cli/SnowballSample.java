@@ -3,7 +3,6 @@ package it.unitn.disi.graph.cli;
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.graph.GraphWriter;
 import it.unitn.disi.graph.SubgraphDecorator;
-import it.unitn.disi.graph.codecs.GraphEncoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.collections.Pair;
 

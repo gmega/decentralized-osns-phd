@@ -40,6 +40,35 @@ public class BitSetNeighborhoodTest extends PeerSimTest{
 	}
 	
 	@Test
+	public void testIterationOrderingIterator() {
+		TestNetworkBuilder builder = new TestNetworkBuilder();
+		builder.addNodes(100);
+
+		int DUMMY_LINKABLE = builder.assignCompleteLinkable();
+		builder.done();
+		
+		Node zero = builder.getNodes().get(0);		
+		Linkable staticl = (Linkable) zero.getProtocol(DUMMY_LINKABLE);
+		BitSetNeighborhood bsn = new BitSetNeighborhood(staticl);
+
+		Assert.assertFalse(bsn.hasNext());
+		
+		for (int i = 0; i < staticl.degree(); i++) {
+			Node neighbor = staticl.getNeighbor(i);
+			Assert.assertFalse(bsn.contains(neighbor));
+			bsn.addNeighbor(neighbor);
+			
+			int count = 0;
+			for (Node node : bsn) {
+				count++;
+				node.setFailState(Node.OK);
+			}
+			
+			Assert.assertEquals(count - 1, i);
+		}
+	}
+	
+	@Test
 	public void testLinearMerge() {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(10);

@@ -1,10 +1,8 @@
 package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.utils.logging.StructuredLog;
 import peersim.core.CommonState;
 import peersim.core.Node;
-import peersim.util.IncrementalStats;
 
 /**
  * {@link JoinTracker} keeps track of individual join processes. The object
@@ -13,49 +11,74 @@ import peersim.util.IncrementalStats;
  * 
  * @author giuliano
  */
-@StructuredLog(key = "JOIN", fields = { "id", "degree", "join", "seen",
-		"unseen", "stale" })
 public class JoinTracker {
 
 	private final DiscoveryProtocol fParent;
 
 	private int fStartTime;
+	
+	private int fPropagators;
+	
+	private int fAggregators;
 
-	private IncrementalStats fStats;
+	private int fPropagationActive;
 
-	private int fCopies;
-
-	private int fDrops;
+	private int fAggregationActive;
 
 	public JoinTracker(DiscoveryProtocol parent) {
 		fParent = parent;
 		fStartTime = CommonState.getIntTime();
 	}
 
-	public void copied() {
-		fCopies++;
+	void joinPropagation() {
+		fPropagators++;
+		fPropagationActive++;
 	}
 
-	public void dropped(IGossipMessage copy, Node location) {
-		fDrops++;
+	void joinAggregation() {
+		fAggregators++;
+		fAggregationActive++;
+	}
+
+	void propagationStop(IGossipMessage copy, Node location) {
+		fPropagationActive--;
 		// Notify the proper protocol.
 		DiscoveryProtocol protocol = (DiscoveryProtocol) location
 				.getProtocol(fParent.pid());
 		protocol.dropped(copy);
-		if (fCopies == fDrops) {
-			notifyJoinDone(copy);
+		if (done()) {
+			joinDone(copy);
 		}
 	}
 
-	private void notifyJoinDone(IGossipMessage copy) {
+	void aggregationStop(AggregationTreeState state) {
+		fAggregationActive--;
+		if (done()) {
+			joinDone(state.propagationMessage());
+		}
+	}
+
+	private boolean done() {
+		return fAggregationActive == 0 && fPropagationActive == 0;
+	}
+
+	private void joinDone(IGossipMessage copy) {
 		fParent.joinDone(copy, this);
 	}
-
-	public void descriptorsHomed(int howmany) {
-		fStats.add(fStartTime - CommonState.getIntTime(), howmany);
+	
+	public int propagators() {
+		return fPropagators;
+	}
+	
+	public int aggregators() {
+		return fAggregators;
 	}
 
-	public int copies() {
-		return fCopies;
+	public DiscoveryProtocol parent() {
+		return fParent;
+	}
+	
+	public int totalTime() {
+		return CommonState.getIntTime() - fStartTime;
 	}
 }

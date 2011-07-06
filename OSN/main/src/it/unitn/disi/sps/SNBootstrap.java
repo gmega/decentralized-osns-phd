@@ -7,6 +7,7 @@ import peersim.core.Control;
 import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
+import peersim.dynamics.NodeInitializer;
 
 /**
  * Populates a {@link Linkable} with random samples taken from a neighborhood
@@ -15,7 +16,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class SNBootstrap implements Control{
+public class SNBootstrap implements Control, NodeInitializer {
 	
 	@Attribute
 	private int protocol;
@@ -25,28 +26,35 @@ public class SNBootstrap implements Control{
 
 	@Attribute
 	private int size;
+	
+	private PermutingCache fCache;
 
 	@Override
 	public boolean execute() {
-		PermutingCache cache = new PermutingCache(neighborhood);
-
 		for (int i = 0; i < Network.size(); i++) {
 			Node node = Network.get(i);
-			Linkable peerSampling = (Linkable) node.getProtocol(protocol);
-			
-			this.preInit(node, peerSampling);
-			cache.populate(node);
-			cache.shuffle();
-			for (int j = 0; j < cache.size() && peerSampling.degree() < size; j++) {
-				Node candidate = cache.get(j);
-				if (canSelect(candidate)) {
-					peerSampling.addNeighbor(candidate);
-				}
-			}
-			this.postInit(node, peerSampling);
+			initialize(node);
 		}
 
 		return false;
+	}
+	
+	@Override
+	public void initialize(Node node) {
+		PermutingCache cache = cache();
+		Linkable peerSampling = (Linkable) node.getProtocol(protocol);
+		this.preInit(node, peerSampling);
+		cache.populate(node);
+		cache.shuffle();
+
+		for (int j = 0; j < cache.size() && peerSampling.degree() < size; j++) {
+			Node candidate = cache.get(j);
+			if (canSelect(candidate)) {
+				peerSampling.addNeighbor(candidate);
+			}
+		}
+		
+		this.postInit(node, peerSampling);
 	}
 	
 	protected void preInit(Node node, Linkable peerSampling) {
@@ -59,5 +67,12 @@ public class SNBootstrap implements Control{
 	
 	protected void postInit(Node node, Linkable peersampling) {
 		
+	}
+	
+	private PermutingCache cache() {
+		if (fCache == null) {
+			fCache = new PermutingCache(neighborhood);
+		}
+		return fCache;
 	}
 }

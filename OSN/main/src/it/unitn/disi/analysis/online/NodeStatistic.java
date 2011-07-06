@@ -1,47 +1,88 @@
 package it.unitn.disi.analysis.online;
 
 import it.unitn.disi.utils.MiscUtils;
+import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Protocol;
 
+@AutoConfig
 public class NodeStatistic implements Protocol {
 	
-	private int fTx;
+	private long fTx;
 	
-	private int fRx;
+	private long fRx;
+	
+	private long fTime;
 	
 	private int fTxCount;
 	
 	private int fRxCount;
+	
+	// ------------------------------------------------------------------------
 	
 	public void messageSent(int size) {
 		fTx += size;
 		fTxCount++;
 	}
 	
+	// ------------------------------------------------------------------------
+	
 	public void messageReceived(int size) {
 		fRx += size;
 		fRxCount++;
 	}
 	
-	void advanceTime(long lastRecord) {
-		long ellapsed = CommonState.getTime() - lastRecord; 
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("BDW ");
-		buffer.append(roundAvg(fTx, ellapsed));
-		buffer.append(roundAvg(fRx, ellapsed));
-		buffer.append(roundAvg(fTxCount, ellapsed));
-		buffer.append(roundAvg(fRxCount, ellapsed));
-		
-		System.out.println(buffer);
+	// ------------------------------------------------------------------------
+	
+	public void reset() {
+		fTime = fTx = fRx = fTxCount = fRxCount = 0;
 	}
+	
+	// ------------------------------------------------------------------------
+	// Statistics.
+	// ------------------------------------------------------------------------
+	
+	public double rxBandwidth() {
+		return receivedBytes()/((double) time());
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public double txBandwidth() {
+		return transmittedBytes()/((double) time());
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public long transmittedBytes() {
+		return fTx;
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public long receivedBytes() {
+		return fRx;
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public long transmittedMessages() {
+		return fRxCount;
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public long receivedMessages() {
+		return fTxCount;
+	}
+	
+	// ------------------------------------------------------------------------
 
-	private String roundAvg(int a, long b) {
-		if (b == 0) {
-			return "NaN";
-		}
-		return Double.toString(((double)a/b));
+	public long time() {
+		return CommonState.getTime() - fTime;
 	}
+	
+	// ------------------------------------------------------------------------
 	
 	public Object clone() {
 		try {
@@ -50,5 +91,4 @@ public class NodeStatistic implements Protocol {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-	
 }

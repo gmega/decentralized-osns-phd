@@ -1,14 +1,11 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 import peersim.config.Attribute;

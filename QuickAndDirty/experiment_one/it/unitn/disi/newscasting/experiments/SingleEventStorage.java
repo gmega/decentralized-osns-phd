@@ -48,8 +48,13 @@ public class SingleEventStorage implements IWritableEventStorage {
 	}
 
 	@Override
-	public boolean remove(IGossipMessage msg) {
-		if (msg.equals(fTweet)) {
+	public boolean remove(Node node, int sequence) {
+		if (fTweet == null) {
+			return false;
+		}
+
+		if (fTweet.originator().equals(node)
+				&& fTweet.sequenceNumber() == sequence) {
 			fTweet = null;
 			return true;
 		}
@@ -77,8 +82,9 @@ public class SingleEventStorage implements IWritableEventStorage {
 	}
 
 	@Override
-	public IGossipMessage retrieve(IGossipMessage key) {
-		if (key.equals(fTweet)) {
+	public IGossipMessage retrieve(Node originator, int sequence) {
+		if (fTweet != null && fTweet.originator().equals(originator)
+				&& fTweet.sequenceNumber() == sequence) {
 			return fTweet;
 		}
 		return null;

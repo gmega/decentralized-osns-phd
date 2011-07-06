@@ -9,6 +9,7 @@ import junit.framework.Assert;
 import peersim.core.Linkable;
 import peersim.core.Node;
 import it.unitn.disi.NullConfigurator;
+import it.unitn.disi.analysis.online.NodeStatistic;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.ISelectionFilter;
@@ -81,7 +82,8 @@ public class DemersTest extends PeerSimTest {
 
 			// Rumor mongering protocol.
 			DemersRumorMonger drm = new DemersRumorMonger(p, Integer.MAX_VALUE,
-					fProtocolId, node,
+					fProtocolId, new FallThroughReference<NodeStatistic>(
+							new NodeStatistic()), node,
 					(Linkable) node.getProtocol(fLinkableId), fRand, false);
 
 			// Selector.

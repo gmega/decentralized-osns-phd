@@ -11,4 +11,9 @@ public class CyclonSNBootstrap extends SNBootstrap {
 	protected void preInit(Node node, Linkable peerSampling) {
 		((CyclonSN) peerSampling).init(node);
 	}
+	
+	@Override
+	public boolean canSelect(Node node) {
+		return node.isUp();
+	}
 }

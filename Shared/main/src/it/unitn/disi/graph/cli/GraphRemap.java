@@ -54,7 +54,6 @@ public class GraphRemap implements IMultiTransformer {
 			Integer source = dec.getSource();
 			Integer target = dec.next();
 			edges++;
-
 			graph.write(encode(map(source, mapfile), fBuf));
 			graph.write(encode(map(target, mapfile), fBuf));
 		}

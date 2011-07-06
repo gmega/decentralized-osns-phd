@@ -12,6 +12,6 @@ public interface IJoinListener {
 	
 	public void descriptorsReceived(Linkable linkable, BitSet indices);
 	
-	public void joinDone(IGossipMessage message, int copies);
+	public boolean joinDone(IGossipMessage starting, JoinTracker tracker);
 	
 }

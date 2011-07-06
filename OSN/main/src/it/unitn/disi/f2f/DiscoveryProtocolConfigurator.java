@@ -29,7 +29,7 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 
 	@Attribute("membership_pid")
 	private int fMembershipPid;
-
+	
 	public DiscoveryProtocolConfigurator() { }
 
 	@Override
@@ -50,6 +50,7 @@ public class DiscoveryProtocolConfigurator extends CachingConfigurator {
 		// Configures the multicast service.
 		DemersRumorMonger drm = new DemersRumorMonger(resolver, prefix,
 				app.pid(), app.node(), CommonState.r, false);
+		
 		app.addStrategy(new Class[] { DemersRumorMonger.class }, drm,
 				new FallThroughReference<IPeerSelector>(
 						new RandomSelectorOverLinkable(fMembershipPid)),

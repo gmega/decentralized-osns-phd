@@ -26,13 +26,15 @@ public interface IEventStorage {
 	public boolean contains(IGossipMessage msg);
 
 	/**
-	 * Retrieves an {@link IGossipMessage} copy which corresponds to the
-	 * {@link IGossipMessage} being passed as key.
+	 * Retrieves an {@link IGossipMessage} under the given key.
 	 * 
-	 * @param key
+	 * @param originator
+	 *            the node originating the message
+	 * @param sequence
+	 *            the message's sequence number
 	 * @return
 	 */
-	public IGossipMessage retrieve(IGossipMessage key);
+	public IGossipMessage retrieve(Node originator, int sequence);
 
 	/**
 	 * @return the number of distinct {@link IGossipMessage} owners being kept

@@ -32,14 +32,16 @@ public class Pair <K1, K2>{
 		
 		Pair other = (Pair) otherObj;
 		boolean equals = (a == null) ? other.a == null : a.equals(other.a);
-		equals |= (b == null) ? other.b == null : b.equals(other.b);
+		equals &= (b == null) ? other.b == null : b.equals(other.b);
 		return equals;
 	}
 	
+	@Override
 	public int hashCode() {
 		return fHashCode;
 	}
 	
+	@Override
 	public String toString() {
 		return "(" + a + ", " + b + ")";
 	}

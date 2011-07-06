@@ -15,9 +15,9 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class BitSetNeighborhood implements Linkable, Iterator<Node> {
+public class BitSetNeighborhood implements Linkable, Iterator<Node>, Iterable<Node> {
 
-	private static final int UNKNOWN = -2;
+	private static final int UNKNOWN = -1;
 
 	private final Linkable fSource;
 
@@ -107,7 +107,7 @@ public class BitSetNeighborhood implements Linkable, Iterator<Node> {
 			reset();
 		}
 
-		return contains;
+		return !contains;
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class BitSetNeighborhood implements Linkable, Iterator<Node> {
 			throw new NoSuchElementException();
 		}
 
-		int idx = fMembers.nextSetBit(fIteratorHint);
+		int idx = fMembers.nextSetBit(fIteratorHint + 1);
 		fIteratorHint = idx;
 		return fSource.getNeighbor(idx);
 	}
@@ -253,6 +253,12 @@ public class BitSetNeighborhood implements Linkable, Iterator<Node> {
 	@Override
 	public String toString() {
 		return fMembers.toString();
+	}
+
+	@Override
+	public Iterator<Node> iterator() {
+		this.reset();
+		return this;
 	}
 
 }
