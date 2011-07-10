@@ -9,7 +9,6 @@ import it.unitn.disi.f2f.IJoinListener;
 import it.unitn.disi.f2f.JoinTracker;
 import it.unitn.disi.graph.BFSIterable;
 import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.StructuredLog;
@@ -19,24 +18,22 @@ import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import peersim.util.IncrementalStats;
 
 @AutoConfig
 @StructuredLog(key = "JOIN", fields = { "id", "degree", "time", "seen",
 		"unseen", "stale" })
 public class GrowingBFSNetwork implements Control, IJoinListener {
 
-	private final int fGraphProtocolId;
+	protected final int fGraphProtocolId;
 
-	private final int fDiscoveryId;
+	protected final int fDiscoveryId;
+	
+	protected final NodeRebootSupport fRebootSupport;
 
 	private final int fSeed;
-
-	private final NodeRebootSupport fRebootSupport;
 
 	private final TableWriter fLog;
 
@@ -73,21 +70,22 @@ public class GrowingBFSNetwork implements Control, IJoinListener {
 
 		Pair<Integer, Integer> step = it.next();
 		INodeRegistry registry = NodeRegistry.getInstance();
-		Node node = registry.getNode(step.a);
-		node.setFailState(Node.OK);
-		fRebootSupport.initialize(node);
-
-		System.err.println("-- Scheduled node " + node.getID() + ".");
-		
-		DiscoveryProtocol protocol = (DiscoveryProtocol) node
-				.getProtocol(fDiscoveryId);
-		protocol.addJoinListener(this);
-		protocol.reinitialize();
+		doSchedule(registry.getNode(step.a));
 
 		return false;
 	}
+	
+	protected void doSchedule(Node node) {
+		node.setFailState(Node.OK);
+		fRebootSupport.initialize(node);
+		DiscoveryProtocol protocol = (DiscoveryProtocol) node
+			.getProtocol(fDiscoveryId);
+		protocol.addJoinListener(this);
+		protocol.reinitialize();
+		System.err.println("-- Scheduled node " + node.getID() + ".");
+	}
 
-	private Iterator<Pair<Integer, Integer>> iterator() {
+	protected Iterator<Pair<Integer, Integer>> iterator() {
 		if (fIterator == null) {
 			Node seed = NodeRegistry.getInstance().getNode(fSeed);
 			GraphProtocol protocol = (GraphProtocol) seed
@@ -98,19 +96,31 @@ public class GrowingBFSNetwork implements Control, IJoinListener {
 		}
 		return fIterator;
 	}
+	
+	protected void iteratorReset() {
+		fIterator = null;
+	}
 
 	@Override
 	public void joinStarted(IGossipMessage message) {
-		fJoining = true;
+		setJoining(true);
 	}
 
 	@Override
 	public void descriptorsReceived(Linkable linkable, BitSet indices) {
 	}
+	
+	protected boolean isJoining() {
+		return fJoining;
+	}
+	
+	public void setJoining(boolean value) {
+		fJoining = value;
+	}
 
 	@Override
 	public boolean joinDone(IGossipMessage message, JoinTracker tracker) {
-		fJoining = false;
+		setJoining(false);
 		DiscoveryProtocol protocol = tracker.parent();
 
 		fLog.set("id", message.originator().getID());
