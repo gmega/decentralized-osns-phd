@@ -9,7 +9,7 @@ public class NeighborhoodClustering extends NeighborhoodMetricComputer<Double> {
 	@Override
 	public Double compute(IndexedNeighborGraph source, int root) {
 		SubgraphDecorator subgraph = neighborhood(source, root, true);
-		return GraphAlgorithms.clustering(subgraph, subgraph.idOf(root));
+		return GraphAlgorithms.clustering(subgraph, subgraph.map(root));
 	}
 
 	@Override

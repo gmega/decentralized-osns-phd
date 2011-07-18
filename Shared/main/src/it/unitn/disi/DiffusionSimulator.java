@@ -125,7 +125,7 @@ public class DiffusionSimulator {
 		System.err.println("Scheduled unit " + (fCount++) + " to worker "
 				+ worker.id + " (size " + graph.length + ").");
 		
-		return new Pair<Integer, int[][]> (decorator.idOf(next), graph);
+		return new Pair<Integer, int[][]> (decorator.map(next), graph);
 	}
 	
 	synchronized void newTMax(int tMax, int[] paintedBy, int[] paintSchedule, DiffusionWorker reporter) {
@@ -139,7 +139,7 @@ public class DiffusionSimulator {
 	private void print(String tag, String quantity, int[] paintedBy, int[] paintSchedule, DiffusionWorker reporter) {
 		SubgraphDecorator decorator = fDecorators[reporter.id];
 		Integer root = findRoot(paintSchedule);
-		root = decorator.inverseIdOf(root);
+		root = decorator.map(root);
 		
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(tag);
@@ -153,10 +153,10 @@ public class DiffusionSimulator {
 		
 		for (int i = 0; i < paintSchedule.length; i++) {
 			String painter = paintedBy[i] == -1 ? "root" : Integer
-					.toString(decorator.inverseIdOf(paintedBy[i]));
+					.toString(decorator.map(paintedBy[i]));
 			buffer.append(painter);
 			buffer.append(":");
-			buffer.append(decorator.inverseIdOf(i));
+			buffer.append(decorator.map(i));
 			buffer.append(":");
 			buffer.append(paintSchedule[i]);
 			buffer.append(",");

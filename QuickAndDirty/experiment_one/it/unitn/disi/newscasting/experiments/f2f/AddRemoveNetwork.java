@@ -75,8 +75,6 @@ public class AddRemoveNetwork extends GrowingBFSNetwork {
 		root.clearState();
 		root.resetStatistics();
 		
-		System.err.println("-- Scheduled node " + next.getID() + ".");
-		
 		// 3. now reschedules it.
 		doSchedule(next);
 		

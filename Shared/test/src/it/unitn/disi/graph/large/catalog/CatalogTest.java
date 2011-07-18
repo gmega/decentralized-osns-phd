@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
+
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -17,13 +17,12 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.IdMapper;
+import it.unitn.disi.utils.AbstractIDMapper;
+import it.unitn.disi.utils.SparseIDMapper;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -153,7 +152,7 @@ public class CatalogTest {
 
 		NeighbourListGraph graph = new NeighbourListGraph(reference.size + 1,
 				true);
-		IdMapper mapper = new IdMapper();
+		AbstractIDMapper mapper = new SparseIDMapper();
 
 		// First reads the immediate neighbors.
 		readAdd(graph, mapper, stream, decoder, reference, false);
@@ -169,7 +168,7 @@ public class CatalogTest {
 		return graph;
 	}
 
-	private void readAdd(NeighbourListGraph graph, IdMapper mapper,
+	private void readAdd(NeighbourListGraph graph, AbstractIDMapper mapper,
 			InputStream stream, ByteGraphDecoder decoder,
 			CatalogRecord reference, boolean constrain) throws IOException {
 		stream.reset();
@@ -178,12 +177,12 @@ public class CatalogTest {
 		Assert.assertEquals(toSkip, skipped);
 		decoder.realign();
 		while (decoder.getSource() == reference.root) {
-			int i = mapper.map(decoder.getSource());
+			int i = mapper.addMapping(decoder.getSource());
 			int j = decoder.next();
 			if (constrain && !mapper.isMapped(j)) {
 				continue;
 			}
-			j = mapper.map(j);
+			j = mapper.addMapping(j);
 			if (graph.isEdge(i, j)) {
 				Assert.fail();
 			}

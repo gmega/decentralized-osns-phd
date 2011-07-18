@@ -91,19 +91,31 @@ public class BitSetNeighborhood implements Linkable, Iterator<Node>, Iterable<No
 	}
 	
 	public boolean addNeighbor(Node neighbour, boolean failSilently) {
+		return setMask(neighbour, true, failSilently);
+	}
+	
+	public boolean removeNeighbor(Node neighbour) {
+		return setMask(neighbour, false, false);
+	}
+	
+	public boolean setMask(Node neighbour, boolean state, boolean failSilently) {
 		int idx = PeersimUtils.indexOf(neighbour, fSource);
 		if (idx == -1) {
 			if (!failSilently) {
 				throw new IllegalArgumentException("Node " + neighbour.getID()
-						+ " can't be a part of this neighborhood.");
+						+ " isn't a part of this neighborhood.");
 			} else {
 				return false;
 			}
 		}
 
 		boolean contains = fMembers.get(idx);
-		if (!contains) {
-			fMembers.set(idx);
+		if (contains != state) {
+			if (state) {
+				fMembers.set(idx);
+			} else {
+				fMembers.clear(idx);
+			}
 			reset();
 		}
 

@@ -1,5 +1,7 @@
 package it.unitn.disi.graph.codecs;
 
+import it.unitn.disi.utils.IDMapper;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -15,14 +17,14 @@ public class AdjListGraphEncoder implements GraphEncoder {
 	}
 
 	@Override
-	public void encode(Graph g) throws IOException {
+	public void encode(Graph g, IDMapper mapper) throws IOException {
 		for (int i = 0; i < g.size(); i++) {
 			StringBuffer line = new StringBuffer();
-			line.append(i);
+			line.append(mapper.map(i));
 			
 			for (Integer neighbor : g.getNeighbours(i)) {
 				line.append(" ");
-				line.append(neighbor);
+				line.append(mapper.map(neighbor));
 			}
 
 			fStream.println(line.toString());
@@ -35,7 +37,7 @@ public class AdjListGraphEncoder implements GraphEncoder {
 	}
 
 	@Override
-	public void transcode(GraphDecoder decoder) throws IOException {
+	public void transcode(GraphDecoder decoder, IDMapper mapper) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

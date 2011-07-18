@@ -49,7 +49,7 @@ public class EgonetResilience extends GraphAnalyzer {
 			}
 		}
 		
-		return egonet.inverseIdOf(idx);
+		return egonet.map(idx);
 	}
 	                                                     
 	private HashSet<Integer> toSet(int [] array) {

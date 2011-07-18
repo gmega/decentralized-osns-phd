@@ -1,9 +1,11 @@
 package it.unitn.disi.graph;
 
+import it.unitn.disi.utils.DenseIDMapper;
+import it.unitn.disi.utils.IDMapper;
+import it.unitn.disi.utils.AbstractIDMapper;
+import it.unitn.disi.utils.SparseIDMapper;
+
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 import peersim.graph.Graph;
 
@@ -18,25 +20,23 @@ import com.google.common.collect.Collections2;
  * @author giuliano
  * 
  */
-public class SubgraphDecorator implements Graph {
+public class SubgraphDecorator implements Graph, IDMapper {
 
 	private final Graph fGraph;
 
-	private int [] fMappings = new int[0];
+	private AbstractIDMapper fIDMap;
 
-	private Map<Integer, Integer> fInvMap = new HashMap<Integer, Integer>();
-	
 	private boolean fChecked = false;
 
 	private final Predicate<Integer> fPredicate = new Predicate<Integer>() {
 		public boolean apply(Integer input) {
-			return fInvMap.containsKey(input);
+			return fIDMap.isMapped(input);
 		}
 	};
 
 	private final Function<Integer, Integer> fMap = new Function<Integer, Integer>() {
 		public Integer apply(Integer from) {
-			return fInvMap.get(from);
+			return fIDMap.map(from);
 		}
 	};
 
@@ -47,8 +47,13 @@ public class SubgraphDecorator implements Graph {
 	 *            the graph to be wrapped.
 	 */
 	public SubgraphDecorator(Graph g, boolean unchecked) {
+		this(g, unchecked, true);
+	}
+	
+	public SubgraphDecorator(Graph g, boolean unchecked, boolean sparse) {
 		fGraph = g;
 		fChecked = !unchecked;
+		fIDMap = sparse ? new SparseIDMapper() : new DenseIDMapper(g.size());
 	}
 
 	// --------------------------------------------------------------------------
@@ -61,28 +66,21 @@ public class SubgraphDecorator implements Graph {
 	 *            vertices in the original graph will be valid in the subgraph.
 	 */
 	public void setVertexList(Collection<Integer> list) {
-		int size = list.size();
-		
-		fInvMap.clear();
-		ensureMappingsSize(size);
-		
-		// The order doesn't really matter, as long as we give it one.
-		Iterator<Integer> it = list.iterator();
-		for (int i = 0; i < size; i++) {
-			int idx = it.next();
-			fInvMap.put(idx, i);
-			fMappings[i] = idx;
+		fIDMap.clear();
+		// The order doesn't really matter, as long as we give it one. If the
+		// supplied collection is order-preserving, however, then our ordering
+		// will also be.
+		for (Integer element : list) {
+			fIDMap.addMapping(element);
 		}
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
-	public void setVertexList(int [] list) {
-		fInvMap.clear();
-		ensureMappingsSize(list.length);
-		for (int i = 0; i < list.length; i++) {
-			fInvMap.put(list[i], i);
-			fMappings[i] = list[i];
+
+	public void setVertexList(int[] list) {
+		fIDMap.clear();
+		for (int element : list) {
+			fIDMap.addMapping(element);
 		}
 	}
 
@@ -101,23 +99,24 @@ public class SubgraphDecorator implements Graph {
 	 *             if the vertex with id <b>i</b> doesn't belong to the
 	 *             subgraph.
 	 */
-	public int idOf(int i) {
-		if (fChecked) {
-			checkInverseIndex(i);
-		}
-		
-		return fInvMap.get(i);
+	public int map(int i) {
+		return fIDMap.map(i);
 	}
-	
 
 	// --------------------------------------------------------------------------
-	
+
 	/**
 	 * Given the index of a vertex in the subgraph, returns its index in the
 	 * original graph.
 	 */
-	public int inverseIdOf(int i) {
-		return fMappings[i];
+	public int reverseMap(int i) {
+		return fIDMap.reverseMap(i);
+	}
+
+	// --------------------------------------------------------------------------
+
+	public boolean isMapped(int id) {
+		return fIDMap.isMapped(id);
 	}
 
 	// --------------------------------------------------------------------------
@@ -134,38 +133,21 @@ public class SubgraphDecorator implements Graph {
 		}
 
 		int count = 0;
-		for (int neighbor : fGraph.getNeighbours(fMappings[i])) {
-			if (fInvMap.containsKey(neighbor)) {
+		for (int neighbor : fGraph.getNeighbours(fIDMap.reverseMap(i))) {
+			if (fIDMap.isMapped(neighbor)) {
 				count++;
 			}
 		}
 
 		return count;
 	}
-	
-	// --------------------------------------------------------------------------
-	
-	private void ensureMappingsSize(int value) {
-		if (fMappings.length < value) {
-			fMappings = new int[value * 2];
-		}
-	}
 
 	// --------------------------------------------------------------------------
 
 	private void checkIndex(int i) {
-		if (i >= fInvMap.size() || i < 0) {
+		if (i >= fIDMap.size() || i < 0) {
 			throw new IllegalArgumentException("Vertex id " + i
 					+ " is not valid.");
-		}
-	}
-
-	// --------------------------------------------------------------------------
-
-	private void checkInverseIndex(int i) {
-		if (!fInvMap.containsKey(i)) {
-			throw new IllegalArgumentException("Vertex " + i
-					+ " is not a part of the subraph.");
 		}
 	}
 
@@ -182,9 +164,9 @@ public class SubgraphDecorator implements Graph {
 		if (fChecked) {
 			checkIndex(i);
 		}
-		
-		return Collections2.transform(Collections2.filter(fGraph
-				.getNeighbours(fMappings[i]), fPredicate), fMap);
+
+		return Collections2.transform(Collections2.filter(
+				fGraph.getNeighbours(fIDMap.reverseMap(i)), fPredicate), fMap);
 	}
 
 	// --------------------------------------------------------------------------
@@ -197,7 +179,7 @@ public class SubgraphDecorator implements Graph {
 			checkIndex(i);
 			checkIndex(j);
 		}
-		return fGraph.getEdge(fMappings[i], fMappings[j]);
+		return fGraph.getEdge(fIDMap.reverseMap(i), fIDMap.reverseMap(j));
 	}
 
 	// --------------------------------------------------------------------------
@@ -216,7 +198,7 @@ public class SubgraphDecorator implements Graph {
 			checkIndex(i);
 			checkIndex(j);
 		}
-		return fGraph.isEdge(fMappings[i], fMappings[j]);
+		return fGraph.isEdge(fIDMap.reverseMap(i), fIDMap.reverseMap(j));
 	}
 
 	// --------------------------------------------------------------------------
@@ -228,16 +210,16 @@ public class SubgraphDecorator implements Graph {
 	// --------------------------------------------------------------------------
 
 	public int size() {
-		return fInvMap.size();
+		return fIDMap.size();
 	}
 
 	// --------------------------------------------------------------------------
-	
+
 	public Object getNode(int i) {
 		if (fChecked) {
 			checkIndex(i);
 		}
-		return fGraph.getNode(fMappings[i]);
+		return fGraph.getNode(fIDMap.reverseMap(i));
 	}
 
 	// --------------------------------------------------------------------------

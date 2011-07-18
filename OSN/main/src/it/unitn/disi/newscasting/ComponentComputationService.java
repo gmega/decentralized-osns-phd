@@ -136,7 +136,7 @@ public class ComponentComputationService implements Protocol, IInitializable {
 				color = componentId++;
 			}
 
-			int originalId = neighborhood.inverseIdOf(i);
+			int originalId = neighborhood.reverseMap(i);
 			fMappings[color].add(originalId);
 			fComponentTable.put(originalId, color);
 		}

@@ -30,6 +30,7 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.BitSetNeighborhoodTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
+import it.unitn.disi.utils.IDMapperTest;
 import it.unitn.disi.utils.MultiCounterTest;
 import it.unitn.disi.utils.PrefixedOutputStreamTest;
 import it.unitn.disi.utils.TestMiscUtils;
@@ -83,7 +84,8 @@ import peersim.config.PluginContainerTest;
 	DemersTest.class,
 	MultiCounterTest.class,
 	DiscoveryProtocolTest.class, 
-	BitSetNeighborhoodTest.class
+	BitSetNeighborhoodTest.class,
+	IDMapperTest.class
 })
 
 public class AllTests extends PeerSimTest {

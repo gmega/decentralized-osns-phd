@@ -27,6 +27,12 @@ import org.kohsuke.args4j.Option;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
+/**
+ * The command line interface driver provides basic scaffolding for running
+ * {@link ITransformer}s and {@link IMultiTransformer}s from the command line.
+ * 
+ * @author giuliano
+ */
 public class GenericDriver {
 
 	@Option(name = "-i", usage = "colon (:) separated list of input files (stdin if ommitted)", required = false)
@@ -37,9 +43,9 @@ public class GenericDriver {
 
 	@Option(name = "-p", usage = "colon (:) separated list of key=value pairs (transformer-specific)", required = false)
 	private String fParameters = "";
-	
+
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
-	private char fSplitChar = ':'; 
+	private char fSplitChar = ':';
 
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
 	private boolean fVerbose;

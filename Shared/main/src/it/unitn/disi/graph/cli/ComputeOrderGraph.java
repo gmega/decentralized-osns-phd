@@ -4,6 +4,7 @@ import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.GraphEncoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.IDMapper;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,6 +41,6 @@ public class ComputeOrderGraph implements ITransformer {
 		
 		// Prints it out.
 		GraphEncoder encoder = GraphCodecHelper.createEncoder(oup, fEncoderClass);
-		encoder.encode(graph);
+		encoder.encode(graph, IDMapper.IDENTITY);
 	}
 }

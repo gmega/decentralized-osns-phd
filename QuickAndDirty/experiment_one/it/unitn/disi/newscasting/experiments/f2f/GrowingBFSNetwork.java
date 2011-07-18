@@ -63,7 +63,6 @@ public class GrowingBFSNetwork implements Control, IJoinListener {
 
 	private boolean addNode() {
 		Iterator<Pair<Integer, Integer>> it = iterator();
-
 		if (!it.hasNext()) {
 			return true;
 		}
@@ -71,7 +70,6 @@ public class GrowingBFSNetwork implements Control, IJoinListener {
 		Pair<Integer, Integer> step = it.next();
 		INodeRegistry registry = NodeRegistry.getInstance();
 		doSchedule(registry.getNode(step.a));
-
 		return false;
 	}
 	

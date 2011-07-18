@@ -102,7 +102,7 @@ public class PercolationThresholdEstimator implements ITransformer {
 		vList.add(node);
 		for (int i = 0; i < mapper.size(); i++) {
 			if (fGa.color[i] == root) {
-				vList.add(mapper.inverseIdOf(i));
+				vList.add(mapper.map(i));
 			}
 		}
 		

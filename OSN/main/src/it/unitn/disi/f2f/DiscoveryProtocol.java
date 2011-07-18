@@ -96,6 +96,12 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 
 	private int fSequence;
 
+	private Node fNode;
+
+	// ------------------------------------------------------------------------
+	// Tracking statistics.
+	// ------------------------------------------------------------------------
+	
 	private int fPSHits;
 
 	private int fDiscoveryHits;
@@ -103,8 +109,6 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 	private int fDiscoveryWaste;
 	
 	private int fAccidentalHits;
-
-	private Node fNode;
 
 	public DiscoveryProtocol(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("onehop") int oneHop, @Attribute("twohop") int twoHop,
@@ -173,13 +177,21 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 	// ------------------------------------------------------------------------
 	
 	private void collectGarbage() {
-		
+		// TODO implement garbage collection policy for descriptors.
 	}
 
 	// ------------------------------------------------------------------------
 
 	private boolean shouldCollectDescriptors() {
 		return CommonState.getTime() % fCollectPeriod == 0;
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public void clearState() {
+		fDescriptors.removeAll();
+		fActiveQueue.clear();
+		fSoftState.clear();
 	}
 
 	// ------------------------------------------------------------------------
@@ -262,16 +274,20 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 			homingNode = tree.originator();
 		}
 
-		// Either way, if we made this far we remove the message from the active
-		// queue.
-		dequeue();
-
 		if (homingNode != null && homingNode.isUp()) {
 			DiscoveryProtocol protocol = (DiscoveryProtocol) homingNode
 					.getProtocol(fSelfPid);
 			fStats.get(fNode).messageSent(tree.sizeOf());
 			protocol.home(fNode, tree);
 		}
+
+		// Either way, if we made this far we remove the message from the active
+		// queue.
+		// XXX DO NOT move this call up. Dequeuing will decrease the reference count
+		// on the tree state, and might make it reach zero just before the call
+		// to protocol.home() above makes it one again. If that happens, we get 
+		// a premature joinDone message and all hell breaks loose.
+		dequeue();
 	}
 
 	// ------------------------------------------------------------------------
@@ -598,6 +614,12 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 	@Override
 	public void pack() {
 	}
+	
+	// ------------------------------------------------------------------------
+	
+	public boolean removeNeighbor(Node neighbor) {
+		return fDescriptors.removeNeighbor(neighbor);
+	}
 
 	// ------------------------------------------------------------------------
 	// Inspection methods.
@@ -673,6 +695,10 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 	}
 	
 	// ------------------------------------------------------------------------
+	
+	public void resetStatistics() {
+		fPSHits = fDiscoveryHits = fAccidentalHits = fDiscoveryWaste = 0;
+	}
 
 	// ------------------------------------------------------------------------
 	// Cloneable requirements.

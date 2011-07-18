@@ -69,7 +69,7 @@ public class ClusteringRanking implements IUtilityFunction<Node, Integer>,
 			clustering = 0.0;
 		} else {
 			clustering = GraphAlgorithms.clustering(subgraph,
-					subgraph.idOf((int) base.getID()));
+					subgraph.map((int) base.getID()));
 		}
 
 		if (fReverse) {

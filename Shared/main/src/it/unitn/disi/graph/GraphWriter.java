@@ -31,10 +31,10 @@ public class GraphWriter {
 		PrintWriter ps = new PrintWriter(writer);
 		for (int i = 0; i < g.size(); i++) {
 			StringBuffer buf = new StringBuffer();
-			buf.append(mapper.inverseIdOf(i));
+			buf.append(mapper.map(i));
 			buf.append(" ");
 			for (int neighbor : g.getNeighbours(i)) {
-				buf.append(mapper.inverseIdOf(neighbor));
+				buf.append(mapper.map(neighbor));
 				buf.append(" ");
 			}
 			buf.deleteCharAt(buf.length() - 1);

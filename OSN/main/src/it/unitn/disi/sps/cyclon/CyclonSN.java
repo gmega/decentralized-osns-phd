@@ -69,6 +69,7 @@ public class CyclonSN implements Linkable, EpidemicProtocol {
 		int actualSize = fPars.viewSize > 1.0 ? (int) fPars.viewSize
 				: (int) Math.ceil(fPars.viewSize * neighborhood.degree());
 		fView = new NodeDescriptor[actualSize];
+		fViewSize = 0;
 	}
 
 	// ----------------------------------------------------------------------
