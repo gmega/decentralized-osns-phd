@@ -1,6 +1,6 @@
 package it.unitn.disi.utils.logging;
 
-class TextProgressTracker extends ProgressTracker {
+abstract class TextProgressTracker extends ProgressTracker {
 	
 	TextProgressTracker(String taskTitle, int totalTicks) {
 		super(taskTitle, totalTicks);
@@ -8,17 +8,19 @@ class TextProgressTracker extends ProgressTracker {
     
 	@Override
 	protected void displayWidget() {
-    	System.err.println("Now starting task <<" + title() + ">>.");
+    	out("Now starting task <<" + title() + ">>.");
     }
         
 	@Override
 	protected void disposeWidget() {
-		System.err.println("[" + title() + "]: Done.");
+		out("[" + title() + "]: Done.");
 	}
 
 	@Override
 	protected void reportProgress(double percentage) {
-		System.err.println(String.format("[%1$s]: %2$.2f %% complete.", title(), percentage));
+		out(String.format("[%1$s]: %2$.2f %% complete.", title(), percentage));
 	}
+	
+	protected abstract void out(String out);
 
 }

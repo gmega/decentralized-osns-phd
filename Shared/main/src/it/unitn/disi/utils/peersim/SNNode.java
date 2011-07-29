@@ -52,6 +52,19 @@ public interface SNNode extends Node {
 	 * nothing if none is installed.
 	 */
 	public void clearStateListener();
+	
+	public void setID(long id);
+
+	/**
+	 * @param id
+	 *            the social network ID for this node.
+	 */
+	public void setSNId(int id);
+
+	/**
+	 * @return the social network ID for this node.
+	 */
+	public int getSNId();
 
 	/*
 	 * XXX these active/isActive methods aren't exactly great. I still got to

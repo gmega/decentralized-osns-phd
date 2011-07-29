@@ -1,12 +1,16 @@
 package it.unitn.disi.graph;
 
+import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.test.framework.TestUtils;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,14 +27,14 @@ import peersim.graph.BitMatrixGraph;
 import peersim.graph.GraphFactory;
 
 public class LSGTransformsTest {
-	
+
 	private BitMatrixGraph originalRandom;
-	
+
 	private LightweightStaticGraph random;
-	
+
 	@Test
 	public void testLoad() throws Exception {
-		init(true);
+		init(true, 100);
 		for (int i = 0; i < random.size(); i++) {
 			Assert.assertEquals(originalRandom.degree(i), random.degree(i));
 			for (int j : random.getNeighbours(i)) {
@@ -38,13 +42,13 @@ public class LSGTransformsTest {
 			}
 		}
 	}
-	
+
 	@Test
 	public void testUndirect() throws Exception {
-		init(true);
+		init(true, 100);
 		LightweightStaticGraph undir = LightweightStaticGraph.undirect(random);
 
-		int [] expectedDegree = new int[undir.size()];
+		int[] expectedDegree = new int[undir.size()];
 		for (int i = 0; i < random.size(); i++) {
 			for (int j : random.getNeighbours(i)) {
 				expectedDegree[i]++;
@@ -55,40 +59,79 @@ public class LSGTransformsTest {
 				}
 			}
 		}
-		
+
 		for (int i = 0; i < undir.size(); i++) {
-			Assert.assertEquals(Integer.toString(i), expectedDegree[i], undir.degree(i));
+			Assert.assertEquals(Integer.toString(i), expectedDegree[i],
+					undir.degree(i));
 		}
 	}
 
 	@Test
 	public void testTransitive() throws Exception {
-		init(false);
-		IndexedNeighborGraph transitive = LightweightStaticGraph.transitiveGraph(random, 2);
-		
-		// For each vertex on the graph, the two-hop neighborhood should correspond
+		init(false, 100);
+		IndexedNeighborGraph transitive = LightweightStaticGraph
+				.transitiveGraph(random, 2);
+
+		// For each vertex on the graph, the two-hop neighborhood should
+		// correspond
 		// to the result of an order 2 BFS.
 		for (int i = 0; i < transitive.size(); i++) {
-			List<Integer> referenceList = neighborhood(random, i, 2); 
+			List<Integer> referenceList = neighborhood(random, i, 2);
 			Collection<Integer> generatedList = transitive.getNeighbours(i);
-			
+
 			Assert.assertEquals(referenceList.size(), generatedList.size());
-			
+
 			Set<Integer> referenceSet = new HashSet<Integer>(referenceList);
 			Set<Integer> generatedSet = new HashSet<Integer>(generatedList);
-			
+
 			Assert.assertTrue(referenceSet.containsAll(generatedSet));
 			Assert.assertTrue(generatedSet.containsAll(referenceSet));
 		}
 	}
-	
+
+	@Test
+	public void testSubgraph() throws Exception {
+		LightweightStaticGraph large = LightweightStaticGraph
+				.load(GraphCodecHelper.createDecoder(
+						new ResettableFileInputStream(new File(ClassLoader
+								.getSystemResource("Large.bin").toURI())),
+						ByteGraphDecoder.class.getName()));
+
+		for (int i = 0; i < large.size(); i++) {
+			TIntArrayList list = new TIntArrayList();
+			list.add(i);
+			list.addAll(large.getNeighbours(i));
+			LightweightStaticGraph subgraph = LightweightStaticGraph.subgraph(
+					large, list.toArray());
+
+			// Asserts isomorphism.
+			isomorphic(large, subgraph, list);
+		}
+	}
+
+	private void isomorphic(LightweightStaticGraph large,
+			LightweightStaticGraph subgraph, TIntArrayList list) {
+
+		SubgraphDecorator decorator = new SubgraphDecorator(large, false);
+		decorator.setVertexList(list.toArray());
+
+		for (int i = 0; i < subgraph.size(); i++) {
+			Assert.assertEquals(decorator.degree(i), subgraph.degree(i));
+			Set<Integer> ref = new HashSet<Integer>();
+			Set<Integer> sub = new HashSet<Integer>();
+			ref.addAll(decorator.getNeighbours(i));
+			sub.addAll(subgraph.getNeighbours(i));
+			Assert.assertTrue(ref.equals(sub));
+		}
+	}
+
 	private List<Integer> neighborhood(IndexedNeighborGraph graph, int root,
 			int order) {
 		BFSIterator iterator = new BFSIterator(graph, root);
 		List<Integer> neighbors = new ArrayList<Integer>();
 		// Skips the root.
 		iterator.next();
-		while(iterator.hasNext()) {
+		while (iterator.hasNext()) {
 			Pair<Integer, Integer> next = iterator.next();
 			if (next.b > order) {
 				break;
@@ -98,14 +141,15 @@ public class LSGTransformsTest {
 		return neighbors;
 	}
 
-	private void init(boolean directed) throws IOException {
-		originalRandom = new BitMatrixGraph(100, directed);
+	private void init(boolean directed, int size) throws IOException {
+		originalRandom = new BitMatrixGraph(size, directed);
 		GraphFactory.wireKOut(originalRandom, 5, new Random(42));
 		ByteArrayInputStream blob = TestUtils.blob(originalRandom);
 		random = LightweightStaticGraph.load(new ByteGraphDecoder(blob));
 	}
-	
+
 	private String edge(int i, int j, boolean added) {
-		return (added ? "MISSING REVERSE:" : "MISSING:") + " (" + i + ", " + j + ")";
+		return (added ? "MISSING REVERSE:" : "MISSING:") + " (" + i + ", " + j
+				+ ")";
 	}
 }

@@ -7,12 +7,12 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
-# -----------------------------------------------------------------------------
 # Line plotting util which calls plot, then lines.
-# -----------------------------------------------------------------------------
+#
+###############################################################################
 setConstructorS3("LinePlotter", function(colorscale = NULL, colorcycle=20, ...) {
 	extend(Object(), "LinePlotter",
-			.first=TRUE,
+			.first = TRUE,
 			.pars = ...,
 			.lty = 1,
 			.colorscale = colorscale(colorcycle)

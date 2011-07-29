@@ -6,17 +6,31 @@ import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.util.ArrayList;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 public abstract class LSGCreator {
 
 	private static final Logger fLogger = Logger.getLogger(LSGCreator.class);
 
+	public LightweightStaticGraph create(boolean quiet) {
+		Level current = fLogger.getLevel();
+		if (quiet) {
+			fLogger.setLevel(Level.ERROR);
+		}
+		try {
+			return create();
+		} finally {
+			fLogger.setLevel(current);
+		}
+	}
+
 	public LightweightStaticGraph create() {
+		
 		// Phase 1 - compute memory requirements.
 		fLogger.info("1: Computing required storage.");
 		CountAction ca = new CountAction();
-		
+
 		uncheckedGraphLoop(ca);
 
 		// Phase 2 - allocates memory.
@@ -29,10 +43,10 @@ public abstract class LSGCreator {
 				+ " edges. Memory required: " + size + " bytes.");
 		fLogger.info("2: Allocating memory.");
 
-		int [] sizes = ca.sizeMap();
+		int[] sizes = ca.sizeMap();
 		// Frees up some memory.
 		ca = null;
-		
+
 		int[][] adjacency = allocate(sizes);
 
 		// Phase 3 - goes again through the input, and loads the graph.
@@ -58,8 +72,9 @@ public abstract class LSGCreator {
 		int neighborless = 0;
 
 		fLogger.info("2: Allocated pointer array.");
-		
-		ProgressTracker tracker = Progress.newTracker("allocating cells", sizes.length);
+
+		ProgressTracker tracker = Progress.newTracker("allocating cells",
+				sizes.length, fLogger);
 		tracker.startTask();
 		for (int i = 0; i < sizes.length; i++) {
 			Integer neighbors = sizes[i];

@@ -49,15 +49,15 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	}
 
 	// --------------------------------------------------------------------------
-	
-	public static LightweightStaticGraph fromAdjacency(int [][] adjlists) {
+
+	public static LightweightStaticGraph fromAdjacency(int[][] adjlists) {
 		return new LightweightStaticGraph(adjlists);
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
+
 	public static LightweightStaticGraph fromGraph(Graph g) {
-		int [][] a = new int[g.size()][];
+		int[][] a = new int[g.size()][];
 		for (int i = 0; i < a.length; i++) {
 			a[i] = new int[g.degree(i)];
 			int j = 0;
@@ -67,6 +67,14 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 			}
 		}
 		return fromAdjacency(a);
+	}
+
+	// --------------------------------------------------------------------------
+
+	public static LightweightStaticGraph subgraph(
+			LightweightStaticGraph source, int[] vertices) {
+		LSGCreateSubgraph subgraph = new LSGCreateSubgraph(vertices);
+		return subgraph.transform(source);
 	}
 
 	// --------------------------------------------------------------------------
@@ -182,8 +190,8 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	}
 
 	/**
-	 * Returns <code>true</code> if this graph is simple, or
-	 * <code>false</code> otherwise.
+	 * Returns <code>true</code> if this graph is simple, or <code>false</code>
+	 * otherwise.
 	 */
 	public boolean isSimple() {
 		if (fSimple == null) {
@@ -205,7 +213,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	}
 
 	/**
-	 * Returns the number of edges in this graph. 
+	 * Returns the number of edges in this graph.
 	 */
 	public int edgeCount() {
 		return fEdges;

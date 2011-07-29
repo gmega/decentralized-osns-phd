@@ -16,6 +16,13 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	private INodeStateListener fListener = NULL_LISTENER;
 
 	/**
+	 * Social network ID for this node.
+	 */
+	private int fSNId;
+	
+	private long fId;
+	
+	/**
 	 * Cumulative downtime counter.
 	 */
 	private long fDownTime;
@@ -42,6 +49,9 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	public SNNodeImpl(String prefix) {
 		super(prefix);
 		fLogSessions = Configuration.contains(prefix + "." + PAR_LOG_SESSIONS);
+		fSNId = (int) super.getID();
+		fId = super.getID();
+		fLastChange = CommonState.getTime();
 	}
 
 	public void setFailState(int newState) {
@@ -112,6 +122,25 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	public void active(boolean stats) {
 		fActive = stats;
 	}
+	
+	public void setID(long id) {
+		fId = id;
+	}
+	
+	@Override
+	public long getID() {
+		return fId;
+	}
+
+	@Override
+	public void setSNId(int id) {
+		fSNId = id;
+	}
+
+	@Override
+	public int getSNId() {
+		return fSNId;
+	}
 
 	private void logEvent(String type) {
 		if (!fLogSessions) {
@@ -149,6 +178,18 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 
 	private long delta() {
 		return CommonState.getTime() - fLastChange;
+	}
+	
+	private long originalID() {
+		return super.getID();
+	}
+	
+	@Override
+	public Object clone() {
+		SNNodeImpl cloned = (SNNodeImpl) super.clone();
+		cloned.fId = cloned.originalID();
+		cloned.fLastChange = CommonState.getTime();
+		return cloned;
 	}
 
 	private static final INodeStateListener NULL_LISTENER = new INodeStateListener() {

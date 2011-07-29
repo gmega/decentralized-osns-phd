@@ -17,6 +17,12 @@ public interface IInitializable {
 	public void initialize(Node node);
 
 	/**
+	 * @return whether this protocol has been initialized for the first time
+	 *         already or not.
+	 */
+	public boolean isInitialized();
+
+	/**
 	 * Called whenever the node owning this protocol instance rejoins the
 	 * network.
 	 */

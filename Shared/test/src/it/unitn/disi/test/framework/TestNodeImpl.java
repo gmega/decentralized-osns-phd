@@ -131,14 +131,10 @@ public class TestNodeImpl implements SNNode {
 		switch (newState) {
 		case GeneralNode.DEAD:
 		case GeneralNode.DOWN:
-//			System.out.println("Node " + getID() + " DOWN @"
-//					+ CommonState.getTime());
 			fUptime += delta();
 			break;
 
 		case GeneralNode.OK:
-//			System.out.println("Node " + getID() + " OK @"
-//					+ CommonState.getTime());
 			fDownTime += delta();
 			fSessionCount++;
 			break;
@@ -193,13 +189,23 @@ public class TestNodeImpl implements SNNode {
 
 	@Override
 	public boolean isActive() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public void active(boolean active) {
-		// TODO Auto-generated method stub
-		
+	}
+
+	@Override
+	public void setID(long id) {
+	}
+
+	@Override
+	public void setSNId(int id) {
+	}
+
+	@Override
+	public int getSNId() {
+		return (int) getID();
 	}
 }

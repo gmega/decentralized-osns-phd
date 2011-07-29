@@ -6,7 +6,7 @@ public abstract class LSGTransformer extends LSGCreator {
 	
 	public LightweightStaticGraph transform(LightweightStaticGraph source) {
 		fSource = source;
-		return create();
+		return create(true);
 	}
 
 	public LightweightStaticGraph sourceGraph() {

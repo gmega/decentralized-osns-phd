@@ -29,20 +29,16 @@ public class GenericInitializer implements Control, NodeInitializer {
 	@Override
 	public boolean execute() {
 		for (int i = 0; i < Network.size(); i++) {
-			initialize(Network.get(i), true);
+			initialize(Network.get(i));
 		}
 		return false;
 	}
 
 	@Override
 	public void initialize(Node n) {
-		initialize(n, false);
-	}
-	
-	public void initialize(Node n, boolean first) {
 		for (int pid : fProtocolIds) {
 			IInitializable initializable = (IInitializable) n.getProtocol(pid);
-			if (first) {
+			if (!initializable.isInitialized()) {
 				initializable.initialize(n);
 			} else {
 				initializable.reinitialize();
