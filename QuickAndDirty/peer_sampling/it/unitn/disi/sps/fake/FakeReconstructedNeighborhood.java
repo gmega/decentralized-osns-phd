@@ -1,9 +1,10 @@
 package it.unitn.disi.sps.fake;
 
-import java.util.Arrays;
-
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.IInitializable;
+
+import java.util.Arrays;
+
 import peersim.cdsim.CDProtocol;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -60,6 +61,12 @@ public class FakeReconstructedNeighborhood implements IInitializable, Linkable,
 			throw new IllegalStateException("Duplicate value.");
 		}
 		fReconstructionTimes[idx] = value;
+	}
+	
+	// ----------------------------------------------------------------------
+	
+	public boolean isInitialized() {
+		return fReconstructionTimes != null;
 	}
 	
 	// ----------------------------------------------------------------------

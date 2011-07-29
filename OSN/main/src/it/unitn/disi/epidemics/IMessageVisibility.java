@@ -1,6 +1,6 @@
-package it.unitn.disi.newscasting;
+package it.unitn.disi.epidemics;
 
-import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.newscasting.Tweet;
 import peersim.core.Node;
 
 /**

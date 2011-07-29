@@ -151,6 +151,11 @@ public class ComponentComputationService implements Protocol, IInitializable {
 	}
 
 	@Override
+	public boolean isInitialized() {
+		return fOwner != null;
+	}
+
+	@Override
 	public void reinitialize() {
 		fOwner = null;
 	}

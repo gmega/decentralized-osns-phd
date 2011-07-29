@@ -1,13 +1,13 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
+import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
+import it.unitn.disi.unitsim.ICDExperimentObserver;
+import it.unitn.disi.unitsim.ICDUnitExperiment;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.core.Node;
-import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
-import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 
 @AutoConfig
-public class StatisticsPrinter implements IExperimentObserver {
+public class StatisticsPrinter implements ICDExperimentObserver {
 
 	@Attribute("load_per_cycle")
 	private boolean fLoadPerCycle;
@@ -22,18 +22,18 @@ public class StatisticsPrinter implements IExperimentObserver {
 			.getInstance();
 
 	@Override
-	public void experimentStart(Node root) {
+	public void experimentStart(ICDUnitExperiment experiment) {
 	}
 
 	@Override
-	public void experimentCycled(Node root) {
+	public void experimentCycled(ICDUnitExperiment experiment) {
 		if (fLoadPerCycle) {
 			fManager.printLoadStatistics(System.out);
 		}
 	}
 
 	@Override
-	public void experimentEnd(Node root) {
+	public void experimentEnd(ICDUnitExperiment experiment) {
 		if (fLoad) {
 			fManager.printLoadStatistics(System.out);
 		}

@@ -1,6 +1,7 @@
 package it.unitn.disi.sps.debug;
 
-import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.epidemics.IPeerSelector;
+import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.utils.SparseMultiCounter;
 
 import java.util.HashMap;
@@ -101,7 +102,7 @@ public class PeersamplingDebuggingApp implements CDProtocol {
 	public void nextCycle(Node node, int protocolID) {
 		IPeerSelector service = (IPeerSelector) node
 				.getProtocol(fPeersamplingId);
-		Node peer = service.selectPeer(node);
+		Node peer = service.selectPeer(node, ISelectionFilter.ALWAYS_TRUE_FILTER);
 		if (peer == null) {
 			return;
 		}

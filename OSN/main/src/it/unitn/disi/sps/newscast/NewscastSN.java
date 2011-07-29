@@ -1,13 +1,16 @@
 package it.unitn.disi.sps.newscast;
 
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.BinaryCompositeFilter;
+import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.sps.newscast.View.BufferHandler;
 import it.unitn.disi.sps.selectors.ISelector;
 import it.unitn.disi.sps.selectors.RandomSelector;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
+import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.IInitializable;
 
@@ -39,8 +42,8 @@ import peersim.core.Node;
  * 
  * @author giuliano
  */
-public class NewscastSN implements IPeerSelector, IInitializable,
-		CDProtocol, IDynamicLinkable {
+public class NewscastSN implements IPeerSelector, IInitializable, CDProtocol,
+		IDynamicLinkable {
 
 	// --------------------------------------------------------------------------
 	// Parameters
@@ -68,7 +71,7 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	 * @config
 	 */
 	private static final String PAR_SWAPPER = "swapper";
-	
+
 	/**
 	 * If present, causes the passive side of the protocol to not inject fresh
 	 * descriptors.
@@ -79,7 +82,7 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	 * Debug flag -- for development purposes. Should be set to off.
 	 */
 	private static final String PAR_DEBUG = "debug";
-	
+
 	// --------------------------------------------------------------------------
 	// Storage for peersim parameters.
 	// --------------------------------------------------------------------------
@@ -93,9 +96,10 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	 * Value for the "healer" parameter. Obtained from {@value #PAR_HEALER}.
 	 */
 	private int fH;
-	
+
 	/**
-	 * Value for the "active injection only" parameter. Obtained from {@value #PAR_ACTIVE_INJECTION}
+	 * Value for the "active injection only" parameter. Obtained from
+	 * {@value #PAR_ACTIVE_INJECTION}
 	 */
 	private boolean fActiveInjectionOnly;
 
@@ -137,6 +141,8 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	 */
 	private ISelectionFilter fFilter;
 
+	private HollowFilter fAppFilter;
+
 	// --------------------------------------------------------------------------
 	// Initialization
 	// --------------------------------------------------------------------------
@@ -146,14 +152,15 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 		this(Configuration.getInt(s + "." + PAR_CACHE), Configuration.getInt(s
 				+ "." + PAR_HEALER), Configuration
 				.getInt(s + "." + PAR_SWAPPER), CommonState.r, Configuration
-				.contains(s + "." + PAR_DEBUG),
-				Configuration.contains(s + "." + PAR_ACTIVE_INJECTION));
+				.contains(s + "." + PAR_DEBUG), Configuration.contains(s + "."
+				+ PAR_ACTIVE_INJECTION));
 	}
 
 	// --------------------------------------------------------------------------
 
 	/** "Regular" constructor (doesn't require PeerSim to be running). */
-	NewscastSN(int cacheSize, int h, int s, Random r, boolean debug, boolean activeInjectionOnly) {
+	NewscastSN(int cacheSize, int h, int s, Random r, boolean debug,
+			boolean activeInjectionOnly) {
 		this.init(cacheSize, h, s, r, debug, activeInjectionOnly);
 	}
 
@@ -163,14 +170,23 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	private void initSelectors() {
 		// Simple policy at the start. We can complicate later.
 		fSelector = new RandomSelector(fView, fRandom);
-		fFilter = ISelectionFilter.UP_FILTER;
+		fAppFilter = new HollowFilter();
+		fFilter = new BinaryCompositeFilter(
+				new FallThroughReference<ISelectionFilter>(
+						ISelectionFilter.UP_FILTER),
+				new FallThroughReference<ISelectionFilter>(fAppFilter));
 	}
 
 	@Override
 	public void initialize(Node node) {
-		
+
 	}
-	
+
+	@Override
+	public boolean isInitialized() {
+		return true;
+	}
+
 	@Override
 	public void reinitialize() {
 		this.init(fView.capacity(), fH, fS, fRandom, fDebug,
@@ -201,26 +217,20 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 	// --------------------------------------------------------------------------
 	// The peer sampling service.
 	// --------------------------------------------------------------------------
-	public Node selectPeer(Node source) {
+	public Node selectPeer(Node node, ISelectionFilter filter) {
 		if (fQueue.runDelayedUpdates()) {
 			fQueue.permute(fRandom);
 		}
 
-		Node node = fQueue.popFirst();
+		fAppFilter.bind(filter);
 
-		if (node == null) {
-			node = this.selectPeer();
+		Node peer = fQueue.popFirst();
+
+		if (peer == null || !fFilter.canSelect(node, peer)) {
+			peer = this.selectPeer();
 		}
-
-		return node;
-	}
-	
-	public Node selectPeer(Node node, ISelectionFilter filter) {
-		throw new UnsupportedOperationException(); 
-	}
-	
-	public boolean supportsFiltering() {
-		return false;
+		
+		return fFilter.selected(node, peer);
 	}
 
 	@Override
@@ -241,8 +251,7 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 			return;
 		}
 
-		NewscastSN peer = (NewscastSN) peerNode
-				.getProtocol(protocolID);
+		NewscastSN peer = (NewscastSN) peerNode.getProtocol(protocolID);
 
 		// Linkables representing the social networks.
 		Linkable thisSn = (Linkable) thisNode.getProtocol(FastConfig
@@ -257,8 +266,8 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 
 	// --------------------------------------------------------------------------
 
-	private void verify(NewscastSN peer, Linkable thisSn,
-			Linkable peerSn, boolean queue) {
+	private void verify(NewscastSN peer, Linkable thisSn, Linkable peerSn,
+			boolean queue) {
 		if (fDebug) {
 			this.view().verifyFriends(thisSn);
 			peer.view().verifyFriends(peerSn);
@@ -302,7 +311,8 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 		peer.view().oldestInTheEnd(fH);
 
 		this.select(fH, fS, peer, peerSn, this, thisNode, View.RECEIVER, true);
-		this.select(fH, fS, this, thisSn, peer, peerNode, View.SENDER, !fActiveInjectionOnly);
+		this.select(fH, fS, this, thisSn, peer, peerNode, View.SENDER,
+				!fActiveInjectionOnly);
 
 		peer.view().buffer(View.RECEIVER).store();
 		this.view().buffer(View.SENDER).store();
@@ -341,7 +351,8 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 		 * where the first part comes from the sender, and the rest from the
 		 * receiver.
 		 */
-		sender.view().buffer(buffer).appendHead(addFresh ? senderNode : null, receiverSn);
+		sender.view().buffer(buffer)
+				.appendHead(addFresh ? senderNode : null, receiverSn);
 
 		/**
 		 * Removes H oldest elements, always from the manipulation area (healer
@@ -425,6 +436,7 @@ public class NewscastSN implements IPeerSelector, IInitializable,
 
 		clone.fView = new View(view());
 		clone.fQueue = fQueue.cloneUsing(clone.fView);
+		clone.fAppFilter = new HollowFilter();
 		clone.initSelectors();
 
 		return clone;

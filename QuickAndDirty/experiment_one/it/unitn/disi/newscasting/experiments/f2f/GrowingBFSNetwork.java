@@ -1,8 +1,5 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
-import java.util.BitSet;
-import java.util.Iterator;
-
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.f2f.DiscoveryProtocol;
 import it.unitn.disi.f2f.IJoinListener;
@@ -16,6 +13,10 @@ import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+
+import java.util.BitSet;
+import java.util.Iterator;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Control;

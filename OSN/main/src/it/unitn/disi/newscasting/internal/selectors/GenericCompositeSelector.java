@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.sps.selectors.ISelector;
 import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;
@@ -209,11 +209,7 @@ public class GenericCompositeSelector implements IPeerSelector, Protocol {
 
 		if (object instanceof IPeerSelector) {
 			IPeerSelector selector = (IPeerSelector) object;
-			if (selector.supportsFiltering()) {
-				return selector.selectPeer(source, filter);
-			} else {
-				return selector.selectPeer(source);
-			}
+			return selector.selectPeer(source, filter);
 		} else if (object instanceof ISelector) {
 			return ((ISelector) object).selectPeer(filter);
 		}

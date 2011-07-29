@@ -4,7 +4,6 @@ import it.unitn.disi.f2f.DiscoveryProtocol;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
-
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;

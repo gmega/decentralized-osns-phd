@@ -4,6 +4,8 @@ import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IApplicationInterface;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventStorage;
+import it.unitn.disi.epidemics.IMessageVisibility;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;

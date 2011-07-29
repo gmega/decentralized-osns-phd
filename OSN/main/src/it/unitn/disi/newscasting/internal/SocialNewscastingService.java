@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.internal;
 
 import it.unitn.disi.epidemics.IApplicationConfigurator;
+import it.unitn.disi.epidemics.IMessageVisibility;
 import it.unitn.disi.epidemics.ProtocolRunner;
-import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.newscasting.Tweet;
 

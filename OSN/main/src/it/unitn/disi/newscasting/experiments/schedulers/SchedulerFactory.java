@@ -17,7 +17,7 @@ public class SchedulerFactory {
 	private static final String PAR_REPETITIONS = "repetitions";
 
 	enum SchedulerType {
-		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST
+		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST, INTERVAL
 	}
 
 	private static final SchedulerFactory fInstance = new SchedulerFactory();
@@ -51,6 +51,10 @@ public class SchedulerFactory {
 					.getInstance(prefix + "." + PAR_ORDERING);
 			base = new AliveBitmapScheduler(new OrderedFullNetworkScheduler(
 					ordering), registry);
+			break;
+			
+		case INTERVAL:
+			base = ObjectCreator.createInstance(IntervalScheduler.class, prefix, resolver);
 			break;
 
 		case DEGREE_CLASS_SAMPLING:

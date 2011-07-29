@@ -1,14 +1,16 @@
 package it.unitn.disi.newscasting.experiments;
 
+import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
+import it.unitn.disi.unitsim.ICDExperimentObserver;
+import it.unitn.disi.unitsim.ICDUnitExperiment;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.PrintStream;
 
 import peersim.core.CommonState;
-import peersim.core.Network;
 import peersim.core.Node;
 import peersim.util.IncrementalStats;
 
@@ -19,7 +21,7 @@ import peersim.util.IncrementalStats;
  * @author giuliano
  */
 public class ExperimentStatisticsManager implements IEventObserver,
-		IExperimentObserver {
+		ICDExperimentObserver {
 
 	private static final ExperimentStatisticsManager fInstance = new ExperimentStatisticsManager();
 
@@ -89,7 +91,7 @@ public class ExperimentStatisticsManager implements IEventObserver,
 	}
 
 	@Override
-	public void experimentEnd(Node root) {
+	public void experimentEnd(ICDUnitExperiment root) {
 		if (fCurrentExperiment == null) {
 			return;
 		}
@@ -98,11 +100,11 @@ public class ExperimentStatisticsManager implements IEventObserver,
 	}
 
 	@Override
-	public void experimentStart(Node root) {
+	public void experimentStart(ICDUnitExperiment root) {
 	}
 
 	@Override
-	public void experimentCycled(Node root) {
+	public void experimentCycled(ICDUnitExperiment root) {
 	}
 
 	public void noSelection(Node node) {
@@ -135,22 +137,21 @@ class UnitExperimentData {
 	/**
 	 * Number of messages received by each node (tracks mainly duplicates).
 	 */
-	private static final int[] fReceived = new int[Network.size()];
+	private static final TIntArrayList fReceived = new TIntArrayList();
 
 	/**
 	 * Number of messages sent by each node.
 	 */
-	private static final int[] fSent = new int[Network.size()];
+	private static final TIntArrayList fSent = new TIntArrayList();
 
 	/**
 	 * Number of messages sent by each node which were duplicates.
 	 */
-	private static final int[] fDuplicatesSent = new int[Network.size()];
-
+	private static final TIntArrayList fDuplicatesSent = new TIntArrayList();
 	/**
 	 * Numbers of selection attempts that failed for each node.
 	 */
-	private static final int[] fFailed = new int[Network.size()];
+	private static final TIntArrayList fFailed = new TIntArrayList();
 
 	/**
 	 * {@link IncrementalStats} for latency statistics.
@@ -176,16 +177,38 @@ class UnitExperimentData {
 		fPending = tweet.destinations() - 1;
 		fTime = CommonState.getIntTime();
 		fTweet = tweet;
-		clear();
+
+		clear(tweet);
 	}
 
-	private void clear() {
-		for (int i = 0; i < fReceived.length; i++) {
-			fReceived[i] = 0;
-			fSent[i] = 0;
-			fDuplicatesSent[i] = 0;
-			fFailed[i] = 0;
+	private void clear(Tweet tweet) {
+
+		// Computes the maximum id. Note that sparse
+		// IDs are not supported efficiently.
+		int maxId = 0;
+		int destinations = tweet.destinations();
+		for (int i = 0; i < destinations; i++) {
+			int id = (int) tweet.destination(i).getID();
+			maxId = Math.max(id, maxId);
 		}
+
+		// Creates array of zeros and re-populates
+		// the counter lists. There are probably more
+		// efficient ways of achieving this.
+		int[] allZeros = new int[maxId + 1];
+
+		fReceived.resetQuick();
+		fReceived.add(allZeros);
+
+		fSent.resetQuick();
+		fSent.add(allZeros);
+
+		fFailed.resetQuick();
+		fFailed.add(allZeros);
+
+		fDuplicatesSent.resetQuick();
+		fDuplicatesSent.add(allZeros);
+
 		fLatency.reset();
 	}
 
@@ -228,11 +251,16 @@ class UnitExperimentData {
 	}
 
 	private void count(long sender, long receiver, boolean dup) {
-		fSent[(int) sender]++;
-		fReceived[(int) receiver]++;
+		increment(fSent, sender);
+		increment(fReceived, receiver);
 		if (dup) {
-			fDuplicatesSent[(int) sender]++;
+			increment(fDuplicatesSent, sender);
 		}
+	}
+
+	private void increment(TIntArrayList list, long index) {
+		int intIndex = (int) index;
+		list.setQuick(intIndex, list.getQuick(intIndex) + 1);
 	}
 
 	/**
@@ -240,7 +268,7 @@ class UnitExperimentData {
 	 * peers.
 	 */
 	public void selectionFailed(Node node) {
-		fFailed[(int) node.getID()]++;
+		increment(fFailed, node.getID());
 	}
 
 	/**
@@ -256,8 +284,8 @@ class UnitExperimentData {
 	 */
 	public int sent() {
 		int sent = 0;
-		for (int i = 0; i < fSent.length; i++) {
-			sent += fSent[i];
+		for (int i = 0; i < fSent.size(); i++) {
+			sent += fSent.getQuick(i);
 		}
 		return sent;
 	}
@@ -268,8 +296,8 @@ class UnitExperimentData {
 	 */
 	public int received() {
 		int received = 0;
-		for (int i = 0; i < fReceived.length; i++) {
-			received += fReceived[i];
+		for (int i = 0; i < fReceived.size(); i++) {
+			received += fReceived.getQuick(i);
 		}
 		return received;
 	}
@@ -394,7 +422,7 @@ class UnitExperimentData {
 	public String latencyStatistics() {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(LATENCY_PREFIX);
-		buffer.append(fTweet.profile().getID()); // 1(2) - id
+		buffer.append(((SNNode) fTweet.profile()).getSNId()); // 1(2) - id
 		buffer.append(FIELD_SEPARATOR);
 		buffer.append(fTweet.destinations() - 1); // 2(3) - degree
 		buffer.append(FIELD_SEPARATOR);
@@ -457,19 +485,19 @@ class UnitExperimentData {
 		buffer.append(i);
 		buffer.append(FIELD_SEPARATOR);
 		// 3 - Messages sent by the node.
-		buffer.append(fSent[i]);
+		buffer.append(fSent.getQuick(i));
 		buffer.append(FIELD_SEPARATOR);
 		// 4 - Messages sent by this node which ended up being duplicates.
-		buffer.append(fDuplicatesSent[i]);
+		buffer.append(fDuplicatesSent.getQuick(i));
 		buffer.append(FIELD_SEPARATOR);
 		// 5 - Messages received by the node. Note that this is COUNTING
 		// DUPLICATES.
-		buffer.append(fReceived[i]);
+		buffer.append(fReceived.getQuick(i));
 		buffer.append(FIELD_SEPARATOR);
 		// 6 - Uptime.
 		buffer.append(node.uptime());
 		buffer.append(FIELD_SEPARATOR);
 		// 7 - Selection failures.
-		buffer.append(fFailed[i]);
+		buffer.append(fFailed.getQuick(i));
 	}
 }

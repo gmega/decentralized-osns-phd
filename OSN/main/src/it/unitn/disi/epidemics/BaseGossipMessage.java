@@ -1,7 +1,6 @@
 package it.unitn.disi.epidemics;
 
 import it.unitn.disi.network.SizeConstants;
-import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.MiscUtils;
 import peersim.core.Node;
 

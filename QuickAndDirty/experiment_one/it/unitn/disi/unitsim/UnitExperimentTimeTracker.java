@@ -1,15 +1,13 @@
-package it.unitn.disi.newscasting.experiments;
+package it.unitn.disi.unitsim;
 
 import it.unitn.disi.statistics.EWMAStats;
-import it.unitn.disi.unitsim.ICDExperimentObserver;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
 import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import peersim.util.IncrementalStats;
 
 @StructuredLog(key="PERF", fields={"completed", "experiment_avg", "cycle_avg", "cycles_per_experiment", "time_remaining"})
-public class TimeTracker implements ICDExperimentObserver {
+public class UnitExperimentTimeTracker implements ICDExperimentObserver {
 
 	private final long fExperiments;
 
@@ -29,11 +27,11 @@ public class TimeTracker implements ICDExperimentObserver {
 	
 	private TableWriter fLog;
 
-	public TimeTracker(long experiments, TabularLogManager manager) {
+	public UnitExperimentTimeTracker(long experiments, TabularLogManager manager) {
 		fExperimentTime = new EWMAStats(200);
 		fCycleTime = new EWMAStats(1000);
 		fExperiments = experiments;
-		fLog = manager.get(TimeTracker.class);
+		fLog = manager.get(UnitExperimentTimeTracker.class);
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package it.unitn.disi.epidemics;
 
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.BroadcastBus;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
@@ -281,6 +280,13 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 			tryInitialize(entry.strategy, node);
 		}
 	}
+	
+	// ----------------------------------------------------------------------
+	
+	@Override
+	public boolean isInitialized() {
+		return fOwner != null;
+	}
 
 	// ----------------------------------------------------------------------
 
@@ -303,6 +309,12 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 	// ----------------------------------------------------------------------
 
 	public void nextCycle(Node ourNode, int protocolID) {
+		
+		// Hasn't been configured yet.
+		if (fOwner == null) {
+			return;
+		}
+		
 		/**
 		 * Runs the configured exchange strategies, with the configured peer
 		 * selectors.
@@ -313,52 +325,50 @@ public class ProtocolRunner implements IProtocolSet, IApplicationInterface,
 			if (!runStrategy(entry)) {
 				continue;
 			}
-
-			SNNode peer = selectPeer(ourNode, entry.selector.get(ourNode),
-					entry.filter);
 			
-			performExchange((SNNode) ourNode, peer, entry.strategy);
+			SNNode peer;
+			if (isPush(entry)) {
+				peer = (SNNode) selectPeerPush(ourNode, entry);
+			} else {
+				peer = (SNNode) selectPeer(ourNode, entry);
+			}
+			
+			// Null peer means no game.
+			if (peer == null) {
+				return;
+			}
+
+			// Performs the actual exchanges.
+			entry.strategy.doExchange((SNNode) ourNode, peer);
 		}
 	}
 
 	// ----------------------------------------------------------------------
 
-	private SNNode selectPeer(Node ourNode, IPeerSelector selector,
-			BinaryCompositeFilter filter) {
-
+	private SNNode selectPeer(Node ourNode, StrategyEntry entry) {
+		IPeerSelector selector = entry.selector.get(ourNode);
 		// Selects a peer using the preconfigured filter.
-		Node peer;
-		if (selector.supportsFiltering()) {
-			peer = selector.selectPeer(ourNode, filter);
-		} else {
-			peer = selector.selectPeer(ourNode);
-		}
+		Node peer = selector.selectPeer(ourNode, entry.filter);
 		return (SNNode) peer;
 	}
-
+	
+	// ----------------------------------------------------------------------
+	
+	private SNNode selectPeerPush(Node ourNode, StrategyEntry entry) {
+		IPushContentExchangeStrategy pushStrategy = (IPushContentExchangeStrategy) entry.strategy;
+		IGossipMessage msg = pushStrategy.scheduleNext(ourNode, entry.filter);
+		if (msg == null) {
+			return null;
+		}
+		
+		IPushPeerSelector selector = (IPushPeerSelector) entry.selector.get(ourNode);
+		return (SNNode) selector.selectPeer(ourNode, entry.filter, msg);
+	}
+	
 	// ----------------------------------------------------------------------
 
-	private void performExchange(SNNode ourNode, SNNode peer,
-			IContentExchangeStrategy strategy) {
-		// Null peer means no game.
-		if (peer == null) {
-			return;
-		}
-
-		// Gets the throttling. It cannot be zero, as zero throttling
-		// means the peer shouldn't have been selected in the first place.
-		int runs = strategy.throttling(peer);
-		if (runs <= 0) {
-			throw new IllegalStateException(
-					"Negative or zero throttling are not allowed.");
-		}
-
-		// Performs the actual exchanges.
-		for (int j = 0; j < runs; j++) {
-			if (!strategy.doExchange(ourNode, peer)) {
-				break;
-			}
-		}
+	private boolean isPush(StrategyEntry entry) {
+		return entry.strategy instanceof IPushContentExchangeStrategy; 
 	}
 
 	// ----------------------------------------------------------------------

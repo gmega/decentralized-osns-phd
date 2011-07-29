@@ -1,14 +1,17 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
+import it.unitn.disi.unitsim.ICDExperimentObserver;
+import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.TableReader;
+
 import java.io.IOException;
 
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.newscasting.experiments.IExperimentObserver;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.TableReader;
 
-public abstract class ParameterUpdater implements IExperimentObserver {
+public abstract class ParameterUpdater implements ICDExperimentObserver {
 
 	private IReference<Linkable> fNeighborhood;
 
@@ -21,7 +24,9 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 	}
 
 	@Override
-	public void experimentStart(Node root) {
+	public void experimentStart(ICDUnitExperiment exp) {
+		NeighborhoodExperiment nexp = (NeighborhoodExperiment) exp;
+		Node root = nexp.rootNode();
 		nextParameterSet();		
 		long id = Long.parseLong(fReader.get("id"));
 
@@ -44,11 +49,11 @@ public abstract class ParameterUpdater implements IExperimentObserver {
 	}
 
 	@Override
-	public void experimentEnd(Node root) {
+	public void experimentEnd(ICDUnitExperiment exp) {
 	}
 
 	@Override
-	public void experimentCycled(Node root) {
+	public void experimentCycled(ICDUnitExperiment exp) {
 	}
 
 	protected abstract void update(Node node, TableReader reader);

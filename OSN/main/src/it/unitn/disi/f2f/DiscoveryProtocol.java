@@ -3,9 +3,9 @@ package it.unitn.disi.f2f;
 import it.unitn.disi.analysis.online.NodeStatistic;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IMessageVisibility;
 import it.unitn.disi.epidemics.MulticastService;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
-import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableWriter;
@@ -428,6 +428,12 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 				(Linkable) node.getProtocol(fOneHop));
 	}
 
+	// ------------------------------------------------------------------------
+	
+	public boolean isInitialized() {
+		return fNode != null;
+	}
+	
 	// ------------------------------------------------------------------------
 
 	@Override

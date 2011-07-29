@@ -1,6 +1,7 @@
 package it.unitn.disi.newscasting;
 
 import it.unitn.disi.epidemics.BaseGossipMessage;
+import it.unitn.disi.epidemics.IMessageVisibility;
 import peersim.core.Node;
 
 //----------------------------------------------------------------------

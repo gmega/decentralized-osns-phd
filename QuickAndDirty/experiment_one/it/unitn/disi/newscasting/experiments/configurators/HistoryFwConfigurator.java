@@ -2,12 +2,10 @@ package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.experiments.ComponentSelector;
-import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
-import it.unitn.disi.newscasting.experiments.IExperimentObserver;
 import it.unitn.disi.newscasting.experiments.OneThanTheOther;
 import it.unitn.disi.newscasting.experiments.PredicateHeuristic;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
@@ -15,15 +13,15 @@ import it.unitn.disi.newscasting.internal.forwarding.BitsetHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
-import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
+import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
+import it.unitn.disi.unitsim.ICDExperimentObserver;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
-
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
@@ -87,7 +85,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		SocialNewscastingService app = (SocialNewscastingService) set;
 		setApplicationReference(app.pid());
 		setSocialNetworkReference(app.socialNetworkId());
-		super.configure(set, resolver, prefix);
+		super.configure0(set, resolver, prefix);
 	}
 
 	// ----------------------------------------------------------------------
@@ -197,7 +195,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 	protected void registerUpdaters(String prefix, TableReader reader) {
 		CompositeHeuristic type = CompositeHeuristic.valueOf(fResolver
 				.getString(prefix, PAR_TYPE));
-		IExperimentObserver updater = null;
+		ICDExperimentObserver updater = null;
 		switch (type) {
 
 		case SIMPLE:
@@ -215,7 +213,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 		}
 
 		if (updater != null) {
-			DisseminationExperimentGovernor.addExperimentObserver(updater);
+			fGovernor.addExperimentObserver(updater);
 		}
 	}
 
@@ -268,7 +266,7 @@ public class HistoryFwConfigurator extends AbstractUEConfigurator {
 			IPeerSelector delegate, String prefix) {
 		return new PredicateHeuristic(new ComponentSelector(prefix, fResolver,
 				new FallThroughReference<IPeerSelector>(delegate), app),
-				delegate);
+				delegate, fGovernor);
 	}
 
 	// ----------------------------------------------------------------------
@@ -371,19 +369,4 @@ class OneThanTheOtherUpdater extends SelectorUpdater {
 	}
 }
 
-/**
- * Special reference type for the {@link DisseminationExperimentGovernor} which
- * allows us to work around the fact that the singleton will be instantiated by
- * PeerSim after its dependencies.
- * 
- * @author giuliano
- */
-class GovernorSingletonReference implements
-		IReference<DisseminationExperimentGovernor> {
 
-	@Override
-	public DisseminationExperimentGovernor get(Node owner) {
-		return DisseminationExperimentGovernor.singletonInstance();
-	}
-
-}

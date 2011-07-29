@@ -1,13 +1,13 @@
 package it.unitn.disi.newscasting.experiments;
 
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.core.Node;
-import peersim.core.Protocol;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.core.Node;
+import peersim.core.Protocol;
 
 @AutoConfig
 public class ComponentSizeRanking implements IUtilityFunction<Node, Integer>, Protocol {

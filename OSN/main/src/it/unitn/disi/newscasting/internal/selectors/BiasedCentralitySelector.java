@@ -1,12 +1,16 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IPeerSelector;
+import it.unitn.disi.epidemics.IPushPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.util.RouletteWheel;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MutableSimplePair;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.peersim.SNNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +31,7 @@ import peersim.core.Protocol;
  * @author giuliano
  */
 @AutoConfig
-public class BiasedCentralitySelector implements IPeerSelector, Protocol {
+public class BiasedCentralitySelector implements IPushPeerSelector, Protocol {
 
 	private static boolean fPrintOnce = true;
 
@@ -66,15 +70,16 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 		}
 	}
 
-	public Node selectPeer(Node source) {
-		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
+	public Node selectPeer(Node source, ISelectionFilter filter) {
+		return selectPeer(source, filter, null);
 	}
 
-	public Node selectPeer(Node source, ISelectionFilter filter) {
+	public Node selectPeer(Node source, ISelectionFilter filter,
+			IGossipMessage update) {
 		Linkable neighborhood = (Linkable) fLinkable.get(source);
 
 		Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> result = makeWheel(
-				source, neighborhood, filter);
+				source, neighborhood, filter, update);
 		// If we have a null, means the filter vetoed all neighbors.
 		if (result == null) {
 			return null;
@@ -86,13 +91,15 @@ public class BiasedCentralitySelector implements IPeerSelector, Protocol {
 				neighborhood.getNeighbor(friends.get(wheel.spin()).b));
 	}
 
-	public boolean supportsFiltering() {
-		return true;
-	}
-
 	private Pair<RouletteWheel, ArrayList<MutableSimplePair<Integer, Integer>>> makeWheel(
-			Node source, Linkable neighborhood, ISelectionFilter filter) {
+			Node node, Linkable neighborhood, ISelectionFilter filter,
+			IGossipMessage update) {
 		ArrayList<MutableSimplePair<Integer, Integer>> fof = new ArrayList<MutableSimplePair<Integer, Integer>>();
+
+		// XXX not good, need to generalize this concept of "anchor node" into
+		// the IGossipMessage interface somehow.
+		Node source = (update == null) ? node : ((Tweet) update).profile();
+
 		IUtilityFunction<Node, Node> ranking = fRanking.get(source);
 		// Computes the centrality metric.
 		int total = 0;

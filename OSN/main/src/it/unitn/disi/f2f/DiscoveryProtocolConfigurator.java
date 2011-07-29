@@ -1,11 +1,11 @@
 package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.CachingConfigurator;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.epidemics.ProtocolRunner;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;

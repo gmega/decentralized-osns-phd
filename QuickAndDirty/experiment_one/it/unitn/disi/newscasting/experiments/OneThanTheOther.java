@@ -2,8 +2,8 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -54,11 +54,6 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 	}
 
 	@Override
-	public Node selectPeer(Node source) {
-		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
-	}
-
-	@Override
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		int idx = (int) source.getID();
 
@@ -73,11 +68,6 @@ public class OneThanTheOther implements IPeerSelector, IEventObserver {
 		}
 
 		return selected;
-	}
-
-	@Override
-	public boolean supportsFiltering() {
-		return true;
 	}
 
 	@Override

@@ -1,8 +1,8 @@
 package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.BaseGossipMessage;
+import it.unitn.disi.epidemics.IMessageVisibility;
 import it.unitn.disi.network.SizeConstants;
-import it.unitn.disi.newscasting.IMessageVisibility;
 import it.unitn.disi.utils.peersim.BitSetNeighborhood;
 
 import java.util.Iterator;

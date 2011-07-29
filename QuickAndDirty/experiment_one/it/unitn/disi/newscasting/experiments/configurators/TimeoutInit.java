@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.epidemics.ProtocolRunner;
-import it.unitn.disi.newscasting.experiments.churn.TimeoutController;
 import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;

@@ -1,5 +1,14 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.unitsim.ICDExperimentObserver;
+import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import it.unitn.disi.utils.SparseMultiCounter;
+import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.logging.StructuredLog;
+import it.unitn.disi.utils.logging.TabularLogManager;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -8,17 +17,11 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.epidemics.IApplicationInterface;
-import it.unitn.disi.newscasting.experiments.IExperimentObserver;
-import it.unitn.disi.utils.SparseMultiCounter;
-import it.unitn.disi.utils.TableWriter;
-import it.unitn.disi.utils.logging.StructuredLog;
-import it.unitn.disi.utils.logging.TabularLogManager;
 
 @AutoConfig
 @StructuredLog(key = "COV", fields = { "id", "degree", "direct", "indirect",
 		"unseen", "mincover", "maxcover", "avgcover" })
-public class CoverageAnalyzer implements IExperimentObserver {
+public class CoverageAnalyzer implements ICDExperimentObserver {
 
 	@Attribute("application")
 	private int fApplication;
@@ -34,15 +37,18 @@ public class CoverageAnalyzer implements IExperimentObserver {
 	}
 
 	@Override
-	public void experimentStart(Node root) {
+	public void experimentStart(ICDUnitExperiment exp) {
 	}
 
 	@Override
-	public void experimentCycled(Node root) {
+	public void experimentCycled(ICDUnitExperiment exp) {
 	}
 
 	@Override
-	public void experimentEnd(Node root) {
+	public void experimentEnd(ICDUnitExperiment exp) {
+		NeighborhoodExperiment nexp = (NeighborhoodExperiment) exp;
+		Node root = nexp.rootNode();
+		
 		SparseMultiCounter<Node> twoHopSeen = new SparseMultiCounter<Node>();
 		Set<Node> oneHopSeen = new HashSet<Node>();
 

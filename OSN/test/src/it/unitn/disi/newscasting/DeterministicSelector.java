@@ -1,5 +1,8 @@
 package it.unitn.disi.newscasting;
 
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.IPeerSelector;
+import it.unitn.disi.epidemics.IPushPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 
@@ -21,7 +24,7 @@ import peersim.core.Protocol;
  * @author giuliano
  */
 @AutoConfig
-public class DeterministicSelector implements IPeerSelector, Protocol {
+public class DeterministicSelector implements IPushPeerSelector, Protocol {
 
 	/**
 	 * Causes the selector to print each selection to the std. error output.
@@ -52,6 +55,12 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 
 	public Node selectPeer(Node source) {
 		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
+	}
+	
+	@Override
+	public Node selectPeer(Node source, ISelectionFilter filter,
+			IGossipMessage message) {
+		return selectPeer(source, filter);
 	}
 
 	public Node selectPeer(Node source, ISelectionFilter filter) {
@@ -145,5 +154,6 @@ public class DeterministicSelector implements IPeerSelector, Protocol {
 		// TODO Auto-generated method stub
 		
 	}
+
 }
 

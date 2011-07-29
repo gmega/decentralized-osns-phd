@@ -2,13 +2,13 @@ package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.f2f.CoverageAnalyzer;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
+import it.unitn.disi.unitsim.CDGovernor;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
@@ -44,7 +44,11 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 		}
 		CoverageAnalyzer analyzer = ObjectCreator.createInstance(
 				CoverageAnalyzer.class, prefix + ".ca", fResolver);
-		DisseminationExperimentGovernor.addExperimentObserver(analyzer);
+				
+		CDGovernor governor = (CDGovernor) resolver.getObject(
+				IResolver.NULL_KEY, CDGovernor.class.getSimpleName());
+		
+		governor.addExperimentObserver(analyzer);
 	}
 
 	// ----------------------------------------------------------------------

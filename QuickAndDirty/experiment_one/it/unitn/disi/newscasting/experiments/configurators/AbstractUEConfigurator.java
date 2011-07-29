@@ -4,16 +4,16 @@ import it.unitn.disi.epidemics.CachingConfigurator;
 import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.SelectionFailureTracker;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
 import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
+import it.unitn.disi.unitsim.CDGovernor;
 import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 
@@ -46,6 +46,8 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 	public static final String PAR_TRACK_SELECT_FAILURES = "selection_failures";
 
 	// ----------------------------------------------------------------------
+	
+	protected static CDGovernor fGovernor;
 
 	public AbstractUEConfigurator() {
 	}
@@ -56,14 +58,16 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 		// And the statistics printer.
 		StatisticsPrinter printer = ObjectCreator.createInstance(
 				StatisticsPrinter.class, prefix, resolver);
-		DisseminationExperimentGovernor.addExperimentObserver(printer);
+		
+		fGovernor = (CDGovernor) resolver.getObject(
+				IResolver.NULL_KEY, CDGovernor.class.getSimpleName());
+		
+		fGovernor.addExperimentObserver(printer);
 
 		// And the statistics manager. The printer has to come BEFORE
 		// the manager, or the experiment data will be wiped out by the
 		// time we have the opportunity to print something.
-		DisseminationExperimentGovernor
-				.addExperimentObserver(ExperimentStatisticsManager
-						.getInstance());
+		fGovernor.addExperimentObserver(ExperimentStatisticsManager.getInstance());
 
 		// And the parameter updaters, if any.
 		TableReader reader = tableReader(prefix);

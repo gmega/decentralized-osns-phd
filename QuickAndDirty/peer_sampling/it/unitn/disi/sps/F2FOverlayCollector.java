@@ -1,9 +1,9 @@
 package it.unitn.disi.sps;
 
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
+import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.collections.StaticVector;
@@ -28,7 +28,8 @@ import peersim.core.Node;
  * @author giuliano
  */
 @AutoConfig
-public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable {
+public class F2FOverlayCollector implements CDProtocol, Linkable,
+		IInitializable {
 
 	private static final StaticVector<Integer> fIndexes = new StaticVector<Integer>();
 
@@ -62,7 +63,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 	@Attribute(value = "log_hits")
 	boolean fLogHits;
-	
+
 	private Layer fSelection;
 
 	private Layer fExchange;
@@ -70,7 +71,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	private ProactiveSelection fSelectionMode;
 
 	private UtilityFunction fUtilityFunction;
-	
+
 	private int fSentRounds = 0;
 
 	// ----------------------------------------------------------------------
@@ -150,8 +151,14 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 		Linkable statik = statik(node);
 		init(statik);
 	}
-	
-	public void reinitialize() { }
+
+	@Override
+	public boolean isInitialized() {
+		return fNode != null;
+	}
+
+	public void reinitialize() {
+	}
 
 	@Override
 	public void nextCycle(Node node, int protocolID) {
@@ -189,14 +196,15 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 
 	private void proactiveQuery(Node ourNode) {
 		/** Picks a peer. **/
-		Node neighbor = fTabooFilter == null ? fSelector.selectPeer(ourNode)
-				: fSelector.selectPeer(ourNode, fTabooFilter);
+		Node neighbor = fTabooFilter == null ? fSelector.selectPeer(ourNode,
+				ISelectionFilter.ALWAYS_TRUE_FILTER) : fSelector.selectPeer(ourNode,
+				fTabooFilter);
 
 		if (neighbor == null) {
 			return;
 		}
 
-		int received = 0;		
+		int received = 0;
 		Linkable ourSn = statik(ourNode);
 		fIndexes.resize(ourSn.degree(), false);
 		// If he does, "contacts" the neighbor and queries for a useful IP.
@@ -206,7 +214,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 			received += collectorCollect(ourNode, neighbor, fIndexes);
 			markSeen(fIndexes, ourNode, ourSn);
 			fIndexes.clear();
-		
+
 		case PEERSAMPLING:
 			received += linkableCollect(ourSn, sampled(neighbor), fIndexes);
 			markSeen(fIndexes, ourNode, ourSn);
@@ -353,7 +361,7 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	public int proactiveHits() {
 		return fProactiveHits;
 	}
-	
+
 	// ----------------------------------------------------------------------
 
 	private void resetCounters() {
@@ -514,21 +522,12 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 		}
 
 		@Override
-		public boolean supportsFiltering() {
-			return true;
-		}
-
-		@Override
-		public Node selectPeer(Node source) {
-			return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
-		}
-
-		@Override
 		public void clear(Node source) {
 		}
 	}
 
-	private class IntersectingUnseenUtility implements IUtilityFunction<Node, Node> {
+	private class IntersectingUnseenUtility implements
+			IUtilityFunction<Node, Node> {
 
 		@Override
 		public int utility(Node base, Node target) {
@@ -554,7 +553,8 @@ public class F2FOverlayCollector implements CDProtocol, Linkable, IInitializable
 	 * 
 	 * @author giuliano
 	 */
-	private class OracleMaximumGainUtility implements IUtilityFunction<Node, Node> {
+	private class OracleMaximumGainUtility implements
+			IUtilityFunction<Node, Node> {
 
 		@Override
 		public int utility(Node base, Node target) {

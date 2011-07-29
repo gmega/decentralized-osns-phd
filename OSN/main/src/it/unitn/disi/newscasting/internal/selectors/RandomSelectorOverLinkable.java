@@ -1,7 +1,7 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import peersim.config.IResolver;
@@ -49,17 +49,6 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 	
 	// ----------------------------------------------------------------------
 	// IPeerSelector interface.
-	// ----------------------------------------------------------------------
-	public boolean supportsFiltering() {
-		return true;
-	}
-	
-	// ----------------------------------------------------------------------
-	
-	public Node selectPeer(Node source) {
-		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
-	}
-	
 	// ----------------------------------------------------------------------
 	
 	public Node selectPeer(Node source, ISelectionFilter filter) {

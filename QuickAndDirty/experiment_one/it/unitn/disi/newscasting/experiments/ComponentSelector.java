@@ -1,10 +1,10 @@
 package it.unitn.disi.newscasting.experiments;
 
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
@@ -156,16 +156,6 @@ public class ComponentSelector implements IPeerSelector, ISelectionFilter {
 	@Override
 	public void clear(Node source) {
 		fRankedComponents = null;
-	}
-
-	@Override
-	public Node selectPeer(Node source) {
-		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
-	}
-
-	@Override
-	public boolean supportsFiltering() {
-		return true;
 	}
 
 	private int[] rankedComponents(Node source) {

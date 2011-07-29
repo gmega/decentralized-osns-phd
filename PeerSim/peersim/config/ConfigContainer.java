@@ -49,7 +49,7 @@ public class ConfigContainer {
 
 	/** Symbolic constant for extended debug */
 	private static final int DEBUG_CONTEXT = 2;
-	
+
 	// ========================== fields =================================
 	// ===================================================================
 
@@ -81,7 +81,7 @@ public class ConfigContainer {
 	private boolean check = false;
 
 	private IResolver resolver;
-	
+
 	private PluginContainer fPluginContainer;
 
 	// =================== initialization ================================
@@ -562,7 +562,7 @@ public class ConfigContainer {
 			throw new MissingParameterException(name);
 			// "\nPossibly incorrect property: " + getSimilarProperty(name));
 		}
-		
+
 		debug(name, classname);
 
 		Class c = null;
@@ -678,6 +678,13 @@ public class ConfigContainer {
 	 * The actual method implementing getInstance().
 	 */
 	private Object getInstanceInternal(String name) {
+		// If starts with dereferencing operator, returns something
+		// already configured.
+		String value = config.getProperty(name);
+		if (value.startsWith("*")) {
+			return resolver.getObject(IResolver.NULL_KEY, value.substring(1));
+		}
+
 		Class c = getClass(name);
 		if (c == null)
 			return null;
@@ -986,62 +993,64 @@ public class ConfigContainer {
 		IResolver asResolver = resolver.asResolver();
 		fPluginContainer = configureUserPlugins(asResolver);
 		resolver.addResolver(fPluginContainer);
-		
+
 		return asResolver;
 	}
-	
+
 	// -------------------------------------------------------------------
-	
+
 	public PluginContainer getPluginContainer() {
 		return fPluginContainer;
 	}
-	
+
 	public IResolver getResolver() {
 		return resolver;
 	}
-	
+
 	private static final String PAR_DEPS = "depends";
-		
+
 	private PluginContainer configureUserPlugins(IResolver resolver) {
-		String [] plugins = getNames(Configuration.PAR_PLUGIN);
-		IPluginDescriptor [] descriptors = new IPluginDescriptor[plugins.length];
-		
+		String[] plugins = getNames(Configuration.PAR_PLUGIN);
+		IPluginDescriptor[] descriptors = new IPluginDescriptor[plugins.length];
+
 		for (int i = 0; i < plugins.length; i++) {
 			final String prefix = plugins[i];
-			final String pid = prefix.substring(Configuration.PAR_PLUGIN.length() + 1);
-			
+			final String pid = prefix.substring(Configuration.PAR_PLUGIN
+					.length() + 1);
+
 			String depString = config.getProperty(prefix + "." + PAR_DEPS);
-			final String [] depArray = depString == null ? new String[] {} : depString.split(" ");
-			
+			final String[] depArray = depString == null ? new String[] {}
+					: depString.split(" ");
+
 			final Class<?> klass = getClass(plugins[i]);
-			
+
 			descriptors[i] = new IPluginDescriptor() {
 				@Override
 				public Class<?> pluginClass() {
 					return klass;
 				}
-				
+
 				@Override
 				public String id() {
 					return pid;
 				}
-				
+
 				@Override
 				public String[] depends() {
 					return depArray;
 				}
-				
+
 				@Override
 				public String configurationPrefix() {
 					return prefix;
 				}
 			};
 		}
-		
+
 		PluginContainer container = new PluginContainer(resolver, descriptors);
 		return container;
 	}
-	
+
 	// -------------------------------------------------------------------
 
 	private void manageDefault(String name, Object def, RuntimeException e) {

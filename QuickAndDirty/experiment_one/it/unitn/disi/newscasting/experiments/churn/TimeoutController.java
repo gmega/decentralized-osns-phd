@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
+import it.unitn.disi.unitsim.CDGovernor;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -16,8 +17,9 @@ public class TimeoutController extends AbstractTimeoutController implements Prot
 	public TimeoutController(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("timeout") int timeout,
-			@Attribute("application") int appid) {
-		super(prefix, manager, timeout, appid);
+			@Attribute("application") int appid,
+			@Attribute("CDGovernor") CDGovernor governor) {
+		super(prefix, manager, timeout, appid, governor);
 	}
 
 	public void reset() {

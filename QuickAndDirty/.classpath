@@ -12,5 +12,6 @@
 	<classpathentry kind="lib" path="/Utilities/lib/args4j-2.0.9.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="/Utilities/lib/trove-3.0.0rc2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

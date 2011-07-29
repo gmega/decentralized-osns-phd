@@ -109,7 +109,7 @@ public class PluginContainer extends NullResolver {
 
 	private void lifecycleMessage(String message, IPluginDescriptor descriptor) {
 		System.err.println(PluginContainer.class.getSimpleName() + ": "
-				+ message + descriptor.id() + " ("
+				+ message + " " + descriptor.id() + " ("
 				+ descriptor.pluginClass().getName() + ").");
 	}
 

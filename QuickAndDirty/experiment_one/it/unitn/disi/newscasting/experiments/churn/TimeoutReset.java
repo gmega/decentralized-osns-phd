@@ -1,11 +1,11 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
-import peersim.config.Attribute;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
+import peersim.config.Attribute;
 
 public class TimeoutReset implements IEventObserver {
 	

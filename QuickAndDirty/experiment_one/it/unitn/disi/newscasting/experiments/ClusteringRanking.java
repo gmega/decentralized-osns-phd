@@ -1,7 +1,5 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.ArrayList;
-
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
@@ -9,6 +7,9 @@ import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.util.ArrayList;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Node;

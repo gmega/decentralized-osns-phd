@@ -1,16 +1,8 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import junit.framework.Assert;
-
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
-import it.unitn.disi.newscasting.IPeerSelector;
-import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
@@ -19,6 +11,13 @@ import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -59,10 +58,12 @@ public class ComponentSelectorTest extends PeerSimTest {
 						ranking), false, false, null);
 
 		for (int i = 0; i < service.components(); i++) {
-			Assert.assertNotNull(slktor.selectPeer(root));
+			Assert.assertNotNull(slktor.selectPeer(root,
+					ISelectionFilter.ALWAYS_TRUE_FILTER));
 		}
 
-		Assert.assertNull(slktor.selectPeer(root));
+		Assert.assertNull(slktor.selectPeer(root,
+				ISelectionFilter.ALWAYS_TRUE_FILTER));
 	}
 
 	class ComponentCheckingSelector implements IPeerSelector {
@@ -156,16 +157,6 @@ public class ComponentSelectorTest extends PeerSimTest {
 						filter.canSelect(source,
 								fRegistry.getNode((long) member)));
 			}
-		}
-
-		@Override
-		public Node selectPeer(Node source) {
-			return this.selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
-		}
-
-		@Override
-		public boolean supportsFiltering() {
-			return true;
 		}
 
 		@Override

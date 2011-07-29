@@ -1,17 +1,16 @@
 package it.unitn.disi.newscasting.experiments;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+
+import java.util.Arrays;
+import java.util.Comparator;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

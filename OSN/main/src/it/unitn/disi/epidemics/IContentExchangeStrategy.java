@@ -1,6 +1,5 @@
 package it.unitn.disi.epidemics;
 
-import it.unitn.disi.newscasting.ICachingObject;
 import it.unitn.disi.utils.peersim.SNNode;
 import peersim.core.Node;
 
@@ -13,7 +12,7 @@ import peersim.core.Node;
  * @author giuliano
  */
 public interface IContentExchangeStrategy extends ICachingObject {
-	
+
 	/**
 	 * Performs the exchange.
 	 * 
@@ -22,36 +21,22 @@ public interface IContentExchangeStrategy extends ICachingObject {
 	 * @param peer
 	 *            the peer selected for exchange.
 	 * 
-	 * @return <code>true</code> if the exchange indeed happen, or
-	 *         <code>false</code> otherwise. Exchanges may fail to happen for a
-	 *         number of reasons, for example if the selected peer refuses a
-	 *         connection.
+	 * @return <code>true</code> if the exchange was successful, or
+	 *         <code>false</code> otherwise.
 	 * 
 	 */
 	public boolean doExchange(SNNode source, SNNode peer);
-	
-	/**
-	 * @return an optimization hint which might allow the caller to speed up
-	 *         diffusion at a low cost. The meaning is implementation-specific,
-	 *         but it is a hint as to how many times the
-	 *         {@link #doExchange(Node, Node)} method should be called
-	 *         per-round.<BR>
-	 *         <BR>
-	 *         If the implementor does not care about throttling, then it should
-	 *         return 1.
-	 */
-	public int throttling(SNNode node);
-	
+
 	/**
 	 * @return the activity status for this protocol.
 	 * 
 	 * @see ActivityStatus
 	 */
 	public ActivityStatus status();
-	
+
 	enum ActivityStatus {
 		/**
-		 * Means the protocol still has messages to send. 
+		 * Means the protocol still has messages to send.
 		 */
 		ACTIVE,
 
@@ -61,7 +46,7 @@ public interface IContentExchangeStrategy extends ICachingObject {
 		 * in any messages being exchanged.
 		 */
 		QUIESCENT,
-		
+
 		/**
 		 * Means that the protocol is non-terminating.
 		 */

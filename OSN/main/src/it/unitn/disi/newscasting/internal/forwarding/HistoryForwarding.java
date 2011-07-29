@@ -5,6 +5,7 @@ import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.epidemics.IPushContentExchangeStrategy;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.utils.peersim.SNNode;
 
@@ -26,7 +27,7 @@ import com.google.common.collect.HashMultimap;
  * 
  * @author giuliano
  */
-public class HistoryForwarding implements IContentExchangeStrategy,
+public class HistoryForwarding implements IPushContentExchangeStrategy,
 		ISelectionFilter, IEventObserver {
 
 	// ----------------------------------------------------------------------
@@ -53,6 +54,8 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	 * Number of messages to be sent to a peer, per round.
 	 */
 	protected final int fChunkSize;
+
+	private IGossipMessage fScheduled;
 
 	private ActivityStatus fStatus;
 
@@ -87,32 +90,54 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 			throw new IllegalArgumentException("Illegal peer selected.");
 		}
 
+		if (fScheduled == null) {
+			throw new IllegalStateException("Update hasn't been scheduled.");
+		}
+
+		if (!fwTableDelete(peer, fScheduled)) {
+			throw new IllegalStateException("Scheduled message disappered "
+					+ "before it could be sent (concurrent modification?).");
+		}
+		
 		/** Picks a message to send to the peer. **/
-		IGossipMessage message = removeAny(peer);
-		Object history = historyGetCreate(source, message);
+		Object history = historyGetCreate(source, fScheduled);
 
 		/** Sends message + history to the peer. **/
 		Object feedback = diffusionObject(peer).receiveMessage(source, peer,
-				message, history);
+				fScheduled, history);
 
 		// Incorporates the receiver into our history.
 		historyAdd(history, peer);
 
 		/** Incorporates feedback information, if there was feedback. */
 		if (feedback != null) {
-			mergeHistories(source, peer, message, history, feedback);
+			mergeHistories(source, peer, fScheduled, history, feedback);
 		}
+		
+		// Clears the scheduled message.
+		fScheduled = null;
 
 		return true;
 	}
+	
+	// ----------------------------------------------------------------------
 
-	public int throttling(SNNode target) {
-		Set<IGossipMessage> pendings = fPending.get(target);
-		if (pendings == null) {
-			return 0;
+	@Override
+	public IGossipMessage scheduleNext(Node source, ISelectionFilter filter) {
+		// This algorithm basically tries to find any update for which there
+		// are destinations allowed by the selection filter. Smarter algorithms
+		// might try to find the peer with the most pending messages.
+		IGossipMessage scheduled = null;
+		Set<Node> candidates = fPending.keySet();
+		for (Node candidate : candidates) {
+			if (filter.canSelect(source, candidate)) {
+				scheduled = fPending.get(candidate).iterator().next();
+				break;
+			}
 		}
-
-		return Math.min(fChunkSize, pendings.size());
+		
+		fScheduled = scheduled;
+		return scheduled;
 	}
 
 	// ----------------------------------------------------------------------
@@ -324,17 +349,6 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 	// Read/Write handling of the forwarding table.
 	// ----------------------------------------------------------------------
 
-	private IGossipMessage removeAny(Node peer) {
-		Set<IGossipMessage> pendings = fPending.get(peer);
-		Iterator<IGossipMessage> it = pendings.iterator();
-		IGossipMessage toReturn = it.next();
-		it.remove();
-		recomputeStatus();
-		return toReturn;
-	}
-
-	// ----------------------------------------------------------------------
-
 	private void fwTableAdd(Node destination, IGossipMessage message) {
 		fPending.put(destination, message);
 		recomputeStatus();
@@ -342,9 +356,10 @@ public class HistoryForwarding implements IContentExchangeStrategy,
 
 	// ----------------------------------------------------------------------
 
-	private void fwTableDelete(Node destination, IGossipMessage message) {
-		fPending.remove(destination, message);
+	private boolean fwTableDelete(Node destination, IGossipMessage message) {
+		boolean result = fPending.remove(destination, message);
 		recomputeStatus();
+		return result;
 	}
 
 	// ----------------------------------------------------------------------

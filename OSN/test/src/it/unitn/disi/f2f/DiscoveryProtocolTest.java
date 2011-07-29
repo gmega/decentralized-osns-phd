@@ -9,10 +9,10 @@ import junit.framework.Assert;
 
 import it.unitn.disi.NullConfigurator;
 import it.unitn.disi.analysis.online.NodeStatistic;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.MulticastService;
 import it.unitn.disi.newscasting.DeterministicSelector;
-import it.unitn.disi.newscasting.IPeerSelector;
 import it.unitn.disi.newscasting.internal.SimpleEventStorage;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.test.framework.FakeCycleEngine;

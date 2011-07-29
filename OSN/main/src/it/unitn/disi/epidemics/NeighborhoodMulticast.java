@@ -1,6 +1,5 @@
 package it.unitn.disi.epidemics;
 
-import it.unitn.disi.newscasting.IMessageVisibility;
 import peersim.config.IResolver;
 import peersim.core.Linkable;
 import peersim.core.Node;

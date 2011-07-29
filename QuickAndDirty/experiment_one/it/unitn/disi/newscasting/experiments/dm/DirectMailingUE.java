@@ -1,5 +1,15 @@
 package it.unitn.disi.newscasting.experiments.dm;
 
+import it.unitn.disi.epidemics.IApplicationInterface;
+import it.unitn.disi.epidemics.IContentExchangeStrategy;
+import it.unitn.disi.epidemics.IEventObserver;
+import it.unitn.disi.epidemics.IGossipMessage;
+import it.unitn.disi.epidemics.ISelectionFilter;
+import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.peersim.IInitializable;
+import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.peersim.SNNode;
+
 import java.util.BitSet;
 import java.util.NoSuchElementException;
 
@@ -7,16 +17,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.epidemics.IApplicationInterface;
-import it.unitn.disi.epidemics.IContentExchangeStrategy;
-import it.unitn.disi.epidemics.IEventObserver;
-import it.unitn.disi.epidemics.IGossipMessage;
-import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.peersim.IInitializable;
-import it.unitn.disi.utils.peersim.ProtocolReference;
-import it.unitn.disi.utils.peersim.SNNode;
 
 /**
  * Simple implementation of <a href="">Direct Mailing</a>, suitable only for the
@@ -64,11 +64,6 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 			clear(source);
 		}
 		return true;
-	}
-
-	@Override
-	public int throttling(SNNode node) {
-		return 1;
 	}
 
 	@Override
@@ -135,6 +130,11 @@ public class DirectMailingUE implements IContentExchangeStrategy,
 	public void initialize(Node node) {
 		check(node);
 		fRoot = node;
+	}
+	
+	@Override
+	public boolean isInitialized() {
+		return fRoot != null;
 	}
 
 	@Override

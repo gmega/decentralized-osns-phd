@@ -1,4 +1,4 @@
-package it.unitn.disi.newscasting;
+package it.unitn.disi.epidemics;
 
 import peersim.core.Node;
 

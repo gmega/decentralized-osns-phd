@@ -1,15 +1,9 @@
 package it.unitn.disi.newscasting.experiments.churn;
 
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.config.Configuration;
-import peersim.core.CommonState;
-import peersim.core.Node;
-import peersim.edsim.EDProtocol;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
-import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IContentExchangeStrategy.ActivityStatus;
-import it.unitn.disi.newscasting.experiments.DisseminationExperimentGovernor;
+import it.unitn.disi.epidemics.IProtocolSet;
+import it.unitn.disi.unitsim.CDGovernor;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.TableWriter;
@@ -17,6 +11,12 @@ import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.config.Configuration;
+import peersim.core.CommonState;
+import peersim.core.Node;
+import peersim.edsim.EDProtocol;
 
 /**
  * Monitoring protocol which halts dissemination after a certain time amount has
@@ -37,16 +37,20 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 	protected final int fSelfPid;
 	
 	private final TableWriter fLog;
+	
+	private final CDGovernor fGovernor;
 
 	public AbstractTimeoutController(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("timeout") int timeout,
-			@Attribute("application") int appid) {
+			@Attribute("application") int appid,
+			@Attribute("CDGovernor") CDGovernor governor) {
 		if (timeout == 0) {
 			throw new IllegalArgumentException(
 					"Timeout must be greater than zero.");
 		}
 		fTimeReserve = timeout;
+		fGovernor = governor;
 		fXchgRef = new ExchangeStrategyRef(appid, prefix + ".strategy_id");
 		fSelfPid = PeersimUtils.selfPid(prefix);
 		fLog = manager.get(AbstractTimeoutController.class);
@@ -73,17 +77,13 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 		IContentExchangeStrategy strategy = fXchgRef.get(node);
 		if (strategy.status() == ActivityStatus.ACTIVE) {
 			strategy.clear(node);
-		
-			//FIXME Argh static, implicit component wiring.
-			DisseminationExperimentGovernor gov = DisseminationExperimentGovernor.singletonInstance();
-			if (gov != null) {
-				fLog.set("root", gov.currentNode().getID());
-				fLog.set("id", node.getID());
-				fLog.set("exptime", gov.experimentTime());
-				fLog.set("uptime", ((SNNode) node).uptime());
-				fLog.set("disstime", timeoutTime());
-				fLog.emmitRow();
-			}
+
+			fLog.set("root", fGovernor.currentExperiment().getId());
+			fLog.set("id", node.getID());
+			fLog.set("exptime", fGovernor.experimentTime());
+			fLog.set("uptime", ((SNNode) node).uptime());
+			fLog.set("disstime", timeoutTime());
+			fLog.emmitRow();
 		}
 	}
 

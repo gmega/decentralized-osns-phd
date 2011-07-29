@@ -1,15 +1,16 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
+import it.unitn.disi.f2f.DiscoveryProtocol;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.peersim.NodeRegistry;
+
 import java.util.Iterator;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Node;
-import it.unitn.disi.f2f.DiscoveryProtocol;
-import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.logging.TabularLogManager;
-import it.unitn.disi.utils.peersim.NodeRegistry;
 
 @AutoConfig
 public class AddRemoveNetwork extends GrowingBFSNetwork {

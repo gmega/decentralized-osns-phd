@@ -1,8 +1,10 @@
 package it.unitn.disi.newscasting.experiments;
 
-import peersim.core.Node;
+import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.newscasting.IPeerSelector;
+import it.unitn.disi.unitsim.CDGovernor;
+import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import peersim.core.Node;
 
 /**
  * Simple metaheuristic which picks the proper heuristic based on a guarding
@@ -15,15 +17,14 @@ public class PredicateHeuristic implements IPeerSelector {
 	private final IPeerSelector fIf;
 
 	private final IPeerSelector fElse;
+	
+	private final CDGovernor fGovernor;
 
-	public PredicateHeuristic(IPeerSelector match, IPeerSelector dontMatch) {
+	public PredicateHeuristic(IPeerSelector match, IPeerSelector dontMatch,
+			CDGovernor governor) {
 		fIf = match;
 		fElse = dontMatch;
-	}
-
-	@Override
-	public Node selectPeer(Node source) {
-		return selectPeer(source, ISelectionFilter.ALWAYS_TRUE_FILTER);
+		fGovernor = governor;
 	}
 
 	@Override
@@ -40,13 +41,9 @@ public class PredicateHeuristic implements IPeerSelector {
 		fIf.clear(source);
 		fElse.clear(source);
 	}
-
-	@Override
-	public boolean supportsFiltering() {
-		return true;
-	}
 	
 	protected boolean predicateMatches(Node source) {
-		return DisseminationExperimentGovernor.singletonInstance().currentNode() == source;
+		return ((NeighborhoodExperiment) fGovernor.currentExperiment())
+				.rootNode() == source;
 	}
 }
