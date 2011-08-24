@@ -1,6 +1,8 @@
 package it.unitn.disi.newscasting.internal.selectors;
 
+import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IPeerSelector;
+import it.unitn.disi.epidemics.IPushPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.PermutingCache;
@@ -15,7 +17,7 @@ import peersim.core.Protocol;
  * 
  * @author giuliano
  */
-public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
+public class RandomSelectorOverLinkable implements IPushPeerSelector, Protocol {
 
 	// ----------------------------------------------------------------------
 	// Parameter keys.
@@ -48,9 +50,14 @@ public class RandomSelectorOverLinkable implements IPeerSelector, Protocol {
 	}
 	
 	// ----------------------------------------------------------------------
-	// IPeerSelector interface.
+	// IPushPeerSelector interface.
 	// ----------------------------------------------------------------------
 	
+	public Node selectPeer(Node source, ISelectionFilter filter,
+			IGossipMessage scheduled) {
+		return selectPeer(source, filter);
+	}
+
 	public Node selectPeer(Node source, ISelectionFilter filter) {
 		fCache.populate(source, filter);
 		fCache.shuffle();

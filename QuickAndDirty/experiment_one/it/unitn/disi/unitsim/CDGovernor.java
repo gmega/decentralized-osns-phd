@@ -27,30 +27,76 @@ import peersim.core.Control;
 @AutoConfig
 public class CDGovernor implements Control, IPlugin {
 
+	// ------------------------------------------------------------------------
+	// Parameter constants.
+	// ------------------------------------------------------------------------
+
 	private static final String SCHEDULER = "scheduler";
 
+	/**
+	 * The governor can be in one of three states.
+	 * 
+	 * @author giuliano
+	 */
 	static enum SchedulingState {
-		RUN, SCHEDULE, DONE
+		/**
+		 * Governor is currently running a unit experiment.
+		 */
+		RUN,
+
+		/**
+		 * Governor is currently trying to schedule a unit experiment, possibly
+		 * waiting until certain conditions are met by the network.
+		 */
+		SCHEDULE,
+
+		/**
+		 * Governor has completed the experiment schedule.
+		 */
+		DONE
 	}
 
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Attributes which we append to the configuration data.
+	 */
 	private HashMap<String, Object> fAttributes;
 
+	/**
+	 * {@link IResolver} used for configuration.
+	 */
 	private final IResolver fResolver;
 
+	/**
+	 * Our configuration prefix.
+	 */
 	private final String fPrefix;
-	
+
+	/**
+	 * Registered {@link ICDExperimentObserver}s.
+	 */
 	private final Vector<ICDExperimentObserver> fObservers = new Vector<ICDExperimentObserver>();
 
+	/**
+	 * The current state for the governor (see {@link SchedulingState}).
+	 */
 	private SchedulingState fState = SchedulingState.SCHEDULE;
 
+	/**
+	 * The experiment schedule.
+	 */
 	private IScheduleIterator fSchedule;
 
+	/**
+	 * The currently running experiment.
+	 */
 	private ICDUnitExperiment fCurrent;
 
 	private final TimeTracker fTracker;
-	
+
 	private final Class<? extends ICDUnitExperiment> fExperimentKlass;
-	
+
 	// ------------------------------------------------------------------------
 
 	@SuppressWarnings("unchecked")
@@ -81,7 +127,7 @@ public class CDGovernor implements Control, IPlugin {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	@Override
@@ -102,7 +148,7 @@ public class CDGovernor implements Control, IPlugin {
 
 		return fState == SchedulingState.DONE;
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private SchedulingState scheduleCycle() {
@@ -118,13 +164,13 @@ public class CDGovernor implements Control, IPlugin {
 
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
-		
+
 		// Condenses a run cycle here.
 		runCycle();
 
 		return SchedulingState.RUN;
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private ICDUnitExperiment create(IResolver resolver, String prefix,
@@ -132,7 +178,7 @@ public class CDGovernor implements Control, IPlugin {
 		fAttributes.put(ICDUnitExperiment.ID, Integer.toString(id));
 		return ObjectCreator.createInstance(fExperimentKlass, prefix, resolver);
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private SchedulingState runCycle() {
@@ -142,14 +188,14 @@ public class CDGovernor implements Control, IPlugin {
 			// Schedules the next one, if any.
 			return SchedulingState.SCHEDULE;
 		}
-		
+
 		for (ICDExperimentObserver observer : fObservers) {
 			observer.experimentCycled(fCurrent);
 		}
 
 		return SchedulingState.RUN;
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private void wrapUpExperiment() {
@@ -160,25 +206,25 @@ public class CDGovernor implements Control, IPlugin {
 
 		fCurrent.done();
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	public void addExperimentObserver(ICDExperimentObserver observer) {
 		fObservers.add(observer);
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	public long experimentTime() {
 		return fTracker.experimentTime();
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	public ICDUnitExperiment currentExperiment() {
 		return fCurrent;
 	}
-	
+
 	// ------------------------------------------------------------------------
 	// IPlugin interface.
 	// ------------------------------------------------------------------------
@@ -187,7 +233,7 @@ public class CDGovernor implements Control, IPlugin {
 	public String id() {
 		return CDGovernor.class.getSimpleName();
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	@Override
@@ -195,7 +241,7 @@ public class CDGovernor implements Control, IPlugin {
 	}
 
 	// ------------------------------------------------------------------------
-	
+
 	@Override
 	public void stop() throws Exception {
 	}

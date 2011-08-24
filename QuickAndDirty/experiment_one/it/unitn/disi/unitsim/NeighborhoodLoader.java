@@ -8,9 +8,8 @@ import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
 
 /**
- * Plug-in which provides social neighborhoods on-demand. The current
- * implementation simply loads it all into memory and subgraphs as requests
- * come.
+ * Plug-in which loads neighborhoods on-demand. The current implementation
+ * simply loads it all into memory and produces subgraphs as requests come.
  * 
  * @author giuliano
  */
