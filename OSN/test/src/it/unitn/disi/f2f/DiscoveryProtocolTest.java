@@ -147,10 +147,8 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 		protocol.reinitialize();
 
 		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(),
-				System.currentTimeMillis());
+				System.currentTimeMillis(), cycles);
 		engine.run(cycles);
-
-		// djt.assertDone();
 
 		return new TabularLogMatcher(logWriter.fields());
 	}

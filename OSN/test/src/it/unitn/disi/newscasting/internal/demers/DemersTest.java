@@ -67,7 +67,7 @@ public class DemersTest extends PeerSimTest {
 		Tweet tweet = sns.postToFriends();
 
 		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(),
-				System.currentTimeMillis());
+				System.currentTimeMillis(), 1000);
 		engine.run(1000);
 
 		assertQuiescence(builder);

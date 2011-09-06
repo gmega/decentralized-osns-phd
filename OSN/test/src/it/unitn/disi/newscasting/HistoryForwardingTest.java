@@ -105,7 +105,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		ISocialNewscasting snsapp = (ISocialNewscasting) replier.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet reply = snsapp.replyToPost(root);
 
-		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
+		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42, CYCLES);
 		engine.run(CYCLES);
 		
 		for (Node node : nodes) {
@@ -169,7 +169,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		ISocialNewscasting snsapp = (ISocialNewscasting) root.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet post = snsapp.postToFriends();
 		
-		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
+		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42, CYCLES);
 		engine.run(CYCLES);
 		
 		assertQuiescence(true, SOCIAL_NEWSCASTING_ID, nodes.get(2));
@@ -213,7 +213,7 @@ public class HistoryForwardingTest extends PeerSimTest {
 		ISocialNewscasting snsapp = (ISocialNewscasting) root.getProtocol(SOCIAL_NEWSCASTING_ID);
 		Tweet post = snsapp.postToFriends();
 		
-		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42);
+		FakeCycleEngine engine = new FakeCycleEngine(nodes, 42, CYCLES);
 		engine.run(CYCLES);
 
 		EventMatcher matcher = new EventMatcher(new EventCodec(Byte.class, NewscastEvents.values()));
