@@ -29,6 +29,10 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 		NetworkInitializer.createNodeArray();
 		NodeRegistry.getInstance().clear();
 	}
+	
+	public INodeRegistry registry() {
+		return NodeRegistry.getInstance();
+	}
 
 	public Iterator<TestNodeImpl> iterator() {
 		return (Iterator<TestNodeImpl>) fOrderedNodes.iterator();
@@ -65,7 +69,7 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 	public int addProtocol(Node node, Protocol protocol) {
 		return chkNode(node).addProtocol(protocol);
 	}
-	
+
 	public int nextProtocolId(Node node) {
 		return chkNode(node).protocolSize();
 	}
@@ -107,11 +111,11 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 	}
 
 	class CompleteLinkable implements Linkable, Protocol {
-		
+
 		private final Node fReference;
-		
+
 		private final int fRefIndex;
-		
+
 		public CompleteLinkable(Node reference) {
 			fReference = reference;
 			fRefIndex = fOrderedNodes.indexOf(reference);
@@ -129,7 +133,7 @@ public class TestNetworkBuilder implements Iterable<TestNodeImpl> {
 		}
 
 		public Node getNeighbor(int i) {
-			int index = i < fRefIndex ? i : i + 1; 
+			int index = i < fRefIndex ? i : i + 1;
 			return fOrderedNodes.get(index);
 		}
 
