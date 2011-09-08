@@ -8,9 +8,10 @@ import java.io.PrintStream;
 
 import peersim.config.AutoConfig;
 
-import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.exception.ParseException;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Binds several tables by row. The header of the first table becomes the
@@ -26,7 +27,7 @@ public class RBind implements ITransformer {
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		TableReader reader = new TableReader(new BufferedInputStream(is));
 		String[] header = reader.columns().toArray(new String[] {});
-		TableWriter writer = new TableWriter(new PrintStream(
+		ITableWriter writer = new TableWriter(new PrintStream(
 				new BufferedOutputStream(oup)), header);
 
 		while (reader.hasNext()) {
@@ -56,7 +57,7 @@ public class RBind implements ITransformer {
 		return true;
 	}
 
-	private void transfer(TableReader reader, TableWriter writer,
+	private void transfer(TableReader reader, ITableWriter writer,
 			String[] header) {
 		for (String key : header) {
 			writer.set(key, reader.get(key));

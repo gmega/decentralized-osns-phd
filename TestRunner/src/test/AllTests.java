@@ -45,6 +45,7 @@ import org.junit.runners.Suite;
 
 import peersim.config.ObjectCreatorTest;
 import peersim.config.PluginContainerTest;
+import unitn.disi.unitsim.experiments.TemporalConnectivityExperimentTest;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -85,7 +86,8 @@ import peersim.config.PluginContainerTest;
 	MultiCounterTest.class,
 	DiscoveryProtocolTest.class, 
 	BitSetNeighborhoodTest.class,
-	IDMapperTest.class
+	IDMapperTest.class,
+	TemporalConnectivityExperimentTest.class
 })
 
 public class AllTests extends PeerSimTest {

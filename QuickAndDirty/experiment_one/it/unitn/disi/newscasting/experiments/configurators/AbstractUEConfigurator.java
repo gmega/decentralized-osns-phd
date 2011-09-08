@@ -14,8 +14,8 @@ import it.unitn.disi.newscasting.experiments.SingleEventStorage;
 import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.unitsim.CDGovernor;
-import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;
 import java.io.FileInputStream;

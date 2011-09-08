@@ -2,10 +2,10 @@ package it.unitn.disi.newscasting.internal.selectors;
 
 import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IDynamicLinkable;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Comparator;
 import java.util.HashMap;

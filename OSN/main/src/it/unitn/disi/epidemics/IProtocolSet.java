@@ -1,6 +1,6 @@
 package it.unitn.disi.epidemics;
 
-import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Collection;
 

@@ -8,8 +8,9 @@ import java.util.HashMap;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Computes residue, corrected residue, average uptime, and duplicate ratio from
@@ -23,7 +24,7 @@ public class LoadReparse implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		TableReader reader = new TableReader(is);
-		TableWriter writer = new TableWriter(new PrintStream(oup),
+		ITableWriter writer = new TableWriter(new PrintStream(oup),
 				new String[] { "root", "degree", "delivered", "root_uptime",
 						"zero_uptime", "residue", "corrected_residue",
 						"duplicates", "copies", "duplicate_ratio"});
@@ -45,7 +46,7 @@ public class LoadReparse implements ITransformer {
 		}
 	}
 
-	private Experiment experiment(long root, Experiment exp, TableWriter writer) {
+	private Experiment experiment(long root, Experiment exp, ITableWriter writer) {
 		Experiment ret = exp;
 		if (exp == null) {
 			ret = new Experiment(root);

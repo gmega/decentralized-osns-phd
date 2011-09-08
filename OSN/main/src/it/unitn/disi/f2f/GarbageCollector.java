@@ -2,7 +2,7 @@ package it.unitn.disi.f2f;
 
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IWritableEventStorage;
-import it.unitn.disi.utils.IReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.BitSet;
 

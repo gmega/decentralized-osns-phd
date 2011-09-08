@@ -10,9 +10,9 @@ import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.demers.IDestinationTracker.Result;
 import it.unitn.disi.newscasting.internal.demers.RumorList.IDemotionObserver;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.ArrayList;
 import java.util.List;

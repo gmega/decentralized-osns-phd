@@ -10,7 +10,8 @@ import java.util.StringTokenizer;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Reads a file in <a href="http://www.eurecom.fr/~btroup/kadtraces/">zone crawl
@@ -27,7 +28,7 @@ public class KADLifetimes implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		TableWriter writer = new TableWriter(new PrintStream(oup),
+		ITableWriter writer = new TableWriter(new PrintStream(oup),
 				new String[] { "id", "country", "start", "end" });
 
 		String line;

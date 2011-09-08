@@ -1,9 +1,9 @@
 package it.unitn.disi.network;
 
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
@@ -26,13 +26,13 @@ public class NetworkStatistics implements Control {
 	
 	private long fLastRun = 0;
 	
-	private TableWriter fLog;
+	private ITableWriter fLog;
 	
 	public NetworkStatistics(@Attribute("TabularLogManager") TabularLogManager manager) {
 		this(manager.get(NetworkStatistics.class));
 	}
 	
-	public NetworkStatistics(TableWriter log) {
+	public NetworkStatistics(ITableWriter log) {
 		fLog = log;
 	}
 	

@@ -5,9 +5,9 @@ import it.unitn.disi.unitsim.ICDExperimentObserver;
 import it.unitn.disi.unitsim.ICDUnitExperiment;
 import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
 import it.unitn.disi.utils.SparseMultiCounter;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,7 +29,7 @@ public class CoverageAnalyzer implements ICDExperimentObserver {
 	@Attribute("onehop")
 	private int fOneHop;
 
-	private final TableWriter fLog;
+	private final ITableWriter fLog;
 
 	public CoverageAnalyzer(
 			@Attribute("TabularLogManager") TabularLogManager mgr) {

@@ -7,7 +7,7 @@ import java.util.Iterator;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.utils.TableReader;
+import it.unitn.disi.utils.tabular.TableReader;
 
 public class TabularLogMatcher {
 

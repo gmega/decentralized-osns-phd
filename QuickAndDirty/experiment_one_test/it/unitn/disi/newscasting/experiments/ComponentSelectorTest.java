@@ -6,11 +6,11 @@ import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.ArrayList;
 import java.util.Collections;

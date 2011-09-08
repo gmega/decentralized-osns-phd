@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
 import it.unitn.disi.f2f.DiscoveryProtocol;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
@@ -25,7 +25,7 @@ public class ConvergenceAnalyzer implements Control {
 
 	private int fDiscoveryPid;
 
-	private TableWriter fLog;
+	private ITableWriter fLog;
 
 	public ConvergenceAnalyzer(@Attribute("discovery") int discoveryPid,
 			@Attribute("TabularLogManager") TabularLogManager mgr) {

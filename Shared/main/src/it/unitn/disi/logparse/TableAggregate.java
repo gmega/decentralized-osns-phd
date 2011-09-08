@@ -13,7 +13,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.utils.TableReader;
+import it.unitn.disi.utils.tabular.TableReader;
 
 /**
  * Highly scalable aggregation script for tables -- merges 'n' tables into one

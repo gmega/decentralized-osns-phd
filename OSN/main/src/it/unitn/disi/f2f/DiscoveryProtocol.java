@@ -6,15 +6,15 @@ import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IMessageVisibility;
 import it.unitn.disi.epidemics.MulticastService;
 import it.unitn.disi.epidemics.NeighborhoodMulticast;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.peersim.BitSetNeighborhood;
 import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.IReference;
+import it.unitn.disi.utils.tabular.ITableWriter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -76,7 +76,7 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 
 	private static IReference<NodeStatistic> fStats;
 
-	private static TableWriter fWriter;
+	private static ITableWriter fWriter;
 
 	private static IMessageVisibility fVisibility;
 
@@ -124,7 +124,7 @@ public class DiscoveryProtocol implements IEventObserver, IInitializable,
 
 	public DiscoveryProtocol(int selfPid, int oneHop, int twoHop,
 			int membership, int multicast, int collect, int softStateTimeout,
-			IReference<NodeStatistic> stats, TableWriter writer) {
+			IReference<NodeStatistic> stats, ITableWriter writer) {
 		fOneHop = oneHop;
 		fTwoHop = twoHop;
 		fMembership = membership;

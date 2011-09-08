@@ -1,5 +1,7 @@
 package it.unitn.disi.utils;
 
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.NoSuchElementException;

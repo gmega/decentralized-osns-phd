@@ -6,11 +6,11 @@ import it.unitn.disi.epidemics.IPushPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.Tweet;
 import it.unitn.disi.util.RouletteWheel;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MutableSimplePair;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.ArrayList;
 import java.util.Collections;

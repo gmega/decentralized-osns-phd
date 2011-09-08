@@ -1,8 +1,8 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
 import it.unitn.disi.network.churn.yao.YaoOnOffChurn;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Comparator;
 

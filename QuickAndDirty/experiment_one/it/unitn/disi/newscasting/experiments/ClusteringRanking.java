@@ -5,8 +5,8 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.ArrayList;
 

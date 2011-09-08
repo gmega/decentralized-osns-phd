@@ -12,10 +12,10 @@ import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.forwarding.BloomFilterHistoryFw;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.probabrm.ProbabilisticRumorMonger;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.StreamManager;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -1,6 +1,6 @@
 package it.unitn.disi.analysis.loadsim;
 
-import it.unitn.disi.utils.TableReader;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -8,10 +8,10 @@ import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
 import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Arrays;
 import java.util.BitSet;

@@ -1,4 +1,4 @@
-package it.unitn.disi.utils;
+package it.unitn.disi.utils.tabular;
 
 import it.unitn.disi.utils.exception.ParseException;
 

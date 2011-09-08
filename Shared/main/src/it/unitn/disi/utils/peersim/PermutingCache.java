@@ -1,9 +1,9 @@
 package it.unitn.disi.utils.peersim;
 
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.IExchanger;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Arrays;
 import java.util.Comparator;

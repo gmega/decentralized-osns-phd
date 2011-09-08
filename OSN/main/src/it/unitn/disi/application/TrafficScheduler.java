@@ -4,11 +4,11 @@ import it.unitn.disi.epidemics.IEventStorage;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IScheduler;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Iterator;
 

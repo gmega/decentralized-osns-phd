@@ -8,8 +8,9 @@ import java.util.HashMap;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Computes average and aggregate loads.
@@ -23,7 +24,7 @@ public class NodeLoadAggregates implements ITransformer {
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		HashMap<Long, NodeData> nodes = new HashMap<Long, NodeData>();
 		TableReader reader = new TableReader(is);
-		TableWriter writer = new TableWriter(new PrintStream(oup),
+		ITableWriter writer = new TableWriter(new PrintStream(oup),
 				new String[] { "id", "posts", "sent", "sent_as_root",
 						"received", "total", "disseminated", "updates",
 						"dups_generated", "dups_received", "experiments" });

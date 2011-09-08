@@ -22,10 +22,10 @@ import it.unitn.disi.test.framework.EventMatcher;
 import it.unitn.disi.test.framework.FakeCycleEngine;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

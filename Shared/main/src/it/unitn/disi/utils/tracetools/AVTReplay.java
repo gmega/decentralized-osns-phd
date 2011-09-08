@@ -16,10 +16,11 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * {@link AVTReplay} can replay trace files in the <a
@@ -56,7 +57,7 @@ public class AVTReplay implements IMultiTransformer {
 	@Override
 	public void execute(StreamProvider provider) throws Exception {
 
-		TableWriter stats = new TableWriter(new PrintStream(
+		ITableWriter stats = new TableWriter(new PrintStream(
 				provider.output(Outputs.network_stats)), new String[] { "time",
 				"size", "in", "out", "seen" });
 

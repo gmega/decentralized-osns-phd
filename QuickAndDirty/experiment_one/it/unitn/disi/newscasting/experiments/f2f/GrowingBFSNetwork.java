@@ -6,13 +6,13 @@ import it.unitn.disi.f2f.IJoinListener;
 import it.unitn.disi.f2f.JoinTracker;
 import it.unitn.disi.graph.BFSIterable;
 import it.unitn.disi.graph.GraphProtocol;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+import it.unitn.disi.utils.tabular.ITableWriter;
 
 import java.util.BitSet;
 import java.util.Iterator;
@@ -36,7 +36,7 @@ public class GrowingBFSNetwork implements Control, IJoinListener {
 
 	private final int fSeed;
 
-	private final TableWriter fLog;
+	private final ITableWriter fLog;
 
 	private Iterator<Pair<Integer, Integer>> fIterator;
 

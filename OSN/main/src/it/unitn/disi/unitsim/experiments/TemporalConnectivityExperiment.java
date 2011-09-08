@@ -4,22 +4,22 @@ import java.util.Arrays;
 import java.util.Stack;
 
 import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.utils.logging.StructuredLog;
+import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 
+@AutoConfig
+@StructuredLog(key = "TCE", fields = {"root", "degree", "reached", "time" })
 public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
-
+	
 	public static final int UNREACHABLE = Integer.MAX_VALUE;
 	
-	public static enum Mode {
-		uptime, total;
-	}
-	
 	// ------------------------------------------------------------------------
-
-	private final Mode fMode;
 
 	private final int fHorizon;
 
@@ -32,10 +32,14 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
 	private final Stack<DFSFrame> fStack = new Stack<DFSFrame>();
 
 	private final INodeRegistry fRegistry;
+	
+	private final ITableWriter fWriter;
 
 	private int fReached;
 
-	private int[][] fReachabilityTable;
+	private int [][] fTotalReachability;
+	
+	private int [][] fUptimeReachability;
 
 	private boolean[] fRoots;
 	
@@ -50,15 +54,23 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
 			@Attribute("timeout") int timeout,
 			@Attribute(value = "horizon", defaultValue = "-1") int horizon,
 			@Attribute("NodeRegistry") INodeRegistry registry,
-			@Attribute("distanceType") String mode) {
+			@Attribute("TabularLogManager") TabularLogManager manager) {
+		this(prefix, id, graphProtocolId, loader, timeBase, timeout, horizon,
+				registry, manager.get(TemporalConnectivityExperiment.class));
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public TemporalConnectivityExperiment(String prefix, Integer id,
+			int graphProtocolId, NeighborhoodLoader loader, int timeBase,
+			int timeout, int horizon, INodeRegistry registry, ITableWriter writer) {
 		super(prefix, id, graphProtocolId, loader);
-
 		fTimeout = timeout;
 		fHorizon = horizon <= 0 ? UNREACHABLE : horizon;
 		fStartingTime = CommonState.getIntTime();
 		fRegistry = registry;
-		fMode = Mode.valueOf(mode.toLowerCase());
 		fTimeBase = timeBase;
+		fWriter = writer;
 	}
 
 	// ------------------------------------------------------------------------
@@ -66,26 +78,31 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
 	@Override
 	protected void chainInitialize() {
 		int dim = graph().size();
-		// The reachability matrix contains the number of steps it takes
-		// to reach a node from any other node.
-		fReachabilityTable = new int[dim][];
 		fRoots = new boolean[dim];
+		fTotalReachability = newTable(dim);
+		fUptimeReachability = newTable(dim);
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	private int [][] newTable(int dim) {
+		int [][] table = new int[dim][];
 		for (int i = 0; i < dim; i++) {
-			fReachabilityTable[i] = new int[dim];
-			Arrays.fill(fReachabilityTable[i], UNREACHABLE);
-			fReached++;
+			table[i] = new int[dim];
+			Arrays.fill(table[i], UNREACHABLE);
 		}
+		return table;
 	}
 
 	// ------------------------------------------------------------------------
 
 	@Override
 	public boolean cycled() {
-		for (int i = 0; i < fReachabilityTable.length; i++) {
+		for (int i = 0; i < fTotalReachability.length; i++) {
 			explore(i);
 		}
 
-		return fReached == (fReachabilityTable.length * fReachabilityTable.length)
+		return fReached == (fTotalReachability.length * fTotalReachability.length)
 				|| ellapsedTime() == fTimeout;
 	}
 
@@ -93,6 +110,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
 
 	@Override
 	public void done() {
+		System.err.println("-- Done: " + rootNode().getSNId() + ".");
 	}
 
 	// ------------------------------------------------------------------------
@@ -108,85 +126,93 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment {
 	 */
 	private void explore(int i) {
 		
-		int[] reachedTable = fReachabilityTable[i];
 		SNNode root = (SNNode) fRegistry.getNode((long) i);
-		if (reachedTable[i] == UNREACHABLE) {
+		if (!isReachable(i, i)) {
 			if (!root.isUp()) {
 				return;
 			} else {
-				reachedTable[i] = runningTime(root);
+				updateRunningTimes(i, root);
 			}
 		}
 		
 		// Computes nodes that are to be explored.
 		Arrays.fill(fRoots, false);
 				
-		for (int j = 0; j < reachedTable.length; j++) {
+		for (int j = 0; j < dim(); j++) {
 			SNNode node = (SNNode) fRegistry.getNode((long) j);
-			fRoots[j] = (reachedTable[j] != UNREACHABLE) && node.isUp();
+			fRoots[j] = (isReachable(i, j)) && node.isUp();
 		}
 
 		// For each already reached node...
-		for (int j = 0; j < reachedTable.length; j++) {
+		for (int j = 0; j < dim(); j++) {
 			// ... expands the reachability.
 			if (fRoots[j]) {
-				recomputeReachability(j, reachedTable);
+				recomputeReachability(i, j);
 			}
 		}
 	}
 
 	// ------------------------------------------------------------------------
 
-	private void recomputeReachability(int root, int[] reached) {
-		fStack.push(new DFSFrame(root));
-		while (!fStack.isEmpty()) {
-			DFSFrame frame = fStack.peek();
+	private void recomputeReachability(int root, int infected) {
+		DFSFrame current = new DFSFrame(infected);
+		while (true) {
 			// Explores while there are neighbors and we're below the horizon.
-			if (frame.hasNext() && fStack.size() <= fHorizon) {
-				int neighbor = frame.nextNeighbor();
-				// Only pushes if node unmarked and reachable.
+			if (current.hasNext() && fStack.size() <= fHorizon) {
+				int neighbor = current.nextNeighbor();
+				// Only pushes if node unmarked and up.
 				SNNode neighborNode = (SNNode) fRegistry
 						.getNode((long) neighbor);
 				if (neighborNode.isUp()
-						&& reached[neighbor] == UNREACHABLE) {
-					fStack.push(new DFSFrame(neighbor));
-					reached[neighbor] = runningTime(neighborNode);
+						&& !isReachable(root, neighbor)) {
+					fStack.push(current);
+					current = new DFSFrame(neighbor);
+					updateRunningTimes(root, neighborNode);
 				}
 			}
 			// Otherwise pops, and does nothing since we visit the node on push.
 			else {
-				fStack.pop();
+				if (fStack.isEmpty()) {
+					break;
+				}
+				current = fStack.pop();
 			}
 		}
 	}
 	
 	// ------------------------------------------------------------------------
 	
-	public int nodes() {
-		return fReachabilityTable.length;
+	private boolean isReachable(int root, int node) {
+		return fTotalReachability[root][node] != UNREACHABLE;
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public int dim() {
+		return fTotalReachability.length;
 	}
 	
 	// ------------------------------------------------------------------------
 
 	public int reachability(int i, int j) {
-		return fReachabilityTable[i][j];
+		return fTotalReachability[i][j];
 	}
 	
 	// ------------------------------------------------------------------------
 
-	public int runningTime(SNNode neighborNode) {
-		int delta = 0;
-		switch (fMode) {
-		case total:
-			delta = CommonState.getIntTime() - fStartingTime;
-			break;
-		case uptime:
-			delta = (int) neighborNode.uptime();
-			break;
-		default:
-			throw new IllegalStateException("Invalid mode " + fMode + ".");
-		}
-		return fTimeBase + delta;
+	private void updateRunningTimes(int root, SNNode neighborNode) {
+		int idx = (int) neighborNode.getID();
+		fTotalReachability[root][idx] = fTimeBase + CommonState.getIntTime()
+				- fStartingTime;
+		fUptimeReachability[root][idx] = fTimeBase
+				+ (int) neighborNode.uptime();
+		fReached++;
+		
+		fWriter.set("root", rootNode().getID());
+		fWriter.set("degree", neighborhood().degree());
+		fWriter.set("reached", fReached);
+		fWriter.set("time", ellapsedTime());
+		fWriter.emmitRow();
 	}
 
 	// ------------------------------------------------------------------------

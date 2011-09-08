@@ -19,11 +19,11 @@ import it.unitn.disi.test.framework.FakeCycleEngine;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TabularLogMatcher;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
-import it.unitn.disi.utils.IReference;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.streams.TeeOutputStream;
+import it.unitn.disi.utils.tabular.IReference;
+import it.unitn.disi.utils.tabular.ITableWriter;
 
 import org.junit.Test;
 
@@ -50,7 +50,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 	public void testSimpleCollect() throws IOException {
 		TestNetworkBuilder builder = simpleCollectFixture();
 		ByteArrayOutputStream log = new ByteArrayOutputStream();
-		TableWriter logWriter = tableWriter(
+		ITableWriter logWriter = tableWriter(
 				new TeeOutputStream(log, System.out), DiscoveryProtocol.class);
 		configureProtocols(builder, fSelectorId, fDemersMembership,
 				fDiscoveryMembership, fNeighborId, fNeighborId, logWriter);
@@ -102,7 +102,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 	@Test
 	public void testSparseCollect() throws Exception {
 		ByteArrayOutputStream log = new ByteArrayOutputStream();
-		TableWriter logWriter = tableWriter(
+		ITableWriter logWriter = tableWriter(
 				new TeeOutputStream(log, System.out), DiscoveryProtocol.class);
 		TestNetworkBuilder builder = sparseCollectFixture(logWriter);
 		TabularLogMatcher matcher = runTest(builder, 11, logWriter);
@@ -138,7 +138,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 	}
 
 	public TabularLogMatcher runTest(TestNetworkBuilder builder, int cycles,
-			TableWriter logWriter) {
+			ITableWriter logWriter) {
 		Node zero = builder.getNodes().get(0);
 		DiscoveryProtocol protocol = (DiscoveryProtocol) zero
 				.getProtocol(fDiscoveryProtocol);
@@ -190,7 +190,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 		return builder;
 	}
 
-	private TestNetworkBuilder sparseCollectFixture(TableWriter log) {
+	private TestNetworkBuilder sparseCollectFixture(ITableWriter log) {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(11);
 
@@ -288,7 +288,7 @@ public class DiscoveryProtocolTest extends PeerSimTest {
 	@SuppressWarnings("unchecked")
 	private void configureProtocols(TestNetworkBuilder builder, int selector,
 			int membership, int discoveryMembership, int neighbors,
-			int visibility, TableWriter log) {
+			int visibility, ITableWriter log) {
 
 		int dpid = -1;
 		for (Node node : builder.getNodes()) {

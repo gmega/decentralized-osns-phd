@@ -1,9 +1,9 @@
 package it.unitn.disi.unitsim;
 
 import it.unitn.disi.statistics.EWMAStats;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.util.IncrementalStats;
 
 @StructuredLog(key="PERF", fields={"completed", "experiment_avg", "cycle_avg", "cycles_per_experiment", "time_remaining"})
@@ -25,7 +25,7 @@ public class TimeTracker implements ICDExperimentObserver {
 
 	private EWMAStats fCycleTime;
 	
-	private TableWriter fLog;
+	private ITableWriter fLog;
 
 	public TimeTracker(long experiments, TabularLogManager manager) {
 		fExperimentTime = new EWMAStats(200);

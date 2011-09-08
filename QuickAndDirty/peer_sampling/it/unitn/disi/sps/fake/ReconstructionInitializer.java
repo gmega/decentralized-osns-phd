@@ -1,9 +1,9 @@
 package it.unitn.disi.sps.fake;
 
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.TableReader;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;
 import java.io.FileInputStream;

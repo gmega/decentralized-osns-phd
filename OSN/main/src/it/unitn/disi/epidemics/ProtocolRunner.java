@@ -2,12 +2,12 @@ package it.unitn.disi.epidemics;
 
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.internal.BroadcastBus;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.Arrays;
 import java.util.Collection;

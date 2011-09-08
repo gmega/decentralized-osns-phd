@@ -7,8 +7,9 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
@@ -62,7 +63,7 @@ public class TabularLogManager implements IPlugin {
 
 	}
 
-	public TableWriter get(Class<?> klass) {
+	public ITableWriter get(Class<?> klass) {
 		StructuredLog annotation = klass
 				.getAnnotation(StructuredLog.class);
 		if (annotation == null) {
@@ -72,7 +73,7 @@ public class TabularLogManager implements IPlugin {
 		// serious as it will not fail silently, but will cause a runtime
 		// exception in TableWriter down the line.
 		String logKey = annotation.key();
-		TableWriter writer = fLogs.get(logKey);
+		ITableWriter writer = fLogs.get(logKey);
 		if (writer == null) {
 			String streamId = fStreamAssignments.get(logKey);
 			writer = add(logKey, streamId == null ? "stdout" : streamId,
@@ -82,7 +83,7 @@ public class TabularLogManager implements IPlugin {
 		return writer;
 	}
 
-	private TableWriter add(String key, String streamId, String[] fields) {
+	private ITableWriter add(String key, String streamId, String[] fields) {
 		if (fLogs.containsKey(key)) {
 			throw new IllegalArgumentException("Duplicate key <<" + key + ">>.");
 		}

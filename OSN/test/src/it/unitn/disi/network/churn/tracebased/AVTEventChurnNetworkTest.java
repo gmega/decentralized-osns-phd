@@ -7,7 +7,7 @@ import it.unitn.disi.test.framework.FakeEDEngine;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.TestNodeImpl;
-import it.unitn.disi.utils.TableReader;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

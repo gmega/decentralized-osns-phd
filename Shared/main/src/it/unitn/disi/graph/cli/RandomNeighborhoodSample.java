@@ -7,7 +7,8 @@ import it.unitn.disi.graph.codecs.ByteGraphEncoder;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.IDMapper;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ public class RandomNeighborhoodSample implements IMultiTransformer {
 				provider.output(Outputs.graph));
 		encoder.encode(subgraph, IDMapper.IDENTITY);
 
-		TableWriter writer = new TableWriter(new PrintStream(
+		ITableWriter writer = new TableWriter(new PrintStream(
 				provider.output(Outputs.rootmap)), new String[] { "id",
 				"mapped", "degree" });
 		

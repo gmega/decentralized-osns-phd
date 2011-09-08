@@ -8,6 +8,7 @@ import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.UpDownControl;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.NullTableWriter;
 
 import org.junit.Test;
 
@@ -42,8 +43,8 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		engine.addControl(churn);
 		
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
-				"", 0, GP_ID, null, 1, Integer.MAX_VALUE, 2, builder.registry(),
-				TemporalConnectivityExperiment.Mode.total.toString());
+				"", 0, GP_ID, null, 1, Integer.MAX_VALUE, 2,
+				builder.registry(), new NullTableWriter());
 		
 		SNNode root = (SNNode) builder.getNodes().get(0);
 		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(), root);
@@ -87,9 +88,9 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 	}
 
 	private void printReachabilities(TemporalConnectivityExperiment exp) {
-		for (int i = 0; i < exp.nodes(); i++) {
+		for (int i = 0; i < exp.dim(); i++) {
 			System.err.println("Node " + i + ":");
-			for (int j = 0; j < exp.nodes(); j++) {
+			for (int j = 0; j < exp.dim(); j++) {
 				System.err.print("-- " + j + ":");
 				int reachability = exp.reachability(i, j);
 				if (reachability == TemporalConnectivityExperiment.UNREACHABLE) {

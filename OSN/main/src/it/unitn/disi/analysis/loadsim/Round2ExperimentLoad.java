@@ -5,7 +5,8 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.PrintStream;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class Round2ExperimentLoad implements IMultiTransformer {
 				p.input(Inputs.experiments), g);
 
 		PrintStream out = new PrintStream(p.output(Outputs.statistics));
-		TableWriter writer = new TableWriter(out, new String[] { "root", "id",
+		ITableWriter writer = new TableWriter(out, new String[] { "root", "id",
 				"sent", "received" });
 		Map<Integer, UnitExperiment> exps = reader.load(false, true);
 

@@ -2,7 +2,7 @@ package it.unitn.disi.network.churn.tracebased;
 
 import it.unitn.disi.network.GenericValueHolder;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.TableReader;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;
 import java.io.FileInputStream;

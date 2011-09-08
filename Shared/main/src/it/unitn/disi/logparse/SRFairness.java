@@ -9,8 +9,9 @@ import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.logparse.LoadReparse.Experiment;
-import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.TableWriter;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Compute fairness from load figures.
@@ -23,7 +24,7 @@ public class SRFairness implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		TableReader reader = new TableReader(is);
-		TableWriter writer = new TableWriter(new PrintStream(oup),
+		ITableWriter writer = new TableWriter(new PrintStream(oup),
 				new String[] { "root", "send_fairness", "recv_fairness",
 						"tot_fairness" });
 		

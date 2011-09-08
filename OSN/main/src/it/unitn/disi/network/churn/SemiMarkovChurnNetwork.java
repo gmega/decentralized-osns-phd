@@ -1,11 +1,11 @@
 package it.unitn.disi.network.churn;
 
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.IScheduler;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 import peersim.config.IResolver;
 import peersim.core.Fallible;
 import peersim.core.Node;

@@ -3,11 +3,11 @@ package it.unitn.disi.network.churn.tracebased;
 import it.unitn.disi.network.GenericValueHolder;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.TableReader;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.collections.ListExchanger;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,7 +42,7 @@ public class RandomAssign implements Control {
 	@Attribute("trace_id")
 	int fIdHolder;
 
-	private final TableWriter fLog;
+	private final ITableWriter fLog;
 
 	public RandomAssign(
 			@Attribute("TabularLogManager") TabularLogManager manager) {

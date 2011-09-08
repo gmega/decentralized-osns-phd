@@ -3,9 +3,9 @@ package it.unitn.disi.network.churn.yao;
 import it.unitn.disi.random.Exponential;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
@@ -15,6 +15,7 @@ import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
+import peersim.dynamics.NodeInitializer;
 
 /**
  * Initializes the Yao model according to the <a
@@ -23,10 +24,10 @@ import peersim.core.Node;
  * The implementation actually allows more flexibile initialization, but all
  * preset modes from the original paper are coded here.
  */
-@StructuredLog(key = "YaoInit", fields = { "id", "index", "li", "di", "eli",
+@StructuredLog(key = "YaoInit", fields = { "id", "li", "di", "eli",
 		"edi", "ai" })
 @AutoConfig
-public class YaoInit implements Control {
+public class YaoInit implements Control, NodeInitializer {
 
 	// ------------------------------------------------------------------------
 	// Configuration machinery.
@@ -107,7 +108,7 @@ public class YaoInit implements Control {
 
 	private int fYaoChurnId;
 
-	private TableWriter fLog;
+	private ITableWriter fLog;
 
 	private final IDistributionGenerator fMode;
 
@@ -130,23 +131,25 @@ public class YaoInit implements Control {
 	public boolean execute() {
 		// Assigns different distributions to each node.
 		for (int i = 0; i < Network.size(); i++) {
-			Node current = Network.get(i);
-			YaoOnOffChurn churn = (YaoOnOffChurn) current
-					.getProtocol(fYaoChurnId);
-			double li = fAverages.nextLI();
-			double di = fAverages.nextDI();
-			IDistribution uptime = fMode.uptimeDistribution(li);
-			IDistribution downtime = fMode.downtimeDistribution(di);
-			churn.init(uptime, downtime, current);
-			printParameters(i, current, li, di, uptime.expectation(),
-					downtime.expectation());
+			initialize(Network.get(i));
 		}
 		return false;
 	}
 
-	private void printParameters(int index, Node node, double li, double di,
-			double eli, double edi) {
-		fLog.set("index", Integer.toString(index));
+	@Override
+	public void initialize(Node current) {
+		YaoOnOffChurn churn = (YaoOnOffChurn) current.getProtocol(fYaoChurnId);
+		double li = fAverages.nextLI();
+		double di = fAverages.nextDI();
+		IDistribution uptime = fMode.uptimeDistribution(li);
+		IDistribution downtime = fMode.downtimeDistribution(di);
+		churn.init(uptime, downtime, current);
+		printParameters(current, li, di, uptime.expectation(),
+				downtime.expectation());
+	}
+
+	private void printParameters(Node node, double li, double di, double eli,
+			double edi) {
 		fLog.set("id", Long.toString(node.getID()));
 		fLog.set("li", Double.toString(li));
 		fLog.set("di", Double.toString(di));

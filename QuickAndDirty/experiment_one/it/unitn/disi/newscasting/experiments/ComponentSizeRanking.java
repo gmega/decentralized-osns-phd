@@ -2,8 +2,8 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;
+import it.unitn.disi.utils.tabular.IReference;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Node;

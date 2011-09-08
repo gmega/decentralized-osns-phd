@@ -5,10 +5,10 @@ import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.utils.IReference;
 import it.unitn.disi.utils.peersim.IInitializable;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.peersim.SNNode;
+import it.unitn.disi.utils.tabular.IReference;
 
 import java.util.BitSet;
 import java.util.NoSuchElementException;

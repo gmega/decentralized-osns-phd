@@ -1,9 +1,10 @@
 package it.unitn.disi.test.framework;
 
 import it.unitn.disi.utils.HashMapResolver;
-import it.unitn.disi.utils.TableWriter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -70,7 +71,7 @@ public class PeerSimTest {
 		resolverContents().put(key, value);
 	}
 	
-	public TableWriter tableWriter(OutputStream stream, Class<?> klass) {
+	public ITableWriter tableWriter(OutputStream stream, Class<?> klass) {
 		StructuredLog logConfig = klass.getAnnotation(StructuredLog.class);
 		String [] fields = logConfig.fields();
 		return new TableWriter(new PrintStream(stream), fields);
