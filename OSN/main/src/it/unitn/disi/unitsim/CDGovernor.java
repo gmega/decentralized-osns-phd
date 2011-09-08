@@ -165,9 +165,7 @@ public class CDGovernor implements Control, IPlugin {
 		fCurrent.initialize();
 
 		// Condenses a run cycle here.
-		runCycle();
-
-		return SchedulingState.RUN;
+		return runCycle();
 	}
 
 	// ------------------------------------------------------------------------
