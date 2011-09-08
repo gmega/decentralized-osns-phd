@@ -49,10 +49,14 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		SNNode root = (SNNode) builder.getNodes().get(0);
 		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(), root);
 		
+		for (Node node : builder.getNodes()) {
+			((SNNode) node).clearStateListener();
+		}
+		
 		for (int i = 0; i < 3; i++) {
 			engine.cycle();
 			printUpNodes(builder);
-			exp.cycled();
+			exp.stateChanged(0, 0, null);
 		}
 		
 		printReachabilities(exp);

@@ -2,8 +2,8 @@ package it.unitn.disi.unitsim.experiments;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
-import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
@@ -13,7 +13,6 @@ import peersim.config.AutoConfig;
 import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
-import peersim.graph.Graph;
 
 /**
  * A {@link NeighborhoodExperiment} is an experiment which is linked to a
@@ -31,7 +30,7 @@ import peersim.graph.Graph;
  * @author giuliano
  */
 @AutoConfig
-public abstract class NeighborhoodExperiment implements ICDUnitExperiment {
+public abstract class NeighborhoodExperiment implements IUnitExperiment {
 
 	public static final String PAR_ID = "id";
 

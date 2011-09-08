@@ -17,7 +17,7 @@ import peersim.config.ObjectCreator;
 import peersim.config.plugin.IPlugin;
 import peersim.config.resolvers.CompositeResolver;
 
-public abstract class GovernorBase<T extends IUnitExperiment> implements IPlugin{
+public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperimentObserver<T>> implements IPlugin{
 
 	protected static final String SCHEDULER = "scheduler";
 	/**
@@ -35,7 +35,7 @@ public abstract class GovernorBase<T extends IUnitExperiment> implements IPlugin
 	/**
 	 * Registered {@link ICDExperimentObserver}s.
 	 */
-	protected final Vector<ICDExperimentObserver> fObservers = new Vector<ICDExperimentObserver>();
+	protected final Vector<K> fObservers = new Vector<K>();
 	/**
 	 * The experiment schedule.
 	 */
@@ -65,7 +65,7 @@ public abstract class GovernorBase<T extends IUnitExperiment> implements IPlugin
 
 		fPrefix = prefix;
 		fTracker = new TimeTracker(fSchedule.remaining(), manager);
-		addExperimentObserver(fTracker);
+		//addExperimentObserver(fTracker);
 
 		try {
 			fExperimentKlass = (Class<T>) Class.forName(experiment);
@@ -81,14 +81,14 @@ public abstract class GovernorBase<T extends IUnitExperiment> implements IPlugin
 
 	protected void wrapUpExperiment() {
 		// Notifies the observers before cleaning any state.
-		for (ICDExperimentObserver observer : fObservers) {
+		for (IExperimentObserver<T> observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
 	
 		fCurrent.done();
 	}
 
-	public void addExperimentObserver(ICDExperimentObserver observer) {
+	public void addExperimentObserver(K observer) {
 		fObservers.add(observer);
 	}
 

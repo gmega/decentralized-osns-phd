@@ -1,15 +1,22 @@
 package it.unitn.disi.unitsim.ed;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.utils.logging.TabularLogManager;
 
-public class EDGovernor extends GovernorBase<IEDUnitExperiment> implements IExperimentObserver {
+@AutoConfig
+public class EDGovernor extends
+		GovernorBase<IEDUnitExperiment, IExperimentObserver<IEDUnitExperiment>>
+		implements IExperimentObserver<IEDUnitExperiment> {
 
-	public EDGovernor(String prefix, IResolver resolver,
-			TabularLogManager manager, String experiment) {
+	public EDGovernor(@Attribute(Attribute.PREFIX) String prefix,
+			@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute("TabularLogManager") TabularLogManager manager,
+			@Attribute("experiment") String experiment) {
 		super(prefix, resolver, manager, experiment);
 	}
 	
@@ -18,13 +25,13 @@ public class EDGovernor extends GovernorBase<IEDUnitExperiment> implements IExpe
 	}
 
 	@Override
-	public void experimentEnd(IUnitExperiment experiment) {
+	public void experimentEnd(IEDUnitExperiment experiment) {
 		wrapUpExperiment();
 		scheduleNext();
 	}
 	
 	@Override
-	public void experimentStart(IUnitExperiment experiment) {
+	public void experimentStart(IEDUnitExperiment experiment) {
 	}
 	
 	private void scheduleNext() {

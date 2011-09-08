@@ -15,7 +15,9 @@ import peersim.core.Control;
  * @author giuliano
  */
 @AutoConfig
-public class CDGovernor extends GovernorBase<ICDUnitExperiment> implements Control  {
+public class CDGovernor extends
+		GovernorBase<ICDUnitExperiment, ICDExperimentObserver> implements
+		Control {
 
 	// ------------------------------------------------------------------------
 	// Parameter constants.
@@ -121,7 +123,7 @@ public class CDGovernor extends GovernorBase<ICDUnitExperiment> implements Contr
 	class CDCalls implements ICDExperimentObserver {
 
 		@Override
-		public void experimentStart(IUnitExperiment experiment) {
+		public void experimentStart(ICDUnitExperiment experiment) {
 		}
 
 		@Override
@@ -130,7 +132,7 @@ public class CDGovernor extends GovernorBase<ICDUnitExperiment> implements Contr
 		}
 
 		@Override
-		public void experimentEnd(IUnitExperiment experiment) {
+		public void experimentEnd(ICDUnitExperiment experiment) {
 			experiment.done();
 		}
 		

@@ -6,6 +6,7 @@ import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 import peersim.config.Attribute;
@@ -14,7 +15,8 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 
 @AutoConfig
-public class DisseminationUnitExperiment extends NeighborhoodExperiment {
+public class DisseminationUnitExperiment extends NeighborhoodExperiment
+		implements ICDUnitExperiment {
 
 	private final int fNewscasting;
 
