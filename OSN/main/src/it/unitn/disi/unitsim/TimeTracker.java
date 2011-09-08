@@ -51,8 +51,8 @@ public class TimeTracker implements ICDExperimentObserver {
 	}
 
 	@Override
-	public void experimentEnd(ICDUnitExperiment experiment) {
-		experimentCycled(experiment);
+	public void experimentEnd(IUnitExperiment experiment) {
+		experimentCycled((ICDUnitExperiment) experiment);
 		fExperimentTime.add(System.currentTimeMillis() - fExpStart);
 		fCyclesPerExperiment.add(fEllapsedCycles);
 		fEllapsedExperiments++;

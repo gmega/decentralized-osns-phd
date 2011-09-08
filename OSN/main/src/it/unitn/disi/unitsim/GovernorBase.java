@@ -3,7 +3,6 @@ package it.unitn.disi.unitsim;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
-import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -17,9 +16,8 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.config.plugin.IPlugin;
 import peersim.config.resolvers.CompositeResolver;
-import peersim.core.Control;
 
-public abstract class GovernorBase implements IPlugin{
+public abstract class GovernorBase<T extends IUnitExperiment> implements IPlugin{
 
 	protected static final String SCHEDULER = "scheduler";
 	/**
@@ -45,10 +43,11 @@ public abstract class GovernorBase implements IPlugin{
 	/**
 	 * The currently running experiment.
 	 */
-	protected ICDUnitExperiment fCurrent;
+	protected T fCurrent;
 	protected final TimeTracker fTracker;
-	protected final Class<? extends ICDUnitExperiment> fExperimentKlass;
+	protected final Class<T> fExperimentKlass;
 
+	@SuppressWarnings("unchecked")
 	public GovernorBase(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute("TabularLogManager") TabularLogManager manager,
@@ -69,14 +68,13 @@ public abstract class GovernorBase implements IPlugin{
 		addExperimentObserver(fTracker);
 
 		try {
-			fExperimentKlass = (Class<? extends ICDUnitExperiment>) Class
-					.forName(experiment);
+			fExperimentKlass = (Class<T>) Class.forName(experiment);
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
 
-	protected ICDUnitExperiment create(IResolver resolver, String prefix, Integer id) {
+	protected T create(IResolver resolver, String prefix, Integer id) {
 		fAttributes.put(IUnitExperiment.ID, Integer.toString(id));
 		return ObjectCreator.createInstance(fExperimentKlass, prefix, resolver);
 	}
