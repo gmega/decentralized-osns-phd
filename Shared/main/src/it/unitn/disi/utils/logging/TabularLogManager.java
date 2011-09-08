@@ -69,9 +69,28 @@ public class TabularLogManager implements IPlugin {
 		if (annotation == null) {
 			return null;
 		}
+		return add(annotation);
+	}
+	
+	public ITableWriter get(Class<?> klass, String key) {
+		StructuredLogs annotation = klass.getAnnotation(StructuredLogs.class);
+		if (annotation == null) {
+			return null;
+		}
+		
+		for (StructuredLog log : annotation.value()) {
+			if (log.key().equals(key)) {
+				return add(log);
+			}
+		}
+		
+		return null;
+	}
+	
+	private ITableWriter add(StructuredLog annotation) {
 		// FIXME I'm not checking whether there are conflicting keys. Not so
 		// serious as it will not fail silently, but will cause a runtime
-		// exception in TableWriter down the line.
+		// exception in TableWriter down the line which might not be intuitive.
 		String logKey = annotation.key();
 		ITableWriter writer = fLogs.get(logKey);
 		if (writer == null) {
@@ -82,7 +101,7 @@ public class TabularLogManager implements IPlugin {
 
 		return writer;
 	}
-
+	
 	private ITableWriter add(String key, String streamId, String[] fields) {
 		if (fLogs.containsKey(key)) {
 			throw new IllegalArgumentException("Duplicate key <<" + key + ">>.");
