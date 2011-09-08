@@ -3,6 +3,7 @@ package it.unitn.disi.utils.peersim;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Control;
+import peersim.core.Fallible;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.PeekableHeap;
@@ -41,7 +42,11 @@ public class CDActionScheduler implements Control {
 			@SuppressWarnings("unchecked")
 			EDProtocol<Object> executor = (EDProtocol<Object>) node
 					.getProtocol(next.pid);
-			executor.processEvent(node, next.pid, next.event);
+			
+			// Don't deliver events to dead nodes.
+			if (node.getFailState() != Fallible.DEAD) {
+				executor.processEvent(node, next.pid, next.event);
+			}
 		}
 
 		return false;

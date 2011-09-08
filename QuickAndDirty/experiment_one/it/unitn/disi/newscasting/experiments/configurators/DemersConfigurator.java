@@ -8,7 +8,8 @@ import it.unitn.disi.newscasting.experiments.f2f.CoverageAnalyzer;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.demers.DemersRumorMonger;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
-import it.unitn.disi.unitsim.CDGovernor;
+import it.unitn.disi.unitsim.GovernorBase;
+import it.unitn.disi.unitsim.cd.CDGovernor;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.MissingParameterException;
@@ -45,7 +46,7 @@ public class DemersConfigurator extends AbstractUEConfigurator implements
 		CoverageAnalyzer analyzer = ObjectCreator.createInstance(
 				CoverageAnalyzer.class, prefix + ".ca", fResolver);
 				
-		CDGovernor governor = (CDGovernor) resolver.getObject(
+		GovernorBase governor = (GovernorBase) resolver.getObject(
 				IResolver.NULL_KEY, CDGovernor.class.getSimpleName());
 		
 		governor.addExperimentObserver(analyzer);

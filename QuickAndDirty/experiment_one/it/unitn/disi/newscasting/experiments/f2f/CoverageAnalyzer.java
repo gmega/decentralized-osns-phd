@@ -1,8 +1,9 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
-import it.unitn.disi.unitsim.ICDExperimentObserver;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.IUnitExperiment;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
 import it.unitn.disi.utils.SparseMultiCounter;
 import it.unitn.disi.utils.logging.StructuredLog;

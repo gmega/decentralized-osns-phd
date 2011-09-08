@@ -1,8 +1,9 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
-import it.unitn.disi.unitsim.ICDExperimentObserver;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.IUnitExperiment;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 

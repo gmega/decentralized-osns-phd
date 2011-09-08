@@ -16,3 +16,14 @@ PAR_LATENCY_LOAD = {PROCESSOR : "ParameterDemux",
                     PREFIXES : 
                     {"DE:" : "rawlatencies%s.text",
                     "N:" : "rawload%s.text"}}
+
+PAR_RUNTIME = {PROCESSOR : "ParameterDemux",
+               PREFIXES : 
+               {"RT:" : "lengths%s.text",
+                "PERF:" : "perf%s.text"}}
+
+PAR_CONV_JOIN = {PROCESSOR : "ParameterDemux",
+                 PREFIXES : 
+                 {"CONV:" : "conv%s.text",
+                  "JOIN:" : "join%s.text",
+                  "BDW:" : "bandwidth%s.text"}}

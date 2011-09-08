@@ -4,8 +4,9 @@ import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.newscasting.Tweet;
-import it.unitn.disi.unitsim.ICDExperimentObserver;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.IUnitExperiment;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.peersim.SNNode;
 
 import java.io.PrintStream;

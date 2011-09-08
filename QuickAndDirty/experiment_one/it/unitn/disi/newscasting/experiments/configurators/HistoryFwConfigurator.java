@@ -16,7 +16,7 @@ import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.GenericCompositeSelector;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
-import it.unitn.disi.unitsim.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.ProtocolReference;

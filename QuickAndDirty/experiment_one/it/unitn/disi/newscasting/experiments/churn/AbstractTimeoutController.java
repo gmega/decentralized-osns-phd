@@ -3,7 +3,7 @@ package it.unitn.disi.newscasting.experiments.churn;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IContentExchangeStrategy.ActivityStatus;
 import it.unitn.disi.epidemics.IProtocolSet;
-import it.unitn.disi.unitsim.CDGovernor;
+import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -38,13 +38,13 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 	
 	private final ITableWriter fLog;
 	
-	private final CDGovernor fGovernor;
+	private final GovernorBase fGovernor;
 
 	public AbstractTimeoutController(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("timeout") int timeout,
 			@Attribute("application") int appid,
-			@Attribute("CDGovernor") CDGovernor governor) {
+			@Attribute("CDGovernor") GovernorBase governor) {
 		if (timeout == 0) {
 			throw new IllegalArgumentException(
 					"Timeout must be greater than zero.");

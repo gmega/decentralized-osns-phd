@@ -1,7 +1,8 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
-import it.unitn.disi.unitsim.ICDExperimentObserver;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
+import it.unitn.disi.unitsim.IUnitExperiment;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
 import it.unitn.disi.utils.tabular.IReference;
 import it.unitn.disi.utils.tabular.TableReader;

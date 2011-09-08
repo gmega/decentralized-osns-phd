@@ -13,7 +13,8 @@ import it.unitn.disi.newscasting.experiments.SelectionFailureTracker;
 import it.unitn.disi.newscasting.experiments.SingleEventStorage;
 import it.unitn.disi.newscasting.experiments.churn.TimeoutReset;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
-import it.unitn.disi.unitsim.CDGovernor;
+import it.unitn.disi.unitsim.GovernorBase;
+import it.unitn.disi.unitsim.cd.CDGovernor;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.tabular.TableReader;
 
@@ -47,7 +48,7 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 
 	// ----------------------------------------------------------------------
 	
-	protected static CDGovernor fGovernor;
+	protected static GovernorBase fGovernor;
 
 	public AbstractUEConfigurator() {
 	}
@@ -59,7 +60,7 @@ public abstract class AbstractUEConfigurator extends CachingConfigurator {
 		StatisticsPrinter printer = ObjectCreator.createInstance(
 				StatisticsPrinter.class, prefix, resolver);
 		
-		fGovernor = (CDGovernor) resolver.getObject(
+		fGovernor = (GovernorBase) resolver.getObject(
 				IResolver.NULL_KEY, CDGovernor.class.getSimpleName());
 		
 		fGovernor.addExperimentObserver(printer);

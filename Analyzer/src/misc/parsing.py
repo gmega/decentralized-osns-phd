@@ -175,14 +175,14 @@ class LineParser(object):
 
 #==========================================================================
 
+SILENT = 0
+WARNING = 1
+ERROR = 2
+
 class TableReader(object):
     """ Iterator-like object for reading table-structured log files which
         allows fields to be referenced by name (R-style)."""
-
-    SILENT = 0
-    WARNING = 1
-    ERROR = 2
-    
+ 
     def __init__(self, source, fs=" ", header=False, malformed=ERROR):
         self._source = source
         self._fs = fs
@@ -253,13 +253,13 @@ class TableReader(object):
 
     
     def __handle_malformed_line__(self, msg):
-        if self._malformed == self.SILENT:
+        if self._malformed == SILENT:
             return
         
         msg = "Line %d -- %s" % (self._linecounter, msg)
-        if self._malformed == self.WARNING:
+        if self._malformed == WARNING:
             logger.warning(msg)
-        elif self._malformed == self.ERROR:
+        elif self._malformed == ERROR:
             raise ParseException(msg)
         else:
             raise Exception("Invalid handling strategy code %d." % self._malformed)

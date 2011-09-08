@@ -15,14 +15,16 @@ STDOUT = "stdout"
 
 class ParameterDemux(object):
     
-    def __init__(self, prefix2file, inputlist):
+    def __init__(self, prefix2file,  target_folder, inputlist):
         self.__prefix2file__ = prefix2file
         self.__inputlist__ = inputlist
+        self.__target_folder__ = target_folder
         
     def demux(self):
         for filename in self.__inputlist__:
             parameters = self.__extract_parameters__(filename)
-            demuxer = LogDemux(self.__substitute__(self.__prefix2file__, parameters), [filename])
+            demuxer = LogDemux(self.__substitute__(self.__prefix2file__, parameters), \
+                                                   self.__target_folder__, [filename])
             demuxer.demux()
     
     def __extract_parameters__(self, filename):
@@ -39,13 +41,14 @@ class ParameterDemux(object):
         
 class LogDemux(object):
     
-    def __init__(self, prefix2file, inputlist):
+    def __init__(self, prefix2file, target_folder, inputlist):
         self.__prefix2file__ = prefix2file
         self.__inputlist__ = inputlist
+        self.__target_folder__ = target_folder
        
     def demux(self):
         for prefix, output in self.__prefix2file__.items():
-            self.__do_demux__(prefix, output)
+            self.__do_demux__(prefix, os.path.join(self.__target_folder__, output))
         
     def __do_demux__(self, prefix, output):
         with self.__open_output__(output) as file:           
@@ -90,22 +93,24 @@ class ParameterIterator(object):
 
 def __main__(argv):
     
-    if len(argv) < 1:
-        print >> sys.stderr, "Missing mode. Syntax: parse MODE [file_1 ... file_n] "
+    if len(argv) < 2:
+        print >> sys.stderr, "Missing mode or target folder. Syntax:\n parse MODE TARGET_FOLDER [file_1 ... file_n] "
         sys.exit(-1)
     
     mode = argv[0].upper()
     mode = getattr(config, mode)
     
+    target_folder = argv[1]
+    
     processor = globals()[mode[PROCESSOR]]
     prefix2output = mode[PREFIXES]
     
-    if len(argv) > 1:
-        inputs = argv[2:]
+    if len(argv) > 2:
+        inputs = argv[3:]
     else:
         inputs = os.listdir("./")
                    
-    mdemux = processor(prefix2output, inputs)
+    mdemux = processor(prefix2output, target_folder, inputs)
     mdemux.demux()
 
 if __name__ == "__main__":

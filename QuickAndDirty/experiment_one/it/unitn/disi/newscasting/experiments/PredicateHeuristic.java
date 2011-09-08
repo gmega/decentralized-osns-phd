@@ -2,7 +2,7 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
-import it.unitn.disi.unitsim.CDGovernor;
+import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
 import peersim.core.Node;
 
@@ -18,10 +18,10 @@ public class PredicateHeuristic implements IPeerSelector {
 
 	private final IPeerSelector fElse;
 	
-	private final CDGovernor fGovernor;
+	private final GovernorBase fGovernor;
 
 	public PredicateHeuristic(IPeerSelector match, IPeerSelector dontMatch,
-			CDGovernor governor) {
+			GovernorBase governor) {
 		fIf = match;
 		fElse = dontMatch;
 		fGovernor = governor;
