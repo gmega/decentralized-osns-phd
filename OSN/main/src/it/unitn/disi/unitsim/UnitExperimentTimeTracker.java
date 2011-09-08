@@ -1,6 +1,8 @@
 package it.unitn.disi.unitsim;
 
 import it.unitn.disi.statistics.EWMAStats;
+import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.tabular.ITableWriter;
@@ -35,7 +37,7 @@ public class UnitExperimentTimeTracker implements ICDExperimentObserver {
 	}
 
 	@Override
-	public void experimentStart(ICDUnitExperiment experiment) {
+	public void experimentStart(IUnitExperiment experiment) {
 		fExpStart = System.currentTimeMillis();
 		fCycleStart = System.currentTimeMillis();
 		fEllapsedCycles = 0;

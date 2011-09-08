@@ -1,4 +1,6 @@
-package it.unitn.disi.unitsim;
+package it.unitn.disi.unitsim.cd;
+
+import it.unitn.disi.unitsim.IUnitExperiment;
 
 
 public interface ICDExperimentObserver {
@@ -6,7 +8,7 @@ public interface ICDExperimentObserver {
 	/**
 	 * Hook method called when an experiment is about to start.
 	 */
-	public void experimentStart(ICDUnitExperiment experiment);
+	public void experimentStart(IUnitExperiment experiment);
 
 	/**
 	 * Hook method called after every cycle for which the current experiment is

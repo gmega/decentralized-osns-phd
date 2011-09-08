@@ -2,8 +2,8 @@ package it.unitn.disi.unitsim.experiments;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.unitsim.ICDUnitExperiment;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
