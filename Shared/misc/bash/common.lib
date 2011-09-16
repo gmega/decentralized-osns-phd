@@ -95,7 +95,7 @@ function assert_exists {
 ############################################################### 
 function checkenv {
 
-    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB,DESCRIPTORS_ROOT,RLIB_HOME misc.cli.CheckVar > /dev/null
+    analyzer -t python -V to_check=HOME,WORKSPACE_HOME,GRAPHS_HOME,BASH_LIB,RLIB_HOME misc.cli.CheckVar > /dev/null
     
     if [ $? == "1" ]
     then

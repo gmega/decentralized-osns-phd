@@ -10,6 +10,7 @@ import it.unitn.disi.utils.peersim.NodeRegistry;
 import it.unitn.disi.utils.peersim.SNNode;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.core.CommonState;
 import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -39,9 +40,11 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 	private final NeighborhoodLoader fLoader;
 
 	private final Integer fRootId;
+	
+	private final long fStartingTime;
 
 	protected final int fGraphProtocolId;
-
+	
 	private SNNode fRootNode;
 	
 	private IndexedNeighborGraph fGraph;
@@ -54,6 +57,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		fRootId = id;
 		fGraphProtocolId = graphProtocolId;
 		fSupport = new NodeRebootSupport(prefix);
+		fStartingTime = CommonState.getTime();
 	}
 
 	@Override
@@ -63,13 +67,8 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 
 	@Override
 	public void initialize() {
+		clearNetwork();
 		INodeRegistry registry = NodeRegistry.getInstance();
-		registry.clear();
-
-		while (Network.size() != 0) {
-			Network.remove();
-		}
-
 		int[] originals = fLoader.verticesOf(fRootId);
 		IndexedNeighborGraph neighborhood = fLoader.neighborhood(fRootId);
 		for (int i = 0; i < originals.length; i++) {
@@ -91,10 +90,22 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		initialize(neighborhood, (SNNode) Network.get(0));
 	}
 	
+	protected void clearNetwork() {
+		INodeRegistry registry = NodeRegistry.getInstance();
+		registry.clear();
+		while (Network.size() != 0) {
+			Network.remove();
+		}
+	}
+	
 	public void initialize(IndexedNeighborGraph neighborhood, SNNode rootNode) {
 		fGraph = neighborhood;
 		fRootNode = rootNode;
 		chainInitialize();
+	}
+	
+	public long startTime() {
+		return fStartingTime;
 	}
 
 	public SNNode rootNode() {

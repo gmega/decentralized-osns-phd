@@ -43,8 +43,9 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		engine.addControl(churn);
 		
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
-				"", 0, GP_ID, null, 1, Integer.MAX_VALUE, 2,
-				builder.registry(), new NullTableWriter());
+				"", 0, GP_ID, null, 1, 2,
+				builder.registry(), new NullTableWriter(),
+				new NullTableWriter(), new NullTableWriter());
 		
 		SNNode root = (SNNode) builder.getNodes().get(0);
 		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(), root);

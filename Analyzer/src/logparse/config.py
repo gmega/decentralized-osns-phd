@@ -27,3 +27,9 @@ PAR_CONV_JOIN = {PROCESSOR : "ParameterDemux",
                  {"CONV:" : "conv%s.text",
                   "JOIN:" : "join%s.text",
                   "BDW:" : "bandwidth%s.text"}}
+
+PAR_CONNECTIVITY = {PROCESSOR : "ParameterDemux",
+                    PREFIXES : 
+                    {"TCP" : "progress%s",
+                     "TCR" : "reachabilities%s",
+                     "TCE" : "summaries%s"}}

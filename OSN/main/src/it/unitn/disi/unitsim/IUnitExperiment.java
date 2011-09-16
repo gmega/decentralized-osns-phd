@@ -7,18 +7,22 @@ public interface IUnitExperiment {
 	/**
 	 * @return the ID for this unit experiment.
 	 */
-	public abstract Object getId();
+	public Object getId();
 
 	/**
 	 * Called right after the unit experiment is scheduled, and before its first
 	 * cycle.
 	 */
-	public abstract void initialize();
+	public void initialize();
 
 	/**
 	 * Called after the last cycle of the current experiment. Experiments should
 	 * release their resources here.
 	 */
-	public abstract void done();
+	public void done();
 
+	/**
+	 * @return the simulation time in which this experiment has started.
+	 */
+	public long startTime();
 }
