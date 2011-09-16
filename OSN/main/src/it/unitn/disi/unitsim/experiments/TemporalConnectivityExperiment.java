@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Stack;
 
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
@@ -59,6 +60,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	private int[][] fUptimeReachability;
 
 	private boolean[] fRoots;
+	
+	private boolean fTerminated = false;
 
 	// ------------------------------------------------------------------------
 
@@ -137,7 +140,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		if (fReached == total()) {
 			System.err.println("-- All nodes reached.");
-			terminate();
+			finished();
 		}
 	}
 	
@@ -151,9 +154,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	@Override
 	public void done() {
-		printReachabilities();
-		printSummary();
-		killAll();
+		if (!fTerminated) {
+			interruptExperiment();
+		}
 	}
 	
 	// ------------------------------------------------------------------------
@@ -195,12 +198,17 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	@Override
 	public void interruptExperiment() {
+		printReachabilities();
+		printSummary();
+		killAll();
+		finished();
 	}
 
 	
 	// ------------------------------------------------------------------------
 	
-	private void terminate() {
+	private void finished() {
+		fTerminated = true;
 		for(IExperimentObserver<IEDUnitExperiment> observer : fObservers) {
 			observer.experimentEnd(this);
 		}
@@ -315,19 +323,20 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private int fNode;
 		private int fIndex = 0;
-		private int fDegree;
+		private int [] fNeighbors;
 
 		public DFSFrame(int node) {
 			fNode = node;
-			fDegree = graph().degree(node);
+			fNeighbors = ((LightweightStaticGraph) graph())
+					.fastGetNeighbours(fNode);
 		}
 
 		public boolean hasNext() {
-			return fIndex < fDegree;
+			return fIndex < fNeighbors.length;
 		}
 
 		public int nextNeighbor() {
-			return graph().getNeighbor(fNode, fIndex++);
+			return fNeighbors[fIndex++];
 		}
 	}
 

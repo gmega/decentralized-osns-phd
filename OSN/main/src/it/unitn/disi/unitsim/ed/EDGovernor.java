@@ -67,6 +67,8 @@ public class EDGovernor extends
 		}
 		
 		if (CommonState.getTime() - fCurrent.startTime() >= fTimeout) {
+			System.err.println("-- Experiment " + fCurrent.getId()
+					+ " timed out.");
 			fCurrent.interruptExperiment();
 		}
 		

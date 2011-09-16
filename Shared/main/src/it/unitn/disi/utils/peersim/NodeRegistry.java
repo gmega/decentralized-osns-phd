@@ -1,9 +1,9 @@
 package it.unitn.disi.utils.peersim;
 
-
 import it.unitn.disi.utils.MiscUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import peersim.config.Configuration;
@@ -18,20 +18,20 @@ import peersim.core.Node;
  * @see INodeRegistry
  */
 public class NodeRegistry {
-	
+
 	/**
 	 * Node registry type.
 	 */
 	private static final String PAR_NODE_REGISTRY = "it.unitn.disi.registry";
-
+	
 	/**
 	 * Setting {@link #PAR_NODE_REGISTRY} to this value will cause an array to
-	 * be used for mapping. If the ID range for the nodes is contiguous, this 
+	 * be used for mapping. If the ID range for the nodes is contiguous, this
 	 * will provide significant performance gains.
 	 */
-	
+
 	private static final INodeRegistry fInstance;
-	
+
 	/** Configures the {@link NodeRegistry} instance. **/
 	static {
 		String mode = null;
@@ -40,25 +40,31 @@ public class NodeRegistry {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		
-		if("contiguous".equals(mode)){
+
+		if ("contiguous".equals(mode)) {
 			System.err.println("Using contiguous node registry.");
 			System.err.print("Allocating... ");
 			fInstance = new ArrayListNodeRegistry(Network.size());
 			System.err.println("done.");
-		} else {
+		} else if("sparse".equals(mode)){
 			fInstance = new HashMapNodeRegistry();
+		} else if("array".equals(mode)) {
+			fInstance = new ArrayNodeRegistry(
+					Configuration.getInt(PAR_NODE_REGISTRY + ".size"));
+		} else {
+			throw new IllegalArgumentException("Invalid mode " + mode + ".");
 		}
 	}
-	
+
 	/**
 	 * @return the singleton instance.
 	 */
 	public static INodeRegistry getInstance() {
 		return fInstance;
 	}
-	
-	private NodeRegistry(){ }
+
+	private NodeRegistry() {
+	}
 }
 
 /**
@@ -67,8 +73,10 @@ public class NodeRegistry {
  * objects from their IDs.
  */
 abstract class AbstractNodeRegistry implements INodeRegistry {
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.protocol.INodeRegistry#registerNode(peersim.core.Node)
 	 */
 	public void registerNode(Node node) {
@@ -90,65 +98,132 @@ abstract class AbstractNodeRegistry implements INodeRegistry {
  * 
  */
 class HashMapNodeRegistry extends AbstractNodeRegistry {
-	
-	private final HashMap<Object, Node> fId2Node = new HashMap<Object, Node>();
-	HashMapNodeRegistry() { }
 
-	protected void store(long id, Node node) { fId2Node.put(id, node); }
-	public Node getNode(long id) { return fId2Node.get(id); }
-	public Node removeNode(long id){ return fId2Node.remove(id); }
-	public boolean contains(long id) { return fId2Node.containsKey(id); }
-	public void clear() { fId2Node.clear(); }
+	private final HashMap<Object, Node> fId2Node = new HashMap<Object, Node>();
+
+	HashMapNodeRegistry() {
+	}
+
+	protected void store(long id, Node node) {
+		fId2Node.put(id, node);
+	}
+
+	public Node getNode(long id) {
+		return fId2Node.get(id);
+	}
+
+	public Node removeNode(long id) {
+		return fId2Node.remove(id);
+	}
+
+	public boolean contains(long id) {
+		return fId2Node.containsKey(id);
+	}
+
+	public void clear() {
+		fId2Node.clear();
+	}
 }
 
 /**
  * {@link INodeRegistry} backed by an array. Efficient if the ID space is
- * roughly the same size as the number of nodes in the network.
- * <BR><BR>
- * Note: if used with large ID spaces, this implementation will quickly 
- * cause the virtual machine to run out of memory.
+ * roughly the same size as the number of nodes in the network. <BR>
+ * <BR>
+ * Note: if used with large ID spaces, this implementation will quickly cause
+ * the virtual machine to run out of memory.
  * 
  * @author giuliano
  */
 class ArrayListNodeRegistry extends AbstractNodeRegistry {
 	private final ArrayList<Node> fId2Node;
-	ArrayListNodeRegistry(int size) { 
+
+	ArrayListNodeRegistry(int size) {
 		fId2Node = new ArrayList<Node>(size);
 	}
 
 	protected void store(long id, Node node) {
-		int int_id = (int)id;
+		int int_id = (int) id;
 		MiscUtils.grow(fId2Node, int_id + 1, null);
 		fId2Node.set(int_id, node);
 	}
-	
+
 	public Node getNode(long id) {
 		if (id >= fId2Node.size()) {
 			return null;
 		}
-		
-		return fId2Node.get((int)id); 
+
+		return fId2Node.get((int) id);
 	}
-	
-	public Node removeNode(long id){
+
+	public Node removeNode(long id) {
 		if (id >= fId2Node.size()) {
 			return null;
 		}
-		
-		return fId2Node.set((int)id, null); 
+
+		return fId2Node.set((int) id, null);
 	}
-	
+
 	public boolean contains(long id) {
 		if (id >= fId2Node.size()) {
 			return false;
 		}
-		
-		return fId2Node.get((int) id) != null; 
+
+		return fId2Node.get((int) id) != null;
 	}
 
-	public void clear(){
+	public void clear() {
 		fId2Node.clear();
 	}
 }
 
+/**
+ * Simple and fast array-backed node registry which does no checks whatsoever
+ * for maximum performance. Use at your own risk.
+ * 
+ * @author giuliano
+ */
+class ArrayNodeRegistry extends AbstractNodeRegistry {
+	private final Node[] fId2Node;
 
+	private int fSize;
+
+	ArrayNodeRegistry(int size) {
+		fId2Node = new Node[size];
+	}
+
+	protected void store(long id, Node node) {
+		fSize++;
+		fId2Node[(int) id] = node;
+	}
+
+	public Node getNode(long id) {
+		if (id >= fSize) {
+			return null;
+		}
+
+		return fId2Node[(int) id];
+	}
+
+	public Node removeNode(long id) {
+		if (id >= fSize) {
+			return null;
+		}
+
+		fSize--;
+		return fId2Node[(int) id] = null;
+	}
+
+	public boolean contains(long id) {
+		if (id >= fSize) {
+			return false;
+		}
+
+		return fId2Node[(int) id] != null;
+	}
+
+	public void clear() {
+		Arrays.fill(fId2Node, null);
+		fSize = 0;
+	}
+
+}
