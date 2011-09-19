@@ -2,6 +2,7 @@ package it.unitn.disi.unitsim.experiments;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Stack;
 
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
@@ -24,10 +25,11 @@ import peersim.core.Node;
 
 @AutoConfig
 @StructuredLogs({
-	@StructuredLog(key = "TCP", fields = {"root", "degree", "reached", "total", "time" }),
-	@StructuredLog(key = "TCR", fields = {"root", "originator", "receiver", "total_length", "uptime_length" }),
-	@StructuredLog(key = "TCE", fields = {"root", "time"} )
-})
+		@StructuredLog(key = "TCP", fields = { "root", "degree", "reached",
+				"total", "time", "active"}),
+		@StructuredLog(key = "TCR", fields = { "root", "originator",
+				"receiver", "total_length", "uptime_length" }),
+		@StructuredLog(key = "TCE", fields = { "root", "time" }) })
 public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		implements IEDUnitExperiment, INodeStateListener {
 
@@ -48,19 +50,23 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	private final INodeRegistry fRegistry;
 
 	private final ITableWriter fProgressWriter;
-	
+
 	private final ITableWriter fReachabilityWriter;
-	
+
 	private final ITableWriter fSummaryWriter;
+	
+	private BitSet fTouched;
 
 	private int fReached;
+	
+	private int fActive;
 
 	private int[][] fTotalReachability;
 
 	private int[][] fUptimeReachability;
 
 	private boolean[] fRoots;
-	
+
 	private boolean fTerminated = false;
 
 	// ------------------------------------------------------------------------
@@ -91,7 +97,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fStartingTime = CommonState.getIntTime();
 		fRegistry = registry;
 		fTimeBase = timeBase;
-		
+
 		fReachabilityWriter = reachabilityWriter;
 		fProgressWriter = progressWriter;
 		fSummaryWriter = summaryWriter;
@@ -105,14 +111,18 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fRoots = new boolean[dim];
 		fTotalReachability = newTable(dim);
 		fUptimeReachability = newTable(dim);
+		fTouched = new BitSet(dim);
+		fActive = dim;
 
 		rootNode().setStateListener(this);
 		Linkable neighborhood = neighborhood();
+
 		int degree = neighborhood.degree();
 		for (int i = 0; i < degree; i++) {
 			SNNode neighbor = (SNNode) neighborhood.getNeighbor(i);
 			neighbor.setStateListener(this);
 		}
+
 	}
 
 	// ------------------------------------------------------------------------
@@ -134,20 +144,74 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			return;
 		}
 		
+		int oldReached = fReached;
+		fTouched.clear();
 		for (int i = 0; i < fTotalReachability.length; i++) {
 			explore(i);
+		}
+		
+		if (oldReached != fReached) {
+			updateActive();
 		}
 
 		if (fReached == total()) {
 			System.err.println("-- All nodes reached.");
+			for (int i = 0; i < neighborhood().degree(); i++) {
+				if (neighborhood().getNeighbor(i).getFailState() != Fallible.DEAD) {
+					throw new IllegalStateException();
+				}
+			}
 			finished();
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private int total() {
 		return (fTotalReachability.length * fTotalReachability.length);
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	private void updateActive() {
+		BitSet toDie = new BitSet();
+		for (int i = fTouched.nextSetBit(0); i >= 0; i = fTouched
+				.nextSetBit(i + 1)) {
+			Node touched = fRegistry.getNode((long) i);
+			Linkable candidates = neighborhood(touched);
+			for(int j = 0; j < candidates.degree(); j++) {
+				Node candidate = candidates.getNeighbor(j);
+				if (candidate.getFailState() == Fallible.DEAD) {
+					continue;
+				}
+				
+				if (allReached(neighborhood(candidate))) {
+					toDie.set((int) candidate.getID());
+				}
+			}
+		}
+		
+		for (int i = toDie.nextSetBit(0); i >= 0; i = toDie
+				.nextSetBit(i + 1)) {
+			fRegistry.getNode((long) i).setFailState(Fallible.DEAD);
+			fActive--;
+		}
+
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	private boolean allReached(Linkable neighborhood) {
+		for (int i = 0; i < fTotalReachability.length; i++) {
+			int degree = neighborhood.degree();
+			for (int j = 0; j < degree; j++) {
+				int neighbor = (int) neighborhood.getNeighbor(j).getID();
+				if (fTotalReachability[i][neighbor] == UNREACHABLE) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	// ------------------------------------------------------------------------
@@ -158,9 +222,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			interruptExperiment();
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void killAll() {
 		Linkable neighborhood = neighborhood();
 		int degree = neighborhood.degree();
@@ -170,24 +234,26 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		}
 		rootNode().setFailState(Fallible.DEAD);
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void printReachabilities() {
 		for (int i = 0; i < dim(); i++) {
 			for (int j = 0; j < dim(); j++) {
-				fReachabilityWriter.set("root", rootNode().getSNId()); 
-				fReachabilityWriter.set("originator", i); 
+				fReachabilityWriter.set("root", rootNode().getSNId());
+				fReachabilityWriter.set("originator", i);
 				fReachabilityWriter.set("receiver", j);
-				fReachabilityWriter.set("total_length", fTotalReachability[i][j]); 
-				fReachabilityWriter.set("uptime_length", fUptimeReachability[i][j]);
+				fReachabilityWriter.set("total_length",
+						fTotalReachability[i][j]);
+				fReachabilityWriter.set("uptime_length",
+						fUptimeReachability[i][j]);
 				fReachabilityWriter.emmitRow();
 			}
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void printSummary() {
 		fSummaryWriter.set("root", rootNode().getSNId());
 		fSummaryWriter.set("time", CommonState.getTime() - startTime());
@@ -204,12 +270,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		finished();
 	}
 
-	
 	// ------------------------------------------------------------------------
-	
+
 	private void finished() {
 		fTerminated = true;
-		for(IExperimentObserver<IEDUnitExperiment> observer : fObservers) {
+		for (IExperimentObserver<IEDUnitExperiment> observer : fObservers) {
 			observer.experimentEnd(this);
 		}
 	}
@@ -301,12 +366,14 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fUptimeReachability[root][idx] = fTimeBase
 				+ (int) neighborNode.uptime();
 		fReached++;
+		fTouched.set((int) neighborNode.getID());
 
 		fProgressWriter.set("root", rootNode().getSNId());
 		fProgressWriter.set("degree", neighborhood().degree());
 		fProgressWriter.set("reached", fReached);
 		fProgressWriter.set("total", total());
 		fProgressWriter.set("time", CommonState.getTime() - startTime());
+		fProgressWriter.set("active", fActive);
 		fProgressWriter.emmitRow();
 	}
 
@@ -323,7 +390,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private int fNode;
 		private int fIndex = 0;
-		private int [] fNeighbors;
+		private int[] fNeighbors;
 
 		public DFSFrame(int node) {
 			fNode = node;
