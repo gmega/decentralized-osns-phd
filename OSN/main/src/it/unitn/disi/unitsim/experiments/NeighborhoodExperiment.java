@@ -41,7 +41,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 
 	private final Integer fRootId;
 	
-	private final long fStartingTime;
+	private long fStartingTime;
 
 	protected final int fGraphProtocolId;
 	
@@ -57,7 +57,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		fRootId = id;
 		fGraphProtocolId = graphProtocolId;
 		fSupport = new NodeRebootSupport(prefix);
-		fStartingTime = CommonState.getTime();
+		resetStartingTime();
 	}
 
 	@Override
@@ -102,6 +102,10 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		fGraph = neighborhood;
 		fRootNode = rootNode;
 		chainInitialize();
+	}
+	
+	protected void resetStartingTime() {
+		fStartingTime = CommonState.getTime();
 	}
 	
 	public long startTime() {

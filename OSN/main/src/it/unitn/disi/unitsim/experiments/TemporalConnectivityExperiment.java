@@ -24,45 +24,62 @@ import peersim.core.Node;
 
 @AutoConfig
 @StructuredLogs({
-	@StructuredLog(key = "TCP", fields = {"root", "degree", "reached", "total", "time" }),
-	@StructuredLog(key = "TCR", fields = {"root", "originator", "receiver", "total_length", "uptime_length" }),
-	@StructuredLog(key = "TCE", fields = {"root", "time"} )
-})
+		@StructuredLog(key = "TCP", fields = { "root", "degree", "reached",
+				"total", "time" }),
+		@StructuredLog(key = "TCR", fields = { "root", "originator",
+				"receiver", "total_length", "uptime_length" }),
+		@StructuredLog(key = "TCE", fields = { "root", "time" }) })
 public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		implements IEDUnitExperiment, INodeStateListener {
 
 	public static final int UNREACHABLE = Integer.MAX_VALUE;
 
 	// ------------------------------------------------------------------------
+	// Experiment configuration parameters.
+	// ------------------------------------------------------------------------
+
+	private final int fBurnInTime;
 
 	private final int fHorizon;
 
-	private final int fStartingTime;
-
 	private final int fTimeBase;
+
+	private final long fTimeout;
+
+	// ------------------------------------------------------------------------
+	// Data structures.
+	// ------------------------------------------------------------------------
 
 	private final Stack<DFSFrame> fStack = new Stack<DFSFrame>();
 
 	private final ArrayList<IExperimentObserver<IEDUnitExperiment>> fObservers = new ArrayList<IExperimentObserver<IEDUnitExperiment>>();
-
-	private final INodeRegistry fRegistry;
-
-	private final ITableWriter fProgressWriter;
-	
-	private final ITableWriter fReachabilityWriter;
-	
-	private final ITableWriter fSummaryWriter;
-	
-	private final long fTimeout;
-
-	private int fReached;
 
 	private int[][] fTotalReachability;
 
 	private int[][] fUptimeReachability;
 
 	private boolean[] fRoots;
-	
+
+	private boolean fBurningIn;
+
+	// ------------------------------------------------------------------------
+	// References to services.
+	// ------------------------------------------------------------------------
+
+	private final INodeRegistry fRegistry;
+
+	private final ITableWriter fProgressWriter;
+
+	private final ITableWriter fReachabilityWriter;
+
+	private final ITableWriter fSummaryWriter;
+
+	// ------------------------------------------------------------------------
+	// Other state variables.
+	// ------------------------------------------------------------------------
+
+	private int fReached;
+
 	private boolean fTerminated = false;
 
 	// ------------------------------------------------------------------------
@@ -75,12 +92,13 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			@Attribute(value = "timebase", defaultValue = "0") int timeBase,
 			@Attribute(value = "horizon", defaultValue = "-1") int horizon,
 			@Attribute(value = "timeout", defaultValue = "0") long timeout,
+			@Attribute(value = "burnin", defaultValue = "0") int burnIn,
 			@Attribute("NodeRegistry") INodeRegistry registry,
 			@Attribute("TabularLogManager") TabularLogManager manager) {
 		this(prefix, id, graphProtocolId, loader, timeBase, horizon, timeout,
-				registry,
-				manager.get(TemporalConnectivityExperiment.class, "TCP"),
-				manager.get(TemporalConnectivityExperiment.class, "TCR"),
+				burnIn, registry, manager.get(
+						TemporalConnectivityExperiment.class, "TCP"), manager
+						.get(TemporalConnectivityExperiment.class, "TCR"),
 				manager.get(TemporalConnectivityExperiment.class, "TCE"));
 	}
 
@@ -88,14 +106,21 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	public TemporalConnectivityExperiment(String prefix, Integer id,
 			int graphProtocolId, NeighborhoodLoader loader, int timeBase,
-			int horizon, long timeout, INodeRegistry registry, ITableWriter progressWriter,
-			ITableWriter reachabilityWriter, ITableWriter summaryWriter) {
+			int horizon, long timeout, int burnIn, INodeRegistry registry,
+			ITableWriter progressWriter, ITableWriter reachabilityWriter,
+			ITableWriter summaryWriter) {
 		super(prefix, id, graphProtocolId, loader);
 		fHorizon = horizon <= 0 ? UNREACHABLE : horizon;
-		fStartingTime = CommonState.getIntTime();
 		fRegistry = registry;
 		fTimeBase = timeBase;
 		fTimeout = timeout == 0 ? Long.MAX_VALUE : timeout;
+		
+		fBurnInTime = burnIn;
+		if (burnIn > 0) {
+			System.err.println("-- Start burn-in period for experiment " + getId()
+					+ ".");
+			fBurningIn = true;
+		}
 		
 		fReachabilityWriter = reachabilityWriter;
 		fProgressWriter = progressWriter;
@@ -135,10 +160,10 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	@Override
 	public void stateChanged(int oldState, int newState, SNNode node) {
-		if (newState == Fallible.DEAD) {
+		if (!updateBurnIn() || newState == Fallible.DEAD) {
 			return;
 		}
-		
+
 		for (int i = 0; i < fTotalReachability.length; i++) {
 			explore(i);
 		}
@@ -148,7 +173,38 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			finished();
 		}
 	}
-	
+
+	// ------------------------------------------------------------------------
+
+	private boolean updateBurnIn() {
+		if (!fBurningIn) {
+			return true;
+		}
+		
+		if (ellapsedTime() < fBurnInTime) {
+			return false;
+		}
+		
+		// Burn-in is over.
+		// 1. Readjust the starting time.
+		resetStartingTime();
+		
+		// 2. Zeroes all uptimes.
+		rootNode().clearUptime();
+		Linkable neighborhood = neighborhood();
+		for (int i = 0; i < neighborhood.degree(); i++) {
+			SNNode neighbor = (SNNode) neighborhood.getNeighbor(i);
+			neighbor.clearUptime();
+		}
+
+		fBurningIn = false;
+		
+		System.err.println("-- Burn-in period for experiment " + getId()
+				+ " over.");
+
+		return true;
+	}
+
 	// ------------------------------------------------------------------------
 
 	private int total() {
@@ -163,9 +219,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			interruptExperiment();
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void killAll() {
 		Linkable neighborhood = neighborhood();
 		int degree = neighborhood.degree();
@@ -175,24 +231,26 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		}
 		rootNode().setFailState(Fallible.DEAD);
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void printReachabilities() {
 		for (int i = 0; i < dim(); i++) {
 			for (int j = 0; j < dim(); j++) {
-				fReachabilityWriter.set("root", rootNode().getSNId()); 
-				fReachabilityWriter.set("originator", i); 
+				fReachabilityWriter.set("root", rootNode().getSNId());
+				fReachabilityWriter.set("originator", i);
 				fReachabilityWriter.set("receiver", j);
-				fReachabilityWriter.set("total_length", fTotalReachability[i][j]); 
-				fReachabilityWriter.set("uptime_length", fUptimeReachability[i][j]);
+				fReachabilityWriter.set("total_length",
+						fTotalReachability[i][j]);
+				fReachabilityWriter.set("uptime_length",
+						fUptimeReachability[i][j]);
 				fReachabilityWriter.emmitRow();
 			}
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
-	
+
 	private void printSummary() {
 		fSummaryWriter.set("root", rootNode().getSNId());
 		fSummaryWriter.set("time", CommonState.getTime() - startTime());
@@ -209,12 +267,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		finished();
 	}
 
-	
 	// ------------------------------------------------------------------------
-	
+
 	private void finished() {
 		fTerminated = true;
-		for(IExperimentObserver<IEDUnitExperiment> observer : fObservers) {
+		for (IExperimentObserver<IEDUnitExperiment> observer : fObservers) {
 			observer.experimentEnd(this);
 		}
 	}
@@ -302,7 +359,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	private void updateRunningTimes(int root, SNNode neighborNode) {
 		int idx = (int) neighborNode.getID();
 		fTotalReachability[root][idx] = fTimeBase + CommonState.getIntTime()
-				- fStartingTime;
+				- (int) startTime();
 		fUptimeReachability[root][idx] = fTimeBase
 				+ (int) neighborNode.uptime();
 		fReached++;
@@ -321,12 +378,18 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	public void addObserver(IExperimentObserver<IEDUnitExperiment> observer) {
 		fObservers.add(observer);
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	@Override
 	public boolean isTimedOut() {
-		return (CommonState.getEndTime() - startTime()) >= fTimeout;
+		return !fBurningIn && ellapsedTime() >= fTimeout;
+	}
+
+	// ------------------------------------------------------------------------
+
+	protected long ellapsedTime() {
+		return CommonState.getTime() - startTime();
 	}
 
 	// ------------------------------------------------------------------------
@@ -335,7 +398,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private int fNode;
 		private int fIndex = 0;
-		private int [] fNeighbors;
+		private int[] fNeighbors;
 
 		public DFSFrame(int node) {
 			fNode = node;

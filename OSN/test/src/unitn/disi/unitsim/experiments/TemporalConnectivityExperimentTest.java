@@ -12,6 +12,7 @@ import it.unitn.disi.utils.tabular.NullTableWriter;
 
 import org.junit.Test;
 
+import peersim.core.CommonState;
 import peersim.core.Node;
 
 public class TemporalConnectivityExperimentTest extends PeerSimTest {
@@ -31,19 +32,22 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		});
 		
 		UpDownControl churn = new UpDownControl(new boolean[][] {
-				{true,	false,	false},
-				{true,	false,	true},
-				{false,	true,	true},
-				{false,	false,	true},
-				{false,	true,	false},
-				{false,	true,	false}
+				{false, false, true,	false,	false},
+				{false, false, true,	false,	true},
+				{false, false, false,	true,	true},
+				{false, false, false,	false,	true},
+				{false, false, false,	true,	false},
+				{false, false, false,	true,	false}
 		});
 		
-		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(), 42, 5);
+		final int TIME_BASE = 1;
+		final int BURN_IN_TIME = 2;
+		
+		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(), 42, 6);
 		engine.addControl(churn);
 		
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
-				"", 0, GP_ID, null, 1, 2, 0, 
+				"", 0, GP_ID, null, TIME_BASE, 2, 0, BURN_IN_TIME,
 				builder.registry(), new NullTableWriter(),
 				new NullTableWriter(), new NullTableWriter());
 		
@@ -54,7 +58,7 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 			((SNNode) node).clearStateListener();
 		}
 		
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 5; i++) {
 			engine.cycle();
 			printUpNodes(builder);
 			exp.stateChanged(0, 0, null);
