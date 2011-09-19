@@ -6,6 +6,7 @@ import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.unitsim.TimeTracker;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -147,5 +148,12 @@ public class DisseminationUnitExperiment extends NeighborhoodExperiment
 
 	private void activate(SNNode node, boolean status) {
 		node.active(status);
+	}
+
+	@Override
+	public boolean isTimedOut() {
+		// FIXME properly implement this now that dissemination governors can work as timeout controllers, 
+		// and clear out the other TimeoutController cruft. 
+		return false;
 	}
 }

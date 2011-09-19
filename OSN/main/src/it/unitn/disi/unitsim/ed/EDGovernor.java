@@ -3,7 +3,6 @@ package it.unitn.disi.unitsim.ed;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
-import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.edsim.EDProtocol;
 import it.unitn.disi.unitsim.GovernorBase;
@@ -23,15 +22,12 @@ public class EDGovernor extends
 		GovernorBase<IEDUnitExperiment, IExperimentObserver<IEDUnitExperiment>>
 		implements IExperimentObserver<IEDUnitExperiment>, Control {
 	
-	private final long fTimeout;
-
 	public EDGovernor(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute("TabularLogManager") TabularLogManager manager,
-			@Attribute("experiment") String experiment,
-			@Attribute(value = "timeout", defaultValue = "0") long timeout) {
+			@Attribute("experiment") String experiment) {
 		super(prefix, resolver, manager, experiment);
-		fTimeout = timeout == 0 ? Long.MAX_VALUE : timeout;
+
 	}
 
 	public void start() {
@@ -66,7 +62,7 @@ public class EDGovernor extends
 			return false;
 		}
 		
-		if (CommonState.getTime() - fCurrent.startTime() >= fTimeout) {
+		if (fCurrent.isTimedOut()) {
 			System.err.println("-- Experiment " + fCurrent.getId()
 					+ " timed out.");
 			fCurrent.interruptExperiment();

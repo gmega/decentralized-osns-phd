@@ -9,7 +9,6 @@ import it.unitn.disi.unitsim.IUnitExperiment;
  * @author giuliano
  */
 public interface IEDUnitExperiment extends IUnitExperiment {
-
 	/**
 	 * Interrupts the currently running experiment.
 	 * 

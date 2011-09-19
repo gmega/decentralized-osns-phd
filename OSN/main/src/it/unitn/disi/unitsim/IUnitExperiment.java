@@ -25,4 +25,9 @@ public interface IUnitExperiment {
 	 * @return the simulation time in which this experiment has started.
 	 */
 	public long startTime();
+
+	/**
+	 * @return whether this experiment has timed out or not.
+	 */
+	public boolean isTimedOut();
 }

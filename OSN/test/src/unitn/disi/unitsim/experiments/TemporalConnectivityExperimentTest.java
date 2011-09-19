@@ -43,7 +43,7 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		engine.addControl(churn);
 		
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
-				"", 0, GP_ID, null, 1, 2,
+				"", 0, GP_ID, null, 1, 2, 0, 
 				builder.registry(), new NullTableWriter(),
 				new NullTableWriter(), new NullTableWriter());
 		

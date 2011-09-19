@@ -23,7 +23,7 @@ public class NodeRegistry {
 	 * Node registry type.
 	 */
 	private static final String PAR_NODE_REGISTRY = "it.unitn.disi.registry";
-	
+
 	/**
 	 * Setting {@link #PAR_NODE_REGISTRY} to this value will cause an array to
 	 * be used for mapping. If the ID range for the nodes is contiguous, this
@@ -36,7 +36,7 @@ public class NodeRegistry {
 	static {
 		String mode = null;
 		try {
-			mode = Configuration.getString(PAR_NODE_REGISTRY, "hash");
+			mode = Configuration.getString(PAR_NODE_REGISTRY, "sparse");
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -46,9 +46,9 @@ public class NodeRegistry {
 			System.err.print("Allocating... ");
 			fInstance = new ArrayListNodeRegistry(Network.size());
 			System.err.println("done.");
-		} else if("sparse".equals(mode)){
+		} else if ("sparse".equals(mode)) {
 			fInstance = new HashMapNodeRegistry();
-		} else if("array".equals(mode)) {
+		} else if ("array".equals(mode)) {
 			fInstance = new ArrayNodeRegistry(
 					Configuration.getInt(PAR_NODE_REGISTRY + ".size"));
 		} else {
@@ -177,8 +177,8 @@ class ArrayListNodeRegistry extends AbstractNodeRegistry {
 }
 
 /**
- * Simple and fast array-backed node registry which does no checks whatsoever
- * for maximum performance. Use at your own risk.
+ * Simple and fast array-backed node registry which does no boundary checks and
+ * no array resizing for maximum performance.
  * 
  * @author giuliano
  */
