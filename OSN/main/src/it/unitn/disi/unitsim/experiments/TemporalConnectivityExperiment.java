@@ -26,6 +26,8 @@ import peersim.core.Node;
 @StructuredLogs({
 		@StructuredLog(key = "TCP", fields = { "root", "degree", "reached",
 				"total", "time" }),
+		@StructuredLog(key = "TCS", fields = { "root", "originator", "total",
+				"unreached", "corrected", "pathological" }),
 		@StructuredLog(key = "TCR", fields = { "root", "originator",
 				"receiver", "total_length", "uptime_length" }),
 		@StructuredLog(key = "TCE", fields = { "root", "time" }) })
@@ -73,6 +75,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	private final ITableWriter fReachabilityWriter;
 
 	private final ITableWriter fSummaryWriter;
+	
+	private final ITableWriter fResidueWriter;
 
 	// ------------------------------------------------------------------------
 	// Other state variables.
@@ -96,10 +100,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			@Attribute("NodeRegistry") INodeRegistry registry,
 			@Attribute("TabularLogManager") TabularLogManager manager) {
 		this(prefix, id, graphProtocolId, loader, timeBase, horizon, timeout,
-				burnIn, registry, manager.get(
-						TemporalConnectivityExperiment.class, "TCP"), manager
-						.get(TemporalConnectivityExperiment.class, "TCR"),
-				manager.get(TemporalConnectivityExperiment.class, "TCE"));
+				burnIn, registry, 
+				manager.get(TemporalConnectivityExperiment.class, "TCP"), 
+				manager.get(TemporalConnectivityExperiment.class, "TCR"),
+				manager.get(TemporalConnectivityExperiment.class, "TCE"),
+				manager.get(TemporalConnectivityExperiment.class, "TCS"));
 	}
 
 	// ------------------------------------------------------------------------
@@ -108,7 +113,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			int graphProtocolId, NeighborhoodLoader loader, int timeBase,
 			int horizon, long timeout, int burnIn, INodeRegistry registry,
 			ITableWriter progressWriter, ITableWriter reachabilityWriter,
-			ITableWriter summaryWriter) {
+			ITableWriter summaryWriter, ITableWriter residueWriter) {
 		super(prefix, id, graphProtocolId, loader);
 		fHorizon = horizon <= 0 ? UNREACHABLE : horizon;
 		fRegistry = registry;
@@ -125,6 +130,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fReachabilityWriter = reachabilityWriter;
 		fProgressWriter = progressWriter;
 		fSummaryWriter = summaryWriter;
+		fResidueWriter = residueWriter;
 	}
 
 	// ------------------------------------------------------------------------
@@ -181,7 +187,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			return true;
 		}
 		
-		if (ellapsedTime() < fBurnInTime) {
+		long ellapsed = ellapsedTime();
+		if (ellapsed < fBurnInTime) {
 			return false;
 		}
 		
@@ -200,7 +207,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fBurningIn = false;
 		
 		System.err.println("-- Burn-in period for experiment " + getId()
-				+ " over.");
+				+ " over (excess was " + (ellapsed - fBurnInTime) + ")." );
 
 		return true;
 	}
@@ -234,35 +241,12 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	private void printReachabilities() {
-		for (int i = 0; i < dim(); i++) {
-			for (int j = 0; j < dim(); j++) {
-				fReachabilityWriter.set("root", rootNode().getSNId());
-				fReachabilityWriter.set("originator", i);
-				fReachabilityWriter.set("receiver", j);
-				fReachabilityWriter.set("total_length",
-						fTotalReachability[i][j]);
-				fReachabilityWriter.set("uptime_length",
-						fUptimeReachability[i][j]);
-				fReachabilityWriter.emmitRow();
-			}
-		}
-	}
-
-	// ------------------------------------------------------------------------
-
-	private void printSummary() {
-		fSummaryWriter.set("root", rootNode().getSNId());
-		fSummaryWriter.set("time", CommonState.getTime() - startTime());
-		fSummaryWriter.emmitRow();
-	}
-
-	// ------------------------------------------------------------------------
-
 	@Override
 	public void interruptExperiment() {
 		printReachabilities();
 		printSummary();
+		printResidues();
+		
 		killAll();
 		finished();
 	}
@@ -363,15 +347,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fUptimeReachability[root][idx] = fTimeBase
 				+ (int) neighborNode.uptime();
 		fReached++;
-
-		fProgressWriter.set("root", rootNode().getSNId());
-		fProgressWriter.set("degree", neighborhood().degree());
-		fProgressWriter.set("reached", fReached);
-		fProgressWriter.set("total", total());
-		fProgressWriter.set("time", CommonState.getTime() - startTime());
-		fProgressWriter.emmitRow();
+		printProgress();
 	}
-
+	
 	// ------------------------------------------------------------------------
 
 	@Override
@@ -392,6 +370,84 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		return CommonState.getTime() - startTime();
 	}
 
+	// ------------------------------------------------------------------------
+	
+	protected void printProgress() {
+		fProgressWriter.set("root", rootNode().getSNId());
+		fProgressWriter.set("degree", neighborhood().degree());
+		fProgressWriter.set("reached", fReached);
+		fProgressWriter.set("total", total());
+		fProgressWriter.set("time", CommonState.getTime() - startTime());
+		fProgressWriter.emmitRow();
+	}
+	
+	// ------------------------------------------------------------------------
+
+	private void printReachabilities() {
+		for (int i = 0; i < dim(); i++) {
+			for (int j = 0; j < dim(); j++) {
+				fReachabilityWriter.set("root", rootNode().getSNId());
+				fReachabilityWriter.set("originator", i);
+				fReachabilityWriter.set("receiver", j);
+				fReachabilityWriter.set("total_length",
+						fTotalReachability[i][j]);
+				fReachabilityWriter.set("uptime_length",
+						fUptimeReachability[i][j]);
+				fReachabilityWriter.emmitRow();
+			}
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	
+	private void printSummary() {
+		fSummaryWriter.set("root", rootNode().getSNId());
+		fSummaryWriter.set("time", CommonState.getTime() - startTime());
+		fSummaryWriter.emmitRow();
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	private void printResidues() {
+		for (int i = 0; i < dim(); i++) {
+			int reached = 0;
+			int nonZeroUptime = 0;
+			
+			for (int j = 0; j < dim(); j++) {
+				// Residue: has the node been reached?
+				if (isReachable(i, j)) {
+					reached++;
+				}
+				
+				// Corrected residue: has the node come online? 
+				SNNode node = (SNNode) fRegistry.getNode((long) j);
+				if (node.uptime() > 0) {
+					nonZeroUptime++;
+				}
+			}
+			
+			double residue = 1.0 - (((double)reached)/dim());
+			double corrected;
+			boolean pathological = false;
+			
+			// Pathological case: issuing node hasn't come online.
+			if (nonZeroUptime == 0) {
+				corrected = 1.0;
+				pathological = true;
+			} else {
+				corrected = 1.0 - (((double)reached)/nonZeroUptime);
+			}
+			
+			fResidueWriter.set("root", rootNode().getSNId());
+			fResidueWriter.set("reached", reached);
+			fResidueWriter.set("total", dim());
+			fResidueWriter.set("residue", residue);
+			fResidueWriter.set("corrected", corrected);
+			fResidueWriter.set("pathological", pathological);
+			fResidueWriter.emmitRow();
+		}
+	}
+	
 	// ------------------------------------------------------------------------
 
 	class DFSFrame {
