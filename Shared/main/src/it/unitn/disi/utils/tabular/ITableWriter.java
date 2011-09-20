@@ -49,6 +49,12 @@ public interface ITableWriter {
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an
+	 * <code>boolean</code> as value.
+	 */
+	public abstract boolean set(String key, boolean value);
+	
+	/**
+	 * Similar to {@link #set(String, String)}, but taking an
 	 * <code>Object</code> as value.
 	 */
 	public abstract boolean set(String key, Object object);

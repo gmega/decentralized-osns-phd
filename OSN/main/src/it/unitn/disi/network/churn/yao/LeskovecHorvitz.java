@@ -3,6 +3,7 @@ package it.unitn.disi.network.churn.yao;
 import java.util.Random;
 
 import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
@@ -14,6 +15,7 @@ import it.unitn.disi.random.IDistribution;
  * 
  * @author giuliano
  */
+@AutoConfig
 public class LeskovecHorvitz implements IDistributionGenerator {
 
 	private final double UP_K = 547.4608;

@@ -27,6 +27,11 @@ public class NullTableWriter implements ITableWriter {
 	public boolean set(String key, float value) {
 		return true;
 	}
+	
+	@Override
+	public boolean set(String key, boolean value) {
+		return true;
+	}
 
 	@Override
 	public boolean set(String key, Object object) {

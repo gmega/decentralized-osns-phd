@@ -101,6 +101,14 @@ public class TableWriter implements ITableWriter {
 	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, java.lang.Object)
 	 */
 	@Override
+	public boolean set(String key, boolean value) {
+		return this.set(key, Boolean.toString(value));
+	}
+	
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, java.lang.Object)
+	 */
+	@Override
 	public boolean set(String key, Object object) {
 		return this.set(key, object.toString());
 	}

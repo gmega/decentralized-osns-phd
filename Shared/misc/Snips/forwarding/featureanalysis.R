@@ -32,63 +32,6 @@ plot_cor <- function(table, x=800, y=0.6, pos=NULL, lwd=2, bty="n") {
 	}
 }
 
-# -----------------------------------------------------------------------------
-# Computes a set of aggregates by successively filtering out points taking by 
-# reference a feature vector and a set of feature vector breaks.
-# -----------------------------------------------------------------------------
-
-aggregate_by_featurevalue <- function(table, avg_function, featurebreaks, featurevector) {
-	return(sapply(featurebreaks, function(x) { return(avg_function(table, which(featurevector >= x))) }));
-}
-
-# -----------------------------------------------------------------------------
-# Generic function which allows us to plot aggregate curves by successively 
-# removing classes of points and recomputing.
-# -----------------------------------------------------------------------------
-plot_comparison_by_feature <- function(tables, featurebreaks, featurevector_extractor, colors, 
-		aggregator=global_latency_average, xlab=NULL, ylab=NULL, lwd=2, lnames=NULL, 
-		lpos="bottomright", ylim=NULL, bty="n", legend_cex=1, plot=TRUE, ltys=NULL, ...) {
-	
-	datasets <- sapply(tables, function(x) { return (aggregate_by_featurevalue(x, aggregator, featurebreaks, featurevector_extractor(x))) })
-	
-	if (!plot) {
-		return(datasets)
-	}
-	
-	# Finds the maximum
-	if (is.null(ylim)) {
-		coalesced <- c(datasets)
-		coalesced <- coalesced[!is.nan(coalesced)]
-		maximum <- max(coalesced)
-		minimum <- min(coalesced)
-		ylim=c(minimum, maximum)	
-	}
-	rm(coalesced)
-	
-	if (is.null(ltys)) {
-		ltys <- 1:length(datasets)
-	}
-	
-	# First calls plot.
-	first_set <- datasets[,1]
-	plot(first_set ~ featurebreaks, type="l", xlab=xlab, ylab=ylab, col=colors[1], lwd=lwd, lty=ltys[1], ylim=ylim,...)
-	
-	# Then lines.
-	for(i in 2:length(tables)) {
-		lines(datasets[,i] ~ featurebreaks, col=colors[i], lwd=lwd, lty=ltys[i])
-	}
-
-	if(!is.null(lnames)) {
-		if(!is.character(lpos)) {
-			x <- lpos[1]
-			y <- lpos[2]
-		} else {
-			x <- lpos
-			y <- NULL
-		}
-		legend(x, y, lnames, col=colors, lwd=lwd, lty=ltys, bty=bty, cex=legend_cex)
-	}
-}
 
 
 
