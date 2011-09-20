@@ -11,7 +11,10 @@ import it.unitn.disi.random.IDistribution;
 /**
  * Random number generators for distributions taken from Leskovec and Horvitz's
  * <a href="http://dx.doi.org/10.1145/1367497.1367620">Planetary-scale views on
- * large instant-messaging network</a>.
+ * large instant-messaging network</a>. Distributions are calibrated for
+ * $x_{min} = 1$. Other minimum values require recomputation of the
+ * normalization constants.
+ * 
  * 
  * @author giuliano
  */

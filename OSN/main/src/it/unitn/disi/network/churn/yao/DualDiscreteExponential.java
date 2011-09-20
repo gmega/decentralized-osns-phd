@@ -13,19 +13,23 @@ import peersim.config.AutoConfig;
 public class DualDiscreteExponential implements IDistributionGenerator {
 
 	private final Random fRandom;
+	
+	private final double fScaling;
 
-	public DualDiscreteExponential(@Attribute("Random") Random r) {
+	public DualDiscreteExponential(@Attribute("Random") Random r,
+			@Attribute("averageScaling") double scaling) {
 		fRandom = r;
+		fScaling = scaling;
 	}
 
 	@Override
 	public IDistribution uptimeDistribution(double li) {
-		return new DiscreteExponential(1.0/li, fRandom);
+		return DiscreteExponential.withAverage(fScaling*li, fRandom);
 	}
 
 	@Override
 	public IDistribution downtimeDistribution(double di) {
-		return new DiscreteExponential(1.0/di, fRandom);
+		return DiscreteExponential.withAverage(fScaling*di, fRandom);
 	}
 
 	@Override
