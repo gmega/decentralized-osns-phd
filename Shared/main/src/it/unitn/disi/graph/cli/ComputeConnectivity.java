@@ -1,6 +1,7 @@
 package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -25,10 +26,13 @@ public class ComputeConnectivity extends GraphAnalyzer {
 		int components = 0;
 		System.err.println("Running Tarjan's algorithm.");
 		try {
-			out.println("id components degree");
+			TableWriter writer = new TableWriter(new PrintStream(oStream),
+					"id", "components", "degree");
 			for (int i = 0; i < fGraph.size(); i++) {
-				out.println(i + " " + tarjan(fGraph.fastGetNeighbours(i)) + " "
-						+ fGraph.fastGetNeighbours(i).length);
+				writer.set("id", i);
+				writer.set("components", tarjan(fGraph.fastGetNeighbours(i)));
+				writer.set("degree", fGraph.fastGetNeighbours(i).length);
+				writer.emmitRow();
 			}
 		} finally {
 			out.close();
