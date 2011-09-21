@@ -6,7 +6,7 @@ import java.util.Iterator;
 
 import peersim.core.Node;
 
-public class AliveBitmapScheduler implements Iterable<Integer> {
+public class AliveBitmapScheduler implements ISchedule {
 
 	private IStaticSchedule fSchedule;
 
@@ -18,8 +18,13 @@ public class AliveBitmapScheduler implements Iterable<Integer> {
 	}
 
 	@Override
-	public Iterator<Integer> iterator() {
+	public IScheduleIterator iterator() {
 		return new Schedule();
+	}
+
+	@Override
+	public int size() {
+		return fSchedule.size();
 	}
 
 	class Schedule implements IScheduleIterator {
@@ -38,14 +43,12 @@ public class AliveBitmapScheduler implements Iterable<Integer> {
 		public int remaining() {
 			return fRemaining;
 		}
-
 		@Override
-		public boolean hasNext() {
-			return fRemaining != 0;
-		}
-
-		@Override
-		public Integer next() {
+		public Integer nextIfAvailable() {			
+			if (fRemaining == 0) {
+				return IScheduleIterator.DONE;
+			}
+			
 			for (int i = 0; i < fSelected.length; i++) {
 				if (!fSelected[i]) {
 					Node candidate = fRegistry.getNode(fSchedule.get(i));
@@ -58,11 +61,5 @@ public class AliveBitmapScheduler implements Iterable<Integer> {
 			}
 			return null;
 		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-
 	}
 }

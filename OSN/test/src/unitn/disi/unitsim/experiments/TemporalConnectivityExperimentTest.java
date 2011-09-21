@@ -12,7 +12,6 @@ import it.unitn.disi.utils.tabular.NullTableWriter;
 
 import org.junit.Test;
 
-import peersim.core.CommonState;
 import peersim.core.Node;
 
 public class TemporalConnectivityExperimentTest extends PeerSimTest {

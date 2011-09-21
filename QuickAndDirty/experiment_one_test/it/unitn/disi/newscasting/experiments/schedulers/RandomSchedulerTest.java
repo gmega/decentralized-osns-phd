@@ -59,8 +59,12 @@ public class RandomSchedulerTest extends PeerSimTest{
 			for (int klass : classes) { degreeClasses.add(klass); }
 			selected.clear();
 			
-			for (Integer integer : scheduler) {
-				Assert.assertFalse(integer.toString(), selected.contains(integer));
+			IScheduleIterator it = scheduler.iterator();
+			
+			Integer integer;
+			while ((integer = it.nextIfAvailable()) != IScheduleIterator.DONE) {
+				Assert.assertFalse(integer.toString(),
+						selected.contains(integer));
 				selected.add(integer);
 				degreeClasses.remove(graph.degree(integer));
 			}

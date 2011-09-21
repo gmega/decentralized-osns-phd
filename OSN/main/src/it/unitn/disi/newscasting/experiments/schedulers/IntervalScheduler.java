@@ -51,36 +51,25 @@ public class IntervalScheduler implements ISchedule {
 		
 		return new IScheduleIterator () {
 			
-			private int fCurrent = fIntervals.get(0);
+			private int fCurrent = fIntervals.get(0) - 1;
 
 			private int fIndex;
 			
 			@Override
-			public boolean hasNext() {
-				return lower() < fIntervals.size();
-			}
-
-			@Override
-			public Integer next() {
-				if(!hasNext()) {
-					throw new NoSuchElementException();
-				}
-				
-				int next = fCurrent;
-				
+			public Integer nextIfAvailable() {
 				fCurrent++;
-				// If we reached the upper bound, switch to the 
+				// If we reached the upper bound, switch to the
 				// next interval.
 				if (fCurrent > fIntervals.get(upper())) {
 					fIndex++;
-					if (hasNext()) {
+					if (lower() < fIntervals.size()) {
 						fCurrent = fIntervals.get(lower());
 					}
 				}
-				
-				return next;
+
+				return fCurrent;
 			}
-			
+
 			@Override
 			public int remaining() {
 				return fSize - fIndex;
@@ -92,11 +81,6 @@ public class IntervalScheduler implements ISchedule {
 			
 			private int upper() {
 				return 2*fIndex + 1;
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
 			}
 		};
 	}

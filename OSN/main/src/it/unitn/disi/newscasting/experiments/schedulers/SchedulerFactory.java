@@ -29,10 +29,10 @@ public class SchedulerFactory {
 	private SchedulerFactory() {
 	}
 
-	public Iterable<Integer> createScheduler(IResolver resolver, String prefix,
+	public ISchedule createScheduler(IResolver resolver, String prefix,
 			INodeRegistry registry) {
 		String type = resolver.getString(prefix, IResolver.NULL_KEY);
-		Iterable<Integer> base;
+		ISchedule base;
 		switch (SchedulerType.valueOf(type.toUpperCase())) {
 
 		case IDLIST:

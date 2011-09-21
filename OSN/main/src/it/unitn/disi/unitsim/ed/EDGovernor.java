@@ -5,6 +5,8 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.core.Control;
 import peersim.edsim.EDProtocol;
+import it.unitn.disi.newscasting.experiments.schedulers.ISchedule;
+import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -46,11 +48,10 @@ public class EDGovernor extends
 	}
 
 	private void scheduleNext() {
-		if (!fSchedule.hasNext()) {
+		Integer id = fSchedule.nextIfAvailable();
+		if (id == IScheduleIterator.DONE) {
 			return;
-		}
-
-		Integer id = fSchedule.next();
+		}	
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
 		fCurrent.addObserver(this);

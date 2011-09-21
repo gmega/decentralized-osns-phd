@@ -43,7 +43,7 @@ public class IDListScheduler implements IStaticSchedule {
 	}
 
 	@Override
-	public Iterator<Integer> iterator() {
+	public IScheduleIterator iterator() {
 		return new StaticScheduleIterator(this);
 	}
 

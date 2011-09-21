@@ -1,5 +1,7 @@
 package it.unitn.disi.utils.collections;
 
+import java.io.Serializable;
+
 /**
  * Generic representation for a pair.
  * 
@@ -8,7 +10,10 @@ package it.unitn.disi.utils.collections;
  * @param <K1>
  * @param <K2>
  */
-public class Pair <K1, K2>{
+public class Pair <K1, K2> implements Serializable{
+	
+	private static final long serialVersionUID = 1L;
+	
 	public final K1 a;
 	public final K2 b;
 	

@@ -1,19 +1,27 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
-import java.util.Iterator;
-
 /**
- * Extension of the {@link Iterator} interface for scheduling nodes for
- * experiments (usually unit experiments).
+ * An {@link IScheduleIterator} provides an iterator interface to experiment
+ * schedules. Schedules are nothing more than sequence of {@link Integer} IDs.
  * 
  * @author giuliano
  */
-public interface IScheduleIterator extends Iterator<Integer> {
+public interface IScheduleIterator {
 
 	/**
-	 * Special value returned by {@link #next()} 
+	 * Special value returned by {@link #next()}
 	 */
-	public static final int NONE_AVAILABLE = Integer.MAX_VALUE;
+	public static final int DONE = Integer.MAX_VALUE;
 
+	/**
+	 * @return the number of remaining IDs in the schedule, or
+	 *         {@link ISchedule#UNKNOWN} if this quantity is not known.
+	 */
 	public int remaining();
+
+	/**
+	 * @return the next {@link Integer} in the ID stream, if available, or
+	 *         {@link #DONE} if none is available.
+	 */
+	public Integer nextIfAvailable();
 }

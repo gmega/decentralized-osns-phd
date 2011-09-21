@@ -1,5 +1,6 @@
 package it.unitn.disi.unitsim.cd;
 
+import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -85,13 +86,11 @@ public class CDGovernor extends
 
 	private SchedulingState scheduleCycle() {
 
-		if (!fSchedule.hasNext()) {
-			return SchedulingState.DONE;
-		}
-
-		Integer id = fSchedule.next();
+		Integer id = fSchedule.nextIfAvailable();
 		if (id == null) {
 			return SchedulingState.SCHEDULE;
+		} else if (id == IScheduleIterator.DONE) {
+			return SchedulingState.DONE;
 		}
 
 		fCurrent = create(fResolver, fPrefix, id);

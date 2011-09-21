@@ -1,26 +1,33 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
-import java.util.Iterator;
+public class RepetitionDecorator implements ISchedule {
 
-public class RepetitionDecorator implements Iterable<Integer> {
-
-	private Iterable<Integer> fDelegate;
+	private ISchedule fDelegate;
 
 	private final int fRepetitions;
 
-	public RepetitionDecorator(Iterable<Integer> delegate, int repetitions) {
+	public RepetitionDecorator(ISchedule delegate, int repetitions) {
 		fDelegate = delegate;
 		fRepetitions = repetitions;
 	}
+	
+	@Override
+	public int size() {
+		if (fDelegate.size() == ISchedule.UNKNOWN) {
+			return ISchedule.UNKNOWN;
+		} else {
+			return fDelegate.size() * fRepetitions;
+		}
+	}
 
 	@Override
-	public Iterator<Integer> iterator() {
+	public IScheduleIterator iterator() {
 		return new RepetitionIterator(fDelegate, fRepetitions);
 	}
 
 	static class RepetitionIterator implements IScheduleIterator {
 
-		private Iterable<Integer> fGenerator;
+		private ISchedule fGenerator;
 
 		private IScheduleIterator fIterator;
 
@@ -28,30 +35,22 @@ public class RepetitionDecorator implements Iterable<Integer> {
 
 		private int fBaseRemaining;
 
-		public RepetitionIterator(Iterable<Integer> fDelegate, int repetitions) {
-			fGenerator = fDelegate;
-			fIterator = (IScheduleIterator) fDelegate.iterator();
+		public RepetitionIterator(ISchedule delegate, int repetitions) {
+			fGenerator = delegate;
+			fIterator = delegate.iterator();
 			fBaseRemaining = fIterator.remaining();
 			fRemaining = repetitions;
 		}
 
 		@Override
-		public boolean hasNext() {
-			while (!fIterator.hasNext() && fRemaining > 0) {
+		public Integer nextIfAvailable() {
+			Integer next;
+			while (((next = fIterator.nextIfAvailable()) == IScheduleIterator.DONE)
+					&& fRemaining > 0) {
 				fIterator = (IScheduleIterator) fGenerator.iterator();
 				fRemaining--;
 			}
-			return fIterator.hasNext();
-		}
-
-		@Override
-		public Integer next() {
-			return fIterator.next();
-		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
+			return next;
 		}
 
 		@Override

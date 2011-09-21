@@ -1,15 +1,27 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
 /**
- * An {@link ISchedule} represents an {@link Iterable} collection of
- * {@link Integer}s. The only static aspect required of {@link ISchedule}s is
- * that their size must be known in advance.
+ * An {@link ISchedule} represents an iterable collection of {@link Integer}s
+ * identifying experiments.
  * 
  * @author giuliano
  */
-public interface ISchedule extends Iterable<Integer> {
+public interface ISchedule {
+
+	public static final Integer UNKNOWN = Integer.MAX_VALUE;
+
 	/**
-	 * @return the size of this schedule.
+	 * @return the initial size of this schedule, or {@link #UNKNOWN} if such
+	 *         size cannot be established in advance. Note that due to the
+	 *         dynamic nature of some schedules, this value might be only an
+	 *         approximation.
 	 */
 	public int size();
+
+	/**
+	 * @return an {@link IScheduleIterator} for this schedule. The meaning of
+	 *         calling {@link #iterator()} more than once is
+	 *         implementation-dependent.
+	 */
+	public IScheduleIterator iterator();
 }

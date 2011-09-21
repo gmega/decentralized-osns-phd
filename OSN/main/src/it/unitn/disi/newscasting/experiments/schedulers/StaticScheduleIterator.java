@@ -11,12 +11,10 @@ public class StaticScheduleIterator implements IScheduleIterator {
 	}
 
 	@Override
-	public boolean hasNext() {
-		return fIndex != fSchedule.size();
-	}
-
-	@Override
-	public Integer next() {
+	public Integer nextIfAvailable() {
+		if (fIndex == fSchedule.size()) {
+			return DONE;
+		}
 		return fSchedule.get(fIndex++);
 	}
 
@@ -24,10 +22,5 @@ public class StaticScheduleIterator implements IScheduleIterator {
 	public int remaining() {
 		return fSchedule.size() - fIndex;
 	}
-
-	@Override
-	public void remove() {
-		throw new UnsupportedOperationException();
-	}
-
+	
 }

@@ -64,7 +64,7 @@ public class DegreeClassScheduler implements IStaticSchedule {
 		return schedule.get(index);
 	}
 	
-	public Iterator<Integer> iterator() {
+	public IScheduleIterator iterator() {
 		schedule();
 		return new StaticScheduleIterator(this);
 	}
