@@ -119,4 +119,12 @@ public class MiscUtils {
 		int size = Integer.parseInt(System.getProperty("sun.arch.data.model"))/Byte.SIZE;
 		return size*count;
 	}
+	
+	public static int safeCast(long other) {
+		if (other >= Long.MAX_VALUE || other <= Long.MIN_VALUE) {
+			throw new IllegalArgumentException("Integer overflow during typecast.");
+		}
+		
+		return (int) other;
+	}
 }

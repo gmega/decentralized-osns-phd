@@ -1,5 +1,12 @@
 package unitn.disi.unitsim.experiments;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.List;
+
 import junit.framework.Assert;
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.test.framework.FakeCycleEngine;
@@ -7,17 +14,22 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.UpDownControl;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.peersim.SNNode;
 import it.unitn.disi.utils.tabular.NullTableWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
 import org.junit.Test;
 
 import peersim.core.Node;
 
 public class TemporalConnectivityExperimentTest extends PeerSimTest {
+	
+	private static final int INF = Integer.MAX_VALUE;
 
 	@Test
-	public void originalExample() {
+	public void originalExample() throws IOException {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
 		builder.addNodes(6);
 
@@ -45,25 +57,27 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		FakeCycleEngine engine = new FakeCycleEngine(builder.getNodes(), 42, 6);
 		engine.addControl(churn);
 		
+		ByteArrayOutputStream oup = new ByteArrayOutputStream();
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
 				"", 0, GP_ID, null, TIME_BASE, 2, 0, BURN_IN_TIME,
-				builder.registry(), new NullTableWriter(),
-				new NullTableWriter(), new NullTableWriter(), new NullTableWriter());
+				builder.registry(), new NullTableWriter(), new TableWriter(
+						new PrintStream(oup), "root", "originator", "receiver",
+						"total_length", "uptime_length", "first_uptime_length"),
+				new NullTableWriter(), new NullTableWriter());
 		
-		SNNode root = (SNNode) builder.getNodes().get(0);
+		@SuppressWarnings("unchecked")
+		List <SNNode> list = (List <SNNode>) builder.getNodes();
+		SNNode root = list.get(0);
 		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(), root);
 		
-		for (Node node : builder.getNodes()) {
-			((SNNode) node).clearStateListener();
+		for (int i = 0; i < list.size(); i++) {
+			list.get(i).setStateListener(exp);
 		}
-		
+	
 		for (int i = 0; i < 5; i++) {
 			engine.cycle();
 			printUpNodes(builder);
-			exp.stateChanged(0, 0, null);
 		}
-		
-		printReachabilities(exp);
 		
 		final int inf = Integer.MAX_VALUE;
 		
@@ -77,13 +91,38 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 				{inf,	3,	2,	3,	2,		2	}
 		};
 		
+		int [][] valuesFULatency = {
+				{0,		0,		1,		0,		inf,	inf	},
+				{0,		0,		1,		0,		inf,	inf	},
+				{inf,	0,		1,		0,		0,		0	},
+				{inf,	0,		0,		2,		inf,	inf	},
+				{inf,	0,		0,		0,		1,		0	},
+				{inf,	0,		0,		0,		0,		1	}
+		};
+		
+		int [][] result = table(values.length);
+		int [][] fuResult = table(valuesFULatency.length);
+		System.err.println(new String(oup.toByteArray()));
+		
+		TableReader reader = new TableReader(new ByteArrayInputStream(oup.toByteArray()));
+		while(reader.hasNext()) {
+			reader.next();
+			int i = Integer.parseInt(reader.get("originator"));
+			int j = Integer.parseInt(reader.get("receiver"));
+			int length = Integer.parseInt(reader.get("total_length"));
+			int fuLatency = Integer.parseInt(reader.get("first_uptime_length"));
+			result[i][j] = length;
+			fuResult[i][j] = fuLatency;
+		}
+		
 		for (int i = 0; i < values.length; i++) {
 			for (int j = 0; j < values[i].length; j++) {
-				Assert.assertEquals(values[i][j], exp.reachability(i, j));
+				Assert.assertEquals(values[i][j], result[i][j]);
+				Assert.assertEquals(i + " " + j, valuesFULatency[i][j], fuResult[i][j]);
 			}
 		}
 	}
-	
+
 	private void printUpNodes(TestNetworkBuilder builder) {
 		StringBuffer buf = new StringBuffer();
 		for (Node node : builder.getNodes()) {
@@ -95,18 +134,12 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		System.out.println(buf);
 	}
 
-	private void printReachabilities(TemporalConnectivityExperiment exp) {
-		for (int i = 0; i < exp.dim(); i++) {
-			System.err.println("Node " + i + ":");
-			for (int j = 0; j < exp.dim(); j++) {
-				System.err.print("-- " + j + ":");
-				int reachability = exp.reachability(i, j);
-				if (reachability == TemporalConnectivityExperiment.UNREACHABLE) {
-					System.err.println(" can't reach");
-				} else {
-					System.err.println(" " + reachability);
-				}
-			}
+	private int[][] table(int dim) {
+		int [][] result = new int[dim][];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = new int[dim];
+			Arrays.fill(result[i], INF);
 		}
+		return result;
 	}
 }

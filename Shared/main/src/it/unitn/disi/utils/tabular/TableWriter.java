@@ -25,18 +25,18 @@ public class TableWriter implements ITableWriter {
 	private final String fSeparator;
 
 	public TableWriter(PrintStream output, String... fields) {
-		this(output, FS, fields);
-	}
-	
-	public TableWriter(PrintWriter output, String... fields) {
-		this(output, FS, fields);
-	}
-	
-	public TableWriter(PrintStream output, String separator, String... fields) {
-		this(new PrintWriter(output), separator, fields);
+		this(FS, output, fields);
 	}
 
-	public TableWriter(PrintWriter output, String separator, String... fields) {
+	public TableWriter(PrintWriter output, String... fields) {
+		this(FS, output, fields);
+	}
+
+	public TableWriter(String separator, PrintStream output, String... fields) {
+		this(separator, new PrintWriter(output), fields);
+	}
+
+	public TableWriter(String separator, PrintWriter output, String... fields) {
 		fOut = output;
 		fFields = fields;
 		fSeparator = separator;
