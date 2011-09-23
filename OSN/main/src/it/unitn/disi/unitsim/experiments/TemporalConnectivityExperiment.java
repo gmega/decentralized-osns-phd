@@ -162,7 +162,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		for (int i = 0; i < fReachability.length; i++) {
 			fReachability[i] = new boolean[dim];
 			fFirstUptime[i] = new long[dim];
-			Arrays.fill(fFirstUptime, NEVER);
+			Arrays.fill(fFirstUptime[i], NEVER);
 		}
 
 		rootNode().setStateListener(this);
@@ -264,8 +264,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		// 3. Updates self-reachability and uptimes for
 		// everyone.
 		for (int i = 0; i < dim(); i++) {
-			updateSelfReachability(i);
-			updateFirstUptimes(i);
+			Node node = fRegistry.getNode(i);
+			if (node.isUp()) {
+				updateSelfReachability(i);
+				updateFirstUptimes(i);
+			}
 		}
 
 		fBurningIn = false;
