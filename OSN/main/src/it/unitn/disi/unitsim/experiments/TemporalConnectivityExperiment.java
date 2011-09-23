@@ -139,7 +139,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fRegistry = registry;
 		fTimeBase = timeBase;
 		fTimeout = timeout == 0 ? Long.MAX_VALUE : timeout;
-		
+
 		fBurnInTime = burnIn;
 		if (burnIn > 0) {
 			System.err.println("-- Start burn-in period for experiment "
@@ -163,7 +163,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fFirstUptime = new int[dim][];
 		for (int i = 0; i < fReachability.length; i++) {
 			fReachability[i] = new boolean[dim];
-			
+
 			// Initialize first uptimes.
 			fFirstUptime[i] = new int[dim];
 			Arrays.fill(fFirstUptime[i], NEVER);
@@ -197,17 +197,16 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			for (int i = 0; i < fReachability.length; i++) {
 				explore(i);
 			}
+			
+			if (fReached == total()) {
+				System.err.println("-- All nodes reached.");
+				interruptExperiment();
+			}
 		}
-
+		
 		case Fallible.DOWN:
 		case Fallible.DEAD:
 			break;
-
-		}
-
-		if (fReached == total()) {
-			System.err.println("-- All nodes reached.");
-			finished();
 		}
 	}
 
@@ -218,7 +217,6 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		if (isReachable(sender, sender)) {
 			// Do we know that already?
 			if (fFirstUptime[sender][receiver] == NEVER) {
-				System.err.println("First uptime of " + receiver + " to " + sender + " is " + ellapsedTime() + ".");
 				// No, start ticking our clock.
 				fFirstUptime[sender][receiver] = MiscUtils
 						.safeCast(ellapsedTime());
@@ -390,9 +388,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			throw new IllegalStateException("Event race condition detected.");
 		}
 		long fromFirst = ellapsedTime() - fFirstUptime[sender][id];
-		
-		printReachability(sender, reached.getSNId(),
-				printableEllapsedTime(), fromFirst, uptime);
+
+		printReachability(sender, reached.getSNId(), printableEllapsedTime(),
+				fromFirst, uptime);
 		printProgress();
 	}
 
