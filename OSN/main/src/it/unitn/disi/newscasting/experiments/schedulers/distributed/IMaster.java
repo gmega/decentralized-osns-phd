@@ -6,6 +6,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface IMaster extends Remote {
+	
+	public static final String MASTER_ADDRESS = IMaster.class.getName();
 
 	/**
 	 * Registers a new worker.
@@ -15,7 +17,7 @@ public interface IMaster extends Remote {
 	 * 
 	 * @return a worker ID.
 	 */
-	public int registerWorker(IWorker worker);
+	public int registerWorker(IWorker worker) throws RemoteException;
 
 	/**
 	 * Asks for a new experiment, acquiring the obligation to run it.

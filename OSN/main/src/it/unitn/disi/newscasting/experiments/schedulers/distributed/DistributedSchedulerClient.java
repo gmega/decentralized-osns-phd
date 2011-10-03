@@ -5,32 +5,80 @@ import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.Iterator;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
+import org.apache.log4j.Logger;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+
+@AutoConfig
 public class DistributedSchedulerClient implements ISchedule, IWorker {
 
-	private IMaster fMaster;
-	
-	private int fWorkerId;
-	
-	private Integer fInitialSize;
-	
-	public DistributedSchedulerClient() {
+	private static final Logger fLogger = Logger
+			.getLogger(DistributedSchedulerClient.class);
 
+	private int fWorkerId;
+
+	private Integer fInitialSize;
+
+	private String fHost;
+
+	private int fPort;
+
+	public DistributedSchedulerClient(@Attribute("host") String host,
+			@Attribute(value = "port", defaultValue = "50325") int port) {
+		fHost = host;
+		fPort = port;
 	}
 
 	@Override
 	public IScheduleIterator iterator() {
-//		IMaster master = connect();
-		return null;
+		IWorker us = publish(); 
+		IMaster master = connect();
+		register(master, us);
+		return new DistributedIterator(master);
+	}
+
+	private void register(IMaster master, IWorker worker) {
+		try {
+			fLogger.info("Registering worker reference with master.");
+			fInitialSize = master.remaining();
+			fWorkerId = master.registerWorker(this);
+		} catch (RemoteException ex) {
+			fLogger.error("Failed to register reference.");
+			throw MiscUtils.nestRuntimeException(ex);
+		}
+	}
+	
+	private IWorker publish() {
+		try {
+			fLogger.info("Publishing RMI reference.");
+			return (IWorker) UnicastRemoteObject.exportObject(this, 0);
+		} catch (RemoteException ex) {
+			fLogger.error("Failed to publish object.");
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 	}
 
 	private IMaster connect() {
-		
-//		fInitialSize = fMaster.remaining();
-//		fMaster.registerWorker(this);
-		return null;
+		fLogger.info("Contacting master at " + fHost + ":" + fPort + ".");
+		try {
+			Registry registry = LocateRegistry.getRegistry(fHost, fPort);
+			return (IMaster) registry.lookup(IMaster.MASTER_ADDRESS);
+		} catch (RemoteException ex) {
+			fLogger.error("Failed to resolve registry at supplied address/port. "
+					+ "Is the master instance running?");
+			throw MiscUtils.nestRuntimeException(ex);
+		} catch (NotBoundException ex) {
+			fLogger.error("Master not bound under expected registry location "
+					+ IMaster.MASTER_ADDRESS + ".");
+			throw MiscUtils.nestRuntimeException(ex);
+		}
 	}
 
 	@Override
@@ -48,7 +96,7 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 		private final IMaster fMaster;
 
 		private int fRemaining;
-		
+
 		private int fPrevious = Integer.MIN_VALUE;
 
 		protected DistributedIterator(IMaster master) {
@@ -80,7 +128,7 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 		private void refreshRemaining(Pair<Integer, Integer> pair) {
 			fRemaining = pair.b;
 		}
-		
+
 		private void releasePrevious() {
 			if (fPrevious != Integer.MIN_VALUE) {
 				try {

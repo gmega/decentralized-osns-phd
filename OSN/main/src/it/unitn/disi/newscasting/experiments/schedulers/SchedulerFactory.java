@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.newscasting.experiments.schedulers.distributed.DistributedSchedulerClient;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 
 import java.util.Comparator;
@@ -17,7 +18,7 @@ public class SchedulerFactory {
 	private static final String PAR_REPETITIONS = "repetitions";
 
 	enum SchedulerType {
-		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST, INTERVAL
+		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST, INTERVAL, DISTRIBUTED
 	}
 
 	private static final SchedulerFactory fInstance = new SchedulerFactory();
@@ -60,6 +61,10 @@ public class SchedulerFactory {
 		case DEGREE_CLASS_SAMPLING:
 			base = new AliveBitmapScheduler(ObjectCreator.createInstance(
 					DegreeClassScheduler.class, prefix, resolver), registry);
+			break;
+			
+		case DISTRIBUTED:
+			base = ObjectCreator.createInstance(DistributedSchedulerClient.class, prefix, resolver);
 			break;
 
 		default:

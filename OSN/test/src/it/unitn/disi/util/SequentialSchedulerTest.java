@@ -1,9 +1,8 @@
 package it.unitn.disi.util;
 
-import it.unitn.disi.utils.IntervalScheduler;
+import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.newscasting.experiments.schedulers.IntervalScheduler;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import junit.framework.Assert;
 
@@ -22,21 +21,15 @@ public class SequentialSchedulerTest {
 		};
 		
 		IntervalScheduler scheduler = new IntervalScheduler(intervals);
-		Iterator <Integer> it = scheduler.iterator();
+		IScheduleIterator it = scheduler.iterator();
 		
 		for (int i = 0; i < expected.length; i++) {
 			for (int j = 0; j < expected[i].length; j++) {
-				Assert.assertTrue(it.hasNext());
-				Assert.assertEquals(expected[i][j], it.next().intValue());
+				Assert.assertEquals(expected[i][j], it.nextIfAvailable().intValue());
 			}
 		}
 		
-		Assert.assertFalse(it.hasNext());
-		
-		try {
-			it.next();
-			Assert.fail();
-		} catch(NoSuchElementException ex) { }
-		
+		Assert.assertEquals(IScheduleIterator.DONE, it.nextIfAvailable().intValue());
+		Assert.assertEquals(IScheduleIterator.DONE, it.nextIfAvailable().intValue());
 	}
 }

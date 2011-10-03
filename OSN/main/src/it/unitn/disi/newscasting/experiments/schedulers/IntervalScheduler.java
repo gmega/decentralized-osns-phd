@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -14,7 +13,10 @@ public class IntervalScheduler implements ISchedule {
 	private int fSize;
 	
 	public IntervalScheduler(@Attribute("idlist") String idlist) {
-		String [] intervals = idlist.split(" ");
+		this(idlist.split(" "));
+	}
+	
+	public IntervalScheduler(String [] intervals) {
 		for (int i = 0; i < intervals.length; i++){
 			String [] interval = intervals[i].split(",");
 			
@@ -57,6 +59,10 @@ public class IntervalScheduler implements ISchedule {
 			
 			@Override
 			public Integer nextIfAvailable() {
+				if (upper() >= fIntervals.size()) {
+					return IScheduleIterator.DONE;
+				}
+				
 				fCurrent++;
 				// If we reached the upper bound, switch to the
 				// next interval.
@@ -64,6 +70,8 @@ public class IntervalScheduler implements ISchedule {
 					fIndex++;
 					if (lower() < fIntervals.size()) {
 						fCurrent = fIntervals.get(lower());
+					} else {
+						return IScheduleIterator.DONE;
 					}
 				}
 
