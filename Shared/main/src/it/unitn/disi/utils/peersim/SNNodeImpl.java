@@ -60,9 +60,13 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 		if (oldState == newState) {
 			return;
 		}
-
+		
 		switch (newState) {
 		case GeneralNode.DEAD:
+			// If node was down, there's nothing to do.
+			if (oldState == GeneralNode.DOWN) {
+				break;
+			}
 		case GeneralNode.DOWN:
 			// Logs end of uptime.
 			logEvent("up");
