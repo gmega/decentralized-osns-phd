@@ -76,11 +76,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	private final ArrayList<IExperimentObserver<IEDUnitExperiment>> fObservers = new ArrayList<IExperimentObserver<IEDUnitExperiment>>();
 
-	private boolean[][] fReachability;
+	private SingleExperiment[] fExperiments;
 
 	private boolean[] fRoots;
-
-	private int[][] fFirstUptime;
 
 	private boolean fBurningIn;
 
@@ -159,15 +157,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	protected void chainInitialize() {
 		int dim = graph().size();
 		fRoots = new boolean[dim];
-		fReachability = new boolean[dim][];
-		fFirstUptime = new int[dim][];
-		for (int i = 0; i < fReachability.length; i++) {
-			fReachability[i] = new boolean[dim];
-
-			// Initialize first uptimes.
-			fFirstUptime[i] = new int[dim];
-			Arrays.fill(fFirstUptime[i], NEVER);
-			fFirstUptime[i][i] = 0;
+		fExperiments = new SingleExperiment[dim];
+		for (int i = 0; i < fExperiments.length; i++) {
+			fExperiments[i] = new SingleExperiment(i);
 		}
 
 		rootNode().setStateListener(this);
@@ -190,51 +182,27 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		switch (newState) {
 
+		/* Interesting things only happen when nodes come up. */
 		case Fallible.OK: {
-			int id = (int) node.getID();
-			updateSelfReachability(id);
-			updateFirstUptimes(id);
-			for (int i = 0; i < fReachability.length; i++) {
-				explore(i);
+			for (SingleExperiment exp : fExperiments) {
+				exp.nodeUp(node);
 			}
 			
+			for (int i = 0; i < dim(); i++) {
+				explore(i);
+			}
+
 			if (fReached == total()) {
 				System.err.println("-- All nodes reached.");
 				interruptExperiment();
 			}
+			
+			break;
 		}
-		
+
 		case Fallible.DOWN:
 		case Fallible.DEAD:
 			break;
-		}
-	}
-
-	// ------------------------------------------------------------------------
-
-	protected void updateFirstUptime(int sender, int receiver) {
-		// Has the sender been up already?
-		if (isReachable(sender, sender)) {
-			// Do we know that already?
-			if (fFirstUptime[sender][receiver] == NEVER) {
-				// No, start ticking our clock.
-				fFirstUptime[sender][receiver] = MiscUtils
-						.safeCast(ellapsedTime());
-			}
-		}
-	}
-
-	// ------------------------------------------------------------------------
-
-	private void updateFirstUptimes(int joining) {
-		for (int i = 0; i < fReachability.length; i++) {
-			// The joining node is a receiver...
-			updateFirstUptime(i, joining);
-			// ... but it's also a sender.
-			SNNode other = (SNNode) fRegistry.getNode(i);
-			if (other.isUp()) {
-				updateFirstUptime(joining, i);
-			}
 		}
 	}
 
@@ -252,7 +220,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	@Override
 	public void interruptExperiment() {
 		Pair<Double, Double> residues = printResidues();
-		printSummary(residues);
+		logSummary(residues);
 		killAll();
 		finished();
 	}
@@ -284,10 +252,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		// 3. Updates self-reachability and uptimes for
 		// everyone.
 		for (int i = 0; i < dim(); i++) {
-			Node node = fRegistry.getNode(i);
+			SNNode node = (SNNode) fRegistry.getNode(i);
 			if (node.isUp()) {
-				updateSelfReachability(i);
-				updateFirstUptimes(i);
+				fExperiments[i].nodeUp(node);
 			}
 		}
 
@@ -310,32 +277,23 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	private void updateSelfReachability(int i) {
-		SNNode root = (SNNode) fRegistry.getNode((long) i);
-		if (!isReachable(i, i)) {
-			reached(i, root);
-		}
-	}
-
-	// ------------------------------------------------------------------------
-
 	/**
 	 * Main algorithm for the connectivity experiments.
 	 */
-	private void explore(int i) {
+	private void explore(int sender) {
 		// Computes nodes that are to be explored.
 		Arrays.fill(fRoots, false);
 
 		for (int j = 0; j < dim(); j++) {
 			SNNode node = (SNNode) fRegistry.getNode((long) j);
-			fRoots[j] = (isReachable(i, j)) && node.isUp();
+			fRoots[j] = fExperiments[sender].isReachable(j) && node.isUp();
 		}
 
 		// For each already reached node...
 		for (int j = 0; j < dim(); j++) {
 			// ... expands the reachability.
 			if (fRoots[j]) {
-				recomputeReachability(i, j);
+				recomputeReachability(sender, j);
 			}
 		}
 	}
@@ -352,10 +310,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				// Only pushes if node unmarked and up.
 				SNNode neighborNode = (SNNode) fRegistry
 						.getNode((long) neighbor);
-				if (neighborNode.isUp() && !isReachable(root, neighbor)) {
+				if (neighborNode.isUp()
+						&& !fExperiments[root].isReachable(neighbor)) {
 					fStack.push(current);
 					current = new DFSFrame(neighbor, lsg);
-					reached(root, neighborNode);
+					fExperiments[root].reached(neighbor);
 				}
 			}
 			// Otherwise pops, and does nothing since we visit the node on push.
@@ -370,34 +329,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	private boolean isReachable(int root, int node) {
-		return fReachability[root][node];
-	}
-
-	// ------------------------------------------------------------------------
-
-	private void reached(int sender, SNNode reached) {
-		int id = (int) reached.getID();
-		// Updates reachability information.
-		fReachability[sender][id] = true;
-		fReached++;
-
-		long uptime = reached.uptime();
-		// Sanity test.
-		if (fFirstUptime[sender][id] == NEVER) {
-			throw new IllegalStateException("Event race condition detected.");
-		}
-		long fromFirst = ellapsedTime() - fFirstUptime[sender][id];
-
-		printReachability(sender, reached.getSNId(), printableEllapsedTime(),
-				fromFirst, uptime);
-		printProgress();
-	}
-
-	// ------------------------------------------------------------------------
-
 	public int dim() {
-		return fReachability.length;
+		return fExperiments.length;
 	}
 
 	// ------------------------------------------------------------------------
@@ -429,7 +362,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	private int total() {
-		return (fReachability.length * fReachability.length);
+		return dim() * dim();
 	}
 
 	// ------------------------------------------------------------------------
@@ -446,7 +379,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	protected void printProgress() {
+	protected void logProgress() {
 		fProgressWriter.set("root", rootNode().getSNId());
 		fProgressWriter.set("degree", neighborhood().degree());
 		fProgressWriter.set("reached", fReached);
@@ -457,7 +390,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	private void printReachability(long originator, long receiver, long total,
+	private void logReached(long originator, long receiver, long total,
 			long fromFirst, long uptime) {
 		fReachabilityWriter.set("root", rootNode().getSNId());
 		fReachabilityWriter.set("originator", originator);
@@ -470,7 +403,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
-	private void printSummary(Pair<Double, Double> residues) {
+	private void logSummary(Pair<Double, Double> residues) {
 		fSummaryWriter.set("root", rootNode().getSNId());
 		fSummaryWriter.set("time", printableEllapsedTime());
 		fSummaryWriter.set("residue", residues.a);
@@ -491,7 +424,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 			for (int j = 0; j < dim(); j++) {
 				// Residue: has the node been reached?
-				if (isReachable(i, j)) {
+				if (fExperiments[i].isReachable(j)) {
 					reached++;
 					totalReached += 1;
 				}
@@ -534,6 +467,145 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	// ------------------------------------------------------------------------
 
+	class SingleExperiment {
+
+		private final int[] fFirstLogon;
+
+		private final boolean[] fReached;
+
+		private int[] fUptimes;
+
+		private final int fSender;
+		
+		// ------------------------------------------------------------------------
+
+		public SingleExperiment(int sender) {
+			fFirstLogon = new int[dim()];
+			Arrays.fill(fFirstLogon, NEVER);
+
+			fReached = new boolean[dim()];
+			Arrays.fill(fReached, false);
+
+			fSender = sender;
+		}
+		
+		// ------------------------------------------------------------------------
+
+		public void nodeUp(SNNode node) {
+			if (node.getID() == fSender) {
+				senderUp();
+			} else {
+				receiverUp(node);
+			}
+		}
+		
+		// ------------------------------------------------------------------------
+
+		public boolean isReachable(int i) {
+			return fReached[i];
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		public long uptimeOf(SNNode node) {
+			return node.uptime() - fUptimes[(int) node.getID()];
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		public int firstLogonOf(SNNode node) {
+			return fFirstLogon[(int)node.getID()];
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		public void reached(int id) {
+			fReached[id] = true;
+			reached(fSender, (SNNode) fRegistry.getNode(id));
+		}
+		
+		// ------------------------------------------------------------------------
+
+		private void senderUp() {
+			// This is not the first log-on event for the root, so
+			// there's nothing to do.
+			if (hasSenderPosted()) {
+				return;
+			}
+
+			// Snapshots the uptimes of all nodes.
+			if (fUptimes == null) {
+				fUptimes = snapshotUptimes();
+			}
+
+			// Marks the root as reached.
+			fReached[fSender] = true;
+			fFirstLogon[fSender] = MiscUtils.safeCast(ellapsedTime());	
+	
+			// Initializes the receiver map.
+			for (int i = 0; i < fUptimes.length; i++) {
+				SNNode node = (SNNode) fRegistry.getNode((long) i);
+				if (node.isUp()) {
+					receiverUp(node);
+				}
+			}
+			
+			reached(fSender, (SNNode) fRegistry.getNode((long) fSender));
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		private void reached(int sender, SNNode reached) {
+			SingleExperiment exp = fExperiments[sender];
+			long uptime = exp.uptimeOf(reached);
+			long fromFirst = ellapsedTime() - exp.firstLogonOf(reached);
+
+			if (fromFirst < uptime) {
+				throw new IllegalStateException(
+						"First uptime is lower than total uptime.");
+			}
+
+			logReached(sender, reached.getSNId(), printableEllapsedTime(),
+					fromFirst, uptime);
+			logProgress();
+		}
+
+		// ------------------------------------------------------------------------
+
+		private void receiverUp(SNNode node) {
+			if (hasSenderPosted()) {
+				updateFirstUptime((int) node.getID());
+			}
+		}
+		
+		// ------------------------------------------------------------------------
+
+		private void updateFirstUptime(int id) {
+			if (fFirstLogon[id] == NEVER) {
+				fFirstLogon[id] = MiscUtils.safeCast(ellapsedTime());
+			}
+		}
+		
+		// ------------------------------------------------------------------------
+
+		private int[] snapshotUptimes() {
+			int[] snapshot = new int[dim()];
+			for (int i = 0; i < dim(); i++) {
+				snapshot[i] = MiscUtils
+						.safeCast(((SNNode) fRegistry.getNode(i)).uptime());
+			}
+			return snapshot;
+		}
+		
+		// ------------------------------------------------------------------------
+
+		private boolean hasSenderPosted() {
+			return fReached[fSender];
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	
 	static class DFSFrame {
 
 		private int fNode;
@@ -554,5 +626,4 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		}
 	}
 
-	// ------------------------------------------------------------------------
 }

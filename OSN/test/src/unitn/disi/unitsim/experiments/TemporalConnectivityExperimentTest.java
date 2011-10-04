@@ -14,7 +14,6 @@ import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.test.framework.UpDownControl;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.peersim.SNNode;
 import it.unitn.disi.utils.tabular.NullTableWriter;
 import it.unitn.disi.utils.tabular.TableReader;
@@ -94,10 +93,10 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		int [][] valuesFULatency = {
 				{0,		0,		1,		0,		inf,	inf	},
 				{0,		0,		1,		0,		inf,	inf	},
-				{inf,	0,		1,		0,		0,		0	},
-				{inf,	0,		0,		2,		inf,	inf	},
-				{inf,	0,		0,		0,		1,		0	},
-				{inf,	0,		0,		0,		0,		1	}
+				{inf,	0,		0,		0,		0,		0	},
+				{inf,	0,		0,		0,		inf,	inf	},
+				{inf,	0,		0,		0,		0,		0	},
+				{inf,	0,		0,		0,		0,		0	}
 		};
 		
 		int [][] result = table(values.length);
