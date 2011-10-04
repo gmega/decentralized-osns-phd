@@ -60,7 +60,7 @@ public class EDGovernor extends
 	@Override
 	public boolean execute() {
 		if (fCurrent == null) {
-			return false;
+			return true;
 		}
 		
 		if (fCurrent.isTimedOut()) {
