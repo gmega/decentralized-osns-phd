@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Stack;
 
+import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
@@ -22,6 +23,7 @@ import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Fallible;
 import peersim.core.Linkable;
+import peersim.core.Network;
 import peersim.core.Node;
 
 @AutoConfig
@@ -103,7 +105,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// Other state variables.
 	// ------------------------------------------------------------------------
 
-	private int fReached;
+	private int fReachedCount;
 
 	private boolean fTerminated = false;
 
@@ -182,6 +184,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		if (!updateBurnIn()) {
 			return;
 		}
+		
+		checkInvariants();
 
 		switch (newState) {
 
@@ -195,7 +199,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				explore(i);
 			}
 
-			if (fReached == total()) {
+			if (fReachedCount == total()) {
 				System.err.println("-- All nodes reached.");
 				interruptExperiment();
 			}
@@ -206,6 +210,18 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		case Fallible.DOWN:
 		case Fallible.DEAD:
 			break;
+		}
+		
+		checkInvariants();
+	}
+	
+	private void checkInvariants() {
+		for (int i = 0; i < Network.size(); i++) {
+			Node node = Network.get(i);
+			if (node.getFailState() == Fallible.DEAD) {
+				assertAllReached(i);
+				
+			}
 		}
 	}
 
@@ -329,7 +345,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			}
 		}
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	private Pair<Double, Double> printResidues() {
@@ -432,7 +448,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	protected void logProgress() {
 		fProgressWriter.set("root", rootNode().getSNId());
 		fProgressWriter.set("degree", neighborhood().degree());
-		fProgressWriter.set("reached", fReached);
+		fProgressWriter.set("reached", fReachedCount);
 		fProgressWriter.set("total", total());
 		fProgressWriter.set("time", printableEllapsedTime());
 		fProgressWriter.emmitRow();
@@ -487,16 +503,28 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private final int fSender;
 
+		private final int[] fNeighborhood;
+
+		private int fUnreachedNeighbors = 0;
+
 		// ------------------------------------------------------------------------
 
 		public SingleExperiment(int sender) {
+			fSender = sender;
+
 			fFirstLogon = new int[dim()];
 			Arrays.fill(fFirstLogon, NEVER);
 
 			fReached = new boolean[dim()];
 			Arrays.fill(fReached, false);
 
-			fSender = sender;
+			// Breaks encapsulation to yield better performance.
+			GraphProtocol neighborhood = (GraphProtocol) neighborhood(fRegistry
+					.getNode(sender));
+			LightweightStaticGraph lsg = (LightweightStaticGraph) neighborhood
+					.graph();
+			fNeighborhood = lsg.fastGetNeighbours(fSender);
+			fUnreachedNeighbors = (fNeighborhood.length  + 1) * dim();
 		}
 
 		// ------------------------------------------------------------------------
@@ -531,7 +559,32 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		public void reached(int id) {
 			fReached[id] = true;
-			reached(fSender, (SNNode) fRegistry.getNode(id));
+			reached((SNNode) fRegistry.getNode(id));
+			
+			for (int i = 0; i < fNeighborhood.length; i++) {
+				fExperiments[fNeighborhood[i]].neighborReached();
+			}
+		}
+
+		// ------------------------------------------------------------------------
+
+		private void neighborReached() {
+			fUnreachedNeighbors--;
+			assert fUnreachedNeighbors >= 0;
+			if (fUnreachedNeighbors == 0) {
+				fRegistry.getNode(fSender).setFailState(Fallible.DEAD);
+			}
+			
+			// DEBUG
+			int active = 0;
+			for (int i = 0; i < Network.size(); i++) {
+				if (Network.get(i).getFailState() != Fallible.DEAD) {
+					active++;
+				}
+			}
+			
+			System.err.println("ACTIVE NODES: " + active);
+			// DEBUG
 		}
 
 		// ------------------------------------------------------------------------
@@ -560,24 +613,27 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				}
 			}
 
-			reached(fSender, (SNNode) fRegistry.getNode((long) fSender));
+			reached(fSender);
 		}
 
 		// ------------------------------------------------------------------------
 
-		private void reached(int sender, SNNode reached) {
+		private void reached(SNNode reached) {
+			fReachedCount++;
+			assert fReachedCount <= total();
+
+			int sender = MiscUtils.safeCast(fSender);
 			SingleExperiment exp = fExperiments[sender];
 			long uptime = exp.uptimeOf(reached);
 			long fromFirst = ellapsedTime() - exp.firstLogonOf(reached);
 
-			if (fromFirst < uptime) {
-				throw new IllegalStateException(
-						"First uptime is lower than total uptime.");
-			}
-
+			assert fromFirst >= uptime;
+			
 			logReached(sender, reached.getSNId(), printableEllapsedTime(),
 					fromFirst, uptime);
 			logProgress();
+
+			neighborReached();
 		}
 
 		// ------------------------------------------------------------------------
