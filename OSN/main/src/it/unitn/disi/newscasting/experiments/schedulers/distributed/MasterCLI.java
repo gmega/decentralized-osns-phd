@@ -20,8 +20,14 @@ public class MasterCLI {
 	@Option(name = "-p", aliases = { "--port" }, usage = "Listening port to server (defaults to 50325).", required = false)
 	private int fPort = 50325;
 	
+	@Option(name = "-r", aliases = {"--reuse"}, usage = "Reuses an already-started registry instance.", required = false)
+	boolean fReuse = false;
+	
 	@Option(name = "-i", aliases = { "--idlist" }, usage = "Semicolon-separated list of comma-separated IDs.", required = true)
 	private String fIdList;
+	
+	@Option(name = "-q", aliases = { "--queue"}, usage = "Name identifying this queue.", required=true)
+	private String fQueueId;
 	
 	public void _main(String [] args) {
 		
@@ -43,10 +49,12 @@ public class MasterCLI {
 	private void publish(MasterImpl impl) {
 		fLogger.info("Starting registry and publishing object reference.");		
 		try {
-			LocateRegistry.createRegistry(fPort);
+			if (!fReuse) {
+				LocateRegistry.createRegistry(fPort);
+			}
 			UnicastRemoteObject.exportObject(impl, 0);
 			Registry registry = LocateRegistry.getRegistry(fPort);
-			registry.rebind(IMaster.MASTER_ADDRESS, impl);
+			registry.rebind(fQueueId, impl);
 		} catch (RemoteException ex) {
 			fLogger.error("Error while publishing object.", ex);
 			System.exit(-1);

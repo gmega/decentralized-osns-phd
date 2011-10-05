@@ -35,6 +35,7 @@ import it.unitn.disi.utils.MultiCounterTest;
 import it.unitn.disi.utils.PrefixedOutputStreamTest;
 import it.unitn.disi.utils.TestMiscUtils;
 import it.unitn.disi.utils.TestTableReader;
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
 import it.unitn.disi.utils.tracetools.AVTReplayTest;
 import it.unitn.disi.utils.tracetools.ZoneCrawl2AvtTest;
 
@@ -87,7 +88,8 @@ import unitn.disi.unitsim.experiments.TemporalConnectivityExperimentTest;
 	DiscoveryProtocolTest.class, 
 	BitSetNeighborhoodTest.class,
 	IDMapperTest.class,
-	TemporalConnectivityExperimentTest.class
+	TemporalConnectivityExperimentTest.class,
+	ResettableFileInputStream.class
 })
 
 public class AllTests extends PeerSimTest {

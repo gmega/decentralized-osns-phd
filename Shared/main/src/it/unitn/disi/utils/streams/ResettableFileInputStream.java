@@ -70,9 +70,17 @@ public class ResettableFileInputStream extends InputStream {
 
 	@Override
 	public synchronized void reset() throws IOException {
-		// To reset, we need to reposition the FileInputStream
+		reposition(fMark);
+	}
+	
+	public synchronized void fromZero() throws IOException {
+		reposition(0);
+	}
+
+	private void reposition(long offset) throws IOException {
+		// To reposition, we need to reposition the FileInputStream
 		// and throw away the buffer.
-		fStream.getChannel().position(fMark);
+		fStream.getChannel().position(offset);
 		fBuffer = new BufferedInputStream(fStream);
 	}
 

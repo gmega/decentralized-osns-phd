@@ -6,6 +6,7 @@ import it.unitn.disi.utils.collections.Pair;
 
 import java.rmi.RemoteException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,7 +16,8 @@ public class MasterImpl implements IMaster {
 
 	private static final Logger fLogger = Logger.getLogger(MasterImpl.class);
 
-	private static final Pair<Integer, Integer> ALL_DONE = new Pair<Integer, Integer>(-1, 0);
+	private static final Pair<Integer, Integer> ALL_DONE = new Pair<Integer, Integer>(
+			-1, 0);
 
 	private final AtomicInteger fId = new AtomicInteger(0);
 
@@ -59,7 +61,7 @@ public class MasterImpl implements IMaster {
 					break;
 				}
 			}
-			
+
 			if (fRemaining == 0) {
 				fLogger.info("Worker " + workerId + " has no more jobs to run.");
 				acquired = ALL_DONE;
@@ -71,18 +73,27 @@ public class MasterImpl implements IMaster {
 			return acquired;
 		}
 	}
+	
+	protected void deadWorker(WorkerEntry entry) {
+		fLogger.warn("Worker " + entry.id + " has died. Now checking if it experiments assigned to it.");
+		synchronized(fExperiments) {
+			
+		}
+	}
 
-	protected Pair<Integer, Integer> tryAcquire(int workerId) {
+	protected Pair<Integer, Integer> tryAcquire(int workerId)
+			throws RemoteException {
+		WorkerEntry entry = fWorkers.get(workerId);
+		if (entry == null) {
+			throw new RemoteException("Worker " + workerId + " is not valid.");
+		}
+
 		for (int i = 0; i < fExperiments.length; i++) {
 			ExperimentEntry exp = fExperiments[i];
 			if (exp.worker == null && !exp.done) {
-				WorkerEntry entry = fWorkers.get(workerId);
-				if (entry == null) {
-					fLogger.warn("Worker " + workerId
-							+ " died half way through assignment.");
-				}
 				fExperiments[i].worker = entry;
-				return new Pair<Integer, Integer>(fExperiments[i].id, fRemaining);
+				return new Pair<Integer, Integer>(fExperiments[i].id,
+						fRemaining);
 			}
 		}
 
@@ -103,12 +114,12 @@ public class MasterImpl implements IMaster {
 				throw new RemoteException("Invalid experiment ID "
 						+ experimentId + ".");
 			}
-			
+
 			ExperimentEntry entry = fExperiments[idx];
-			
+
 			fLogger.info("Worker " + entry.worker.id + " done with job "
 					+ entry.id + ".");
-			
+
 			fExperiments[idx].done = true;
 			fExperiments[idx].worker = null;
 			fRemaining--;
@@ -125,7 +136,7 @@ public class MasterImpl implements IMaster {
 
 		public WorkerEntry(IWorker worker, int id) {
 			this.worker = worker;
-			this. id = id;
+			this.id = id;
 		}
 	}
 
@@ -141,13 +152,35 @@ public class MasterImpl implements IMaster {
 		@Override
 		public int compareTo(Object o) {
 			if (o instanceof ExperimentEntry) {
-				return this.id - ((ExperimentEntry)o).id;
+				return this.id - ((ExperimentEntry) o).id;
 			} else if (o instanceof Integer) {
-				return this.id - ((Integer)o);
+				return this.id - ((Integer) o);
 			} else {
 				throw new IllegalArgumentException();
 			}
 		}
+	}
+
+	class WorkerControl implements Runnable {
+
+		@Override
+		public void run() {
+			while (!Thread.interrupted()) {
+				// Loosely pings all workers on the table. It's not
+				// a problem if we lose some workers on a single run.
+				for (WorkerEntry entry : fWorkers.values()) {
+					try {
+						entry.worker.echo();
+					} catch (RemoteException ex) {
+						// Worker presumed dead.
+						// XXX maybe check exception type to see
+						// if that's actually the case?
+						deadWorker(entry);
+					}
+				}
+			}
+		}
+
 	}
 
 }

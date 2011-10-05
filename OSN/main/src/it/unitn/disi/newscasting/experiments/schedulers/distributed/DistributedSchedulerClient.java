@@ -22,18 +22,23 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 	private static final Logger fLogger = Logger
 			.getLogger(DistributedSchedulerClient.class);
 
-	private int fWorkerId;
+	private final String fHost;
+	
+	private final String fQueueId;
 
+	private final int fPort;
+	
+	private int fWorkerId;
+	
 	private Integer fInitialSize;
 
-	private String fHost;
-
-	private int fPort;
-
-	public DistributedSchedulerClient(@Attribute("host") String host,
+	public DistributedSchedulerClient(
+			@Attribute("host") String host,
+			@Attribute("queue") String queueId,
 			@Attribute(value = "port", defaultValue = "50325") int port) {
 		fHost = host;
 		fPort = port;
+		fQueueId = queueId;
 	}
 
 	@Override
@@ -69,10 +74,10 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 		fLogger.info("Contacting master at " + fHost + ":" + fPort + ".");
 		try {
 			Registry registry = LocateRegistry.getRegistry(fHost, fPort);
-			return (IMaster) registry.lookup(IMaster.MASTER_ADDRESS);
+			return (IMaster) registry.lookup(fQueueId);
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to resolve registry at supplied address/port. "
-					+ "Is the master instance running?");
+					+ "Is the master instance running? Is the queue id right?");
 			throw MiscUtils.nestRuntimeException(ex);
 		} catch (NotBoundException ex) {
 			fLogger.error("Master not bound under expected registry location "

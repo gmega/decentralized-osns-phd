@@ -1,4 +1,4 @@
-package it.unitn.disi.cli;
+package it.unitn.disi.utils.tabular;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -8,10 +8,8 @@ import java.io.PrintStream;
 
 import peersim.config.AutoConfig;
 
+import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.utils.exception.ParseException;
-import it.unitn.disi.utils.tabular.ITableWriter;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Binds several tables by row. The header of the first table becomes the

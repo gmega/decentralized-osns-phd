@@ -38,8 +38,8 @@ public class EDGovernor extends
 	@Override
 	public void experimentEnd(IEDUnitExperiment experiment) {
 		wrapUpExperiment();
-		scheduleNext();
 		System.err.println("END:" + experiment.getId());
+		scheduleNext();
 	}
 
 	@Override
