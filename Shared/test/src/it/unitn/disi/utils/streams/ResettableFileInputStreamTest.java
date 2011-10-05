@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Random;
 
 import org.junit.Test;
@@ -13,10 +12,6 @@ import junit.framework.Assert;
 
 
 public class ResettableFileInputStreamTest {
-	
-	private static final int TRIALS = 100;
-	
-	private final Random random = new Random();
 	
 	@Test
 	public void testMarkReset() throws Exception {
@@ -35,13 +30,11 @@ public class ResettableFileInputStreamTest {
 		Assert.assertTrue(stream.read() == -1);
 		byte [] arrayContents = contents.toByteArray();
 		
-		// Perform 100 random passes.
-		for (int i = 0; i < TRIALS; i++) {
+		// Try all mark/reset positions.
+		for (int markPoint = 1; markPoint < arrayContents.length; markPoint++) {
 			stream.fromZero();
-			int markPoint = random.nextInt(arrayContents.length);
 			
-			assertSame(stream, arrayContents, 0, Math.max(0, markPoint - 1));
-			
+			assertSame(stream, arrayContents, 0, markPoint - 1);
 			stream.mark(Integer.MAX_VALUE);
 			
 			assertSame(stream, arrayContents, markPoint, arrayContents.length - 1);
@@ -58,7 +51,7 @@ public class ResettableFileInputStreamTest {
 	private void assertSame(InputStream is, byte[] reference, int start, int end)
 			throws Exception {
 		for (int i = start; i <= end; i++) {
-			Assert.assertEquals(reference[i], is.read());
+			Assert.assertEquals("[" + start + ", " + end + ", " + i + "]", reference[i], is.read());
 		}
 	}
 }

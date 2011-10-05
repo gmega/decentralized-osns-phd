@@ -16,16 +16,16 @@ public class DiscardIncompletes implements ITransformer {
 	
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
+		int printTo = establishLastLine(is);
+		is.reset();
 		
-		long printTo = establishLastOffset(is);
 		
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		
-		String line;
-		
-		while ((line = reader.readLine()))
 	}
 	
+	private int establishLastLine(InputStream is) {
+		
+	}
+
 	class PendingExperiment {
 		Object id;
 		int startPosition;
