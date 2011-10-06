@@ -1,9 +1,11 @@
 package it.unitn.disi.utils;
 
 import it.unitn.disi.utils.collections.IExchanger;
+import it.unitn.disi.utils.streams.EOFException;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 
@@ -105,6 +107,7 @@ public class MiscUtils {
 		}
 		return i;
 	}
+
 	
 	public static double log2(double input) {
 		return Math.log(input)/Math.log(2.0);

@@ -14,25 +14,51 @@ public class StreamProvider {
 	private static final String INPUTS = "Inputs";
 
 	private static final String OUTPUTS = "Outputs";
+	
+	private final boolean fGZipped;
 
-	private final HashMap<Enum, Closeable> fInputs = new HashMap<Enum, Closeable>();
+	private final HashMap<Object, Closeable> fInputs = new HashMap<Object, Closeable>();
 
-	private final HashMap<Enum, Closeable> fOutputs = new HashMap<Enum, Closeable>();
+	private final HashMap<Object, Closeable> fOutputs = new HashMap<Object, Closeable>();
 
 	public StreamProvider(InputStream[] iStreams, OutputStream[] oStreams,
-			Class<? extends Object> klass) {
-		Class[] classes = klass.getDeclaredClasses();
-		for (Class internal : classes) {
-			if (internal.getSimpleName().equals(INPUTS)) {
-				assign(INPUTS, internal, fInputs, iStreams);
-			} else if (internal.getSimpleName().equals(OUTPUTS)) {
-				assign(OUTPUTS, internal, fOutputs, oStreams);
-			}
+			Class<? extends Object> klass, boolean gzipped) {
+		fGZipped = gzipped;
+		assign(INPUTS, klass, fInputs, iStreams);
+		assign(OUTPUTS, klass, fOutputs, oStreams);
+	}
+	
+	private void assign(String type, Class klass, HashMap<Object, Closeable> store, Closeable [] streams) {
+		Class cls = findClass(klass, type);
+		if (cls != null) {
+			namedAssign(type, cls, store, streams);
+		} else {
+			anonymousAssign(type, store, streams);
 		}
 	}
 
-	private void assign(String input, Class klass,
-			HashMap<Enum, Closeable> map, Closeable[] streams) {
+	private Class findClass(Class klass, String type) {
+		Class[] classes = klass.getDeclaredClasses();
+		for (Class candidate : classes) {
+			if(candidate.getSimpleName().equals(type)) {
+				return candidate;
+			}
+		}
+		
+		return null;
+	}
+
+	private void anonymousAssign(String type, HashMap<Object, Closeable> store,
+			Closeable[] streams) {
+		for (int i = 0; i < streams.length; i++) {
+			// Not a great use for a HashMap but simplifies the 
+			// implementation (performance is of null importance here).
+			store.put(i, streams[i]);
+		}
+	}
+	
+	private void namedAssign(String input, Class klass,
+			HashMap<Object, Closeable> map, Closeable[] streams) {
 		try {
 			@SuppressWarnings("unchecked")
 			Method valueOf = klass.getMethod("values");
@@ -57,12 +83,24 @@ public class StreamProvider {
 		}
 	}
 
-	public InputStream input(Enum value) {
-		return (InputStream) fInputs.get(value);
+	public InputStream input(Object key) {
+		return (InputStream) fInputs.get(key);
 	}
 	
-	public OutputStream output(Enum value) {
-		return (OutputStream) fOutputs.get(value);
+	public OutputStream output(Object key) {
+		return (OutputStream) fOutputs.get(key);
+	}
+	
+	public int inputStreams() {
+		return fInputs.size();
+	}
+	
+	public int outputStreams() {
+		return fOutputs.size();
+	}
+	
+	public boolean isInputGZipped() {
+		return fGZipped;
 	}
 
 }

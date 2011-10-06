@@ -1,6 +1,8 @@
 package it.unitn.disi.utils.logging;
 
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.EOFException;
+import it.unitn.disi.utils.streams.SafeBufferReader;
 
 import java.io.DataInputStream;
 import java.io.DataOutput;
@@ -134,7 +136,7 @@ public class EventCodec {
 
 	public class DecodingStream implements Iterator<Number> {
 
-		private InputStream fStream;
+		private SafeBufferReader fBufReader;
 
 		private Number fCurrentType;
 
@@ -144,10 +146,8 @@ public class EventCodec {
 
 		private int fDecodingIndex;
 
-		private boolean fSeenEof;
-
 		public DecodingStream(InputStream is) {
-			fStream = is;
+			fBufReader = new SafeBufferReader(is);
 			fNext = readType();
 		}
 
@@ -181,7 +181,7 @@ public class EventCodec {
 		}
 
 		public boolean hasNext() {
-			return !fSeenEof || fNext != null;
+			return !fBufReader.eof() || fNext != null;
 		}
 
 		public Number next() {
@@ -211,7 +211,7 @@ public class EventCodec {
 		private Number readType() {
 			fillBuffer(fBuffer, fTypeDecoder.size());
 		
-			if (fSeenEof) {
+			if (fBufReader.eof()) {
 				return null;
 			}
 		
@@ -237,34 +237,18 @@ public class EventCodec {
 			return decoder.decode(fillBuffer(fBuffer, decoder.size()));
 		}
 
-		private byte[] fillBuffer(byte[] buffer, int length) {
+		private byte [] fillBuffer(byte [] buffer, int length) {
 			int read = 0;
-
-			while(true) {
-				try {
-					read += fStream.read(buffer, read, length - read);
-				} catch (IOException ex) {
-					throw new RuntimeException(ex);
-				}
-			
-				if (read == length) {
-					break;
-				} else if (read == -1) {
-					fSeenEof = true;
-					break;
-				} else {
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
-				}
+			try {
+				read = fBufReader.fillBuffer(buffer, length);
+			} catch(IOException ex) {
+				throw MiscUtils.nestRuntimeException(ex);
 			}
 			
-			if (!fSeenEof && read < length) {
+			if (read < length && read != 0) {
 				throw new EOFException("Unexpected end-of-file while decoding.");
 			}
-		
+			
 			return buffer;
 		}
 	}

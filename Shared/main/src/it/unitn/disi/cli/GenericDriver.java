@@ -47,6 +47,9 @@ public class GenericDriver {
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
 	private char fSplitChar = ':';
 
+	@Option(name = "-z", aliases = {"--zipped"}, usage = "allows usage of GZipped inputs", required = false)
+	private boolean fGZipped;
+		
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
 	private boolean fVerbose;
 
@@ -86,7 +89,7 @@ public class GenericDriver {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
 				StreamProvider provider = new StreamProvider(fIStreams,
-						fOStreams, processor.getClass());
+						fOStreams, processor.getClass(), fGZipped);
 				((IMultiTransformer) processor).execute(provider);
 			} else {
 				System.err.println("Class " + processor.getClass().getName()
@@ -168,7 +171,7 @@ public class GenericDriver {
 		}
 
 		boolean stdinUsed = false;
-		String[] inputs = inputString.split(":");
+		String[] inputs = inputString.split(" ");
 		InputStream[] iStreams = new InputStream[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
 			if (fVerbose) {

@@ -5,8 +5,9 @@ import java.io.IOException;
 import peersim.config.AutoConfig;
 
 /**
- * {@link IMultiTransformer} is a generic information processor which takes
- * multiple input and multiple output streams.
+ * {@link IMultiTransformer} is, like an {@link IMultiTransformer}, a
+ * generic information processor which takes multiple input and multiple output
+ * streams, except that these streams play specific roles and are, thus, 
  * 
  * @author giuliano
  */
@@ -16,12 +17,11 @@ public interface IMultiTransformer {
 	 * Executes this processor. Implementors <b>should not</b> close the
 	 * streams. This is the responsibility of the client.
 	 * 
-	 * @param istreams
-	 *            the inputs to the processor (implementation-specific).
-	 * @param ostreams
-	 *            the outputs to the processor (also implementation-specific).
+	 * @param provider
+	 *            a {@link StreamProvider} which allows streams to be
+	 *            accessed.
 	 * @throws IOException
 	 *             if an I/O error occurs during read or write of streams.
 	 */
-	public void execute (StreamProvider provider) throws Exception;
+	public void execute(StreamProvider provider) throws Exception;
 }

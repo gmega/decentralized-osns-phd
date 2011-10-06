@@ -149,7 +149,8 @@ public class TestLatencyComputer {
 		computer.execute(new StreamProvider(new InputStream[] {
 				new ByteArrayInputStream(socialNetwork),
 				new ByteArrayInputStream(oup.toByteArray()) },
-				new OutputStream[] { output }, LatencyComputer.class));
+				new OutputStream[] { output }, LatencyComputer.class, 
+				false));
 		
 		return new String(output.toByteArray());
 	}

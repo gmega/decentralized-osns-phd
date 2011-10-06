@@ -31,7 +31,7 @@ public class AVTReplayTest {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		StreamProvider provider = new StreamProvider(new InputStream[] { avt,
-				idList }, new OutputStream[] { out }, AVTReplay.class);
+				idList }, new OutputStream[] { out }, AVTReplay.class, false);
 		
 		AVTReplay replayer = new AVTReplay(1);
 
