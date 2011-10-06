@@ -69,7 +69,6 @@ public class DiscardIncompletes implements IMultiTransformer {
 		int c;
 		while ((c = safeRead(reader)) != -1) {
 			totalRead++;
-			System.out.print((char)c);
 			// Matches the next character.
 			if (c == matchArray[mIndex]) {
 				mIndex++;
