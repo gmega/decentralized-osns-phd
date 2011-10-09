@@ -3,16 +3,25 @@ package it.unitn.disi.newscasting.experiments.schedulers.distributed;
 import it.unitn.disi.newscasting.experiments.schedulers.ISchedule;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
 public class MasterImpl implements IMaster {
+
+	private static enum ExperimentState {
+		assigned, done;
+	}
 
 	private static final Logger fLogger = Logger.getLogger(MasterImpl.class);
 
@@ -25,9 +34,12 @@ public class MasterImpl implements IMaster {
 
 	private final ExperimentEntry[] fExperiments;
 
+	private volatile TableWriter fWriter;
+
 	private volatile int fRemaining;
 
-	public MasterImpl(ISchedule schedule) {
+	public MasterImpl(ISchedule schedule, TableReader recover)
+			throws IOException {
 		fExperiments = new ExperimentEntry[schedule.size()];
 		fRemaining = schedule.size();
 		IScheduleIterator iterator = schedule.iterator();
@@ -38,6 +50,63 @@ public class MasterImpl implements IMaster {
 			}
 			Arrays.sort(fExperiments);
 		}
+
+		if (recover != null) {
+			replayLog(recover);	
+		}
+	}
+
+	public void start(String queueId, boolean createRegistry, int port,
+			TableWriter log) {
+		fWriter = log;
+		fLogger.info("Starting registry and publishing object reference.");
+		try {
+			if (createRegistry) {
+				LocateRegistry.createRegistry(port);
+			}
+			UnicastRemoteObject.exportObject(this, 0);
+			Registry registry = LocateRegistry.getRegistry(port);
+			registry.rebind(queueId, this);
+		} catch (RemoteException ex) {
+			fLogger.error("Error while publishing object.", ex);
+			System.exit(-1);
+		}
+
+		fLogger.info("All good.");
+	}
+
+	private void replayLog(TableReader log) throws IOException {
+		fLogger.info("Replaying experiment log file...");
+		int done = 0;
+		while (log.hasNext()) {
+			log.next();
+			int id = Integer.parseInt(log.get("experiment"));
+			switch (ExperimentState.valueOf(log.get("status"))) {
+			case done:
+				synchronized (fExperiments) {
+					ExperimentEntry exp = experimentByID(id);
+					if (exp == null) {
+						fLogger.warn("Log entry points to non-existent experiment "
+								+ id + ".");
+						continue;
+					}
+					exp.done = true;
+					done++;
+				}
+			}
+		}
+
+		fLogger.info("Log replay complete. " + done
+				+ " experiments marked as done.");
+	}
+
+	private ExperimentEntry experimentByID(int id) {
+		for (ExperimentEntry entry : fExperiments) {
+			if (entry.id == id) {
+				return entry;
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -68,16 +137,24 @@ public class MasterImpl implements IMaster {
 			} else {
 				fLogger.info("Worker " + workerId + " assigned to job "
 						+ acquired.a + ".");
+				fWriter.set("experiment", id(acquired));
+				fWriter.set("status", ExperimentState.assigned);
 			}
 
 			return acquired;
 		}
 	}
-	
+
 	protected void deadWorker(WorkerEntry entry) {
-		fLogger.warn("Worker " + entry.id + " has died. Now checking if it experiments assigned to it.");
-		synchronized(fExperiments) {
-			
+		fLogger.warn("Worker "
+				+ entry.id
+				+ " has died. Now checking if it had any experiments assigned to it.");
+		synchronized (fExperiments) {
+			for (ExperimentEntry exp : fExperiments) {
+				if (exp.worker == entry) {
+					exp.worker = null;
+				}
+			}
 		}
 	}
 
@@ -100,6 +177,10 @@ public class MasterImpl implements IMaster {
 		return null;
 	}
 
+	private int id(Pair<Integer, Integer> pair) {
+		return pair.a;
+	}
+
 	@Override
 	public int remaining() throws RemoteException {
 		return fRemaining;
@@ -119,6 +200,10 @@ public class MasterImpl implements IMaster {
 
 			fLogger.info("Worker " + entry.worker.id + " done with job "
 					+ entry.id + ".");
+
+			fWriter.set("experiment", entry.id);
+			fWriter.set("status", ExperimentState.done);
+			fWriter.emmitRow();
 
 			fExperiments[idx].done = true;
 			fExperiments[idx].worker = null;

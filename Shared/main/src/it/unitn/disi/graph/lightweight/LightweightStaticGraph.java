@@ -91,7 +91,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		LSGCreateTransitive transitive = new LSGCreateTransitive(order);
 		return transitive.transform(base);
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// Actual graph implementation.
 	// --------------------------------------------------------------------------

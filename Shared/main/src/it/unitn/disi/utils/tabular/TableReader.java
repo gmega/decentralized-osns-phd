@@ -79,6 +79,10 @@ public class TableReader {
 		}
 		return fCurrent[idx];
 	}
+	
+	public void close() throws IOException {
+		fReader.close();
+	}
 
 	public TableReader fromCurrentRow() {
 		return new TableReader(fReader, fCurrent, fNext);

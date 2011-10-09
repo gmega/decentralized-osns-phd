@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Stack;
 
 import it.unitn.disi.graph.GraphProtocol;
+import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.NeighborhoodLoader;
@@ -488,8 +489,6 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private final int fSender;
 
-		private final int[] fNeighborhood;
-
 		// ------------------------------------------------------------------------
 
 		public SingleExperiment(int sender) {
@@ -506,7 +505,6 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 					.getNode(sender));
 			LightweightStaticGraph lsg = (LightweightStaticGraph) neighborhood
 					.graph();
-			fNeighborhood = lsg.fastGetNeighbours(fSender);
 		}
 
 		// ------------------------------------------------------------------------
@@ -629,19 +627,19 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private int fNode;
 		private int fIndex = 0;
-		private int[] fNeighbors;
+		private final IndexedNeighborGraph fGraph;
 
 		public DFSFrame(int node, LightweightStaticGraph graph) {
 			fNode = node;
-			fNeighbors = graph.fastGetNeighbours(fNode);
+			fGraph = graph;
 		}
 
 		public boolean hasNext() {
-			return fIndex < fNeighbors.length;
+			return fIndex < fGraph.degree(fNode);
 		}
 
 		public int nextNeighbor() {
-			return fNeighbors[fIndex++];
+			return fGraph.getNeighbor(fNode, fIndex++);
 		}
 	}
 

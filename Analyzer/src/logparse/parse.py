@@ -106,7 +106,7 @@ def __main__(argv):
     prefix2output = mode[PREFIXES]
     
     if len(argv) > 2:
-        inputs = argv[3:]
+        inputs = argv[2:]
     else:
         inputs = os.listdir("./")
                    
