@@ -5,7 +5,7 @@ import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
-import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.unitsim.INeighborhoodProvider;
 import it.unitn.disi.unitsim.TimeTracker;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
@@ -30,7 +30,7 @@ public class DisseminationUnitExperiment extends NeighborhoodExperiment
 			@Attribute("linkable") int linkable,
 			@Attribute("newscasting") int newscasting,
 			@Attribute("exchange_strategy") String strategy,
-			@Attribute("NeighborhoodLoader") NeighborhoodLoader loader) {
+			@Attribute("NeighborhoodLoader") INeighborhoodProvider loader) {
 
 		super(prefix, id, linkable, loader);
 		try {

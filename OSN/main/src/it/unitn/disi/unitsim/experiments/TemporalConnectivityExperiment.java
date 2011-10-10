@@ -8,7 +8,7 @@ import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
-import it.unitn.disi.unitsim.NeighborhoodLoader;
+import it.unitn.disi.unitsim.INeighborhoodProvider;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
@@ -115,7 +115,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
-			@Attribute("NeighborhoodLoader") NeighborhoodLoader loader,
+			@Attribute("NeighborhoodLoader") INeighborhoodProvider loader,
 			@Attribute(value = "timebase", defaultValue = "0") int timeBase,
 			@Attribute(value = "horizon", defaultValue = "-1") int horizon,
 			@Attribute(value = "timeout", defaultValue = "0") long timeout,
@@ -133,7 +133,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	public TemporalConnectivityExperiment(String prefix, Integer id,
-			int graphProtocolId, NeighborhoodLoader loader, int timeBase,
+			int graphProtocolId, INeighborhoodProvider loader, int timeBase,
 			int horizon, long timeout, int burnIn, INodeRegistry registry,
 			ITableWriter progressWriter, ITableWriter reachabilityWriter,
 			ITableWriter summaryWriter, ITableWriter residueWriter) {

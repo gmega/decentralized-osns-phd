@@ -9,12 +9,13 @@ import peersim.config.plugin.IPlugin;
 
 /**
  * Plug-in which loads neighborhoods on-demand. The current implementation
- * simply loads it all into memory and produces subgraphs as requests come.
+ * simply loads it all into memory and produces subgraphs as requests come 
+ * (meaning it doesn't really provide any memory savings).
  * 
  * @author giuliano
  */
 @AutoConfig
-public class NeighborhoodLoader implements IPlugin {
+public class NeighborhoodLoader implements IPlugin, INeighborhoodProvider {
 
 	@Attribute("decoder")
 	private String fDec;
@@ -39,11 +40,24 @@ public class NeighborhoodLoader implements IPlugin {
 	public void stop() throws Exception {
 		fGraph = null;
 	}
+	
+	@Override
+	public int size() {
+		return fGraph.size();
+	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.unitsim.INeighborhoodLoader#neighborhood(java.lang.Integer)
+	 */
+	@Override
 	public LightweightStaticGraph neighborhood(Integer node) {
 		return LightweightStaticGraph.subgraph(fGraph, verticesOf(node));
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.unitsim.INeighborhoodLoader#verticesOf(java.lang.Integer)
+	 */
+	@Override
 	public int[] verticesOf(Integer node) {
 		int[] neighbors = fGraph.fastGetNeighbours(node);
 		int[] vertices = new int[neighbors.length + 1];

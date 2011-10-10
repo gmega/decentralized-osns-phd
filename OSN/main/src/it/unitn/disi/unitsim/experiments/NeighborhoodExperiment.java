@@ -2,8 +2,8 @@ package it.unitn.disi.unitsim.experiments;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.unitsim.INeighborhoodProvider;
 import it.unitn.disi.unitsim.IUnitExperiment;
-import it.unitn.disi.unitsim.NeighborhoodLoader;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
 import it.unitn.disi.utils.peersim.NodeRegistry;
@@ -37,7 +37,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 
 	private final NodeRebootSupport fSupport;
 
-	private final NeighborhoodLoader fLoader;
+	private final INeighborhoodProvider fLoader;
 
 	private final Integer fRootId;
 	
@@ -52,7 +52,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 	public NeighborhoodExperiment(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
-			@Attribute("NeighborhoodLoader") NeighborhoodLoader loader) {
+			@Attribute("NeighborhoodLoader") INeighborhoodProvider loader) {
 		fLoader = loader;
 		fRootId = id;
 		fGraphProtocolId = graphProtocolId;
