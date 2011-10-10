@@ -275,10 +275,9 @@ class Join(object):
         keys = set()
         while keyreader.has_next():
             keyreader.next_row()
-            print keyreader.get(self._colsrc)
             keys.add(keyreader.get(self._colsrc))
         
-        print >> sys.stderr, len(keys), "keys found."
+        print >> sys.stderr, len(keys), "keys found. Now processing input."
         
         intable = TableReader(sys.stdin, header=True)
         outtable = TableWriter(sys.stdout, " ", *intable.fields())

@@ -53,7 +53,7 @@ public class CompleteNeighborhoodGenerator implements INeighborhoodProvider,
 
 	@Override
 	public String id() {
-		return CompleteNeighborhoodGenerator.class.getSimpleName();
+		return "NeighborhoodLoader";
 	}
 
 }

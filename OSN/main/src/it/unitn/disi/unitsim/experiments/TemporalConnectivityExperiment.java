@@ -17,6 +17,7 @@ import it.unitn.disi.utils.logging.StructuredLogs;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.INodeStateListener;
+import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
@@ -267,6 +268,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		System.err.println("-- Burn-in period for experiment " + getId()
 				+ " over (excess was " + (ellapsed - fBurnInTime) + ").");
+		System.err.println("-- Active nodes: " + PeersimUtils.countActives()
+				+ ".");
 
 		return true;
 	}
@@ -306,8 +309,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	private void recomputeReachability(int root, int infected) {
-		LightweightStaticGraph lsg = (LightweightStaticGraph) graph();
-		DFSFrame current = new DFSFrame(infected, lsg);
+		IndexedNeighborGraph graph = graph();
+		DFSFrame current = new DFSFrame(infected, graph);
 		while (true) {
 			// Explores while there are neighbors and we're below the horizon.
 			if (current.hasNext() && fStack.size() <= fHorizon) {
@@ -318,7 +321,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				if (neighborNode.isUp()
 						&& !fExperiments[root].isReachable(neighbor)) {
 					fStack.push(current);
-					current = new DFSFrame(neighbor, lsg);
+					current = new DFSFrame(neighbor, graph);
 					fExperiments[root].reached(neighbor);
 				}
 			}
@@ -499,12 +502,6 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 			fReached = new boolean[dim()];
 			Arrays.fill(fReached, false);
-
-			// Breaks encapsulation to yield better performance.
-			GraphProtocol neighborhood = (GraphProtocol) neighborhood(fRegistry
-					.getNode(sender));
-			LightweightStaticGraph lsg = (LightweightStaticGraph) neighborhood
-					.graph();
 		}
 
 		// ------------------------------------------------------------------------
@@ -581,7 +578,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			long fromFirst = ellapsedTime() - exp.firstLogonOf(reached);
 
 			assert fromFirst >= uptime;
-			
+
 			logReached(sender, reached.getSNId(), printableEllapsedTime(),
 					fromFirst, uptime);
 			logProgress();
@@ -629,7 +626,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		private int fIndex = 0;
 		private final IndexedNeighborGraph fGraph;
 
-		public DFSFrame(int node, LightweightStaticGraph graph) {
+		public DFSFrame(int node, IndexedNeighborGraph graph) {
 			fNode = node;
 			fGraph = graph;
 		}

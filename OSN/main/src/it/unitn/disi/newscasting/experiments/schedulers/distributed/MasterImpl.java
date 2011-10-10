@@ -17,11 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
-public class MasterImpl implements IMaster {
+public class MasterImpl implements IMaster, Runnable {
 
 	private static enum ExperimentState {
 		assigned, done;
 	}
+	
+	private static final int POLLING_INTERVAL = 1000;
 
 	private static final Logger fLogger = Logger.getLogger(MasterImpl.class);
 
@@ -33,6 +35,8 @@ public class MasterImpl implements IMaster {
 	private final ConcurrentHashMap<Integer, WorkerEntry> fWorkers = new ConcurrentHashMap<Integer, WorkerEntry>();
 
 	private final ExperimentEntry[] fExperiments;
+	
+	private final Thread fController;
 
 	private volatile TableWriter fWriter;
 
@@ -54,6 +58,8 @@ public class MasterImpl implements IMaster {
 		if (recover != null) {
 			replayLog(recover);	
 		}
+		
+		fController = new Thread(new WorkerControl(POLLING_INTERVAL));
 	}
 
 	public void start(String queueId, boolean createRegistry, int port,
@@ -71,8 +77,19 @@ public class MasterImpl implements IMaster {
 			fLogger.error("Error while publishing object.", ex);
 			System.exit(-1);
 		}
-
+		Runtime.getRuntime().addShutdownHook(new Thread(this));
+		fController.start();
 		fLogger.info("All good.");
+	}
+	
+	@Override
+	public void run() {
+		fController.interrupt();
+		try {
+			fController.join();
+		} catch (InterruptedException ex) {
+			// Swallows and returns.
+		}
 	}
 
 	private void replayLog(TableReader log) throws IOException {
@@ -139,6 +156,8 @@ public class MasterImpl implements IMaster {
 						+ acquired.a + ".");
 				fWriter.set("experiment", id(acquired));
 				fWriter.set("status", ExperimentState.assigned);
+				fWriter.emmitRow();
+				fWriter.flush();
 			}
 
 			return acquired;
@@ -149,13 +168,18 @@ public class MasterImpl implements IMaster {
 		fLogger.warn("Worker "
 				+ entry.id
 				+ " has died. Now checking if it had any experiments assigned to it.");
+		fWorkers.remove(entry.id);
 		synchronized (fExperiments) {
 			for (ExperimentEntry exp : fExperiments) {
 				if (exp.worker == entry) {
 					exp.worker = null;
+					fLogger.info("Job " + exp.id
+							+ " has been returned to the pool.");
 				}
 			}
 		}
+		
+		
 	}
 
 	protected Pair<Integer, Integer> tryAcquire(int workerId)
@@ -204,6 +228,7 @@ public class MasterImpl implements IMaster {
 			fWriter.set("experiment", entry.id);
 			fWriter.set("status", ExperimentState.done);
 			fWriter.emmitRow();
+			fWriter.flush();
 
 			fExperiments[idx].done = true;
 			fExperiments[idx].worker = null;
@@ -247,6 +272,12 @@ public class MasterImpl implements IMaster {
 	}
 
 	class WorkerControl implements Runnable {
+		
+		private final int fPollingInterval;
+		
+		public WorkerControl(int pollingInterval) {
+			fPollingInterval = pollingInterval;
+		}
 
 		@Override
 		public void run() {
@@ -263,9 +294,13 @@ public class MasterImpl implements IMaster {
 						deadWorker(entry);
 					}
 				}
+				
+				try {
+					Thread.sleep(fPollingInterval);
+				} catch(InterruptedException ex) {
+					break;
+				}
 			}
 		}
-
 	}
-
 }
