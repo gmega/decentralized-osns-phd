@@ -5,7 +5,8 @@ Created on Mar 6, 2011
 '''
 import unittest
 import StringIO
-from misc.parsing import TableReader, type_converting_table_reader
+from misc.tabular import TableReader, type_converting_table_reader
+import misc
 
 class Test(unittest.TestCase):
     
@@ -25,56 +26,56 @@ class Test(unittest.TestCase):
         
         FIELDS, table = self.simpleTable()
         
-        reader = TableReader(table, ";", True, malformed=TableReader.WARNING)
+        reader = TableReader(table, ";", True, malformed=misc.tabular.WARNING)
         
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, FIELDS)
         
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Mega", "Giuliano", "38050", "11", "Elm Street, 200"])
 
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Doe", "John", "00000", "42", "Somewhere, Somenumber"])
 
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Doe", "Jane", "00001", "43", "Somewhere, Somenumber++"])
 
-        reader.next()
+        reader.next_row()
         self.assertAllEquals(reader, FIELDS, ["Surname", "Name", "Num", "ZIP", "blahblah"])
 
         self.assertFalse(reader.has_next())
         
         try:
-            reader.next()
+            reader.next_row()
             self.fail("Exception not thrown.")
         except StopIteration:
             pass
         
     def test_type_converters(self):
         FIELDS, table = self.simpleTable()
-        reader = TableReader(table, ";", True, malformed=TableReader.WARNING)
+        reader = TableReader(table, ";", True, malformed=misc.tabular.WARNING)
         
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, FIELDS)
 
         reader = type_converting_table_reader(reader, {"zip_code" : lambda x: int(x), "gibberish" : lambda x: int(x)})
 
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Mega", "Giuliano", 38050, 11, "Elm Street, 200"])
 
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Doe", "John", 0, 42, "Somewhere, Somenumber"])
 
-        reader.next()
+        reader.next_row()
         self.assertTrue(reader.has_next())
         self.assertAllEquals(reader, FIELDS, ["Doe", "Jane", 1, 43, "Somewhere, Somenumber++"])
 
-        reader.next()
+        reader.next_row()
         try:
             reader.get("zip_code")
             self.fail()

@@ -7,7 +7,8 @@ import unittest
 from ex1.analysis import ExperimentSet, ParameterizedExperimentSet, BestLatency
 import resources
 import StringIO
-from misc.parsing import LineParser, TableReader, type_converting_table_reader
+from misc.parsing import LineParser
+from misc.tabular import type_converting_table_reader, TableReader
 
 class ExperimentSetTest(unittest.TestCase):
     
@@ -101,11 +102,11 @@ class BestLatencyTest(unittest.TestCase):
         reader = type_converting_table_reader(reader, converters);
 
         self.assertTrue(reader.has_next())      
-        reader.next()
+        reader.next_row()
         self.assertComplies(l1_ref, reader)
 
         self.assertTrue(reader.has_next())      
-        reader.next()
+        reader.next_row()
         self.assertComplies(l2_ref, reader)
         
         self.assertFalse(reader.has_next())

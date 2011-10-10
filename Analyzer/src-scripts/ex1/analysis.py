@@ -14,7 +14,7 @@ import operator
 import re
 import numpy
 import math
-from misc.parsing import LineParser, TableReader, type_converting_table_reader
+from misc.tabular import TableReader, TableWriter, type_converting_table_reader
 
 # =============================================================================
 
@@ -48,7 +48,7 @@ class BestPars:
     def execute(self):
         reader = self.__table_reader__()
         while reader.has_next():
-            reader.next()
+            reader.next_row()
             exp_set = self.__get__(reader.get("id"), reader.get("degree"))
             exp_set.point(self.__key_tuple__(reader), self.__data_point__(reader))
         
@@ -256,41 +256,39 @@ class ExperimentSet(object):
 # =============================================================================
 
 class Join(object):
-    """ Given a file with a set of keys, finds all lines in a second file that
-        start with these same keys.
+    """ Given two tabular files with a set of keys, prints all rows in the 
+        second file for which the value matches the ones in the first file.
         
-        Keys are read from a file, the remainder is streamed in from stdin.
+        The keys are read from a file, the remainder is streamed in from stdin.
     """
      
-    def __init__(self, keyfile, keylength):
-        self._optimals = keyfile
-        self._keylength = int(keylength)
+    def __init__(self, colsrc, coltarget, keyfile):
+        self._keys = keyfile
+        self._colsrc = colsrc
+        self._coltarget = coltarget
 
         
     def execute(self):
         # First reads the key file.
         print >> sys.stderr, "Parsing keys..."
+        keyreader = TableReader(open(self._keys, "r"))
         keys = set()
-        with open(self._optimals, "r") as file:
-            for line in file:
-                key, rest = self.__parseline__(line)
-                keys.add(key)
-        print >> sys.stderr, "done."
+        while keyreader.has_next():
+            keyreader.next_row()
+            print keyreader.get(self._colsrc)
+            keys.add(keyreader.get(self._colsrc))
         
+        print >> sys.stderr, len(keys), "keys found."
+        
+        intable = TableReader(sys.stdin, header=True)
+        outtable = TableWriter(sys.stdout, " ", *intable.fields())
         # Now reads the log from stdin.
-        for line in sys.stdin:
-            key, rest = self.__parseline__(line)
-            if key in keys:
-                print " ".join(key + rest),
+        while intable.has_next():
+            intable.next_row()
+            if (intable.get(self._coltarget) in keys):
+                outtable.fill_row(intable)
+                outtable.emmit_row()
             
-    
-    def __parseline__(self, line):
-        parts = line.split(" ")
-        key = tuple([i.rstrip().lstrip() for i in parts[0:self._keylength]])
-        rest = tuple(parts[self._keylength:])
-        
-        return (key, rest)
-    
 # =============================================================================    
 
 class EstimateIdeals(object):

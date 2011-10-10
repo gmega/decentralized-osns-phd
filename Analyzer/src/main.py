@@ -21,8 +21,8 @@ def _main(args):
     
     parser = OptionParser(usage="%prog [options] (pss_script1 ... pss_scriptn) | python_script")
     parser.add_option("-V", "--vars", action="store", type="string", dest="vars", help="define variables for scripts")
-    parser.add_option("-t", "--type", action="store", type="choice", choices=("pss", "python"), dest="type", default="pss",
-                      help="one of {pss, python}. Defaults to pss.")
+    parser.add_option("-t", "--type", action="store", type="choice", choices=("pss", "python"), dest="type", default="python",
+                      help="one of {pss, python}. Defaults to python.")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode (show full task progress)")
     parser.add_option("-r", "--profile", action="store_true", dest="profile", help="enable profiling")
     parser.add_option("-p", "--psyco", action="store_true", dest="psyco", help="enable compiled Python with Psyco")
