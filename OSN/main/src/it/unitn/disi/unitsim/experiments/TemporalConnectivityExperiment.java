@@ -536,7 +536,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		public void reached(int id) {
 			fReached[id] = true;
-			reached((SNNode) fRegistry.getNode(id));
+			reached(((SNNode) fRegistry.getNode(id)).getSNId());
 		}
 
 		// ------------------------------------------------------------------------
