@@ -165,7 +165,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fRoots = new boolean[dim];
 		fExperiments = new SingleExperiment[dim];
 		for (int i = 0; i < fExperiments.length; i++) {
-			fExperiments[i] = new SingleExperiment(i);
+			fExperiments[i] = new SingleExperiment(i,
+					((SNNode) fRegistry.getNode(i)).getSNId());
 		}
 
 		rootNode().setStateListener(this);
@@ -492,10 +493,13 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		private final int fSender;
 
+		private final int fSenderSNId;
+
 		// ------------------------------------------------------------------------
 
-		public SingleExperiment(int sender) {
-			fSender = sender;
+		public SingleExperiment(int senderIndex, int senderSNId) {
+			fSender = senderIndex;
+			fSenderSNId = senderSNId;
 
 			fFirstLogon = new int[dim()];
 			Arrays.fill(fFirstLogon, NEVER);
@@ -536,7 +540,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		public void reached(int id) {
 			fReached[id] = true;
-			reached(((SNNode) fRegistry.getNode(id)).getSNId());
+			reached((SNNode) fRegistry.getNode(id));
 		}
 
 		// ------------------------------------------------------------------------
@@ -579,7 +583,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 			assert fromFirst >= uptime;
 
-			logReached(sender, reached.getSNId(), printableEllapsedTime(),
+			logReached(fSenderSNId, reached.getSNId(), printableEllapsedTime(),
 					fromFirst, uptime);
 			logProgress();
 		}

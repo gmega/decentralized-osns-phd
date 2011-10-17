@@ -3,6 +3,25 @@ library(ggplot2)
 library(multicore)
 
 # -----------------------------------------------------------------------------
+# Pareto experiments.
+# -----------------------------------------------------------------------------
+
+churnsetting <- function(alpha, beta, dist_alpha, 
+		fb = function(x, beta) { return (x*beta) }) {
+	
+	return(function(m, n) {
+		li <- pareto(alpha, beta, m)
+		samps <- c()
+		samps[1:(m*n)] <- 0
+		for (i in 1:m) {
+			samps[((i - 1)*n + 1):(i*n)] <- pareto(dist_alpha, fb(li[i], beta), n)
+		}
+		return(samps)
+	});
+}
+
+
+# -----------------------------------------------------------------------------
 # Plotting.
 # -----------------------------------------------------------------------------
 

@@ -10,19 +10,22 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.RemoteServer;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
-public class MasterImpl implements IMaster, Runnable {
+public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 
 	private static enum ExperimentState {
 		assigned, done;
 	}
-	
+
 	private static final int POLLING_INTERVAL = 1000;
 
 	private static final Logger fLogger = Logger.getLogger(MasterImpl.class);
@@ -35,7 +38,7 @@ public class MasterImpl implements IMaster, Runnable {
 	private final ConcurrentHashMap<Integer, WorkerEntry> fWorkers = new ConcurrentHashMap<Integer, WorkerEntry>();
 
 	private final ExperimentEntry[] fExperiments;
-	
+
 	private final Thread fController;
 
 	private volatile TableWriter fWriter;
@@ -56,9 +59,9 @@ public class MasterImpl implements IMaster, Runnable {
 		}
 
 		if (recover != null) {
-			replayLog(recover);	
+			replayLog(recover);
 		}
-		
+
 		fController = new Thread(new WorkerControl(POLLING_INTERVAL));
 	}
 
@@ -81,7 +84,7 @@ public class MasterImpl implements IMaster, Runnable {
 		fController.start();
 		fLogger.info("All good.");
 	}
-	
+
 	@Override
 	public void run() {
 		fController.interrupt();
@@ -129,7 +132,13 @@ public class MasterImpl implements IMaster, Runnable {
 	@Override
 	public int registerWorker(IWorker worker) {
 		int id = fId.incrementAndGet();
-		fWorkers.put(id, new WorkerEntry(worker, id));
+		String host = null;
+		try {
+			host = RemoteServer.getClientHost();
+		} catch (ServerNotActiveException e) {
+			fLogger.error("Error while querying for the client's host.", e);
+		}
+		fWorkers.put(id, new WorkerEntry(worker, host, id));
 		return id;
 	}
 
@@ -178,8 +187,7 @@ public class MasterImpl implements IMaster, Runnable {
 				}
 			}
 		}
-		
-		
+
 	}
 
 	protected Pair<Integer, Integer> tryAcquire(int workerId)
@@ -240,19 +248,52 @@ public class MasterImpl implements IMaster, Runnable {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public Pair<String, Integer>[] registeredWorkers() {
+		ArrayList<Pair<String, Integer>> workers = new ArrayList<Pair<String, Integer>>();
+		for (Integer id : fWorkers.keySet()) {
+			WorkerEntry entry = fWorkers.get(id);
+			if (entry == null) {
+				continue;
+			}
+			workers.add(new Pair<String, Integer>(entry.host, id));
+		}
+		return workers.toArray((Pair<String, Integer>[]) new Object[workers
+				.size()]);
+	}
+
+	@Override
+	public int total() {
+		return fExperiments.length;
+	}
+
+	@Override
+	public double completion() throws RemoteException {
+		return ((double) remaining()) / ((double) total());
+	}
+
 	class WorkerEntry {
+
 		final IWorker worker;
+
 		final int id;
 
-		public WorkerEntry(IWorker worker, int id) {
+		final String host;
+
+		public WorkerEntry(IWorker worker, String host, int id) {
 			this.worker = worker;
 			this.id = id;
+			this.host = host;
 		}
 	}
 
 	class ExperimentEntry implements Comparable<Object> {
+
 		final int id;
+
 		WorkerEntry worker;
+
 		boolean done;
 
 		public ExperimentEntry(int id) {
@@ -272,9 +313,9 @@ public class MasterImpl implements IMaster, Runnable {
 	}
 
 	class WorkerControl implements Runnable {
-		
+
 		private final int fPollingInterval;
-		
+
 		public WorkerControl(int pollingInterval) {
 			fPollingInterval = pollingInterval;
 		}
@@ -294,10 +335,10 @@ public class MasterImpl implements IMaster, Runnable {
 						deadWorker(entry);
 					}
 				}
-				
+
 				try {
 					Thread.sleep(fPollingInterval);
-				} catch(InterruptedException ex) {
+				} catch (InterruptedException ex) {
 					break;
 				}
 			}

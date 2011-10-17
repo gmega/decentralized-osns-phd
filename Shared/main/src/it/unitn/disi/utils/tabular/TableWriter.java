@@ -1,12 +1,14 @@
 package it.unitn.disi.utils.tabular;
 
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
 /**
  * Simple implementation for the {@link ITableWriter} interface.
+ * 
+ * TODO implement proper append mode in TableWriter. Can be done easily using a
+ * {@link TableReader} to infer rows and find the last line.
  * 
  * @author giuliano
  */
@@ -29,21 +31,29 @@ public class TableWriter implements ITableWriter {
 	}
 
 	public TableWriter(PrintWriter output, String... fields) {
-		this(FS, output, fields);
+		this(output, true, fields);
+	}
+	
+	public TableWriter(PrintWriter output, boolean append, String... fields) {
+		this(FS, output, append, fields);
 	}
 
 	public TableWriter(String separator, PrintStream output, String... fields) {
-		this(separator, new PrintWriter(output), fields);
+		this(separator, new PrintWriter(output), true, fields);
 	}
 
-	public TableWriter(String separator, PrintWriter output, String... fields) {
+	public TableWriter(String separator, PrintWriter output, boolean append,
+			String... fields) {
 		fOut = output;
 		fFields = fields;
 		fSeparator = separator;
+		fPrintHeader = !append;
 		fCurrentRecord = new String[fFields.length];
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#newRow()
 	 */
 	@Override
@@ -51,9 +61,12 @@ public class TableWriter implements ITableWriter {
 		fOut.flush();
 		Arrays.fill(fCurrentRecord, null);
 	}
-	
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, java.lang.String)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String,
+	 * java.lang.String)
 	 */
 	@Override
 	public boolean set(String key, String value) {
@@ -64,24 +77,30 @@ public class TableWriter implements ITableWriter {
 		fCurrentRecord[idx] = value;
 		return true;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, int)
 	 */
 	@Override
 	public boolean set(String key, int value) {
 		return this.set(key, Integer.toString(value));
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, long)
 	 */
 	@Override
 	public boolean set(String key, long value) {
 		return this.set(key, Long.toString(value));
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, double)
 	 */
 	@Override
@@ -89,31 +108,41 @@ public class TableWriter implements ITableWriter {
 		return this.set(key, Double.toString(value));
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, float)
 	 */
 	@Override
 	public boolean set(String key, float value) {
 		return this.set(key, Float.toString(value));
 	}
-	
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, java.lang.Object)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String,
+	 * java.lang.Object)
 	 */
 	@Override
 	public boolean set(String key, boolean value) {
 		return this.set(key, Boolean.toString(value));
 	}
-	
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String, java.lang.Object)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see it.unitn.disi.utils.ITableWriter#set(java.lang.String,
+	 * java.lang.Object)
 	 */
 	@Override
 	public boolean set(String key, Object object) {
 		return this.set(key, object.toString());
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#emmitRow()
 	 */
 	@Override
@@ -132,15 +161,21 @@ public class TableWriter implements ITableWriter {
 		fOut.println(rb.toString());
 		this.newRow();
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.utils.ITableWriter#fields()
 	 */
 	@Override
-	public String [] fields() {
-		String [] copy = new String[fFields.length];
+	public String[] fields() {
+		String[] copy = new String[fFields.length];
 		System.arraycopy(fFields, 0, copy, 0, fFields.length);
 		return copy;
+	}
+
+	public void flush() {
+		fOut.flush();
 	}
 
 	private void emmitHeader() {

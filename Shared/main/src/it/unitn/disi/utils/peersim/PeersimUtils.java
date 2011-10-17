@@ -36,6 +36,16 @@ public class PeersimUtils {
 		return null;
 	}
 	
+	public static int countActives() {
+		int active = 0;
+		for (int i = 0; i < Network.size(); i++) {
+			if (Network.get(i).isUp()) {
+				active++;
+			}
+		}	
+		return active;
+	}
+	
 	public static int indexOf(Node node, Linkable linkable) {
 		int degree = linkable.degree();
 		for (int i = 0; i < degree; i++) {
