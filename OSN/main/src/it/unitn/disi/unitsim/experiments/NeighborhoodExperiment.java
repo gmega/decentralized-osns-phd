@@ -2,7 +2,7 @@ package it.unitn.disi.unitsim.experiments;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.unitsim.INeighborhoodProvider;
+import it.unitn.disi.unitsim.IGraphProvider;
 import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;
@@ -37,7 +37,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 
 	private final NodeRebootSupport fSupport;
 
-	private final INeighborhoodProvider fLoader;
+	private final IGraphProvider fLoader;
 
 	private final Integer fRootId;
 	
@@ -52,7 +52,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 	public NeighborhoodExperiment(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
-			@Attribute("NeighborhoodLoader") INeighborhoodProvider loader) {
+			@Attribute("NeighborhoodLoader") IGraphProvider loader) {
 		fLoader = loader;
 		fRootId = id;
 		fGraphProtocolId = graphProtocolId;
@@ -70,7 +70,7 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		clearNetwork();
 		INodeRegistry registry = NodeRegistry.getInstance();
 		int[] originals = fLoader.verticesOf(fRootId);
-		IndexedNeighborGraph neighborhood = fLoader.neighborhood(fRootId);
+		IndexedNeighborGraph neighborhood = fLoader.subgraph(fRootId);
 		for (int i = 0; i < originals.length; i++) {
 			SNNode node = (SNNode) Network.prototype.clone();
 			node.setSNId(originals[i]);

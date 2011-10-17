@@ -8,9 +8,9 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 
 /**
  * Very limited but memory-efficient implementation of
- * {@link INeighborhoodProvider} for generating complete neighborhoods. <BR>
+ * {@link IGraphProvider} for generating complete neighborhoods. <BR>
  * <BR>
- * This implementation does not respect the {@link INeighborhoodProvider}
+ * This implementation does not respect the {@link IGraphProvider}
  * contract for method {@link #verticesOf(Integer)}, and the values returned by
  * this method do not represent a cohesive underlying graph.
  * 
@@ -18,7 +18,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
  * @author giuliano
  */
 @AutoConfig
-public class CompleteNeighborhoodGenerator implements INeighborhoodProvider,
+public class CompleteNeighborhoodGenerator implements IGraphProvider,
 		IPlugin {
 
 	public CompleteNeighborhoodGenerator() {
@@ -38,7 +38,7 @@ public class CompleteNeighborhoodGenerator implements INeighborhoodProvider,
 	}
 
 	@Override
-	public IndexedNeighborGraph neighborhood(Integer node) {
+	public IndexedNeighborGraph subgraph(Integer node) {
 		return new CompleteGraph(node);
 	}
 

@@ -15,7 +15,7 @@ import peersim.config.plugin.IPlugin;
  * @author giuliano
  */
 @AutoConfig
-public class NeighborhoodLoader implements IPlugin, INeighborhoodProvider {
+public class NeighborhoodLoader implements IPlugin, IGraphProvider {
 
 	@Attribute("decoder")
 	private String fDec;
@@ -50,7 +50,7 @@ public class NeighborhoodLoader implements IPlugin, INeighborhoodProvider {
 	 * @see it.unitn.disi.unitsim.INeighborhoodLoader#neighborhood(java.lang.Integer)
 	 */
 	@Override
-	public LightweightStaticGraph neighborhood(Integer node) {
+	public LightweightStaticGraph subgraph(Integer node) {
 		return LightweightStaticGraph.subgraph(fGraph, verticesOf(node));
 	}
 
