@@ -3,7 +3,7 @@ package it.unitn.disi.newscasting.experiments;
 import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.unitsim.GovernorBase;
-import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import it.unitn.disi.unitsim.experiments.DisseminationExperiment;
 import peersim.core.Node;
 
 /**
@@ -43,7 +43,7 @@ public class PredicateHeuristic implements IPeerSelector {
 	}
 	
 	protected boolean predicateMatches(Node source) {
-		return ((NeighborhoodExperiment) fGovernor.currentExperiment())
+		return ((DisseminationExperiment) fGovernor.currentExperiment())
 				.rootNode() == source;
 	}
 }

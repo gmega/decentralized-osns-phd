@@ -6,7 +6,6 @@ import it.unitn.disi.epidemics.IProtocolSet;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.ISocialNewscasting;
 import it.unitn.disi.unitsim.IGraphProvider;
-import it.unitn.disi.unitsim.TimeTracker;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -16,7 +15,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 
 @AutoConfig
-public class DisseminationUnitExperiment extends NeighborhoodExperiment
+public class DisseminationExperiment extends GraphExperiment
 		implements ICDUnitExperiment {
 
 	private final int fNewscasting;
@@ -24,7 +23,7 @@ public class DisseminationUnitExperiment extends NeighborhoodExperiment
 	private final Class<? extends IContentExchangeStrategy> fStrategy;
 
 	@SuppressWarnings("unchecked")
-	public DisseminationUnitExperiment(
+	public DisseminationExperiment(
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute(ID) int id, 
 			@Attribute("linkable") int linkable,
@@ -57,6 +56,10 @@ public class DisseminationUnitExperiment extends NeighborhoodExperiment
 		
 		System.out.println("-- Scheduled node " + rootNode().getSNId()
 				+ " (degree " + neighborhood().degree() + ").");
+	}
+
+	public SNNode rootNode() {
+		return getNode(0); 
 	}
 
 	@Override

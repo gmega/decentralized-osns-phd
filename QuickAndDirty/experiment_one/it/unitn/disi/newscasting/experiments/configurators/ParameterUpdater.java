@@ -1,9 +1,8 @@
 package it.unitn.disi.newscasting.experiments.configurators;
 
-import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
-import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import it.unitn.disi.unitsim.experiments.DisseminationExperiment;
 import it.unitn.disi.utils.tabular.IReference;
 import it.unitn.disi.utils.tabular.TableReader;
 
@@ -26,7 +25,7 @@ public abstract class ParameterUpdater implements ICDExperimentObserver {
 
 	@Override
 	public void experimentStart(ICDUnitExperiment exp) {
-		NeighborhoodExperiment nexp = (NeighborhoodExperiment) exp;
+		DisseminationExperiment nexp = (DisseminationExperiment) exp;
 		Node root = nexp.rootNode();
 		nextParameterSet();		
 		long id = Long.parseLong(fReader.get("id"));

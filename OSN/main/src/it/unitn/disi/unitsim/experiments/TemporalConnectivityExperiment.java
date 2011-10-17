@@ -38,7 +38,7 @@ import peersim.core.Node;
 				"first_uptime_length" }),
 		@StructuredLog(key = "TCE", fields = { "root", "time", "residue",
 				"corrected" }) })
-public class TemporalConnectivityExperiment extends NeighborhoodExperiment
+public class TemporalConnectivityExperiment extends GraphExperiment
 		implements IEDUnitExperiment, INodeStateListener {
 
 	public static final int NEVER = Integer.MAX_VALUE;
@@ -92,7 +92,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// References to services.
 	// ------------------------------------------------------------------------
 
-	private final INodeRegistry fRegistry;
+	//private final INodeRegistry fRegistry;
 
 	private final ITableWriter fProgressWriter;
 
@@ -121,12 +121,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			@Attribute(value = "horizon", defaultValue = "-1") int horizon,
 			@Attribute(value = "timeout", defaultValue = "0") long timeout,
 			@Attribute(value = "burnin", defaultValue = "0") int burnIn,
-			@Attribute("NodeRegistry") INodeRegistry registry,
 			@Attribute("TabularLogManager") TabularLogManager manager) {
 		this(prefix, id, graphProtocolId, loader, timeBase, horizon, timeout,
-				burnIn, registry, manager.get(
-						TemporalConnectivityExperiment.class, "TCP"), manager
-						.get(TemporalConnectivityExperiment.class, "TCR"),
+				burnIn, manager
+						.get(TemporalConnectivityExperiment.class, "TCP"),
+				manager.get(TemporalConnectivityExperiment.class, "TCR"),
 				manager.get(TemporalConnectivityExperiment.class, "TCE"),
 				manager.get(TemporalConnectivityExperiment.class, "TCS"));
 	}
@@ -135,12 +134,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	public TemporalConnectivityExperiment(String prefix, Integer id,
 			int graphProtocolId, IGraphProvider loader, int timeBase,
-			int horizon, long timeout, int burnIn, INodeRegistry registry,
-			ITableWriter progressWriter, ITableWriter reachabilityWriter,
-			ITableWriter summaryWriter, ITableWriter residueWriter) {
+			int horizon, long timeout, int burnIn, ITableWriter progressWriter,
+			ITableWriter reachabilityWriter, ITableWriter summaryWriter,
+			ITableWriter residueWriter) {
 		super(prefix, id, graphProtocolId, loader);
 		fHorizon = horizon <= 0 ? Integer.MAX_VALUE : horizon;
-		fRegistry = registry;
 		fTimeBase = timeBase;
 		fTimeout = timeout == 0 ? Long.MAX_VALUE : timeout;
 
@@ -165,16 +163,11 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		fRoots = new boolean[dim];
 		fExperiments = new SingleExperiment[dim];
 		for (int i = 0; i < fExperiments.length; i++) {
-			fExperiments[i] = new SingleExperiment(i,
-					((SNNode) fRegistry.getNode(i)).getSNId());
+			fExperiments[i] = new SingleExperiment(i, getNode(i).getSNId());
 		}
 
-		rootNode().setStateListener(this);
-		Linkable neighborhood = neighborhood();
-		int degree = neighborhood.degree();
-		for (int i = 0; i < degree; i++) {
-			SNNode neighbor = (SNNode) neighborhood.getNeighbor(i);
-			neighbor.setStateListener(this);
+		for (int i = 0; i < size(); i++) {
+			getNode(i).setStateListener(this);
 		}
 	}
 
@@ -249,17 +242,14 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		resetStartingTime();
 
 		// 2. Zeroes all uptimes.
-		rootNode().clearUptime();
-		Linkable neighborhood = neighborhood();
-		for (int i = 0; i < neighborhood.degree(); i++) {
-			SNNode neighbor = (SNNode) neighborhood.getNeighbor(i);
-			neighbor.clearUptime();
+		for (int i = 0; i < size(); i++) {
+			getNode(i).clearUptime();
 		}
 
 		// 3. Updates self-reachability and uptimes for
 		// everyone.
 		for (int i = 0; i < dim(); i++) {
-			SNNode node = (SNNode) fRegistry.getNode(i);
+			SNNode node = getNode(i);
 			if (node.isUp()) {
 				fExperiments[i].nodeUp(node);
 			}
@@ -294,7 +284,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		Arrays.fill(fRoots, false);
 
 		for (int j = 0; j < dim(); j++) {
-			SNNode node = (SNNode) fRegistry.getNode((long) j);
+			SNNode node = getNode(j);
 			fRoots[j] = fExperiments[sender].isReachable(j) && node.isUp();
 		}
 
@@ -317,8 +307,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 			if (current.hasNext() && fStack.size() <= fHorizon) {
 				int neighbor = current.nextNeighbor();
 				// Only pushes if node unmarked and up.
-				SNNode neighborNode = (SNNode) fRegistry
-						.getNode((long) neighbor);
+				SNNode neighborNode = getNode(neighbor);
 				if (neighborNode.isUp()
 						&& !fExperiments[root].isReachable(neighbor)) {
 					fStack.push(current);
@@ -355,7 +344,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				}
 
 				// Corrected residue: has the node come online?
-				SNNode node = (SNNode) fRegistry.getNode((long) j);
+				SNNode node = getNode(j);
 				if (node.uptime() > 0) {
 					nonZeroUptime++;
 					totalNonZero += 1.0;
@@ -374,8 +363,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 				corrected = 1.0 - (((double) reached) / nonZeroUptime);
 			}
 
-			SNNode originator = (SNNode) fRegistry.getNode((long) i);
-
+			SNNode originator = getNode(i);
 			logResidue(reached, residue, corrected, pathological, originator);
 		}
 
@@ -406,13 +394,9 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	private void killAll() {
-		Linkable neighborhood = neighborhood();
-		int degree = neighborhood.degree();
-		for (int i = 0; i < degree; i++) {
-			Node node = neighborhood.getNeighbor(i);
-			node.setFailState(Fallible.DEAD);
+		for (int i = 0; i < size(); i++) {
+			getNode(i).setFailState(Fallible.DEAD);
 		}
-		rootNode().setFailState(Fallible.DEAD);
 	}
 
 	// ------------------------------------------------------------------------
@@ -436,8 +420,8 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	protected void logProgress() {
-		fProgressWriter.set("root", rootNode().getSNId());
-		fProgressWriter.set("degree", neighborhood().degree());
+		fProgressWriter.set("root", getNode(0).getSNId());
+		fProgressWriter.set("degree", size() - 1);
 		fProgressWriter.set("reached", fReachedCount);
 		fProgressWriter.set("total", total());
 		fProgressWriter.set("time", printableEllapsedTime());
@@ -448,7 +432,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	private void logReached(long originator, long receiver, long total,
 			long fromFirst, long uptime) {
-		fReachabilityWriter.set("root", rootNode().getSNId());
+		fReachabilityWriter.set("root", getNode(0).getSNId());
 		fReachabilityWriter.set("originator", originator);
 		fReachabilityWriter.set("receiver", receiver);
 		fReachabilityWriter.set("total_length", total);
@@ -460,7 +444,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 	// ------------------------------------------------------------------------
 
 	private void logSummary(Pair<Double, Double> residues) {
-		fSummaryWriter.set("root", rootNode().getSNId());
+		fSummaryWriter.set("root", getNode(0).getSNId());
 		fSummaryWriter.set("time", printableEllapsedTime());
 		fSummaryWriter.set("residue", residues.a);
 		fSummaryWriter.set("corrected", residues.b);
@@ -471,7 +455,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 	private void logResidue(int reached, double residue, double corrected,
 			boolean pathological, SNNode originator) {
-		fResidueWriter.set("root", rootNode().getSNId());
+		fResidueWriter.set("root",getNode(0).getSNId());
 		fResidueWriter.set("originator", originator.getSNId());
 		fResidueWriter.set("reached", reached);
 		fResidueWriter.set("total", dim());
@@ -540,7 +524,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 		public void reached(int id) {
 			fReached[id] = true;
-			reached((SNNode) fRegistry.getNode(id));
+			reached(getNode(id));
 		}
 
 		// ------------------------------------------------------------------------
@@ -563,13 +547,13 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 
 			// Initializes the receiver map.
 			for (int i = 0; i < fUptimes.length; i++) {
-				SNNode node = (SNNode) fRegistry.getNode((long) i);
+				SNNode node = getNode(i);
 				if (node.isUp()) {
 					receiverUp(node);
 				}
 			}
 
-			reached((SNNode) fRegistry.getNode((long) fSender));
+			reached(getNode(fSender));
 		}
 
 		// ------------------------------------------------------------------------
@@ -609,8 +593,7 @@ public class TemporalConnectivityExperiment extends NeighborhoodExperiment
 		private int[] snapshotUptimes() {
 			int[] snapshot = new int[dim()];
 			for (int i = 0; i < dim(); i++) {
-				snapshot[i] = MiscUtils
-						.safeCast(((SNNode) fRegistry.getNode(i)).uptime());
+				snapshot[i] = MiscUtils.safeCast(getNode(i).uptime());
 			}
 			return snapshot;
 		}

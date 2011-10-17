@@ -11,27 +11,21 @@ import it.unitn.disi.utils.peersim.SNNode;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
-import peersim.core.Linkable;
 import peersim.core.Network;
 import peersim.core.Node;
 
 /**
- * A {@link NeighborhoodExperiment} is an experiment which is linked to a
- * neighborhood in a graph. It makes the following assumptions:
- * <ol>
- * <li>that the neighborhood is uniquely identified by the ID of its root node;</li>
- * <li>that the experiment is constrained to a given neighborhood;</li>
- * <li>that the underlying graph might be loaded incrementally into memory.</li>
- * </ol>
+ * A {@link GraphExperiment} is an experiment which is linked to a graph which
+ * is a part of a larger set of graphs, possibly subgraphs of a huge graph.
  * 
- * The whole idea here is to be able to run several experiments without having
- * to load the whole graph and/or without having to register the entire graph as
- * PeerSim nodes, since that would needlessly limit scalability.
+ * The initial motivation here was to be able to run several experiments without
+ * having to load the whole graph and/or without having to register the entire
+ * graph as PeerSim nodes, since that would needlessly limit scalability.
  * 
  * @author giuliano
  */
 @AutoConfig
-public abstract class NeighborhoodExperiment implements IUnitExperiment {
+public abstract class GraphExperiment implements IUnitExperiment {
 
 	public static final String PAR_ID = "id";
 
@@ -40,16 +34,16 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 	private final IGraphProvider fLoader;
 
 	private final Integer fRootId;
-	
+
 	private long fStartingTime;
 
 	protected final int fGraphProtocolId;
-	
-	private SNNode fRootNode;
-	
+
+	private SNNode[] fNodes;
+
 	private IndexedNeighborGraph fGraph;
 
-	public NeighborhoodExperiment(@Attribute(Attribute.PREFIX) String prefix,
+	public GraphExperiment(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
 			@Attribute("NeighborhoodLoader") IGraphProvider loader) {
@@ -70,63 +64,61 @@ public abstract class NeighborhoodExperiment implements IUnitExperiment {
 		clearNetwork();
 		INodeRegistry registry = NodeRegistry.getInstance();
 		int[] originals = fLoader.verticesOf(fRootId);
-		IndexedNeighborGraph neighborhood = fLoader.subgraph(fRootId);
+		IndexedNeighborGraph graph = fLoader.subgraph(fRootId);
+		SNNode nodes [] = new SNNode[graph.size()];
 		for (int i = 0; i < originals.length; i++) {
 			SNNode node = (SNNode) Network.prototype.clone();
+			nodes[i] = node;
 			node.setSNId(originals[i]);
 			node.setID(i);
 			Network.add(node);
 			registry.registerNode(node);
 			GraphProtocol gp = (GraphProtocol) node
 					.getProtocol(fGraphProtocolId);
-			gp.configure(node, neighborhood, registry);
+			gp.configure(node, graph, registry);
 		}
 
 		// Run node initializers.
 		for (int i = 0; i < Network.size(); i++) {
 			fSupport.initialize(Network.get(i));
 		}
-		
-		initialize(neighborhood, (SNNode) Network.get(0));
+
+		initialize(graph, nodes);
 	}
-	
-	protected void clearNetwork() {
+
+	public long startTime() {
+		return fStartingTime;
+	}
+
+	void initialize(IndexedNeighborGraph neighborhood, SNNode [] nodes) {
+		fGraph = neighborhood;
+		fNodes = nodes;
+		chainInitialize();
+	}
+
+	protected void resetStartingTime() {
+		fStartingTime = CommonState.getTime();
+	}
+
+	protected IndexedNeighborGraph graph() {
+		return fGraph;
+	}
+
+	protected int size() {
+		return fNodes.length;
+	}
+
+	protected SNNode getNode(int id) {
+		return fNodes[id];
+	}
+
+	protected abstract void chainInitialize();
+
+	private void clearNetwork() {
 		INodeRegistry registry = NodeRegistry.getInstance();
 		registry.clear();
 		while (Network.size() != 0) {
 			Network.remove();
 		}
 	}
-	
-	public void initialize(IndexedNeighborGraph neighborhood, SNNode rootNode) {
-		fGraph = neighborhood;
-		fRootNode = rootNode;
-		chainInitialize();
-	}
-	
-	protected void resetStartingTime() {
-		fStartingTime = CommonState.getTime();
-	}
-	
-	public long startTime() {
-		return fStartingTime;
-	}
-
-	public SNNode rootNode() {
-		return fRootNode;
-	}
-	
-	protected IndexedNeighborGraph graph() {
-		return fGraph;
-	}
-
-	protected Linkable neighborhood() {
-		return neighborhood(rootNode());
-	}
-	
-	protected Linkable neighborhood(Node node) {
-		return (Linkable) node.getProtocol(fGraphProtocolId);
-	}
-
-	protected abstract void chainInitialize();
 }

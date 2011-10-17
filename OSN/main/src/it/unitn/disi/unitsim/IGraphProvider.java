@@ -33,6 +33,10 @@ public interface IGraphProvider {
 	 * subgraph of this graph, with their IDs in the ID space of the underlying
 	 * graph.
 	 * 
+	 * Note that array <code>v</code> of IDs returned by this method is ordered
+	 * so that the <code>v[n]</code> represents the n-th vertex in the subgraph
+	 * returned by the {@link #subgraph(Integer)} method.
+	 * 
 	 * @param node
 	 *            the id of the vertex, in the ID space of the underlying graph.
 	 * @return its neighbors in the underlying graph.

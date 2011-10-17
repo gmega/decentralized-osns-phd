@@ -8,9 +8,13 @@ import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
 
 /**
- * Plug-in which loads neighborhoods on-demand. The current implementation
- * simply loads it all into memory and produces subgraphs as requests come 
- * (meaning it doesn't really provide any memory savings).
+ * {@link NeighborhoodLoader} is an {@link IGraphProvider} which allows loading
+ * of individual neighborhoods of an underlying, possibly huge graph. Subgraph
+ * ids are intepreted as node IDs in the underlying graph, for which
+ * neighborhoods can be accessed one at a time.<BR>
+ * <BR>
+ * Note: the current implementation simply loads it all into memory, meaning it
+ * doesn't really provide any memory savings graph-wise.
  * 
  * @author giuliano
  */
@@ -40,22 +44,28 @@ public class NeighborhoodLoader implements IPlugin, IGraphProvider {
 	public void stop() throws Exception {
 		fGraph = null;
 	}
-	
+
 	@Override
 	public int size() {
 		return fGraph.size();
 	}
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.unitsim.INeighborhoodLoader#neighborhood(java.lang.Integer)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * it.unitn.disi.unitsim.INeighborhoodLoader#neighborhood(java.lang.Integer)
 	 */
 	@Override
 	public LightweightStaticGraph subgraph(Integer node) {
 		return LightweightStaticGraph.subgraph(fGraph, verticesOf(node));
 	}
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.unitsim.INeighborhoodLoader#verticesOf(java.lang.Integer)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * it.unitn.disi.unitsim.INeighborhoodLoader#verticesOf(java.lang.Integer)
 	 */
 	@Override
 	public int[] verticesOf(Integer node) {

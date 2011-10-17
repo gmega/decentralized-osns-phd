@@ -28,6 +28,7 @@ import it.unitn.disi.sps.newscast.TestPeerSelectors;
 import it.unitn.disi.sps.newscast.TestQueueManager;
 import it.unitn.disi.sps.newscast.TestView;
 import it.unitn.disi.test.framework.PeerSimTest;
+import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperimentTest;
 import it.unitn.disi.util.SequentialSchedulerTest;
 import it.unitn.disi.util.peersim.BitSetNeighborhoodTest;
 import it.unitn.disi.util.peersim.PermutingCacheTest;
@@ -47,7 +48,6 @@ import org.junit.runners.Suite;
 
 import peersim.config.ObjectCreatorTest;
 import peersim.config.PluginContainerTest;
-import unitn.disi.unitsim.experiments.TemporalConnectivityExperimentTest;
  
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

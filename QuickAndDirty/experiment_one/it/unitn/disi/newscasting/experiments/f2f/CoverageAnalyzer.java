@@ -1,10 +1,9 @@
 package it.unitn.disi.newscasting.experiments.f2f;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
-import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
-import it.unitn.disi.unitsim.experiments.NeighborhoodExperiment;
+import it.unitn.disi.unitsim.experiments.DisseminationExperiment;
 import it.unitn.disi.utils.SparseMultiCounter;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
@@ -47,7 +46,7 @@ public class CoverageAnalyzer implements ICDExperimentObserver {
 
 	@Override
 	public void experimentEnd(ICDUnitExperiment exp) {
-		NeighborhoodExperiment nexp = (NeighborhoodExperiment) exp;
+		DisseminationExperiment nexp = (DisseminationExperiment) exp;
 		Node root = nexp.rootNode();
 		
 		SparseMultiCounter<Node> twoHopSeen = new SparseMultiCounter<Node>();

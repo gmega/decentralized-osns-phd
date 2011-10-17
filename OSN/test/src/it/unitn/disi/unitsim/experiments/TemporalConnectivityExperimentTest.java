@@ -1,4 +1,4 @@
-package unitn.disi.unitsim.experiments;
+package it.unitn.disi.unitsim.experiments;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -59,15 +59,16 @@ public class TemporalConnectivityExperimentTest extends PeerSimTest {
 		ByteArrayOutputStream oup = new ByteArrayOutputStream();
 		TemporalConnectivityExperiment exp = new TemporalConnectivityExperiment(
 				"", 0, GP_ID, null, TIME_BASE, 2, 0, BURN_IN_TIME,
-				builder.registry(), new NullTableWriter(), new TableWriter(
-						new PrintStream(oup), "root", "originator", "receiver",
-						"total_length", "uptime_length", "first_uptime_length"),
+				new NullTableWriter(), new TableWriter(new PrintStream(oup),
+						"root", "originator", "receiver", "total_length",
+						"uptime_length", "first_uptime_length"),
 				new NullTableWriter(), new NullTableWriter());
 		
 		@SuppressWarnings("unchecked")
 		List <SNNode> list = (List <SNNode>) builder.getNodes();
 		SNNode root = list.get(0);
-		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(), root);
+		exp.initialize(((GraphProtocol) root.getProtocol(GP_ID)).graph(),
+				list.toArray(new SNNode[list.size()]));
 		
 		for (int i = 0; i < list.size(); i++) {
 			list.get(i).setStateListener(exp);
