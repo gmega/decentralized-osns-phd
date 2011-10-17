@@ -3,6 +3,7 @@ package it.unitn.disi.network.churn.yao;
 import it.unitn.disi.random.Exponential;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
+import it.unitn.disi.random.UniformDistribution;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.tabular.ITableWriter;
@@ -62,10 +63,12 @@ public class YaoInit implements Control, NodeInitializer {
 	private static final double BETA_UPTIME = 1.0;
 
 	private static final double BETA_DOWNTIME = 2.0;
+	
+	private static final IDistribution fUniform = new UniformDistribution(CommonState.r);
 
 	private static final IAverageGenerator YAO_GENERATOR = new AverageGeneratorImpl(
-			new ShiftedPareto(ALPHA, BETA_UPTIME, CommonState.r),
-			new ShiftedPareto(ALPHA, BETA_DOWNTIME, CommonState.r), "yao");
+			new ShiftedPareto(ALPHA, BETA_UPTIME, fUniform),
+			new ShiftedPareto(ALPHA, BETA_DOWNTIME, fUniform), "yao");
 
 	private static final IAverageGenerator[] generators = new IAverageGenerator[] { YAO_GENERATOR };
 
@@ -75,23 +78,23 @@ public class YaoInit implements Control, NodeInitializer {
 
 	// -- Heavy tailed
 	private static final IDistributionGenerator HEAVY_TAILED = new DualPareto(
-			3.0, 3.0, 2.0, 2.0, "H", CommonState.r);
+			3.0, 3.0, 2.0, 2.0, "H", fUniform);
 
 	// -- Very Heavy tailed
 	private static final IDistributionGenerator VERY_HEAVY_TAILED = new DualPareto(
-			1.5, 1.5, 2.0, 2.0, "VH", CommonState.r);
+			1.5, 1.5, 2.0, 2.0, "VH", fUniform);
 
 	// -- Exponential System
 	private static final IDistributionGenerator EXPONENTIAL_SYSTEM = new IDistributionGenerator() {
 
 		@Override
 		public IDistribution uptimeDistribution(double li) {
-			return new Exponential(1.0 / li, CommonState.r);
+			return new Exponential(1.0 / li, fUniform);
 		}
 
 		@Override
 		public IDistribution downtimeDistribution(double di) {
-			return new ShiftedPareto(3.0, 2.0 * di, CommonState.r);
+			return new ShiftedPareto(3.0, 2.0 * di, fUniform);
 		}
 
 		@Override

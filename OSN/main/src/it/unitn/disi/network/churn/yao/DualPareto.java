@@ -3,6 +3,7 @@ package it.unitn.disi.network.churn.yao;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.ShiftedPareto;
+import it.unitn.disi.random.UniformDistribution;
 
 import java.util.Random;
 
@@ -22,31 +23,31 @@ public class DualPareto implements IDistributionGenerator {
 
 	private final String fId;
 
-	private final Random fRandom;
+	private final IDistribution fUniform;
 
 	public DualPareto(@Attribute("uptime_alpha") double uptimeAlpha,
 			@Attribute("downtime_alpha") double downtimeAlpha,
 			@Attribute("uptime_beta") double uptimeBetaFactor,
 			@Attribute("downtime_beta") double downtimeBetaFactor,
 			@Attribute(value = "id", defaultValue = "custom") String id, 
-			@Attribute("Random") Random r) {
+			@Attribute("UniformDistribution") IDistribution uniform) {
 		fUptimeAlpha = uptimeAlpha;
 		fDowntimeAlpha = downtimeAlpha;
 		fUptimeBetaFactor = uptimeBetaFactor;
 		fDowntimeBetaFactor = downtimeBetaFactor;
 		fId = id;
-		fRandom = r;
+		fUniform = uniform;
 	}
 
 	@Override
 	public IDistribution uptimeDistribution(double li) {
-		return new ShiftedPareto(fUptimeAlpha, fUptimeBetaFactor * li, fRandom);
+		return new ShiftedPareto(fUptimeAlpha, fUptimeBetaFactor * li, fUniform);
 	}
 
 	@Override
 	public IDistribution downtimeDistribution(double di) {
 		return new ShiftedPareto(fDowntimeAlpha, fDowntimeBetaFactor * di,
-				fRandom);
+				fUniform);
 	}
 
 	@Override

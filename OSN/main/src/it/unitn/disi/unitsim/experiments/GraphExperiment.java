@@ -12,7 +12,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Network;
-import peersim.core.Node;
 
 /**
  * A {@link GraphExperiment} is an experiment which is linked to a graph which
