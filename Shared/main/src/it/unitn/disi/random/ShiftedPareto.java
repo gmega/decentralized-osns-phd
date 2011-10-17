@@ -22,17 +22,17 @@ public class ShiftedPareto implements IDistribution {
 
 	private final double fBeta;
 
-	private final Random fRand;
+	private final IDistribution fU;
 
-	public ShiftedPareto(double alpha, double beta, Random r) {
+	public ShiftedPareto(double alpha, double beta, IDistribution uniform) {
 		fBeta = beta;
 		fAlpha = alpha;
-		fRand = r;
+		fU = uniform;
 	}
 
 	@Override
 	public double sample() {
-		return fBeta * (Math.pow(fRand.nextDouble(), -1.0 / fAlpha) - 1);
+		return fBeta * (Math.pow(fU.sample(), -1.0 / fAlpha) - 1);
 	}
 
 	@Override

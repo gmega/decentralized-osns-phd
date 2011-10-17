@@ -13,7 +13,7 @@ public class Weibull implements IDistribution {
 
 	private final double fScale;
 	
-	private final Random fRand;
+	private final IDistribution fU;
 
 	/**
 	 * Creates a new Weibull-distributed random number generator.
@@ -23,20 +23,20 @@ public class Weibull implements IDistribution {
 	 * @param scale
 	 *            the scale of the distribution.
 	 */
-	public Weibull(double shape, double scale, Random r) {
+	public Weibull(double shape, double scale, IDistribution uniform) {
 		fShapeInverse = 1.0 / shape;
 		fScale = scale;
-		fRand = r;
+		fU = uniform;
 	}
 
 	@Override
 	public double sample() {
-		return fScale * Math.pow(-Math.log(1.0 - fRand.nextDouble()), fShapeInverse);
+		return fScale * Math.pow(-Math.log(1.0 - fU.sample()), fShapeInverse);
 	}
 
 	@Override
 	public double expectation() {
-		throw new UnsupportedOperationException("BUG: not implemented (required gamma function).");
+		throw new UnsupportedOperationException("BUG: not implemented (requires the gamma function).");
 	}
 
 }
