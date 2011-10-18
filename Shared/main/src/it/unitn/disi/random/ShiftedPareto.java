@@ -1,7 +1,5 @@
 package it.unitn.disi.random;
 
-import java.util.Random;
-
 /**
  * Generates a stream of numbers distributed according to a "shifted Pareto"
  * distribution, that is, a Pareto distribution whose PDF has been shifted to

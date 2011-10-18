@@ -94,7 +94,7 @@ public abstract class LSGCreator {
 		return adjacency;
 	}
 
-	interface Action {
+	public interface Action {
 		public void edge(int source, int target);
 	}
 

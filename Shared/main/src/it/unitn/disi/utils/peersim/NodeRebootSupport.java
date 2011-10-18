@@ -5,11 +5,11 @@ import peersim.core.Node;
 import peersim.dynamics.NodeInitializer;
 
 public class NodeRebootSupport {
-	
+
 	public static final String PAR_INIT = "init";
-	
+
 	private final NodeInitializer[] fInits;
-	
+
 	public NodeRebootSupport(String prefix) {
 		Object[] tmp = Configuration.getInstanceArray(prefix + "." + PAR_INIT);
 		fInits = new NodeInitializer[tmp.length];
@@ -17,10 +17,14 @@ public class NodeRebootSupport {
 			fInits[i] = (NodeInitializer) tmp[i];
 		}
 	}
-	
+
 	public void initialize(Node node) {
 		for (int j = 0; j < fInits.length; ++j) {
-			fInits[j].initialize(node);
+			runInitializer(node, fInits[j]);
 		}
+	}
+
+	private void runInitializer(Node node, NodeInitializer initializer) {
+		initializer.initialize(node);
 	}
 }

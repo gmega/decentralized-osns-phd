@@ -8,8 +8,8 @@ import subprocess
 import sys
 import logparse.config as config
 import os
-import re
 from logparse.config import PROCESSOR, PREFIXES
+from logparse.commons import ParameterIterator, AnalyzerLauncher
     
 STDOUT = "stdout"
 
@@ -51,14 +51,10 @@ class LogDemux(object):
             self.__do_demux__(prefix, os.path.join(self.__target_folder__, output))
         
     def __do_demux__(self, prefix, output):
-        with self.__open_output__(output) as file:           
+        with self.__open_output__(output) as oup:           
             # Launches the demuxer.
             command = self.__make_command__(self.__inputlist__, prefix)
-            process = Popen(command, shell=True, stdout=file, stderr=subprocess.PIPE)
-            
-            while process.returncode is None:
-                (stdout, stderr) = process.communicate()
-                print >> sys.stderr, stderr
+            command.run(oup)
 
     def __open_output__(self, output):
         if output == STDOUT:
@@ -67,29 +63,15 @@ class LogDemux(object):
         return open(output, "w")
 
     def __make_command__(self, inputlist, prefix):
-        # Eventually I'll create a command templating class.
-        opts = ["file_list='" + " ".join(inputlist) + "'"]
-        opts += ["line_prefix=" + prefix]
-        opts += ["matching_only=true,allow_partial=true,single_header=true,discard_parameters=true"]
-        opts = ",".join(opts)
-        
-        command = ["analyzer-j", "-s", ",", "-p", opts, "it.unitn.disi.logparse.PeerSimLogDemux"]
-        return " ".join(command)
-
-class ParameterIterator(object):
-    
-    IDENT = "[A-Z]+"
-    INT_OR_FLOAT = "[0-9]+(?:\\.[0-9]+)?"
-    INT_OR_FLOAT_OR_IDENT = "(?:" + IDENT + "|(?:" + INT_OR_FLOAT + "))"
-    SPLIT_CHAR = "_"
-    PARAMETER = IDENT + SPLIT_CHAR + INT_OR_FLOAT_OR_IDENT
-    
-    def __init__(self, string):
-        self.__string__ = string
-        
-    def __iter__(self):
-        for match in re.finditer(self.PARAMETER, self.__string__):
-            yield match.group(0)
+        launcher = AnalyzerLauncher(processor=
+                                    "it.unitn.disi.logparse.PeerSimLogDemux")
+        launcher["file_list"] = "'" + " ".join(inputlist) + "'"
+        launcher["line_prefix"] = prefix
+        launcher["matching_only"] = "true"
+        launcher["allow_partial"] = "true"
+        launcher["single_header"] = "true"
+        launcher["discard_parameters"] = "true"
+        return launcher
 
 def __main__(argv):
     

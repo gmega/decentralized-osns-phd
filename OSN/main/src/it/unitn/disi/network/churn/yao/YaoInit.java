@@ -22,7 +22,7 @@ import peersim.dynamics.NodeInitializer;
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>. <BR>
  * <BR>
- * The implementation actually allows more flexibile initialization, but all
+ * The implementation actually allows more flexible initialization, but all
  * preset modes from the original paper are coded here.
  */
 @StructuredLog(key = "YaoInit", fields = { "id", "li", "di", "eli",
@@ -48,6 +48,12 @@ public class YaoInit implements Control, NodeInitializer {
 		double nextDI();
 
 		String id();
+	}
+	
+	interface ISeedGenerator {
+		public boolean shouldReseed();
+		
+		public long nextSeed();
 	}
 
 	// ------------------------------------------------------------------------
@@ -194,4 +200,5 @@ public class YaoInit implements Control, NodeInitializer {
 				.createInstance(Configuration.getClass(prefix + ".generator"),
 						prefix, resolver);
 	}
+
 }
