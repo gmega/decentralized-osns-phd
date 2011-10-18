@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.List;
 
 import peersim.config.AutoConfig;
 
@@ -20,6 +21,8 @@ import it.unitn.disi.utils.exception.ParseException;
  */
 @AutoConfig
 public class RBind implements ITransformer {
+	
+	private int fCurrentTable = 1;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -32,12 +35,9 @@ public class RBind implements ITransformer {
 			try {
 				reader.next();
 			} catch (ParseException ex) {
-				// As long as the new width keeps the same fields, should be ok.
 				reader = reader.fromCurrentRow();
-				continue;
-			}
-
-			if (pMatches(header, reader)) {
+				fCurrentTable++;
+				checkHeader(reader, header);
 				continue;
 			}
 
@@ -46,13 +46,15 @@ public class RBind implements ITransformer {
 		}
 	}
 
-	private boolean pMatches(String[] header, TableReader reader) {
-		for (String key : header) {
-			if (!reader.get(key).equals(key)) {
-				return false;
+	private void checkHeader(TableReader reader, String[] header) {
+		List <String> newHeader = reader.columns();
+		for (String headerPart : header) {
+			if (!newHeader.contains(headerPart)) {
+				throw new ParseException("Cannot bind by column: table "
+						+ fCurrentTable + " does not contain column "
+						+ headerPart + ".");
 			}
 		}
-		return true;
 	}
 
 	private void transfer(TableReader reader, ITableWriter writer,
