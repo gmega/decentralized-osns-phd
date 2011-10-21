@@ -28,7 +28,6 @@ public class EDGovernor extends
 			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("experiment") String experiment) {
 		super(prefix, resolver, manager, experiment);
-
 	}
 
 	public void start() {
@@ -52,6 +51,7 @@ public class EDGovernor extends
 		if (id == IScheduleIterator.DONE) {
 			return;
 		}
+		System.err.println("START:" + id);
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
 		fCurrent.addObserver(this);

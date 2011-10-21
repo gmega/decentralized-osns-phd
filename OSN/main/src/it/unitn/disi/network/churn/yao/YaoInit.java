@@ -49,12 +49,6 @@ public class YaoInit implements Control, NodeInitializer {
 
 		String id();
 	}
-	
-	interface ISeedGenerator {
-		public boolean shouldReseed();
-		
-		public long nextSeed();
-	}
 
 	// ------------------------------------------------------------------------
 	// Preset average generators.

@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Stack;
 
-import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.IGraphProvider;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
@@ -15,7 +13,6 @@ import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.StructuredLogs;
 import it.unitn.disi.utils.logging.TabularLogManager;
-import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.INodeStateListener;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
@@ -24,8 +21,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
 import peersim.core.Fallible;
-import peersim.core.Linkable;
-import peersim.core.Node;
 
 @AutoConfig
 @StructuredLogs({
@@ -91,8 +86,6 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 	// ------------------------------------------------------------------------
 	// References to services.
 	// ------------------------------------------------------------------------
-
-	//private final INodeRegistry fRegistry;
 
 	private final ITableWriter fProgressWriter;
 

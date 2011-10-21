@@ -65,7 +65,6 @@ public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperim
 
 		fPrefix = prefix;
 		fTracker = new TimeTracker(fSchedule.remaining(), manager);
-		//addExperimentObserver(fTracker);
 
 		try {
 			fExperimentKlass = (Class<T>) Class.forName(experiment);
