@@ -2,7 +2,6 @@ package it.unitn.disi.unitsim.cd;
 
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.unitsim.GovernorBase;
-import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.utils.logging.TabularLogManager;
 
 import peersim.config.Attribute;
@@ -95,7 +94,9 @@ public class CDGovernor extends
 
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
-
+		
+		currentExperimentStarted();
+		
 		// Condenses a run cycle here.
 		return runCycle();
 	}
@@ -118,22 +119,4 @@ public class CDGovernor extends
 	}
 
 	// ------------------------------------------------------------------------
-
-	class CDCalls implements ICDExperimentObserver {
-
-		@Override
-		public void experimentStart(ICDUnitExperiment experiment) {
-		}
-
-		@Override
-		public void experimentCycled(ICDUnitExperiment experiment) {
-			experiment.cycled();
-		}
-
-		@Override
-		public void experimentEnd(ICDUnitExperiment experiment) {
-			experiment.done();
-		}
-		
-	}
 }

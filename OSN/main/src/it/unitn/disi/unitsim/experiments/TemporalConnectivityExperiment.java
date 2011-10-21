@@ -48,7 +48,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 	 * can get availability patterns to settle in their stable state before we
 	 * start measuring connectivity.
 	 */
-	private final long fBurnInTime;
+	private final BurnInSupport fBurnIn;
 
 	/**
 	 * An offset to be added to all time measurements. In most cases, set to 1
@@ -80,8 +80,6 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 	private SingleExperiment[] fExperiments;
 
 	private boolean[] fRoots;
-
-	private boolean fBurningIn;
 
 	// ------------------------------------------------------------------------
 	// References to services.
@@ -134,14 +132,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		fHorizon = horizon <= 0 ? Integer.MAX_VALUE : horizon;
 		fTimeBase = timeBase;
 		fTimeout = timeout == 0 ? Long.MAX_VALUE : timeout;
-
-		fBurnInTime = burnIn;
-		if (burnIn > 0) {
-			System.err.println("-- Start burn-in period for experiment "
-					+ getId() + ".");
-			fBurningIn = true;
-		}
-
+		fBurnIn = new BurnInSupport(burnIn, id);
 		fReachabilityWriter = reachabilityWriter;
 		fProgressWriter = progressWriter;
 		fSummaryWriter = summaryWriter;
@@ -152,9 +143,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 	@Override
 	protected void chainInitialize() {
-		int dim = graph().size();
-		fRoots = new boolean[dim];
-		fExperiments = new SingleExperiment[dim];
+		fRoots = new boolean[size()];
+		fExperiments = new SingleExperiment[size()];
 		for (int i = 0; i < fExperiments.length; i++) {
 			fExperiments[i] = new SingleExperiment(i, getNode(i).getSNId());
 		}
@@ -169,8 +159,10 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 	@Override
 	public void stateChanged(int oldState, int newState, SNNode node) {
 
-		if (!updateBurnIn()) {
+		if (fBurnIn.isBurningIn()) {
 			return;
+		} else if (fBurnIn.wasBurningIn()) {
+			stateFromNetwork();
 		}
 
 		switch (newState) {
@@ -181,7 +173,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 				exp.nodeUp(node);
 			}
 
-			for (int i = 0; i < dim(); i++) {
+			for (int i = 0; i < experiments(); i++) {
 				explore(i);
 			}
 
@@ -220,16 +212,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 	// ------------------------------------------------------------------------
 
-	private boolean updateBurnIn() {
-		if (!fBurningIn) {
-			return true;
-		}
-
-		long ellapsed = ellapsedTime();
-		if (ellapsed < fBurnInTime) {
-			return false;
-		}
-
+	private void stateFromNetwork() {
 		// Burn-in is over.
 		// 1. Readjust the starting time.
 		resetStartingTime();
@@ -241,21 +224,12 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 		// 3. Updates self-reachability and uptimes for
 		// everyone.
-		for (int i = 0; i < dim(); i++) {
+		for (int i = 0; i < experiments(); i++) {
 			SNNode node = getNode(i);
 			if (node.isUp()) {
 				fExperiments[i].nodeUp(node);
 			}
 		}
-
-		fBurningIn = false;
-
-		System.err.println("-- Burn-in period for experiment " + getId()
-				+ " over (excess was " + (ellapsed - fBurnInTime) + ").");
-		System.err.println("-- Active nodes: " + PeersimUtils.countActives()
-				+ ".");
-
-		return true;
 	}
 
 	// ------------------------------------------------------------------------
@@ -276,13 +250,13 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		// Computes nodes that are to be explored.
 		Arrays.fill(fRoots, false);
 
-		for (int j = 0; j < dim(); j++) {
+		for (int j = 0; j < experiments(); j++) {
 			SNNode node = getNode(j);
 			fRoots[j] = fExperiments[sender].isReachable(j) && node.isUp();
 		}
 
 		// For each already reached node...
-		for (int j = 0; j < dim(); j++) {
+		for (int j = 0; j < experiments(); j++) {
 			// ... expands the reachability.
 			if (fRoots[j]) {
 				recomputeReachability(sender, j);
@@ -325,11 +299,11 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		double totalReached = 0.0;
 		double totalNonZero = 0.0;
 
-		for (int i = 0; i < dim(); i++) {
+		for (int i = 0; i < experiments(); i++) {
 			int reached = 0;
 			int nonZeroUptime = 0;
 
-			for (int j = 0; j < dim(); j++) {
+			for (int j = 0; j < experiments(); j++) {
 				// Residue: has the node been reached?
 				if (fExperiments[i].isReachable(j)) {
 					reached++;
@@ -344,7 +318,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 				}
 			}
 
-			double residue = 1.0 - (((double) reached) / dim());
+			double residue = 1.0 - (((double) reached) / experiments());
 			double corrected;
 			boolean pathological = false;
 
@@ -360,13 +334,13 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 			logResidue(reached, residue, corrected, pathological, originator);
 		}
 
-		return new Pair<Double, Double>(totalReached / (dim() * dim()),
+		return new Pair<Double, Double>(totalReached / (experiments() * experiments()),
 				totalReached / totalNonZero);
 	}
 
 	// ------------------------------------------------------------------------
 
-	public int dim() {
+	public int experiments() {
 		return fExperiments.length;
 	}
 
@@ -381,21 +355,13 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 	@Override
 	public boolean isTimedOut() {
-		return !fBurningIn && ellapsedTime() >= fTimeout;
-	}
-
-	// ------------------------------------------------------------------------
-
-	private void killAll() {
-		for (int i = 0; i < size(); i++) {
-			getNode(i).setFailState(Fallible.DEAD);
-		}
+		return !fBurnIn.isBurningIn() && ellapsedTime() >= fTimeout;
 	}
 
 	// ------------------------------------------------------------------------
 
 	private int total() {
-		return dim() * dim();
+		return experiments() * experiments();
 	}
 
 	// ------------------------------------------------------------------------
@@ -451,7 +417,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		fResidueWriter.set("root",getNode(0).getSNId());
 		fResidueWriter.set("originator", originator.getSNId());
 		fResidueWriter.set("reached", reached);
-		fResidueWriter.set("total", dim());
+		fResidueWriter.set("total", experiments());
 		fResidueWriter.set("residue", residue);
 		fResidueWriter.set("corrected", corrected);
 		fResidueWriter.set("pathological", pathological);
@@ -478,10 +444,10 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 			fSender = senderIndex;
 			fSenderSNId = senderSNId;
 
-			fFirstLogon = new int[dim()];
+			fFirstLogon = new int[experiments()];
 			Arrays.fill(fFirstLogon, NEVER);
 
-			fReached = new boolean[dim()];
+			fReached = new boolean[experiments()];
 			Arrays.fill(fReached, false);
 		}
 
@@ -584,8 +550,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		// ------------------------------------------------------------------------
 
 		private int[] snapshotUptimes() {
-			int[] snapshot = new int[dim()];
-			for (int i = 0; i < dim(); i++) {
+			int[] snapshot = new int[experiments()];
+			for (int i = 0; i < experiments(); i++) {
 				snapshot[i] = MiscUtils.safeCast(getNode(i).uptime());
 			}
 			return snapshot;

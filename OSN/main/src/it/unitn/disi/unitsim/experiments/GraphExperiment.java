@@ -11,6 +11,7 @@ import it.unitn.disi.utils.peersim.SNNode;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.CommonState;
+import peersim.core.Fallible;
 import peersim.core.Network;
 
 /**
@@ -99,6 +100,10 @@ public abstract class GraphExperiment implements IUnitExperiment {
 		fStartingTime = CommonState.getTime();
 	}
 
+	protected long ellapsedTime() {
+		return CommonState.getTime() - startTime();
+	}
+	
 	protected IndexedNeighborGraph graph() {
 		return fGraph;
 	}
@@ -110,6 +115,13 @@ public abstract class GraphExperiment implements IUnitExperiment {
 	protected SNNode getNode(int id) {
 		return fNodes[id];
 	}
+
+	protected void killAll() {
+		for (int i = 0; i < size(); i++) {
+			getNode(i).setFailState(Fallible.DEAD);
+		}
+	}
+
 
 	protected abstract void chainInitialize();
 

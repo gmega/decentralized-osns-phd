@@ -55,6 +55,8 @@ public class EDGovernor extends
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
 		fCurrent.addObserver(this);
+		
+		currentExperimentStarted();
 	}
 
 	@Override

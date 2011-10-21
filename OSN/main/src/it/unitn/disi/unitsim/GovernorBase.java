@@ -77,6 +77,12 @@ public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperim
 		fAttributes.put(IUnitExperiment.ID, Integer.toString(id));
 		return ObjectCreator.createInstance(fExperimentKlass, prefix, resolver);
 	}
+	
+	protected void currentExperimentStarted() {
+		for (IExperimentObserver<T> observer : fObservers) {
+			observer.experimentStart(fCurrent);
+		}
+	}
 
 	protected void wrapUpExperiment() {
 		// Notifies the observers before cleaning any state.

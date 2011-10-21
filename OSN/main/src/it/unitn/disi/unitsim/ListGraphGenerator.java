@@ -1,9 +1,13 @@
 package it.unitn.disi.unitsim;
 
+import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.plugin.IPlugin;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LSGCreator;
 
-public class ListGraphGenerator implements IGraphProvider {
+@AutoConfig
+public class ListGraphGenerator implements IGraphProvider, IPlugin {
 
 	@Override
 	public int size() {
@@ -41,6 +45,19 @@ public class ListGraphGenerator implements IGraphProvider {
 			}
 		}
 		
+	}
+
+	@Override
+	public String id() {
+		return "NeighborhoodLoader";
+	}
+
+	@Override
+	public void start(IResolver resolver) throws Exception {
+	}
+
+	@Override
+	public void stop() throws Exception {
 	}
 
 }
