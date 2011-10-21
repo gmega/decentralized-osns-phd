@@ -13,7 +13,7 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
-multicdf <- function(datasets, lwd, pos = NULL, names = NULL, xlim=NULL, ...) {
+multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, pos = NULL, names = NULL, xlim=NULL, ...) {
 	
 	# Computes the maximum and minimum.
 	if (is.null(xlim)) {
@@ -29,16 +29,22 @@ multicdf <- function(datasets, lwd, pos = NULL, names = NULL, xlim=NULL, ...) {
 		}
 		
 		xlim <- c(xmin, xmax)
+		print(xmax)
 	}
 	
 	lp <- LinePlotter(colorscale=colorRampPalette(colors=c("red", "green", 
 						"blue"), space="rgb"), colorcycle=length(datasets), 
 						xlim=xlim, lwd=lwd, ...)
 
-	for (dataset in datasets) {
-		f <- ecdf(dataset)
-		x <- knots(f)
-		y <- f(x)
+	for (i in seq(1, length(datasets))) {
+		if (is.null(freqsets)) {
+			f <- cdf_fun(dataset[[i]])
+			x <- knots(f)
+			y <- f(x)
+		} else {
+			x <- datasets[[i]]
+			y <- freqsets[[i]]
+		}
 		doPlot(lp, y ~ x, lwd=lwd)
 	}
 	

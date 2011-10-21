@@ -1,17 +1,23 @@
 package it.unitn.disi.random;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+
 /**
  * Generates a stream of exponentially distributed numbers.
  * 
  * @author giuliano
  */
+@AutoConfig
 public class Exponential implements IDistribution {
 
 	private final double fLambda;
 	
 	private final IDistribution fU;;
 	
-	public Exponential(double lambda, IDistribution uniform) {
+	public Exponential(
+			@Attribute("lambda") double lambda, 
+			@Attribute("UniformDistribution") IDistribution uniform) {
 		fLambda = lambda;
 		fU = uniform;
 	}

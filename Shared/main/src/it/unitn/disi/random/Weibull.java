@@ -1,12 +1,14 @@
 package it.unitn.disi.random;
 
-import java.util.Random;
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 
 /**
  * Generates a stream of Weibull distributed numbers.
  * 
  * @author giuliano
  */
+@AutoConfig
 public class Weibull implements IDistribution {
 
 	private final double fShapeInverse;
@@ -23,7 +25,9 @@ public class Weibull implements IDistribution {
 	 * @param scale
 	 *            the scale of the distribution.
 	 */
-	public Weibull(double shape, double scale, IDistribution uniform) {
+	public Weibull(@Attribute("shape") double shape, 
+			@Attribute("scale") double scale, 
+			@Attribute("UniformDistribution") IDistribution uniform) {
 		fShapeInverse = 1.0 / shape;
 		fScale = scale;
 		fU = uniform;

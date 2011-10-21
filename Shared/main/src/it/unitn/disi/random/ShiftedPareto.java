@@ -1,5 +1,8 @@
 package it.unitn.disi.random;
 
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+
 /**
  * Generates a stream of numbers distributed according to a "shifted Pareto"
  * distribution, that is, a Pareto distribution whose PDF has been shifted to
@@ -14,6 +17,7 @@ package it.unitn.disi.random;
  * @author giuliano
  * 
  */
+@AutoConfig
 public class ShiftedPareto implements IDistribution {
 
 	private final double fAlpha;
@@ -22,7 +26,10 @@ public class ShiftedPareto implements IDistribution {
 
 	private final IDistribution fU;
 
-	public ShiftedPareto(double alpha, double beta, IDistribution uniform) {
+	public ShiftedPareto(
+			@Attribute("alpha") double alpha, 
+			@Attribute("beta") double beta, 
+			@Attribute("UniformDistribution") IDistribution uniform) {
 		fBeta = beta;
 		fAlpha = alpha;
 		fU = uniform;

@@ -34,7 +34,10 @@ public class RBind implements ITransformer {
 		while (reader.hasNext()) {
 			try {
 				reader.next();
-			} catch (ParseException ex) {
+			} 
+			// Parse exception means we bumped into text data where there should
+			// be numbers.
+			catch (ParseException ex) {
 				reader = reader.fromCurrentRow();
 				fCurrentTable++;
 				checkHeader(reader, header);
