@@ -2,7 +2,7 @@ package it.unitn.disi.network.churn.yao;
 
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
-import it.unitn.disi.random.ShiftedPareto;
+import it.unitn.disi.random.GeneralizedPareto;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -18,6 +18,10 @@ public class DualPareto implements IDistributionGenerator {
 
 	private final double fDowntimeBetaFactor;
 
+	private final double fUptimeMu;
+
+	private final double fDowntimeMu;
+
 	private final String fId;
 
 	private final IDistribution fUniform;
@@ -26,25 +30,30 @@ public class DualPareto implements IDistributionGenerator {
 			@Attribute("downtime_alpha") double downtimeAlpha,
 			@Attribute("uptime_beta") double uptimeBetaFactor,
 			@Attribute("downtime_beta") double downtimeBetaFactor,
-			@Attribute(value = "id", defaultValue = "custom") String id, 
+			@Attribute("uptime_mu") double uptimeMu,
+			@Attribute("downtime_mu") double downtimeMu,
+			@Attribute(value = "id", defaultValue = "custom") String id,
 			@Attribute("UniformDistribution") IDistribution uniform) {
 		fUptimeAlpha = uptimeAlpha;
 		fDowntimeAlpha = downtimeAlpha;
 		fUptimeBetaFactor = uptimeBetaFactor;
 		fDowntimeBetaFactor = downtimeBetaFactor;
+		fDowntimeMu = uptimeMu;
+		fUptimeMu = downtimeMu;
 		fId = id;
 		fUniform = uniform;
 	}
 
 	@Override
 	public IDistribution uptimeDistribution(double li) {
-		return new ShiftedPareto(fUptimeAlpha, fUptimeBetaFactor * li, fUniform);
+		return new GeneralizedPareto(fUptimeAlpha, fUptimeBetaFactor * li,
+				fUptimeMu, fUniform);
 	}
 
 	@Override
 	public IDistribution downtimeDistribution(double di) {
-		return new ShiftedPareto(fDowntimeAlpha, fDowntimeBetaFactor * di,
-				fUniform);
+		return new GeneralizedPareto(fDowntimeAlpha, fDowntimeBetaFactor * di,
+				fDowntimeMu, fUniform);
 	}
 
 	@Override

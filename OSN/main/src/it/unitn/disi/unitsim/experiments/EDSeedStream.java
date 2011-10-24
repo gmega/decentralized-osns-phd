@@ -10,8 +10,12 @@ import it.unitn.disi.network.churn.yao.ISeedStream;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.ed.EDGovernor;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
+import it.unitn.disi.utils.logging.StructuredLog;
+import it.unitn.disi.utils.logging.TabularLogManager;
+import it.unitn.disi.utils.tabular.ITableWriter;
 
 @AutoConfig
+@StructuredLog(key = "SD", fields = { "seed_no", "value" })
 public class EDSeedStream implements IPlugin, ISeedStream,
 		IExperimentObserver<IEDUnitExperiment> {
 
@@ -19,20 +23,26 @@ public class EDSeedStream implements IPlugin, ISeedStream,
 
 	private int fNextSeed;
 	
+	private int fReseeds;
+
 	private long fCurrentSeed;
-	
-	private boolean fShouldReseed;
+
+	private boolean fShouldReseed = true;
 
 	private Random fRandom;
-	
+
 	private EDGovernor fGovernor;
+	
+	private ITableWriter fWriter;
 
 	public EDSeedStream(@Attribute("repetitions") int reps,
 			@Attribute("Random") Random random,
+			@Attribute("TabularLogManager") TabularLogManager manager,
 			@Attribute("EDGovernor") EDGovernor governor) {
 		fRepeats = reps;
 		fRandom = random;
 		fGovernor = governor;
+		fWriter = manager.get(EDSeedStream.class);
 	}
 
 	@Override
@@ -50,6 +60,9 @@ public class EDSeedStream implements IPlugin, ISeedStream,
 		if (fNextSeed == 0) {
 			fCurrentSeed = fRandom.nextLong();
 			fNextSeed = fRepeats;
+			fWriter.set("seed_no", fReseeds);
+			fWriter.set("value", fCurrentSeed);
+			fWriter.emmitRow();
 		}
 		fShouldReseed = false;
 		return fCurrentSeed;

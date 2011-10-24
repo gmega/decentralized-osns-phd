@@ -18,7 +18,7 @@ import it.unitn.disi.utils.tabular.ITableWriter;
 @AutoConfig
 @StructuredLog(key = "TCR:", fields = { "id", "distance", "perceived_latency",
 		"first_login_latency" })
-public class SimplePathTemporalConnectivity extends GraphExperiment implements
+public class SimplePathExperiment extends GraphExperiment implements
 		INodeStateListener, IEDUnitExperiment {
 
 	private ArrayList<IExperimentObserver<IEDUnitExperiment>> fObservers = new ArrayList<IExperimentObserver<IEDUnitExperiment>>();
@@ -33,7 +33,7 @@ public class SimplePathTemporalConnectivity extends GraphExperiment implements
 	
 	private ITableWriter fLog;
 
-	public SimplePathTemporalConnectivity(
+	public SimplePathExperiment(
 			@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
@@ -42,7 +42,7 @@ public class SimplePathTemporalConnectivity extends GraphExperiment implements
 			@Attribute("TabularLogManager") TabularLogManager manager) {
 		super(prefix, id, graphProtocolId, loader);
 		fBurnin = new BurnInSupport(burnin, id);
-		fLog = manager.get(SimplePathTemporalConnectivity.class);
+		fLog = manager.get(SimplePathExperiment.class);
 	}
 
 	@Override
