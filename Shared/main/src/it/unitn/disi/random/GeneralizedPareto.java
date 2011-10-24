@@ -4,9 +4,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
- * Generates a stream of numbers distributed according to a "shifted Pareto"
- * distribution, that is, a Pareto distribution whose PDF has been shifted to
- * start at x = 0.<BR>
+ * Random number generator for a generalized Pareto distribution.<BR>
  * <BR>
  * Formulas for sampling and expectation taken from the generalized Pareto
  * distribution on <a href= "http://en.wikipedia.org/wiki/Pareto_distribution"
@@ -18,31 +16,34 @@ import peersim.config.AutoConfig;
  * 
  */
 @AutoConfig
-public class ShiftedPareto implements IDistribution {
+public class GeneralizedPareto implements IDistribution {
 
 	private final double fAlpha;
 
 	private final double fBeta;
 
+	private final double fMu;
+
 	private final IDistribution fU;
 
-	public ShiftedPareto(
-			@Attribute("alpha") double alpha, 
-			@Attribute("beta") double beta, 
+	public GeneralizedPareto(@Attribute("alpha") double alpha,
+			@Attribute("beta") double beta,
+			@Attribute(value = "mu", defaultValue = "0") double mu,
 			@Attribute("UniformDistribution") IDistribution uniform) {
 		fBeta = beta;
 		fAlpha = alpha;
+		fMu = mu;
 		fU = uniform;
 	}
 
 	@Override
 	public double sample() {
-		return fBeta * (Math.pow(fU.sample(), -1.0 / fAlpha) - 1);
+		return fMu + fBeta * (Math.pow(fU.sample(), -1.0 / fAlpha) - 1);
 	}
 
 	@Override
 	public double expectation() {
-		return fBeta / (fAlpha - 1.0);
+		return fMu + fBeta / (fAlpha - 1.0);
 	}
 
 }

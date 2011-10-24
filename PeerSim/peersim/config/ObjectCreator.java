@@ -366,9 +366,9 @@ class DefaultValueResolver extends StringValueResolver {
 	public DefaultValueResolver(IAttributeSource source) {
 		fSource = source;
 	}
-
+	
 	@Override
-	public String getString(String prefix, String key) {
+	public Object getObject(String prefix, String key) {
 		Attribute attribute = fSource.attribute(prefix, key);
 		if (attribute == null
 				|| attribute.defaultValue().equals(Attribute.VALUE_NONE)) {
@@ -377,6 +377,11 @@ class DefaultValueResolver extends StringValueResolver {
 			return null;
 		}
 		return attribute.defaultValue();
+	}
+
+	@Override
+	public String getString(String prefix, String key) {
+		return (String) getObject(prefix, key);
 	}
 
 	public static interface IAttributeSource {

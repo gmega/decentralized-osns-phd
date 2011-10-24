@@ -3,9 +3,11 @@ package it.unitn.disi.network.churn.yao;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
 import it.unitn.disi.random.GeneralizedPareto;
+import it.unitn.disi.random.UniformDistribution;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.core.CommonState;
 
 @AutoConfig
 public class DualPareto implements IDistributionGenerator {
@@ -26,14 +28,15 @@ public class DualPareto implements IDistributionGenerator {
 
 	private final IDistribution fUniform;
 
-	public DualPareto(@Attribute("uptime_alpha") double uptimeAlpha,
+	public DualPareto(
+			@Attribute("uptime_alpha") double uptimeAlpha,
 			@Attribute("downtime_alpha") double downtimeAlpha,
 			@Attribute("uptime_beta") double uptimeBetaFactor,
 			@Attribute("downtime_beta") double downtimeBetaFactor,
 			@Attribute("uptime_mu") double uptimeMu,
 			@Attribute("downtime_mu") double downtimeMu,
 			@Attribute(value = "id", defaultValue = "custom") String id,
-			@Attribute("UniformDistribution") IDistribution uniform) {
+			@Attribute(value = "UniformDistribution", defaultValue = Attribute.VALUE_NULL) IDistribution uniform) {
 		fUptimeAlpha = uptimeAlpha;
 		fDowntimeAlpha = downtimeAlpha;
 		fUptimeBetaFactor = uptimeBetaFactor;
@@ -41,7 +44,8 @@ public class DualPareto implements IDistributionGenerator {
 		fDowntimeMu = uptimeMu;
 		fUptimeMu = downtimeMu;
 		fId = id;
-		fUniform = uniform;
+		fUniform = uniform == null ? new UniformDistribution(CommonState.r)
+				: uniform;
 	}
 
 	@Override

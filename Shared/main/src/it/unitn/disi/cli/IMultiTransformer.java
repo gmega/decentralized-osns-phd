@@ -7,7 +7,7 @@ import peersim.config.AutoConfig;
 /**
  * {@link IMultiTransformer} is, like an {@link IMultiTransformer}, a
  * generic information processor which takes multiple input and multiple output
- * streams, except that these streams play specific roles and are, thus, 
+ * streams, except that these streams play specific roles and are, thus, named. 
  * 
  * @author giuliano
  */
