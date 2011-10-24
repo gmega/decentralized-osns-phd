@@ -14,7 +14,6 @@ import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.StructuredLogs;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeStateListener;
-import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.SNNode;
 import it.unitn.disi.utils.tabular.ITableWriter;
 import peersim.config.Attribute;
@@ -33,8 +32,8 @@ import peersim.core.Fallible;
 				"first_uptime_length" }),
 		@StructuredLog(key = "TCE", fields = { "root", "time", "residue",
 				"corrected" }) })
-public class TemporalConnectivityExperiment extends GraphExperiment
-		implements IEDUnitExperiment, INodeStateListener {
+public class TemporalConnectivityExperiment extends GraphExperiment implements
+		IEDUnitExperiment, INodeStateListener {
 
 	public static final int NEVER = Integer.MAX_VALUE;
 
@@ -279,7 +278,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 						&& !fExperiments[root].isReachable(neighbor)) {
 					fStack.push(current);
 					current = new DFSFrame(neighbor, graph);
-					fExperiments[root].reached(neighbor);
+					fExperiments[root].reached(neighbor, root,
+							fStack.size() - 1);
 				}
 			}
 			// Otherwise pops, and does nothing since we visit the node on push.
@@ -334,8 +334,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 			logResidue(reached, residue, corrected, pathological, originator);
 		}
 
-		return new Pair<Double, Double>(totalReached / (experiments() * experiments()),
-				totalReached / totalNonZero);
+		return new Pair<Double, Double>(totalReached
+				/ (experiments() * experiments()), totalReached / totalNonZero);
 	}
 
 	// ------------------------------------------------------------------------
@@ -414,7 +414,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 	private void logResidue(int reached, double residue, double corrected,
 			boolean pathological, SNNode originator) {
-		fResidueWriter.set("root",getNode(0).getSNId());
+		fResidueWriter.set("root", getNode(0).getSNId());
 		fResidueWriter.set("originator", originator.getSNId());
 		fResidueWriter.set("reached", reached);
 		fResidueWriter.set("total", experiments());
@@ -430,7 +430,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 		private final int[] fFirstLogon;
 
-		private final boolean[] fReached;
+		private final int[] fReached;
 
 		private int[] fUptimes;
 
@@ -447,8 +447,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 			fFirstLogon = new int[experiments()];
 			Arrays.fill(fFirstLogon, NEVER);
 
-			fReached = new boolean[experiments()];
-			Arrays.fill(fReached, false);
+			fReached = new int[experiments()];
+			Arrays.fill(fReached, Integer.MIN_VALUE);
 		}
 
 		// ------------------------------------------------------------------------
@@ -464,7 +464,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		// ------------------------------------------------------------------------
 
 		public boolean isReachable(int i) {
-			return fReached[i];
+			return fReached[i] != Integer.MIN_VALUE;
 		}
 
 		// ------------------------------------------------------------------------
@@ -481,9 +481,10 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 
 		// ------------------------------------------------------------------------
 
-		public void reached(int id) {
-			fReached[id] = true;
-			reached(getNode(id));
+		public void reached(int reached, int from, int pdelta) {
+			assert pdelta > 0;
+			fReached[reached] = fReached[from] + pdelta;
+			reached(getNode(reached));
 		}
 
 		// ------------------------------------------------------------------------
@@ -501,7 +502,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 			}
 
 			// Marks the root as reached.
-			fReached[fSender] = true;
+			fReached[fSender] = 0;
 			fFirstLogon[fSender] = MiscUtils.safeCast(ellapsedTime());
 
 			// Initializes the receiver map.
@@ -560,7 +561,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment
 		// ------------------------------------------------------------------------
 
 		private boolean hasSenderPosted() {
-			return fReached[fSender];
+			return isReachable(fSender);
 		}
 	}
 
