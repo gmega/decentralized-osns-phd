@@ -17,7 +17,7 @@ import it.unitn.disi.utils.tabular.ITableWriter;
 
 @AutoConfig
 @StructuredLog(key = "TCR:", fields = { "id", "distance", "perceived_latency",
-		"first_login_latency" })
+		"first_login_latency"})
 public class SimplePathExperiment extends GraphExperiment implements
 		INodeStateListener, IEDUnitExperiment {
 
@@ -28,6 +28,10 @@ public class SimplePathExperiment extends GraphExperiment implements
 	private BurnInSupport fBurnin;
 
 	private long[] fReached;
+	
+	private long [] fSnapshot;
+	
+	private long[] fTTC;
 	
 	private int fReachedCount = 0;
 	
@@ -60,7 +64,11 @@ public class SimplePathExperiment extends GraphExperiment implements
 	@Override
 	protected void chainInitialize() {
 		fReached = new long[size()];
+		fTTC = new long[size()];
+		fSnapshot = new long[size()];
 		Arrays.fill(fReached, Long.MIN_VALUE);
+		Arrays.fill(fTTC, Long.MIN_VALUE);
+		Arrays.fill(fSnapshot, Long.MIN_VALUE);
 		for (int i = 0; i < size(); i++) {
 			getNode(i).setStateListener(this);
 		}
@@ -68,11 +76,18 @@ public class SimplePathExperiment extends GraphExperiment implements
 
 	@Override
 	public void stateChanged(int oldState, int newState, SNNode node) {
+		// Are we during burn-in?
 		if (fBurnin.isBurningIn()) {
 			return;
-		} else if (!fBurnin.wasBurningIn()) {
-			// At the burn-in transition, we run the reachability
-			// exploration regardless of the type of event we see.
+		} 
+		
+		// Were we during burn-in?
+		else if (fBurnin.wasBurningIn()) {
+			resetStartingTime();
+		} 
+		
+		// Just a normal transition.
+		else {
 			if (newState != Fallible.OK) {
 				return;
 			}
@@ -80,9 +95,15 @@ public class SimplePathExperiment extends GraphExperiment implements
 
 		// Base case.
 		if (node.getID() == 0 && !reached(0) && node.isUp()) {
-			fReached[0] = 0;
-			System.err.println("Reached 0.");
+			fReached[0] = getNode(0).uptime();
+			fTTC[0] = ellapsedTime();
 			fReachedCount++;
+			
+			// Snapshots everyone's uptime to start counting
+			// latency.
+			for (int i = 0; i < size(); i++) {
+				fSnapshot[i] = getNode(i).uptime();
+			}
 		}
 
 		if (!reached(0)) {
@@ -96,9 +117,9 @@ public class SimplePathExperiment extends GraphExperiment implements
 			}
 
 			if (!reached(i) && getNode(i - 1).isUp() && getNode(i).isUp()) {
-				fReached[i] = ((SNNode) getNode(i)).uptime();
+				fReached[i] = getNode(i).uptime();
+				fTTC[i] = ellapsedTime();
 				fReachedCount++;
-				System.err.println("Reached " + i);
 			} else {
 				break;
 			}
@@ -125,8 +146,8 @@ public class SimplePathExperiment extends GraphExperiment implements
 			// Prints statistics.
 			fLog.set("id", getId());
 			fLog.set("distance", i);
-			fLog.set("perceived_latency", fReached[i]);
-			fLog.set("first_login_latency", -1);
+			fLog.set("first_login_latency", fTTC[i] - fTTC[0]);
+			fLog.set("perceived_latency", fReached[i] - fSnapshot[i]);
 			fLog.emmitRow();
 		}
 	}

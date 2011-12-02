@@ -2,6 +2,9 @@ package it.unitn.disi.unitsim.experiments;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -72,7 +75,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 	// Data structures.
 	// ------------------------------------------------------------------------
 
-	private final Stack<DFSFrame> fStack = new Stack<DFSFrame>();
+	private final Deque<BFSEntry> fQueue = new LinkedList<BFSEntry>();
 
 	private final ArrayList<IExperimentObserver<IEDUnitExperiment>> fObservers = new ArrayList<IExperimentObserver<IEDUnitExperiment>>();
 
@@ -267,27 +270,24 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 
 	private void recomputeReachability(int root, int infected) {
 		IndexedNeighborGraph graph = graph();
-		DFSFrame current = new DFSFrame(infected, graph);
-		while (true) {
-			// Explores while there are neighbors and we're below the horizon.
-			if (current.hasNext() && fStack.size() <= fHorizon) {
-				int neighbor = current.nextNeighbor();
-				// Only pushes if node unmarked and up.
-				SNNode neighborNode = getNode(neighbor);
-				if (neighborNode.isUp()
-						&& !fExperiments[root].isReachable(neighbor)) {
-					fStack.push(current);
-					current = new DFSFrame(neighbor, graph);
-					fExperiments[root].reached(neighbor, root,
-							fStack.size() - 1);
+		fQueue.addFirst(new BFSEntry(root, 0));
+
+		while (!fQueue.isEmpty()) {
+			BFSEntry current = fQueue.removeLast();
+			// Explores while we're below the horizon.
+			if ((current.distance + 1) <= fHorizon) {
+				int degree = graph.degree(current.node);
+				// Queues everyone that's up, and haven't been reached yet.
+				for (int i = 0; i < degree; i++) {
+					int neighbor = graph.getNeighbor(current.node, i);
+					if (getNode(neighbor).isUp() 
+							&& !fExperiments[root].isReachable(neighbor)) {
+						fQueue.addFirst(new BFSEntry(neighbor,
+								current.distance + 1));
+						fExperiments[root].reached(neighbor, current.node,
+								current.distance);
+					}
 				}
-			}
-			// Otherwise pops, and does nothing since we visit the node on push.
-			else {
-				if (fStack.isEmpty()) {
-					break;
-				}
-				current = fStack.pop();
 			}
 		}
 	}
@@ -433,6 +433,8 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 		private final int[] fReached;
 
 		private int[] fUptimes;
+		
+		private boolean [] fAllowChange;
 
 		private final int fSender;
 
@@ -477,6 +479,18 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 
 		public int firstLogonOf(SNNode node) {
 			return fFirstLogon[(int) node.getID()];
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		public boolean canUpdate(int node) {
+			return fAllowChange[node];
+		}
+		
+		// ------------------------------------------------------------------------
+		
+		public void crystalize() {
+			Arrays.fill(fAllowChange, false);
 		}
 
 		// ------------------------------------------------------------------------
@@ -567,23 +581,14 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 
 	// ------------------------------------------------------------------------
 
-	static class DFSFrame {
+	static class BFSEntry {
 
-		private int fNode;
-		private int fIndex = 0;
-		private final IndexedNeighborGraph fGraph;
+		public final int node;
+		public final int distance;
 
-		public DFSFrame(int node, IndexedNeighborGraph graph) {
-			fNode = node;
-			fGraph = graph;
-		}
-
-		public boolean hasNext() {
-			return fIndex < fGraph.degree(fNode);
-		}
-
-		public int nextNeighbor() {
-			return fGraph.getNeighbor(fNode, fIndex++);
+		public BFSEntry(int node, int distance) {
+			this.distance = distance;
+			this.node = node;
 		}
 	}
 
