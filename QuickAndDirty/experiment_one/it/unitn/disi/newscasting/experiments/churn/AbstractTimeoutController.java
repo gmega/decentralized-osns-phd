@@ -81,7 +81,7 @@ public abstract class AbstractTimeoutController implements EDProtocol<Object> {
 			fLog.set("root", fGovernor.currentExperiment().getId());
 			fLog.set("id", node.getID());
 			fLog.set("exptime", fGovernor.experimentTime());
-			fLog.set("uptime", ((SNNode) node).uptime());
+			fLog.set("uptime", ((SNNode) node).uptime(true));
 			fLog.set("disstime", timeoutTime());
 			fLog.emmitRow();
 		}

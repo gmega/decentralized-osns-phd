@@ -232,7 +232,7 @@ class UnitExperimentData {
 			throw new IllegalStateException();
 		}
 
-		fLatency.add(receiver.uptime());
+		fLatency.add(receiver.uptime(true));
 		count(sender.getID(), receiver.getID(), false);
 		return fPending == 0;
 	}
@@ -496,7 +496,7 @@ class UnitExperimentData {
 		buffer.append(fReceived.getQuick(i));
 		buffer.append(FIELD_SEPARATOR);
 		// 6 - Uptime.
-		buffer.append(node.uptime());
+		buffer.append(node.uptime(true));
 		buffer.append(FIELD_SEPARATOR);
 		// 7 - Selection failures.
 		buffer.append(fFailed.getQuick(i));
