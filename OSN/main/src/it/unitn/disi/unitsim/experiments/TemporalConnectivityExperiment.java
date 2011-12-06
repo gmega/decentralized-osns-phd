@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Stack;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.unitsim.IExperimentObserver;
@@ -312,7 +310,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 
 				// Corrected residue: has the node come online?
 				SNNode node = getNode(j);
-				if (node.uptime() > 0) {
+				if (node.uptime(true) > 0) {
 					nonZeroUptime++;
 					totalNonZero += 1.0;
 				}
@@ -472,7 +470,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 		// ------------------------------------------------------------------------
 
 		public long uptimeOf(SNNode node) {
-			return node.uptime() - fUptimes[(int) node.getID()];
+			return node.uptime(true) - fUptimes[(int) node.getID()];
 		}
 
 		// ------------------------------------------------------------------------
@@ -567,7 +565,7 @@ public class TemporalConnectivityExperiment extends GraphExperiment implements
 		private int[] snapshotUptimes() {
 			int[] snapshot = new int[experiments()];
 			for (int i = 0; i < experiments(); i++) {
-				snapshot[i] = MiscUtils.safeCast(getNode(i).uptime());
+				snapshot[i] = MiscUtils.safeCast(getNode(i).uptime(true));
 			}
 			return snapshot;
 		}

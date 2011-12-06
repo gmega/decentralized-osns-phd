@@ -34,19 +34,31 @@ public class RBind implements ITransformer {
 		while (reader.hasNext()) {
 			try {
 				reader.next();
-			} 
-			// Parse exception means we bumped into text data where there should
-			// be numbers.
-			catch (ParseException ex) {
+			} catch (ParseException ex) {
 				reader = reader.fromCurrentRow();
 				fCurrentTable++;
 				checkHeader(reader, header);
+				continue;
+			}
+			
+			// Is the current row a header?
+			if (pMatches(header, reader)) {
+				// Yes, don't transfer.
 				continue;
 			}
 
 			transfer(reader, writer, header);
 			writer.emmitRow();
 		}
+	}
+	
+	private boolean pMatches(String[] header, TableReader reader) {
+		for (String key : header) {
+			if (!reader.get(key).equals(key)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private void checkHeader(TableReader reader, String[] header) {

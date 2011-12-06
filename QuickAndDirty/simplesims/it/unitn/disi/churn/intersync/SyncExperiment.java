@@ -76,10 +76,6 @@ public class SyncExperiment implements Runnable {
 		}
 	}
 
-	private boolean isBurningIn() {
-		return fTime < fBurnin;
-	}
-
 	public IncrementalStats accounting() {
 		return fLatency;
 	}
@@ -126,12 +122,14 @@ public class SyncExperiment implements Runnable {
 		if (!noDesyncEpoch()) {
 			duration = fTime - fLast;
 		}
-		fLast = -1;
 		account(duration);
+		fLast = -1;
 	}
 
 	private void account(double duration, IncrementalStats... stats) {
-		if (isBurningIn()) {
+		// If the start time for the current epoch is behind the
+		// burn-in mark, don't account.
+		if (fLast < fBurnin) {
 			if (fVerbose) {
 				System.out.println("SB: " + fEid + " " + duration);
 			}

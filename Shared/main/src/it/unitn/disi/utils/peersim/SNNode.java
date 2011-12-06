@@ -19,14 +19,24 @@ public interface SNNode extends Node {
 	 *         to {@link #clearUptime()}, or from the begining of the simulation
 	 *         if {@link #clearUptime()} hasn't been called.
 	 */
-	public long uptime();
+	public long uptime(boolean includeCurrent);
 
 	/**
 	 * @return the cumulative downtime for this {@link Node}, from the last call
 	 *         to {@link #clearDowntime()},, or from the begining of the
 	 *         simulation if {@link #clearDowntime()} hasn't been called.
 	 */
-	public long downtime();
+	public long downtime(boolean includeCurrent);
+
+	/**
+	 * @return the number of uptime segments for this node.
+	 */
+	public long uptimeN(boolean includeCurrent);
+
+	/**
+	 * @return the number of downtime segments for this node.
+	 */
+	public long downtimeN(boolean includeCurrent);
 
 	/**
 	 * Resets the uptime counter for this node.
@@ -52,7 +62,13 @@ public interface SNNode extends Node {
 	 * nothing if none is installed.
 	 */
 	public void clearStateListener();
-	
+
+	/**
+	 * Sets the social network ID for this node.
+	 * 
+	 * @param id
+	 *            the ID to be used for this node.
+	 */
 	public void setID(long id);
 
 	/**

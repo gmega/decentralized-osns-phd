@@ -16,6 +16,8 @@ public class SchedulerFactory {
 	private static final String PAR_ORDERING = "ordering";
 
 	private static final String PAR_REPETITIONS = "repetitions";
+	
+	private static final String PAR_LOOP = "loop";
 
 	enum SchedulerType {
 		FULL_NETWORK, ORDERED_FULLNETWORK, DEGREE_CLASS_SAMPLING, IDLIST, INTERVAL, DISTRIBUTED
@@ -81,7 +83,8 @@ public class SchedulerFactory {
 		}
 
 		if (repetitions != 0) {
-			base = new RepetitionDecorator(base, repetitions);
+			base = new RepetitionDecorator(base, repetitions,
+					resolver.getBoolean(prefix, PAR_LOOP));
 		}
 
 		return base;

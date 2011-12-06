@@ -154,11 +154,11 @@ public class TestNodeImpl implements SNNode {
 		fLastChange = CommonState.getTime();
 	}
 
-	public long uptime() {
+	public long uptime(boolean current) {
 		return isUp() ? fUptime + delta() : fUptime;
 	}
 
-	public long downtime() {
+	public long downtime(boolean current) {
 		return !isUp() ? fDownTime + delta() : fDownTime;
 	}
 
@@ -207,5 +207,15 @@ public class TestNodeImpl implements SNNode {
 	@Override
 	public int getSNId() {
 		return (int) getID();
+	}
+
+	@Override
+	public long uptimeN(boolean includeCurrent) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long downtimeN(boolean includeCurrent) {
+		throw new UnsupportedOperationException();	
 	}
 }

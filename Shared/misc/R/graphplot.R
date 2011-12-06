@@ -29,7 +29,7 @@ multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, pos = NULL, n
 		}
 		
 		xlim <- c(xmin, xmax)
-		print(xmax)
+		print(paste(xmin," ",xmax))
 	}
 	
 	lp <- LinePlotter(colorscale=colorRampPalette(colors=c("red", "green", 
@@ -125,3 +125,7 @@ setMethodS3(".color", "LinePlotter", function(this, index) {
 	}
 	return(this$.colorscale[(index %% length(this$.colorscale)) + 1])
 })
+
+is.formula <- function(x) {
+	return(class(x) == "formula")
+}

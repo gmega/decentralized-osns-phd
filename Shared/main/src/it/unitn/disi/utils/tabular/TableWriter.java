@@ -139,6 +139,10 @@ public class TableWriter implements ITableWriter {
 	public boolean set(String key, Object object) {
 		return this.set(key, object.toString());
 	}
+	
+	public void set(int index, String str) {
+		fCurrentRecord[index] = str;
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -177,6 +181,17 @@ public class TableWriter implements ITableWriter {
 	public void flush() {
 		fOut.flush();
 	}
+	
+	public int indexOf(String key) {
+		int idx = -1;
+		for (int i = 0; i < fFields.length; i++) {
+			if (fFields[i].equals(key)) {
+				idx = i;
+				break;
+			}
+		}
+		return idx;
+	}
 
 	private void emmitHeader() {
 		if (fPrintHeader) {
@@ -196,14 +211,4 @@ public class TableWriter implements ITableWriter {
 		hb.delete(hb.length() - fSeparator.length(), hb.length());
 	}
 
-	private int indexOf(String key) {
-		int idx = -1;
-		for (int i = 0; i < fFields.length; i++) {
-			if (fFields[i].equals(key)) {
-				idx = i;
-				break;
-			}
-		}
-		return idx;
-	}
 }

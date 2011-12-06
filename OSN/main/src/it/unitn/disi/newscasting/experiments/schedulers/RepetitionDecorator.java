@@ -6,11 +6,14 @@ public class RepetitionDecorator implements ISchedule {
 
 	private final int fRepetitions;
 
-	public RepetitionDecorator(ISchedule delegate, int repetitions) {
+	private final boolean fLoop;
+
+	public RepetitionDecorator(ISchedule delegate, int repetitions, boolean loop) {
 		fDelegate = delegate;
 		fRepetitions = repetitions;
+		fLoop = loop;
 	}
-	
+
 	@Override
 	public int size() {
 		if (fDelegate.size() == ISchedule.UNKNOWN) {
@@ -22,10 +25,50 @@ public class RepetitionDecorator implements ISchedule {
 
 	@Override
 	public IScheduleIterator iterator() {
-		return new RepetitionIterator(fDelegate, fRepetitions);
+		return fLoop ? new StreamLoopRepetition(fDelegate, fRepetitions)
+				: new SequentialRepetition(fDelegate, fRepetitions);
 	}
 
-	static class RepetitionIterator implements IScheduleIterator {
+	static class SequentialRepetition implements IScheduleIterator {
+
+		private IScheduleIterator fDelegate;
+
+		private int fRepetitions;
+
+		private int fCurrentRepeat = 0;
+
+		private int fCurrent;
+
+		public SequentialRepetition(ISchedule delegate, int repetitions) {
+			fDelegate = delegate.iterator();
+			fRepetitions = repetitions;
+		}
+
+		@Override
+		public Integer nextIfAvailable() {
+			if (fCurrentRepeat == 0) {
+				int next = fDelegate.nextIfAvailable();
+				if (next == IScheduleIterator.DONE) {
+					return IScheduleIterator.DONE;
+				}
+				fCurrentRepeat = fRepetitions;
+				fCurrent = next;
+			}
+
+			fCurrentRepeat--;
+			return fCurrent;
+		}
+
+		@Override
+		public int remaining() {
+			// XXX This might not be always correct if the delegate schedule
+			// isn't static.
+			return fDelegate.remaining() * fRepetitions + fCurrentRepeat;
+		}
+
+	}
+
+	static class StreamLoopRepetition implements IScheduleIterator {
 
 		private ISchedule fGenerator;
 
@@ -35,7 +78,7 @@ public class RepetitionDecorator implements ISchedule {
 
 		private int fBaseRemaining;
 
-		public RepetitionIterator(ISchedule delegate, int repetitions) {
+		public StreamLoopRepetition(ISchedule delegate, int repetitions) {
 			fGenerator = delegate;
 			fIterator = delegate.iterator();
 			fBaseRemaining = fIterator.remaining();

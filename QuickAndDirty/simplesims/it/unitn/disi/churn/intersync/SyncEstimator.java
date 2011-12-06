@@ -63,7 +63,6 @@ public class SyncEstimator {
 		IDistributionGenerator dgen = YaoPresets.mode(fMode);
 
 		System.out.println("P:p di li");
-		System.out.println("E: intersync estimate");
 
 		double[] li = new double[2], di = new double[2];
 		li[1] = agen.nextLI();
@@ -127,7 +126,7 @@ public class SyncEstimator {
 
 	private void printHelp(CmdLineParser parser) {
 		System.err.println(this.getClass().getSimpleName()
-				+ " [options...] processing_class");
+				+ " [options...]");
 		parser.printUsage(System.err);
 		System.err.println();
 	}
@@ -145,7 +144,6 @@ public class SyncEstimator {
 			buf.append(di);
 			buf.append(" ");
 			buf.append(li);
-
 			System.out.println(buf);
 		}
 
@@ -158,10 +156,9 @@ public class SyncEstimator {
 	private void printResults(IncrementalStats stats) {
 		// Done. Prints the statistics for the 11 and 10 states.
 		StringBuffer buffer = new StringBuffer();
-		buffer.append("E: ");
+		buffer.append("E:");
 
 		double lubound = stats.getAverage();
-		buffer.append(" ");
 		buffer.append(lubound);
 		buffer.append(" ");
 		buffer.append(lubound * 3600);

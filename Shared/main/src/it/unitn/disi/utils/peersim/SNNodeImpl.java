@@ -19,9 +19,9 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	 * Social network ID for this node.
 	 */
 	private int fSNId;
-	
+
 	private long fId;
-	
+
 	/**
 	 * Cumulative downtime counter.
 	 */
@@ -32,10 +32,7 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	 */
 	private long fUptime;
 
-	/**
-	 * Session counter.
-	 */
-	private int fSessionCount;
+	private int fLogins = 1;
 
 	/**
 	 * Timestamp for the last state change.
@@ -43,7 +40,7 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	private long fLastChange;
 
 	private final boolean fLogSessions;
-	
+
 	private boolean fActive = false;
 
 	public SNNodeImpl(String prefix) {
@@ -60,14 +57,18 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 		if (oldState == newState) {
 			return;
 		}
-		
+
+		// We only get here if:
+		// oldState != newState
+		// oldState != GeneralNode.DEAD
 		switch (newState) {
 		case GeneralNode.DEAD:
-			// If node was down, there's nothing to do.
+		case GeneralNode.DOWN:
+			// If node was already down, there's
+			// nothing to do.
 			if (oldState == GeneralNode.DOWN) {
 				break;
 			}
-		case GeneralNode.DOWN:
 			// Logs end of uptime.
 			logEvent("up");
 			fUptime += delta();
@@ -77,7 +78,7 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 			// Logs end of downtime.
 			logEvent("down");
 			fDownTime += delta();
-			fSessionCount++;
+			fLogins++;
 			break;
 		}
 
@@ -95,12 +96,24 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 		fLastChange = CommonState.getTime();
 	}
 
-	public long uptime() {
-		return isUp() ? fUptime + delta() : fUptime;
+	public long uptime(boolean includeCurrent) {
+		return (includeCurrent && isUp()) ? fUptime + delta() : fUptime;
 	}
 
-	public long downtime() {
-		return !isUp() ? fDownTime + delta() : fDownTime;
+	public long downtime(boolean includeCurrent) {
+		return (includeCurrent && !isUp()) ? fDownTime + delta() : fDownTime;
+	}
+
+	public long currentJump() {
+		return delta();
+	}
+
+	public long uptimeN(boolean includeCurrent) {
+		return (!includeCurrent && isUp()) ? fLogins - 1 : fLogins;
+	}
+
+	public long downtimeN(boolean includeCurrent) {
+		return (isUp() || !includeCurrent) ? fLogins - 1 : fLogins; 
 	}
 
 	@Override
@@ -117,20 +130,20 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	public long lastStateChange() {
 		return fLastChange;
 	}
-	
+
 	@Override
 	public boolean isActive() {
 		return fActive;
 	}
-	
+
 	public void active(boolean stats) {
 		fActive = stats;
 	}
-	
+
 	public void setID(long id) {
 		fId = id;
 	}
-	
+
 	@Override
 	public long getID() {
 		return fId;
@@ -183,11 +196,11 @@ public class SNNodeImpl extends GeneralNode implements SNNode {
 	private long delta() {
 		return CommonState.getTime() - fLastChange;
 	}
-	
+
 	private long originalID() {
 		return super.getID();
 	}
-	
+
 	@Override
 	public Object clone() {
 		SNNodeImpl cloned = (SNNodeImpl) super.clone();

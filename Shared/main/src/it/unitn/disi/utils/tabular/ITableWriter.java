@@ -21,49 +21,49 @@ public interface ITableWriter {
 	 * @return <code>true</code> if the field key was valid, or
 	 *         <code>false</code> otherwise.
 	 */
-	public abstract boolean set(String key, String value);
+	public boolean set(String key, String value);
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an <code>int</code>
 	 * as value.
 	 */
-	public abstract boolean set(String key, int value);
+	public boolean set(String key, int value);
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an <code>long</code>
 	 * as value.
 	 */
-	public abstract boolean set(String key, long value);
+	public boolean set(String key, long value);
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an
 	 * <code>double</code> as value.
 	 */
-	public abstract boolean set(String key, double value);
+	public boolean set(String key, double value);
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an <code>float</code>
 	 * as value.
 	 */
-	public abstract boolean set(String key, float value);
+	public boolean set(String key, float value);
 
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an
 	 * <code>boolean</code> as value.
 	 */
-	public abstract boolean set(String key, boolean value);
+	public boolean set(String key, boolean value);
 	
 	/**
 	 * Similar to {@link #set(String, String)}, but taking an
 	 * <code>Object</code> as value.
 	 */
-	public abstract boolean set(String key, Object object);
+	public boolean set(String key, Object object);
 
 	/**
 	 * Starts a new row. All content input by <code>set</code> methods is
 	 * discarded when this call is performed.
 	 */
-	public abstract void newRow();
+	public void newRow();
 
 	/**
 	 * Emits the currently set row to an underlying output, and starts a new row
@@ -73,13 +73,13 @@ public interface ITableWriter {
 	 *             if there are fields which have not been set before this call
 	 *             has been made.
 	 */
-	public abstract void emmitRow();
+	public void emmitRow();
 
 	/**
 	 * @return an array containing the field keys in this table. All field keys
 	 *         must be assigned values by calling the <code>set</code> methods
 	 *         appropriately before {@link #emmitRow()} can be called.
 	 */
-	public abstract String[] fields();
+	public String[] fields();
 
 }

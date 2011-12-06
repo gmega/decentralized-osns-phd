@@ -1,9 +1,6 @@
 package it.unitn.disi.network.churn.yao;
 
-import it.unitn.disi.random.Exponential;
 import it.unitn.disi.random.IDistribution;
-import it.unitn.disi.random.GeneralizedPareto;
-import it.unitn.disi.random.UniformDistribution;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.tabular.ITableWriter;
@@ -12,7 +9,6 @@ import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -22,11 +18,9 @@ import peersim.dynamics.NodeInitializer;
  * Initializes the Yao model according to the <a
  * href="http://dx.doi.org/10.1109/ICNP.2006.320196">original paper</a>. <BR>
  * <BR>
- * The implementation actually allows more flexible initialization, but all
- * preset modes from the original paper are coded here.
+ * The preset configurations from the paper are in class {@link YaoPresets}.
  */
-@StructuredLog(key = "YaoInit", fields = { "id", "li", "di", "eli",
-		"edi", "ai" })
+@StructuredLog(key = "YaoInit", fields = { "id", "li", "di", "eli", "edi", "ai" })
 @AutoConfig
 public class YaoInit implements Control, NodeInitializer {
 
@@ -34,7 +28,7 @@ public class YaoInit implements Control, NodeInitializer {
 	// Configuration machinery.
 	// ------------------------------------------------------------------------
 
-	interface IDistributionGenerator {
+	public static interface IDistributionGenerator {
 		IDistribution uptimeDistribution(double li);
 
 		IDistribution downtimeDistribution(double di);
@@ -42,70 +36,13 @@ public class YaoInit implements Control, NodeInitializer {
 		String id();
 	}
 
-	interface IAverageGenerator {
+	public static interface IAverageGenerator {
 		double nextLI();
 
 		double nextDI();
 
 		String id();
 	}
-
-	// ------------------------------------------------------------------------
-	// Preset average generators.
-	// ------------------------------------------------------------------------
-
-	/**
-	 * Alpha parameters for the shifted Pareto distributions used to generate
-	 * uptime and downtime averages.
-	 */
-	private static final double ALPHA = 3.0;
-
-	private static final double BETA_UPTIME = 1.0;
-
-	private static final double BETA_DOWNTIME = 2.0;
-	
-	private static final IDistribution fUniform = new UniformDistribution(CommonState.r);
-
-	private static final IAverageGenerator YAO_GENERATOR = new AverageGeneratorImpl(
-			new GeneralizedPareto(ALPHA, BETA_UPTIME, 0, fUniform),
-			new GeneralizedPareto(ALPHA, BETA_DOWNTIME, 0, fUniform), "yao");
-
-	private static final IAverageGenerator[] generators = new IAverageGenerator[] { YAO_GENERATOR };
-
-	// ------------------------------------------------------------------------
-	// Preset system modes.
-	// ------------------------------------------------------------------------
-
-	// -- Heavy tailed
-	private static final IDistributionGenerator HEAVY_TAILED = new DualPareto(
-			3.0, 3.0, 2.0, 2.0, 0, 0, "H", fUniform);
-
-	// -- Very Heavy tailed
-	private static final IDistributionGenerator VERY_HEAVY_TAILED = new DualPareto(
-			1.5, 1.5, 2.0, 2.0, 0, 0, "VH", fUniform);
-
-	// -- Exponential System
-	private static final IDistributionGenerator EXPONENTIAL_SYSTEM = new IDistributionGenerator() {
-
-		@Override
-		public IDistribution uptimeDistribution(double li) {
-			return new Exponential(1.0 / li, fUniform);
-		}
-
-		@Override
-		public IDistribution downtimeDistribution(double di) {
-			return new GeneralizedPareto(3.0, 2.0 * di, 0.0, fUniform);
-		}
-
-		@Override
-		public String id() {
-			return "E";
-		}
-
-	};
-
-	private static final IDistributionGenerator[] modes = new IDistributionGenerator[] {
-			HEAVY_TAILED, VERY_HEAVY_TAILED, EXPONENTIAL_SYSTEM };
 
 	// ------------------------------------------------------------------------
 
@@ -169,10 +106,9 @@ public class YaoInit implements Control, NodeInitializer {
 	@SuppressWarnings("unchecked")
 	private IDistributionGenerator mode(IResolver resolver, String prefix,
 			String modeId) {
-		for (IDistributionGenerator mode : modes) {
-			if (mode.id().toUpperCase().equals(modeId)) {
-				return mode;
-			}
+		IDistributionGenerator generator = YaoPresets.mode(modeId);
+		if (generator != null) {
+			return generator;
 		}
 
 		// Not one of the pre-set modes, interpret as class name.
@@ -183,10 +119,10 @@ public class YaoInit implements Control, NodeInitializer {
 	@SuppressWarnings("unchecked")
 	private IAverageGenerator generator(IResolver resolver, String prefix,
 			String modeId) {
-		for (IAverageGenerator generator : generators) {
-			if (generator.id().toUpperCase().equals(modeId)) {
-				return generator;
-			}
+		
+		IAverageGenerator generator = YaoPresets.averageGenerator(modeId);
+		if (generator != null) {
+			return generator;
 		}
 
 		// Not one of the pre-set modes, interpret as class name.
