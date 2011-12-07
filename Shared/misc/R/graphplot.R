@@ -75,7 +75,7 @@ setConstructorS3("LinePlotter", function(colorscale = NULL, colorcycle=20, ...) 
 	)
 });
 
-setMethodS3("doPlot", "LinePlotter", function(this, formula, ...) {
+setMethodS3("doPlot", "LinePlotter", function(this, ylim, formula, ...) {
 	color <- this$.color(this$.lty - 1)
 	style <- this$.lty
 	this$.lty <- this$.lty + 1
@@ -85,6 +85,7 @@ setMethodS3("doPlot", "LinePlotter", function(this, formula, ...) {
 		this$.pars$lty <- style
 		this$.pars$col <- color
 		this$.pars$type <- "l"
+	    this$.pars$ylim <- ylim
 		
 		penvir <- parent.frame()
 		

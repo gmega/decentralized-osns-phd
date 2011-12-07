@@ -104,6 +104,7 @@ public class PluginContainer extends NullResolver {
 	}
 
 	public void registerObject(String fullName, Object object) {
+		System.err.println("PluginContainer: register object " + fullName);
 		fPluginRegistry.put(fullName, object);
 	}
 

@@ -16,7 +16,7 @@ import it.unitn.disi.utils.peersim.SNNode;
 import it.unitn.disi.utils.tabular.ITableWriter;
 
 @AutoConfig
-@StructuredLog(key = "TCR:", fields = { "id", "distance", "perceived_latency",
+@StructuredLog(key = "TCR", fields = { "id", "distance", "perceived_latency",
 		"first_login_latency" })
 public class SimplePathExperiment extends GraphExperiment implements
 		INodeStateListener, IEDUnitExperiment {
