@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.RenewalProcess;
+import it.unitn.disi.churn.StateAccountant;
 
 import java.util.PriorityQueue;
 
@@ -8,6 +9,7 @@ import peersim.util.IncrementalStats;
 
 public class SyncExperiment implements Runnable {
 
+	static final byte SIN = 0x04;
 	static final byte S00 = 0x00;
 	static final byte S01 = 0x01;
 	static final byte S10 = 0x02;
@@ -16,6 +18,9 @@ public class SyncExperiment implements Runnable {
 	/** The two RenewalProcesses we are going to synchronize. */
 	private final RenewalProcess fP1;
 	private final RenewalProcess fP2;
+	
+	private final StateAccountant f10A = new StateAccountant();
+	private final StateAccountant f11A = new StateAccountant();
 
 	/** Keeps track of intersync time stats. */
 	private final IncrementalStats fLatency;
@@ -62,7 +67,9 @@ public class SyncExperiment implements Runnable {
 		fP1.next();
 		fP2.next();
 
-		updateSync();
+		fCurrent = currentState();
+		updateSync(SIN, fCurrent);
+		updateAccounting(SIN, fCurrent);
 
 		queue.add(fP1);
 		queue.add(fP2);
@@ -72,26 +79,71 @@ public class SyncExperiment implements Runnable {
 			fTime = p.nextSwitch();
 			p.next();
 			queue.add(p);
-			updateSync();
+			
+			byte newState = currentState();
+			updateSync(fCurrent, newState);
+			updateAccounting(fCurrent, newState);
+			fCurrent = newState;
 		}
+	}
+	
+	public double time() {
+		return fTime;
 	}
 
 	public IncrementalStats accounting() {
 		return fLatency;
 	}
+	
+	public StateAccountant s10Accountant() {
+		return f10A;
+	}
+	
+	public StateAccountant s11Accountant() {
+		return f11A;
+	}
 
 	public long zeroes() {
 		return fZeroes;
 	}
+	
+	private void updateAccounting(byte oldState, byte newState) {
+		if (newState == oldState) {
+			return;
+		}
+		
+		switch(oldState) {
+		
+		case S10:
+			f10A.exitState(fTime);
+			break;
+		
+		case S11:
+			f11A.exitState(fTime);
+			break;
+			
+		}
+		
+		switch(newState) {
+		
+		case S10:
+			f10A.enterState(fTime);
+			break;
+			
+		case S11:
+			f11A.enterState(fTime);
+			break;
+			
+		}
+	}
 
-	private void updateSync() {
-		byte state = currentState();
-		if (state == fCurrent) {
+	private void updateSync(byte oldState, byte newState) {
+		if (newState == oldState) {
 			return;
 		}
 
 		// New state.
-		switch (state) {
+		switch (newState) {
 
 		case S10:
 			// We are not in a desync epoch.
@@ -104,9 +156,8 @@ public class SyncExperiment implements Runnable {
 		case S11:
 			endDesyncEpoch();
 			break;
+		
 		}
-
-		fCurrent = state;
 	}
 
 	private boolean noDesyncEpoch() {
@@ -129,12 +180,12 @@ public class SyncExperiment implements Runnable {
 	private void account(double duration, IncrementalStats... stats) {
 		// If the start time for the current epoch is behind the
 		// burn-in mark, don't account.
-		if (fLast < fBurnin) {
-			if (fVerbose) {
-				System.out.println("SB: " + fEid + " " + duration);
-			}
-			return;
-		}
+//		if (fLast < fBurnin) {
+//			if (fVerbose) {
+//				System.out.println("SB: " + fEid + " " + duration);
+//			}
+//			return;
+//		}
 
 		if (fVerbose) {
 			System.out.println("SA: " + fEid + " " + duration);
