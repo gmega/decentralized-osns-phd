@@ -122,7 +122,6 @@ public abstract class GraphExperiment implements IUnitExperiment {
 		}
 	}
 
-
 	protected abstract void chainInitialize();
 
 	private void clearNetwork() {

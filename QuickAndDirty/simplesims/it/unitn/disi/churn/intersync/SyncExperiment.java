@@ -1,8 +1,14 @@
 package it.unitn.disi.churn.intersync;
 
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.StateAccountant;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
 
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.PriorityQueue;
 import org.junit.internal.matchers.IsCollectionContaining;
 
@@ -17,19 +23,17 @@ public class SyncExperiment implements Runnable {
 	/** Current simulation time. */
 	private volatile double fTime;
 
-	private StateAccountant fWaitSync;
-
-	private boolean fWaitingLogin = true;
-
-	private boolean fWaitingSync = false;
-
 	private volatile int fSyncs;
 
 	private boolean fDone;
-	
-	private double fIdle = -1;
-	
-	private double fIdleMax;
+
+	private final IncrementalStats fStats;
+
+	private TDoubleArrayList fPendingUps;
+
+	private final TableWriter fWriter = new TableWriter(new PrintWriter(
+			new PrefixedWriter("SYNC:", new OutputStreamWriter(System.out))),
+			"started", "finished", "duration");
 
 	private final boolean fVerbose;
 
@@ -47,8 +51,8 @@ public class SyncExperiment implements Runnable {
 		fSyncs = syncs;
 		fVerbose = verbose;
 		fEid = eid;
-		fIdleMax = burnin;
-		fWaitSync = new StateAccountant(stats, new IncrementalStats());
+		fStats = stats;
+		fPendingUps = new TDoubleArrayList();
 	}
 
 	public void run() {
@@ -68,39 +72,31 @@ public class SyncExperiment implements Runnable {
 	}
 
 	private void stateShifted(RenewalProcess p) {
-		
-		if (fTime < fIdle) {
-			return;
-		}
-		
+
 		// We saw a login event for P1.
-		if (fWaitingLogin) {
-			if (p == fP1 && p.isUp()) {
-				fWaitingLogin = false;
-				fWaitingSync = true;
-				fWaitSync.enterState(fTime);
-			}
+		if (p == fP1 && p.isUp()) {
+			fPendingUps.add(fTime);
 		}
 
 		// P1 and P2 are synchronized.
-		if (fWaitingSync) {
-			if (fP1.isUp() && fP2.isUp()) {
-				fWaitSync.exitState(fTime);
-				fSyncs--;
-				fWaitingLogin = true;
-				fWaitingSync = false;
-				// Begin idle period.
-				fIdle = fTime + idlePeriod();
+		if (fP1.isUp() && fP2.isUp()) {
+			for (int i = 0; i < fPendingUps.size(); i++) {
+				double started = fPendingUps.get(i);
+				double duration = fTime - started;
+				fWriter.set("started", started);
+				fWriter.set("finished", fTime);
+				fWriter.set("duration", duration);
+				fWriter.emmitRow();
+				fStats.add(duration);
 			}
+			fPendingUps.clear();
 		}
+		
+		fSyncs--;
 
 		if (fSyncs == 0) {
 			fDone = true;
 		}
-	}
-	
-	private double idlePeriod() {
-		return fIdleMax;
 	}
 
 	public double time() {

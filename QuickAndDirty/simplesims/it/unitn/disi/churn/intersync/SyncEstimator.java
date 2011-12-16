@@ -103,6 +103,7 @@ public class SyncEstimator {
 		}
 
 		else {
+			System.err.println("Inner repeats");
 			exp = new SyncExperiment(create(pid[0], dgen, li[0], di[0], false),
 					create(pid[1], dgen, li[1], di[1], false), fBurnin,
 					Integer.toString(id), fRepeats, stats, fVerbose);
@@ -147,7 +148,7 @@ public class SyncEstimator {
 			System.out.println(buf);
 		}
 
-		return new RenewalProcess(dp.uptimeDistribution(li),
+		return new RenewalProcess(i, dp.uptimeDistribution(li),
 				dp.downtimeDistribution(di), State.up);
 	}
 

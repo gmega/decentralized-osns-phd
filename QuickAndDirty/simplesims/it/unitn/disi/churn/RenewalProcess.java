@@ -8,9 +8,11 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	public static enum State {
 		up, down;
 	}
-	
+
+	private final int fId;
+
 	private IncrementalStats fSession;
-	
+
 	private IncrementalStats fInterSession;
 
 	private final IDistribution fUp;
@@ -20,14 +22,16 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	private State fState;
 
 	private double fNextEvent;
-	
+
 	private int fN;
 
-	public RenewalProcess(IDistribution upDown, State initial) {
-		this(upDown, upDown, initial);
+	public RenewalProcess(int id, IDistribution upDown, State initial) {
+		this(id, upDown, upDown, initial);
 	}
 
-	public RenewalProcess(IDistribution up, IDistribution down, State initial) {
+	public RenewalProcess(int id, IDistribution up, IDistribution down,
+			State initial) {
+		fId = id;
 		fUp = up;
 		fDown = down;
 		fState = initial;
@@ -54,17 +58,17 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 			fState = State.down;
 			fInterSession.add(increment);
 			break;
-		
+
 		}
-		
+
 		fNextEvent += increment;
 		fN++;
 	}
-	
+
 	public int jumps() {
 		return fN;
 	}
-	
+
 	public double nextSwitch() {
 		return fNextEvent;
 	}
@@ -73,11 +77,11 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	public int compareTo(RenewalProcess o) {
 		return (int) Math.signum(this.nextSwitch() - o.nextSwitch());
 	}
-	
+
 	public IncrementalStats upStats() {
 		return fSession;
 	}
-	
+
 	public IncrementalStats downStats() {
 		return fInterSession;
 	}
