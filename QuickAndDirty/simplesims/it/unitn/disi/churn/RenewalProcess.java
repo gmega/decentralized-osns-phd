@@ -39,10 +39,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		fInterSession = new IncrementalStats();
 	}
 
-	public boolean isUp() {
-		return fState == State.up;
-	}
-
 	public void next() {
 		double increment = 0;
 		switch (fState) {
@@ -65,6 +61,14 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		fN++;
 	}
 
+	public boolean isUp() {
+		return state() == State.up;
+	}
+
+	public State state() {
+		return fState;
+	}
+
 	public int jumps() {
 		return fN;
 	}
@@ -84,6 +88,10 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 
 	public IncrementalStats downStats() {
 		return fInterSession;
+	}
+
+	public int id() {
+		return fId;
 	}
 
 }
