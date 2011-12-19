@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.intersync;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -9,6 +11,8 @@ import org.kohsuke.args4j.Option;
 import peersim.config.Configuration;
 import peersim.util.IncrementalStats;
 
+import it.unitn.disi.churn.BaseChurnSim;
+import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.network.churn.yao.AveragesFromFile;
@@ -17,6 +21,10 @@ import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.network.churn.yao.YaoPresets;
 
 public class SyncEstimator {
+
+	static enum ExperimentType {
+		true_average, regular, all;
+	}
 
 	@Option(name = "-m", aliases = { "--mode" }, usage = "One of the Yao modes.", required = true)
 	private String fMode;
@@ -27,6 +35,9 @@ public class SyncEstimator {
 	@Option(name = "-c", aliases = { "--chainsize" }, usage = "Size of the chain to simulate.", required = true)
 	private int fSize;
 
+	@Option(name = "-e", aliases = { "--experiment" }, usage = "One of (regular | true_average).", required = true)
+	private String fType;
+
 	@Option(name = "-o", aliases = { "--outer" }, usage = "Uses outer instead of inner repetitions.", required = false)
 	private boolean fUseOuter = false;
 
@@ -35,8 +46,8 @@ public class SyncEstimator {
 
 	@Option(name = "-b", aliases = { "--burnin" }, usage = "Simulation burn-in time.", required = false)
 	private double fBurnin;
-	
-	@Option(name = "-v", aliases = { "--verbose"}, usage = "Verbose session lengths.", required = false)
+
+	@Option(name = "-v", aliases = { "--verbose" }, usage = "Verbose session lengths.", required = false)
 	private boolean fVerbose = false;
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "prints this help message", required = false)
@@ -44,15 +55,19 @@ public class SyncEstimator {
 
 	public void _main(String[] args) throws Exception {
 		CmdLineParser parser = new CmdLineParser(this);
-
 		try {
 			parser.parseArgument(args);
+			ExperimentType.valueOf(fType);
 			if (fHelpOnly) {
 				printHelp(parser);
 				return;
 			}
 		} catch (CmdLineException ex) {
 			System.err.println(ex.getMessage());
+			printHelp(parser);
+			return;
+		} catch (IllegalArgumentException ex) {
+			System.err.println("Invalid mode " + fType + ".");
 			printHelp(parser);
 			return;
 		}
@@ -70,49 +85,78 @@ public class SyncEstimator {
 
 		int[] pid = new int[2];
 
-		for (int i = 1; i <= fSize; i++) {
+		for (int i = 0; i < fSize; i++) {
 			li[0] = li[1];
 			di[0] = di[1];
 			li[1] = agen.nextLI();
 			di[1] = agen.nextDI();
 			pid[0] = i;
 			pid[1] = i + 1;
-			IncrementalStats stats = runExperiment(agen, dgen, li, di, pid, i);
-			printResults(stats);
+			runExperiment(agen, dgen, li, di, pid, i);
 		}
 
 	}
 
 	// ------------------------------------------------------------------------
 
-	private IncrementalStats runExperiment(IAverageGenerator agen,
+	private void runExperiment(IAverageGenerator agen,
 			IDistributionGenerator dgen, double[] li, double[] di, int[] pid,
 			int id) {
 
-		IncrementalStats stats = new IncrementalStats();
+		List<Object> stats = mkStats();
 
 		// With outer repeats, we start one experiment from scratch each time.
-		SyncExperiment exp;
+		BaseChurnSim sim = null;
 		if (fUseOuter) {
 			for (int i = 0; i < fRepeats; i++) {
-				exp = new SyncExperiment(create(pid[0], dgen, li[0], di[0],
-						i != 0), create(pid[1], dgen, li[1], di[1], i != 0),
-						fBurnin, Integer.toString(i), 1, stats, fVerbose);
-				exp.run();
+				sim = experiment(create(pid[0], dgen, li[0], di[0], i != 0),
+						create(pid[1], dgen, li[1], di[1], i != 0), fBurnin,
+						Integer.toString(i), 1, stats, fVerbose);
+				sim.run();
 			}
 		}
 
 		else {
 			System.err.println("Inner repeats");
-			exp = new SyncExperiment(create(pid[0], dgen, li[0], di[0], false),
+			sim = experiment(create(pid[0], dgen, li[0], di[0], false),
 					create(pid[1], dgen, li[1], di[1], false), fBurnin,
 					Integer.toString(id), fRepeats, stats, fVerbose);
-			exp.run();
+			sim.run();
 		}
-
-		return stats;
+		
+		sim.print();
 	}
 	
+	private List<Object> mkStats() {
+		List<Object> stats = new ArrayList<Object>();
+		stats.add(new IncrementalStats());
+		if (ExperimentType.valueOf(fType) == ExperimentType.all) {
+			stats.add(new IncrementalStats());
+		}
+		return stats;
+	}
+
+	// ------------------------------------------------------------------------
+
+	private BaseChurnSim experiment(RenewalProcess p1, RenewalProcess p2,
+			double burnin, String string, int repeats,
+			List<Object> stats, boolean verbose) {
+
+		List<IChurnSim> sims = new ArrayList<IChurnSim>();
+		
+		
+		ExperimentType type = ExperimentType.valueOf(fType);
+		if (type == ExperimentType.true_average || type == ExperimentType.all) {
+			sims.add(new EmmitAllPairs(repeats));
+		}
+
+		if (type == ExperimentType.regular || type == ExperimentType.all) {
+			sims.add(new SyncExperiment(burnin, repeats));
+		}
+
+		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, stats);
+	}
+
 	// ------------------------------------------------------------------------
 
 	private IAverageGenerator averageGenerator() {
@@ -126,8 +170,7 @@ public class SyncEstimator {
 	// ------------------------------------------------------------------------
 
 	private void printHelp(CmdLineParser parser) {
-		System.err.println(this.getClass().getSimpleName()
-				+ " [options...]");
+		System.err.println(this.getClass().getSimpleName() + " [options...]");
 		parser.printUsage(System.err);
 		System.err.println();
 	}
@@ -152,21 +195,6 @@ public class SyncEstimator {
 				dp.downtimeDistribution(di), State.up);
 	}
 
-	// ------------------------------------------------------------------------
-
-	private void printResults(IncrementalStats stats) {
-		// Done. Prints the statistics for the 11 and 10 states.
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("E:");
-
-		double lubound = stats.getAverage();
-		buffer.append(lubound);
-		buffer.append(" ");
-		buffer.append(lubound * 3600);
-		System.out.println(buffer);
-
-	}
-	
 	// ------------------------------------------------------------------------
 
 	public static void main(String[] args) throws Exception {
