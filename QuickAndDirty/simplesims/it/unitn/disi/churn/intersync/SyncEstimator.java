@@ -144,7 +144,6 @@ public class SyncEstimator {
 
 		List<IChurnSim> sims = new ArrayList<IChurnSim>();
 		
-		
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
 			sims.add(new EmmitAllPairs(repeats));
