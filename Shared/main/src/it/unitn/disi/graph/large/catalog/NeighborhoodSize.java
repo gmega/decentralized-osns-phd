@@ -4,9 +4,11 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 
 public class NeighborhoodSize implements ICatalogPart<Integer>{
 
+	public static final String KEY = "size";
+	
 	@Override
 	public String key() {
-		return "size";
+		return KEY;
 	}
 
 	@Override

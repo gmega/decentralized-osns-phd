@@ -78,7 +78,7 @@ public class ResettableFileInputStream extends InputStream {
 		reposition(0);
 	}
 
-	private void reposition(long offset) throws IOException {
+	public synchronized void reposition(long offset) throws IOException {
 		// To reposition, we need to reposition the FileInputStream
 		// and throw away the buffer.
 		fStream.getChannel().position(offset);

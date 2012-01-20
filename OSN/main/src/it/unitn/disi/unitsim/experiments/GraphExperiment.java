@@ -2,7 +2,7 @@ package it.unitn.disi.unitsim.experiments;
 
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.unitsim.IGraphProvider;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.unitsim.IUnitExperiment;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRebootSupport;

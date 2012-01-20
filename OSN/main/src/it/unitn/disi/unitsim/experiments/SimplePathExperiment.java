@@ -7,8 +7,8 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.core.Fallible;
 import peersim.util.IncrementalStats;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.unitsim.IExperimentObserver;
-import it.unitn.disi.unitsim.IGraphProvider;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
@@ -42,6 +42,8 @@ public class SimplePathExperiment extends GraphExperiment implements
 
 	private boolean fWait = true;
 
+	private BurnInSupport fBurnin;
+
 	private ITableWriter fLog;
 
 	private ProgressTracker fTracker;
@@ -49,11 +51,12 @@ public class SimplePathExperiment extends GraphExperiment implements
 	public SimplePathExperiment(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,
 			@Attribute("linkable") int graphProtocolId,
-			@Attribute("repeats") int repeats,
+			@Attribute("repeats") int repeats, @Attribute("burnin") int burnin,
 			@Attribute("NeighborhoodLoader") IGraphProvider loader,
 			@Attribute("TabularLogManager") TabularLogManager manager) {
 		super(prefix, id, graphProtocolId, loader);
 		fRepeats = repeats;
+		fBurnin = new BurnInSupport(burnin, id);
 		fLog = manager.get(SimplePathExperiment.class);
 		fTracker = Progress.newTracker("experiment", fRepeats);
 		fTracker.startTask();
@@ -79,6 +82,11 @@ public class SimplePathExperiment extends GraphExperiment implements
 
 	@Override
 	public void stateChanged(int oldState, int newState, SNNode node) {
+
+		// During burn-in we ignore all events.
+		if (fBurnin.isBurningIn()) {
+			return;
+		}
 
 		// Has node 0 already made its first renewal?
 		if (!clearToStart(newState, node) || newState != Fallible.OK) {
@@ -141,11 +149,13 @@ public class SimplePathExperiment extends GraphExperiment implements
 		}
 		fRepeats--;
 		fTracker.tick();
+
 		if (fRepeats == 0) {
 			fTracker.done();
 			for (int i = 0; i < fTTCStats.length; i++) {
-				System.out
-						.println("AVG:" + i + " " + fTTCStats[i].getAverage());
+				System.out.println("AVG:" + size() + " " + i + " "
+						+ fTTCStats[i].getSum() + " " + fTTCStats[i].getN()
+						+ " " + fTTCStats[i].getAverage());
 			}
 
 			for (int i = 0; i < size(); i++) {

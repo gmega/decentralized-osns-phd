@@ -16,6 +16,18 @@ public class DenseIDMapper extends AbstractIDMapper {
 		super();
 		clear();
 	}
+	
+	public int [] mappings() {
+		int [] map = new int[fMap.length];
+		System.arraycopy(fMap, 0, map, 0, map.length);
+		return map;
+	}
+	
+	public int [] reverseMappings() {
+		int [] revMap = new int[fReverseMap.length];
+		System.arraycopy(fReverseMap, 0, revMap, 0, revMap.length);
+		return revMap;
+	}
 
 	@Override
 	protected int get(int id) {

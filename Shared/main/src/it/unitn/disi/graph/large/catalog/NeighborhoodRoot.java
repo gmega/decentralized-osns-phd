@@ -4,9 +4,11 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 
 public class NeighborhoodRoot implements ICatalogPart<Integer>{
 
+	public static final String KEY = "root";
+	
 	@Override
 	public String key() {
-		return "root";
+		return NeighborhoodRoot.KEY;
 	}
 
 	@Override

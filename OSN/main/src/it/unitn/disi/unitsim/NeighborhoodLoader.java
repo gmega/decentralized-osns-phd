@@ -1,6 +1,7 @@
 package it.unitn.disi.unitsim;
 
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;

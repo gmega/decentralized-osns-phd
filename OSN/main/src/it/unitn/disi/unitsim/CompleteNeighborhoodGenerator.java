@@ -5,6 +5,7 @@ import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
 import it.unitn.disi.graph.CompleteGraph;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 
 /**
  * Very limited but memory-efficient implementation of

@@ -34,7 +34,7 @@ public class ByteGraphDecoder extends AbstractEdgeListDecoder {
 			}
 			return -1;
 		} else if (read != fBuf.length) {
-			unexpectedEOF("file size is not multiple of " + Long.SIZE);
+			unexpectedEOF("file size is not multiple of " + Integer.SIZE);
 		}
 
 		return CodecUtils.decodeInt(fBuf);

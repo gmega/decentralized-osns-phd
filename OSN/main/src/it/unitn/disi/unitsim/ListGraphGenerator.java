@@ -4,6 +4,7 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LSGCreator;
 
 @AutoConfig

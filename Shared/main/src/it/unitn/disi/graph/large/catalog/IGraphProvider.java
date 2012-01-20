@@ -1,4 +1,4 @@
-package it.unitn.disi.unitsim;
+package it.unitn.disi.graph.large.catalog;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
@@ -26,7 +26,7 @@ public interface IGraphProvider {
 	 * @param node
 	 * @return
 	 */
-	public abstract IndexedNeighborGraph subgraph(Integer subgraph);
+	public IndexedNeighborGraph subgraph(Integer subgraph);
 
 	/**
 	 * An array containing the IDs of the vertices which compose the n-th
@@ -41,6 +41,6 @@ public interface IGraphProvider {
 	 *            the id of the vertex, in the ID space of the underlying graph.
 	 * @return its neighbors in the underlying graph.
 	 */
-	public abstract int[] verticesOf(Integer subgraph);
+	public int[] verticesOf(Integer subgraph);
 
 }

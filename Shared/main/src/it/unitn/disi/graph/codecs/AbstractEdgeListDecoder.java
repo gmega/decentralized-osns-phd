@@ -73,6 +73,7 @@ public abstract class AbstractEdgeListDecoder implements ResettableGraphDecoder 
 	}
 	
 	public void realign() throws IOException {
+		fSeenEof = false;
 		init();
 	}
 

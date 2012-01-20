@@ -45,7 +45,8 @@ class BurnInSupport {
 		fIsBurningIn = false;
 
 		System.err.println("-- Burn-in period for experiment " + fId
-				+ " over (excess was " + (ellapsedTime() - fBurninTime) + ").");
+				+ " over (total: " + ellapsedTime() + ", excess: "
+				+ (ellapsedTime() - fBurninTime) + ").");
 		System.err.println("-- Active nodes: " + PeersimUtils.countActives()
 				+ ".");
 

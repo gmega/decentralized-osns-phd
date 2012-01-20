@@ -17,11 +17,11 @@ import java.lang.reflect.InvocationTargetException;
  * @author giuliano
  */
 public class GraphCodecHelper {
-	
+
 	// ----------------------------------------------------------------------
 	// Encoders.
 	// ----------------------------------------------------------------------
-	
+
 	public static GraphEncoder uncheckedCreateEncoder(OutputStream stream,
 			String encoderClass) {
 		try {
@@ -30,21 +30,21 @@ public class GraphCodecHelper {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-	
+
 	public static GraphEncoder createEncoder(OutputStream stream,
 			String encoderClass) throws ClassNotFoundException,
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, IOException {
-		return (GraphEncoder) instantiate(encoderClass, OutputStream.class,
-				stream);
+		return (GraphEncoder) instantiate(resolve(encoderClass),
+				OutputStream.class, stream);
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Decoders.
 	// ----------------------------------------------------------------------
-	
-	public static ResettableGraphDecoder uncheckedCreateDecoder(InputStream stream,
-			String decoderClass) {
+
+	public static ResettableGraphDecoder uncheckedCreateDecoder(
+			InputStream stream, String decoderClass) {
 		try {
 			return GraphCodecHelper.createDecoder(stream, decoderClass);
 		} catch (Exception ex) {
@@ -65,18 +65,29 @@ public class GraphCodecHelper {
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, IOException {
 
+		return (ResettableGraphDecoder) createDecoder(resolve(decoderClass),
+				stream);
+	}
+
+	public static ResettableGraphDecoder createDecoder(Class<?> decoderClass,
+			InputStream stream) throws ClassNotFoundException,
+			NoSuchMethodException, InstantiationException,
+			IllegalAccessException, InvocationTargetException, IOException {
 		return (ResettableGraphDecoder) instantiate(decoderClass,
 				InputStream.class, stream);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static Object instantiate(String codec, Class parameterType,
+	private static Object instantiate(Class klass, Class parameterType,
 			Object parameter) throws ClassNotFoundException,
 			NoSuchMethodException, InstantiationException,
 			IllegalAccessException, InvocationTargetException, IOException {
-
-		Class klass = Class.forName(codec);
 		Constructor constructor = klass.getConstructor(parameterType);
 		return constructor.newInstance(parameter);
 	}
+
+	private static Class<?> resolve(String cls) throws ClassNotFoundException {
+		return Class.forName(cls);
+	}
+
 }

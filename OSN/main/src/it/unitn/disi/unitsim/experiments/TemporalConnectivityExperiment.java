@@ -6,8 +6,8 @@ import java.util.Deque;
 import java.util.LinkedList;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.unitsim.IExperimentObserver;
-import it.unitn.disi.unitsim.IGraphProvider;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
