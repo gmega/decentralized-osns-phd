@@ -32,6 +32,7 @@ public class PartialLoaderTest extends CatalogTest {
 			int id = rnd.nextInt(fOriginal.size());
 			IndexedNeighborGraph neighborhood = loader.subgraph(id);
 			int ids[] = loader.verticesOf(id);
+			Assert.assertEquals(ids.length, fOriginal.degree(id) + 1);
 			Assert.assertEquals(neighborhood.size(), fOriginal.degree(id) + 1);
 			for (int j = 0; j < neighborhood.size(); j++) {
 				assertSameNeighbors(neighborhood, fOriginal, j, ids);

@@ -1,6 +1,5 @@
 package it.unitn.disi.churn;
 
-import peersim.util.IncrementalStats;
 import it.unitn.disi.churn.RenewalProcess.State;
 
 public interface IChurnSim {

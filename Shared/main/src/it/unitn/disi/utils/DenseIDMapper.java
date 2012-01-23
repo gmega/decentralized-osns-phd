@@ -18,15 +18,18 @@ public class DenseIDMapper extends AbstractIDMapper {
 	}
 	
 	public int [] mappings() {
-		int [] map = new int[fMap.length];
-		System.arraycopy(fMap, 0, map, 0, map.length);
-		return map;
+		return copyInternal(fMap);
 	}
 	
 	public int [] reverseMappings() {
-		int [] revMap = new int[fReverseMap.length];
-		System.arraycopy(fReverseMap, 0, revMap, 0, revMap.length);
-		return revMap;
+		return copyInternal(fReverseMap);
+	}
+
+	private int[] copyInternal(int [] array) {
+		int cLength = findMax(array) + 1;
+		int [] copy = new int[cLength];
+		System.arraycopy(array, 0, copy, 0, cLength);
+		return copy;
 	}
 
 	@Override
@@ -61,6 +64,16 @@ public class DenseIDMapper extends AbstractIDMapper {
 		fReverseMap = new int[10];
 		Arrays.fill(fMap, UNMAPPED);
 		Arrays.fill(fReverseMap, UNMAPPED);
+	}
+	
+	private int findMax(int [] array) {
+		for (int i = array.length - 1; i >= 0; i--) {
+			if (array[i] != UNMAPPED) {
+				return i;
+			}
+		}
+		
+		return -1;
 	}
 
 	private int[] ensure(int[] array, int id) {
