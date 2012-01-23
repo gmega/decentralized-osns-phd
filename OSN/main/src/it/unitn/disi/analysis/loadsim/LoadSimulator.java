@@ -5,7 +5,9 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.HashMapResolver;
+import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
@@ -40,7 +42,8 @@ import peersim.util.IncrementalStats;
  * @author giuliano
  */
 @AutoConfig
-public class LoadSimulator implements IMultiTransformer, ILoadSim {
+public class LoadSimulator implements IMultiTransformer, ILoadSim,
+		IExecutorCallback<TaskResult> {
 
 	/**
 	 * {@link StreamProvider} input keys.
@@ -140,7 +143,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 
 		fSimMode = SimulationMode.valueOf(simMode.toLowerCase());
 		fPrintMode = PrintMode.valueOf(printMode.toLowerCase());
-		fExecutor = new CallbackThreadPoolExecutor(cores, this);
+		fExecutor = new CallbackThreadPoolExecutor<TaskResult>(cores, this);
 		fSema = new Semaphore(cores);
 		fResolver = resolver;
 		fDecoder = decoder;
@@ -239,7 +242,8 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 			CompositeResolver composite = new CompositeResolver();
 			composite.addResolver(new HashMapResolver(config), fResolver);
 			ObjectCreator creator = new ObjectCreator(composite.asResolver());
-			return creator.create("", (Class<? extends Object>) Class.forName(className));
+			return creator.create("",
+					(Class<? extends Object>) Class.forName(className));
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
@@ -359,44 +363,17 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim {
 	public IndexedNeighborGraph getGraph() {
 		return fGraph;
 	}
-}
-
-/**
- * {@link ThreadPoolExecutor} subclass which calls back the {@link ILoadSim}
- * when an experiment completes.
- * 
- * @author giuliano
- */
-class CallbackThreadPoolExecutor extends ThreadPoolExecutor {
-
-	private final LoadSimulator fLoadSim;
-
-	public CallbackThreadPoolExecutor(int cores, LoadSimulator loadSim) {
-		super(cores, cores, 0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>());
-		fLoadSim = loadSim;
-	}
-
+	
 	@Override
-	@SuppressWarnings("unchecked")
-	public void afterExecute(Runnable r, Throwable t) {
-		Future<TaskResult> future = (Future<TaskResult>) r;
-
-		TaskResult results = null;
-
-		try {
-			results = future.get();
-		} catch (ExecutionException ex) {
-			System.err.println("Error while running task.");
-			ex.printStackTrace();
-			this.shutdown();
-			return;
-		} catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-		} finally {
-			fLoadSim.releaseCore();
-		}
-
-		fLoadSim.printSummary(results);
+	public synchronized void taskFailed(Future<TaskResult> future, Exception ex) {
+		releaseCore();
+		ex.printStackTrace();
+	}
+	
+	@Override 
+	public synchronized void taskDone(TaskResult result) {
+		releaseCore();
+		printSummary(result);
 	}
 }
+

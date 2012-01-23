@@ -10,14 +10,16 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.Configuration;
+import peersim.util.IncrementalStats;
 
 import it.unitn.disi.churn.BaseChurnSim;
+import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.churn.intersync.SyncExperiment;
@@ -30,11 +32,15 @@ import it.unitn.disi.graph.large.catalog.PartialLoader;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.network.churn.yao.YaoPresets;
+import it.unitn.disi.utils.CallbackThreadPoolExecutor;
+import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
-public class PrepareSample implements ITransformer {
+public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 	private final TableWriter fSampleWriter = new TableWriter(new PrintWriter(
 			new PrefixedWriter("SM:", new OutputStreamWriter(System.out))),
@@ -61,6 +67,8 @@ public class PrepareSample implements ITransformer {
 
 	@Attribute("repeats")
 	private int fRepeats;
+
+	private ProgressTracker fTracker;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -94,7 +102,7 @@ public class PrepareSample implements ITransformer {
 				fAssignmentWriter.set("node", ids[j]);
 				fAssignmentWriter.set("li", lIs[j]);
 				fAssignmentWriter.set("di", dIs[j]);
-				
+
 				fAssignmentWriter.emmitRow();
 			}
 
@@ -109,8 +117,10 @@ public class PrepareSample implements ITransformer {
 				}
 			}
 
-			ExecutorService es = Executors.newFixedThreadPool(Runtime
-					.getRuntime().availableProcessors());
+			ExecutorService es = new CallbackThreadPoolExecutor<Object>(Runtime
+					.getRuntime().availableProcessors(), this);
+
+			initializeProgress(i, tasks.size());
 
 			for (TTCTask task : tasks) {
 				synchronized (task) {
@@ -126,8 +136,8 @@ public class PrepareSample implements ITransformer {
 					fSampleWriter.set("id", i);
 					fSampleWriter.set("source", task.i);
 					fSampleWriter.set("target", task.j);
-					fSampleWriter.set("ttc", task.sexp.stats().getAverage());
-					
+					fSampleWriter.set("ttc", task.stats.getAverage());
+
 					fSampleWriter.emmitRow();
 				}
 			}
@@ -144,24 +154,51 @@ public class PrepareSample implements ITransformer {
 				distGen.uptimeDistribution(lIs[j]),
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
-		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, null, null);
+		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 		SyncExperiment sexp = new SyncExperiment(fBurnin, fRepeats);
+		sims.add(sexp);
 
-		return new TTCTask(churnSim, sexp, i, j);
+		ArrayList<Object> cookies = new ArrayList<Object>();
+		IncrementalStats stats = new IncrementalStats();
+		cookies.add(stats);
+
+		BaseChurnSim churnSim = new BaseChurnSim(
+				new RenewalProcess[] { pI, pJ }, sims, cookies);
+
+		return new TTCTask(churnSim, sexp, stats, i, j);
 	}
 
 	static class TTCTask {
 		final BaseChurnSim sim;
 		final SyncExperiment sexp;
+		final IncrementalStats stats;
 		final int i;
 		final int j;
 
-		public TTCTask(BaseChurnSim sim, SyncExperiment sexp, int i, int j) {
+		public TTCTask(BaseChurnSim sim, SyncExperiment sexp,
+				IncrementalStats stats, int i, int j) {
 			this.sim = sim;
 			this.sexp = sexp;
 			this.i = i;
 			this.j = j;
+			this.stats = stats;
 		}
+	}
+
+	private synchronized void initializeProgress(int sampleId, int size) {
+		fTracker = Progress.newTracker("est. TTC sample " + sampleId
+				+ "", size);
+		fTracker.startTask();
+	}
+
+	@Override
+	public synchronized void taskFailed(Future<Object> task, Exception ex) {
+		ex.printStackTrace();
+		fTracker.tick();
+	}
+
+	@Override
+	public synchronized void taskDone(Object result) {
+		fTracker.tick();
 	}
 }

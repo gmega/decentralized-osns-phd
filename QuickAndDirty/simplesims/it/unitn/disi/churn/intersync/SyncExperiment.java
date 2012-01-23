@@ -73,10 +73,6 @@ public class SyncExperiment implements IChurnSim {
 	public boolean isDone() {
 		return fDone;
 	}
-	
-	public IncrementalStats stats() { 
-		return fWaitSync.permanence();
-	}
 
 	@Override
 	public void printStats(Object stats) {
