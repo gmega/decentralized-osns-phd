@@ -123,10 +123,10 @@ public class SyncEstimator {
 					Integer.toString(id), fRepeats, stats, fVerbose);
 			sim.run();
 		}
-		
+
 		sim.print();
 	}
-	
+
 	private List<Object> mkStats() {
 		List<Object> stats = new ArrayList<Object>();
 		stats.add(new IncrementalStats());
@@ -139,11 +139,11 @@ public class SyncEstimator {
 	// ------------------------------------------------------------------------
 
 	private BaseChurnSim experiment(RenewalProcess p1, RenewalProcess p2,
-			double burnin, String string, int repeats,
-			List<Object> stats, boolean verbose) {
+			double burnin, String string, int repeats, List<Object> stats,
+			boolean verbose) {
 
 		List<IChurnSim> sims = new ArrayList<IChurnSim>();
-		
+
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
 			sims.add(new EmmitAllPairs(repeats));
@@ -153,7 +153,8 @@ public class SyncEstimator {
 			sims.add(new SyncExperiment(burnin, repeats));
 		}
 
-		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, stats);
+		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, stats,
+				0.0);
 	}
 
 	// ------------------------------------------------------------------------

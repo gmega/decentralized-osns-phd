@@ -16,9 +16,11 @@ public class BaseChurnSim implements Runnable {
 	private final Object [] fCookie;
 
 	private double fTime;
+	
+	private double fBurnin;
 
 	public BaseChurnSim(RenewalProcess[] processes, List<IChurnSim> delegates,
-			List<Object> cookie) {
+			List<Object> cookie, double burnin) {
 		fProcesses = processes;
 		fQueue = new PriorityQueue<RenewalProcess>();
 		for (RenewalProcess process : processes) {
@@ -41,7 +43,11 @@ public class BaseChurnSim implements Runnable {
 			State old = p.state();
 			p.next();
 			fQueue.add(p);
-			done = runSims(done, p, old);
+			
+			// Only run the sims if burnin time is over.
+			if (fTime >= fBurnin) {
+				done = runSims(done, p, old);
+			}
 		}
 	}
 	
@@ -54,7 +60,7 @@ public class BaseChurnSim implements Runnable {
 	private int runSims(int done, RenewalProcess p, State old) {
 		for (IChurnSim sim : fSim) {
 			if (!sim.isDone()) {
-				sim.stateShifted(this, fTime, p, old, p.state());
+				sim.stateShifted(this, fTime - fBurnin, p, old, p.state());
 				if (sim.isDone()) {
 					done++;
 				}

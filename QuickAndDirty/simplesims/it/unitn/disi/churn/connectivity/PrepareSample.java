@@ -133,9 +133,9 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 			for (TTCTask task : tasks) {
 				synchronized (task) {
-					fSampleWriter.set("id", i);
-					fSampleWriter.set("source", task.i);
-					fSampleWriter.set("target", task.j);
+					fSampleWriter.set("id", ids[0]);
+					fSampleWriter.set("source", ids[task.i]);
+					fSampleWriter.set("target", ids[task.j]);
 					fSampleWriter.set("ttc", task.stats.getAverage());
 
 					fSampleWriter.emmitRow();
@@ -163,7 +163,7 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 		cookies.add(stats);
 
 		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, sims, cookies);
+				new RenewalProcess[] { pI, pJ }, sims, cookies, 0.0);
 
 		return new TTCTask(churnSim, sexp, stats, i, j);
 	}
