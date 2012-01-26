@@ -51,12 +51,14 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 			State nw, double time) {
 
 		// Source being reached for the first time?
-		if (!isReached(fSource) && process.id() == fSource && nw == State.up) {
-			reached(fSource, time);
-		}
-		// Source not reached yet, just return.
-		else {
-			return;
+		if (!isReached(fSource)) {
+			if (process.id() == fSource && nw == State.up) {
+				reached(fSource, time);
+			}
+			// Source not reached yet, just return.
+			else {
+				return;
+			}
 		}
 
 		for (int i = 0; i < fDone.length; i++) {
@@ -76,7 +78,6 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 			}
 			done &= isReached(neighbor);
 		}
-
 		fDone[source] = done;
 	}
 
@@ -99,7 +100,7 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 	}
 
 	public double reachTime(int i) {
-		return fReached[i];
+		return fReached[i] - fReached[0];
 	}
 
 	@Override

@@ -59,9 +59,10 @@ public class DualPareto implements IDistributionGenerator {
 		return new GeneralizedPareto(fDowntimeAlpha, fDowntimeBetaFactor * di,
 				fDowntimeMu, fUniform);
 	}
-
+	
 	@Override
 	public String id() {
 		return fId;
 	}
+
 }

@@ -171,7 +171,7 @@ public class GenericDriver {
 		}
 
 		boolean stdinUsed = false;
-		String[] inputs = inputString.split(" ");
+		String[] inputs = inputString.split(":");
 		InputStream[] iStreams = new InputStream[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
 			if (fVerbose) {

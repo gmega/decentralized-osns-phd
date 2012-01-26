@@ -76,6 +76,10 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 		DenseIDMapper mapper = init(catalogEntry(subgraph), new NullGraph());
 		return mapper.reverseMappings();
 	}
+	
+	public int size(Integer subgraph) {
+		return catalogEntry(subgraph).size + 1;
+	}
 
 	private DenseIDMapper init(CatalogEntry entry, Graph graph) {
 		DenseIDMapper mapper = new DenseIDMapper(graph.size());

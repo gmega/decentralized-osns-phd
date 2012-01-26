@@ -3,9 +3,7 @@ package it.unitn.disi.churn.connectivity;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -20,7 +18,6 @@ import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
@@ -28,10 +25,10 @@ import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
 import it.unitn.disi.graph.large.catalog.PartialLoader;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.network.churn.yao.YaoPresets;
 import it.unitn.disi.utils.exception.ParseException;
+import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -56,6 +53,9 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Attribute("burnin")
 	private double fBurnin;
+	
+	@Attribute("repetitions")
+	private int fRepetitions;
 
 	public static enum Inputs {
 		assignments, weights
@@ -70,6 +70,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Override
 	public void execute(StreamProvider provider) throws Exception {
+		Configuration.setConfig(new Properties());
 		PartialLoader loader = new PartialLoader(new CatalogReader(
 				new FileInputStream(new File(fCatalogFile)),
 				CatalogRecordTypes.PROPERTY_RECORD), ByteGraphDecoder.class,
@@ -81,9 +82,9 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 		TableReader weights = new TableReader(provider.input(Inputs.weights));
 
-		TableWriter result = new TableWriter(new PrintStream(
-				provider.output(Outputs.estimates)), "id", "source", "target",
-				"simulation", "estimate");
+		TableWriter result = new TableWriter(new PrefixedWriter("ES:",
+				new OutputStreamWriter(provider.output(Outputs.estimates))),
+				"id", "source", "target", "simulation", "estimate");
 
 		IndexedNeighborGraph graph = null;
 		int[] ids = null;
@@ -92,7 +93,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 		assignments.next();
 		weights.next();
-		
+
 		while (assignments.hasNext()) {
 			int root = Integer.parseInt(assignments.get("id"));
 
@@ -102,8 +103,8 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 			ld = readLiDi(root, assignments, graph, ids);
 
 			for (int i = 0; i < graph.size(); i++) {
-				double[] simulation = simulate(graph, i, ld);
-				double[] estimates = estimate(graph, i, w);
+				double[] estimates = estimate(graph, i, w, ids);
+				double[] simulation = simulate(graph, i, ld, ids);
 
 				for (int j = 0; j < graph.size(); j++) {
 					if (i == j) {
@@ -112,27 +113,53 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 					result.set("id", root);
 					result.set("source", ids[i]);
 					result.set("target", ids[j]);
-					result.set("simulation", simulation[j]);
+					result.set("simulation", simulation[j]/fRepetitions);
 					result.set("estimate", estimates[j]);
+					result.emmitRow();
 				}
 			}
 		}
 	}
 
 	private double[] estimate(IndexedNeighborGraph graph, int source,
-			double[][] w) {
-		double [] minDists = new double[graph.size()];
-		double [] previous = new double[graph.size()];
-		
+			double[][] w, int [] ids) {
+		System.err.println("Estimating for source " + source + ".");
+		double[] minDists = new double[graph.size()];
+		int[] previous = new int[graph.size()];
+		Arrays.fill(previous, Integer.MAX_VALUE);
+
 		GraphAlgorithms.dijkstra(graph, source, w, minDists, previous);
 		
+		for (int i = 1; i < graph.size(); i++) {
+			int vertex = i;
+			while(previous[vertex] != Integer.MAX_VALUE) {
+				System.err.println(ids[vertex] + " <- " + ids[previous[vertex]] + " (" + w[previous[vertex]][vertex] + ")");
+				vertex = previous[vertex];
+			}
+		}
+
 		return minDists;
 	}
 
 	private double[] simulate(IndexedNeighborGraph graph, int source,
-			double[][] ld) {
+			double[][] ld, int [] ids) {
+		System.err.println("Simulating for source " + source + ".");
+		double[] ttc = new double[graph.size()];
+
+		for (int j = 0; j < fRepetitions; j++) {
+			TemporalConnectivityExperiment tce = doSimulate(graph, source, ld, ids);
+			for (int i = 0; i < graph.size(); i++) {
+				ttc[i] += tce.reachTime(i);
+			}
+		}
+
+		return ttc;
+	}
+
+	private TemporalConnectivityExperiment doSimulate(
+			IndexedNeighborGraph graph, int source, double[][] ld, int ids[]) {
+		
 		RenewalProcess[] rp = new RenewalProcess[graph.size()];
-		Configuration.setConfig(new Properties());
 		IDistributionGenerator distGen = YaoPresets.mode(fMode.toUpperCase());
 
 		for (int i = 0; i < rp.length; i++) {
@@ -145,20 +172,14 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				graph, source);
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 		sims.add(tce);
-		
+
 		ArrayList<Object> cookies = new ArrayList<Object>();
 		cookies.add(new Object());
-		
+
 		BaseChurnSim bcs = new BaseChurnSim(rp, sims, cookies, fBurnin);
 		bcs.run();
 		
-		double [] ttc = new double[graph.size()];
-		
-		for (int i = 0; i < graph.size(); i++) {
-			ttc[i] = tce.reachTime(i);
-		}
-		
-		return ttc;
+		return tce;
 	}
 
 	private double[][] readLiDi(int root, TableReader assignments,
@@ -197,7 +218,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 		for (int i = 0; i < w.length; i++) {
 			Arrays.fill(w[i], Double.MAX_VALUE);
 		}
-		
+
 		for (int i = 0; weights.hasNext(); i++) {
 			int id = Integer.parseInt(weights.get("id"));
 			if (root != id) {

@@ -54,13 +54,13 @@ public class TestTCExperiment {
 		BaseChurnSim bcs = new BaseChurnSim(processes, sims, cookies, 0);
 		bcs.run();
 		
-		Assert.assertEquals(0.1, tce.reachTime(0));
-		Assert.assertEquals(0.9, tce.reachTime(1));
-		Assert.assertEquals(1.9, tce.reachTime(2));
-		Assert.assertEquals(3.0, tce.reachTime(3));
-		Assert.assertEquals(3.9, tce.reachTime(4));
-		Assert.assertEquals(4.9, tce.reachTime(5));
-		Assert.assertEquals(5.9, tce.reachTime(6));
+		Assert.assertEquals(0.0, tce.reachTime(0));
+		Assert.assertEquals(0.8, tce.reachTime(1));
+		Assert.assertTrue(Math.abs(1.8 - tce.reachTime(2)) < 1e-5);
+		Assert.assertEquals(2.9, tce.reachTime(3));
+		Assert.assertEquals(3.8, tce.reachTime(4));
+		Assert.assertTrue(Math.abs(4.8 - tce.reachTime(5)) < 1e-5);
+		Assert.assertTrue(Math.abs(5.8 - tce.reachTime(6)) < 1e-5);
 	}
 
 	private void addIntervals(int id, Multimap<Integer, Double> intervals,

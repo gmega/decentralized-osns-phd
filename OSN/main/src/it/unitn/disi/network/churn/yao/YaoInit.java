@@ -28,7 +28,7 @@ public class YaoInit implements Control, NodeInitializer {
 	// Configuration machinery.
 	// ------------------------------------------------------------------------
 
-	public static interface IDistributionGenerator {
+	public static interface IDistributionGenerator extends Cloneable {
 		IDistribution uptimeDistribution(double li);
 
 		IDistribution downtimeDistribution(double di);

@@ -104,7 +104,7 @@ setMethodS3("doPlot", "LinePlotter", function(this, ylim, formula, ...) {
 		# Done, all subsequent calls will be to lines.
 		this$.first=FALSE
 	} else {
-		lines(formula, lty = style, col=color, ...)
+		lines(formula, lty = style, col = color, ...)
 	}
 });
 

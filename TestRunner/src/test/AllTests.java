@@ -3,12 +3,14 @@ package test;
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
+import it.unitn.disi.churn.connectivity.TestTCExperiment;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.f2f.DiscoveryProtocolTest;
 import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.CompleteGraphTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
+import it.unitn.disi.graph.analysis.TestGraphAlgorithms;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.graph.large.catalog.CatalogTest;
 import it.unitn.disi.network.churn.tracebased.AVTEventChurnNetworkTest;
@@ -91,7 +93,9 @@ import peersim.config.PluginContainerTest;
 	IDMapperTest.class,
 	TemporalConnectivityExperimentTest.class,
 	ResettableFileInputStreamTest.class,
-	CompleteGraphTest.class
+	CompleteGraphTest.class,
+	TestTCExperiment.class,
+	TestGraphAlgorithms.class
 })
 
 public class AllTests extends PeerSimTest {

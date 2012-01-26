@@ -4,7 +4,10 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.streams.DisjointSets;
 
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 import peersim.graph.Graph;
 
@@ -24,18 +27,18 @@ public class GraphAlgorithms {
 	}
 
 	// --------------------------------------------------------------------------
-	
-	public static int [] components(Graph graph) {
+
+	public static int[] components(Graph graph) {
 		DisjointSets sets = GraphAlgorithms.computeComponents(graph);
-		int [] components = new int[graph.size()];
+		int[] components = new int[graph.size()];
 		for (int i = 0; i < graph.size(); i++) {
 			components[sets.find(i)]++;
 		}
 		return components;
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
+
 	private static DisjointSets computeComponents(Graph g) {
 		final DisjointSets set = new DisjointSets(g.size());
 		for (int i = 0; i < g.size(); i++) {
@@ -111,7 +114,7 @@ public class GraphAlgorithms {
 		// Assumes the graph is undirected and simple.
 		int triads = 0;
 		int degree = g.degree(root);
-		
+
 		// Counts how many (undirected) inter-neighbor edges there are.
 		for (int i = 0; i < degree; i++) {
 			for (int j = (i + 1); j < degree; j++) {
@@ -127,5 +130,41 @@ public class GraphAlgorithms {
 	}
 
 	// --------------------------------------------------------------------------
+
+	/**
+	 * Implementation of Dijkstra's algorithm using priority queues. 
+	 */
+	public static void dijkstra(IndexedNeighborGraph graph, int source,
+			double[][] weights, final double[] minDists, int[] previous) {
+
+		Arrays.fill(minDists, Double.POSITIVE_INFINITY);
+
+		minDists[source] = 0;
+		PriorityQueue<Integer> vertexQueue = new PriorityQueue<Integer>(10,
+				new Comparator<Integer>() {
+					@Override
+					public int compare(Integer o1, Integer o2) {
+						return (int) Math.signum(minDists[o1] - minDists[o2]);
+					}
+				});
+
+		vertexQueue.add(source);
+
+		while (!vertexQueue.isEmpty()) {
+			int u = vertexQueue.poll();
+			// Visit each edge exiting u
+			for (int i = 0; i < graph.degree(u); i++) {
+				int v = graph.getNeighbor(u, i);
+				double weight = weights[u][v];
+				double distanceThroughU = minDists[u] + weight;
+				if (distanceThroughU < minDists[v]) {
+					vertexQueue.remove(v);
+					minDists[v] = distanceThroughU;
+					previous[v] = u;
+					vertexQueue.add(v);
+				}
+			}
+		}
+	}
 
 }

@@ -2,6 +2,7 @@ package it.unitn.disi.utils.tabular;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.Arrays;
 
 /**
@@ -28,6 +29,10 @@ public class TableWriter implements ITableWriter {
 
 	public TableWriter(PrintStream output, String... fields) {
 		this(FS, output, fields);
+	}
+	
+	public TableWriter(Writer output, String... fields) {
+		this(new PrintWriter(output), fields);
 	}
 
 	public TableWriter(PrintWriter output, String... fields) {
