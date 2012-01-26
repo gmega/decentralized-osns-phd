@@ -50,9 +50,13 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 	private void recomputeReachabilities(RenewalProcess process, State old,
 			State nw, double time) {
 
-		// Is it the first time that the source comes up?
+		// Source being reached for the first time?
 		if (!isReached(fSource) && process.id() == fSource && nw == State.up) {
 			reached(fSource, time);
+		}
+		// Source not reached yet, just return.
+		else {
+			return;
 		}
 
 		for (int i = 0; i < fDone.length; i++) {

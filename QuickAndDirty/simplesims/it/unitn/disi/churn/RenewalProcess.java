@@ -93,5 +93,9 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	public int id() {
 		return fId;
 	}
+	
+	public String toString() {
+		return "[" + fId + ", " + fState + "]";
+	}
 
 }

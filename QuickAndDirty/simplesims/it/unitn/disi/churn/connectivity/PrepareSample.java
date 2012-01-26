@@ -110,7 +110,10 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 			// Now estimates the TTC for all edges, in parallel.
 			for (int j = 0; j < lIs.length; j++) {
-				for (int k = j; k < dIs.length; k++) {
+				for (int k = 0; k < dIs.length; k++) {
+					if (j == k) {
+						continue;
+					}
 					if (subgraph.isEdge(j, k)) {
 						tasks.add(ttcTask(j, k, lIs, dIs, distGen));
 					}

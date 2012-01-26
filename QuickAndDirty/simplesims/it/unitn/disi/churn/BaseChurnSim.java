@@ -28,6 +28,7 @@ public class BaseChurnSim implements Runnable {
 		}
 		fSim = delegates.toArray(new IChurnSim[delegates.size()]);
 		fCookie = cookie.toArray(new Object[cookie.size()]);
+		fBurnin = burnin;
 	}
 
 	public void run() {
