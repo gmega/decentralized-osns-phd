@@ -1,17 +1,15 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.Configuration;
 
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
@@ -21,12 +19,10 @@ import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
-import it.unitn.disi.network.churn.yao.YaoPresets;
+import it.unitn.disi.utils.CallbackThreadPoolExecutor;
+import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.exception.ParseException;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;
@@ -40,22 +36,16 @@ import it.unitn.disi.utils.tabular.TableWriter;
  * @author giuliano
  */
 @AutoConfig
-public class TemporalEstimateExperiment implements IMultiTransformer {
-
-	@Attribute("graph")
-	private String fGraphFile;
-
-	@Attribute("catalog")
-	private String fCatalogFile;
-
-	@Attribute("yaomode")
-	private String fMode;
+public class TemporalEstimateExperiment extends YaoGraphExperiment implements
+		IMultiTransformer {
 
 	@Attribute("burnin")
 	private double fBurnin;
-	
+
 	@Attribute("repetitions")
 	private int fRepetitions;
+
+	private final CallbackThreadPoolExecutor<double[]> fExecutor;
 
 	public static enum Inputs {
 		assignments, weights
@@ -68,14 +58,22 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 	private static final int LI = 0;
 	private static final int DI = 1;
 
+	public TemporalEstimateExperiment() {
+		fExecutor = new CallbackThreadPoolExecutor<double[]>(Runtime
+				.getRuntime().availableProcessors(),
+				new IExecutorCallback<double[]>() {
+					@Override
+					public void taskFailed(Future<double[]> task, Exception ex) {
+					}
+					@Override
+					public void taskDone(double[] result) {
+					}
+				});
+	}
+
 	@Override
 	public void execute(StreamProvider provider) throws Exception {
-		Configuration.setConfig(new Properties());
-		PartialLoader loader = new PartialLoader(new CatalogReader(
-				new FileInputStream(new File(fCatalogFile)),
-				CatalogRecordTypes.PROPERTY_RECORD), ByteGraphDecoder.class,
-				new File(fGraphFile));
-		loader.start(null);
+		IGraphProvider loader = graphProvider();
 
 		TableReader assignments = new TableReader(
 				provider.input(Inputs.assignments));
@@ -113,7 +111,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 					result.set("id", root);
 					result.set("source", ids[i]);
 					result.set("target", ids[j]);
-					result.set("simulation", simulation[j]/fRepetitions);
+					result.set("simulation", simulation[j] / fRepetitions);
 					result.set("estimate", estimates[j]);
 					result.emmitRow();
 				}
@@ -122,18 +120,19 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 	}
 
 	private double[] estimate(IndexedNeighborGraph graph, int source,
-			double[][] w, int [] ids) {
+			double[][] w, int[] ids) {
 		System.err.println("Estimating for source " + source + ".");
 		double[] minDists = new double[graph.size()];
 		int[] previous = new int[graph.size()];
 		Arrays.fill(previous, Integer.MAX_VALUE);
 
 		GraphAlgorithms.dijkstra(graph, source, w, minDists, previous);
-		
+
 		for (int i = 1; i < graph.size(); i++) {
 			int vertex = i;
-			while(previous[vertex] != Integer.MAX_VALUE) {
-				System.err.println(ids[vertex] + " <- " + ids[previous[vertex]] + " (" + w[previous[vertex]][vertex] + ")");
+			while (previous[vertex] != Integer.MAX_VALUE) {
+				System.err.println(ids[vertex] + " <- " + ids[previous[vertex]]
+						+ " (" + w[previous[vertex]][vertex] + ")");
 				vertex = previous[vertex];
 			}
 		}
@@ -142,44 +141,70 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 	}
 
 	private double[] simulate(IndexedNeighborGraph graph, int source,
-			double[][] ld, int [] ids) {
-		System.err.println("Simulating for source " + source + ".");
-		double[] ttc = new double[graph.size()];
+			double[][] ld, int[] ids) throws Exception {
 
+		ArrayList<Future<double []>> tasks = new ArrayList<Future<double []>>(); 
+		double[] ttc = new double[graph.size()];
 		for (int j = 0; j < fRepetitions; j++) {
-			TemporalConnectivityExperiment tce = doSimulate(graph, source, ld, ids);
-			for (int i = 0; i < graph.size(); i++) {
-				ttc[i] += tce.reachTime(i);
-			}
+			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph)));
+		}
+
+		for (Future<double []> task : tasks) {
+			double [] tce = task.get();
+			for (int i = 0; i < ttc.length; i++) {
+				ttc[i] += tce[i];
+			} 
 		}
 
 		return ttc;
 	}
 
-	private TemporalConnectivityExperiment doSimulate(
-			IndexedNeighborGraph graph, int source, double[][] ld, int ids[]) {
-		
-		RenewalProcess[] rp = new RenewalProcess[graph.size()];
-		IDistributionGenerator distGen = YaoPresets.mode(fMode.toUpperCase());
+	class SimulationTask implements Callable<double[]> {
 
-		for (int i = 0; i < rp.length; i++) {
-			rp[i] = new RenewalProcess(i,
-					distGen.uptimeDistribution(ld[i][LI]),
-					distGen.downtimeDistribution(ld[i][DI]), State.down);
+		private final double[][] fld;
+
+		private final int fSource;
+
+		private final IndexedNeighborGraph fGraph;
+
+		public SimulationTask(double[][] ld, int source,
+				IndexedNeighborGraph graph) {
+			super();
+			this.fld = ld;
+			this.fSource = source;
+			this.fGraph = graph;
 		}
 
-		TemporalConnectivityExperiment tce = new TemporalConnectivityExperiment(
-				graph, source);
-		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		sims.add(tce);
+		@Override
+		public double[] call() throws Exception {
 
-		ArrayList<Object> cookies = new ArrayList<Object>();
-		cookies.add(new Object());
+			RenewalProcess[] rp = new RenewalProcess[fGraph.size()];
+			IDistributionGenerator distGen = distributionGenerator();
 
-		BaseChurnSim bcs = new BaseChurnSim(rp, sims, cookies, fBurnin);
-		bcs.run();
-		
-		return tce;
+			for (int i = 0; i < rp.length; i++) {
+				rp[i] = new RenewalProcess(i,
+						distGen.uptimeDistribution(fld[i][LI]),
+						distGen.downtimeDistribution(fld[i][DI]), State.down);
+			}
+
+			TemporalConnectivityExperiment tce = new TemporalConnectivityExperiment(
+					fGraph, fSource);
+			ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
+			sims.add(tce);
+
+			ArrayList<Object> cookies = new ArrayList<Object>();
+			cookies.add(new Object());
+
+			BaseChurnSim bcs = new BaseChurnSim(rp, sims, cookies, fBurnin);
+			bcs.run();
+
+			double[] contrib = new double[fGraph.size()];
+			for (int i = 0; i < contrib.length; i++) {
+				contrib[i] = tce.reachTime(i);
+			}
+			return contrib;
+		}
+
 	}
 
 	private double[][] readLiDi(int root, TableReader assignments,

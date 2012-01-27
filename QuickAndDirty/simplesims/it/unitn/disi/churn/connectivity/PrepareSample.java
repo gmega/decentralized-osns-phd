@@ -1,12 +1,31 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.io.File;
-import java.io.FileInputStream;
+import it.unitn.disi.churn.BaseChurnSim;
+import it.unitn.disi.churn.IChurnSim;
+import it.unitn.disi.churn.RenewalProcess;
+import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.intersync.SyncExperiment;
+import it.unitn.disi.churn.intersync.TrueSyncEstimator;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
+import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
+import it.unitn.disi.statistics.StatUtils;
+import it.unitn.disi.utils.CallbackThreadPoolExecutor;
+import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -15,52 +34,21 @@ import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.Configuration;
 import peersim.util.IncrementalStats;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
-import it.unitn.disi.churn.intersync.SyncExperiment;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
-import it.unitn.disi.network.churn.yao.YaoPresets;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
-import it.unitn.disi.utils.streams.PrefixedWriter;
-import it.unitn.disi.utils.tabular.TableWriter;
-
 @AutoConfig
-public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
+public class PrepareSample extends YaoGraphExperiment implements ITransformer, IExecutorCallback<Object> {
 
 	private final TableWriter fSampleWriter = new TableWriter(new PrintWriter(
 			new PrefixedWriter("SM:", new OutputStreamWriter(System.out))),
-			"id", "source", "target", "ttc");
+			"id", "source", "target", "ttcl", "ttc", "ttcu");
 
 	private final TableWriter fAssignmentWriter = new TableWriter(
 			new PrintWriter(new PrefixedWriter("A:", new OutputStreamWriter(
 					System.out))), "id", "node", "li", "di");
 
 	@Attribute("samples")
-	private int fSamples;
-
-	@Attribute("graph")
-	private String fGraph;
-
-	@Attribute("catalog")
-	private String fCatalog;
-
-	@Attribute("yaomode")
-	private String fMode;
+	private String fSamples;
 
 	@Attribute("burnin")
 	private double fBurnin;
@@ -72,21 +60,17 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		CatalogReader reader = new CatalogReader(new FileInputStream(new File(
-				fCatalog)), CatalogRecordTypes.PROPERTY_RECORD);
-		PartialLoader loader = new PartialLoader(reader,
-				ByteGraphDecoder.class, new File(fGraph));
+		IGraphProvider loader = graphProvider();
 
 		Random random = new Random();
 
-		Configuration.setConfig(new Properties());
+		IDistributionGenerator distGen = distributionGenerator();
+		IAverageGenerator avgGen = averageGenerator();
 
-		IDistributionGenerator distGen = YaoPresets.mode(fMode.toUpperCase());
-		IAverageGenerator avgGen = YaoPresets.averageGenerator("yao");
+		int[] samples = sampleList(loader, random);
 
-		loader.start(null);
-		for (int i = 0; i < fSamples; i++) {
-			int idx = random.nextInt(loader.size());
+		for (int i = 0; i < samples.length; i++) {
+			int idx = samples[i];
 
 			IndexedNeighborGraph subgraph = loader.subgraph(idx);
 			int[] ids = loader.verticesOf(idx);
@@ -102,7 +86,6 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 				fAssignmentWriter.set("node", ids[j]);
 				fAssignmentWriter.set("li", lIs[j]);
 				fAssignmentWriter.set("di", dIs[j]);
-
 				fAssignmentWriter.emmitRow();
 			}
 
@@ -136,15 +119,37 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 			for (TTCTask task : tasks) {
 				synchronized (task) {
-					fSampleWriter.set("id", ids[0]);
+					fSampleWriter.set("id", idx);
 					fSampleWriter.set("source", ids[task.i]);
 					fSampleWriter.set("target", ids[task.j]);
+					fSampleWriter.set("ttcl",
+							StatUtils.lowerConfidenceLimit(task.stats));
 					fSampleWriter.set("ttc", task.stats.getAverage());
-
+					fSampleWriter.set("ttcu",
+							StatUtils.upperConfidenceLimit(task.stats));
 					fSampleWriter.emmitRow();
 				}
 			}
 		}
+	}
+
+	private int[] sampleList(IGraphProvider loader, Random random) {
+		int[] samples;
+		if (fSamples.contains(",")) {
+			String[] sampleRoots = fSamples.split(",");
+			samples = new int[sampleRoots.length];
+			for (int i = 0; i < sampleRoots.length; i++) {
+				samples[i] = Integer.parseInt(sampleRoots[i]);
+			}
+		} else {
+			int[] permute = new int[loader.size()];
+			for (int i = 0; i < loader.size(); i++) {
+				permute[i] = i;
+			}
+			OrderingUtils.permute(0, permute.length, permute, random);
+			samples = Arrays.copyOf(permute, Integer.parseInt(fSamples));
+		}
+		return samples;
 	}
 
 	private TTCTask ttcTask(int i, int j, double[] lIs, double[] dIs,
@@ -158,7 +163,7 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		SyncExperiment sexp = new SyncExperiment(fBurnin, fRepeats);
+		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepeats);
 		sims.add(sexp);
 
 		ArrayList<Object> cookies = new ArrayList<Object>();
@@ -173,12 +178,12 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 
 	static class TTCTask {
 		final BaseChurnSim sim;
-		final SyncExperiment sexp;
+		final IChurnSim sexp;
 		final IncrementalStats stats;
 		final int i;
 		final int j;
 
-		public TTCTask(BaseChurnSim sim, SyncExperiment sexp,
+		public TTCTask(BaseChurnSim sim, IChurnSim sexp,
 				IncrementalStats stats, int i, int j) {
 			this.sim = sim;
 			this.sexp = sexp;
@@ -189,8 +194,8 @@ public class PrepareSample implements ITransformer, IExecutorCallback<Object> {
 	}
 
 	private synchronized void initializeProgress(int sampleId, int size) {
-		fTracker = Progress.newTracker("est. TTC sample " + sampleId
-				+ "", size);
+		fTracker = Progress
+				.newTracker("est. TTC sample " + sampleId + "", size);
 		fTracker.startTask();
 	}
 

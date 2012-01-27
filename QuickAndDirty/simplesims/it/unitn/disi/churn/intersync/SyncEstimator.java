@@ -146,7 +146,7 @@ public class SyncEstimator {
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new EmmitAllPairs(repeats));
+			sims.add(new TrueSyncEstimator(repeats));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {

@@ -100,7 +100,7 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 	}
 
 	public double reachTime(int i) {
-		return fReached[i] - fReached[0];
+		return fReached[i] - fReached[fSource];
 	}
 
 	@Override
