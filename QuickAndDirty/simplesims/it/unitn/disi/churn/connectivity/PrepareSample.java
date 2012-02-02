@@ -2,9 +2,9 @@ package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
+import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
-import it.unitn.disi.churn.intersync.SyncExperiment;
 import it.unitn.disi.churn.intersync.TrueSyncEstimator;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -26,7 +26,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -37,7 +36,8 @@ import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
 
 @AutoConfig
-public class PrepareSample extends YaoGraphExperiment implements ITransformer, IExecutorCallback<Object> {
+public class PrepareSample extends YaoGraphExperiment implements ITransformer,
+		IExecutorCallback<Object> {
 
 	private final TableWriter fSampleWriter = new TableWriter(new PrintWriter(
 			new PrefixedWriter("SM:", new OutputStreamWriter(System.out))),
@@ -50,9 +50,6 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer, I
 	@Attribute("samples")
 	private String fSamples;
 
-	@Attribute("burnin")
-	private double fBurnin;
-
 	@Attribute("repeats")
 	private int fRepeats;
 
@@ -61,10 +58,7 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer, I
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		IGraphProvider loader = graphProvider();
-
 		Random random = new Random();
-
-		IDistributionGenerator distGen = distributionGenerator();
 		IAverageGenerator avgGen = averageGenerator();
 
 		int[] samples = sampleList(loader, random);
@@ -98,7 +92,8 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer, I
 						continue;
 					}
 					if (subgraph.isEdge(j, k)) {
-						tasks.add(ttcTask(j, k, lIs, dIs, distGen));
+						tasks.add(ttcTask(j, k, lIs, dIs,
+								distributionGenerator()));
 					}
 				}
 			}
@@ -162,16 +157,15 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer, I
 				distGen.uptimeDistribution(lIs[j]),
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
+		IncrementalStats stats = new IncrementalStats();
+
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepeats);
+		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepeats,
+				new IncrementalStatsAdapter(stats));
 		sims.add(sexp);
 
-		ArrayList<Object> cookies = new ArrayList<Object>();
-		IncrementalStats stats = new IncrementalStats();
-		cookies.add(stats);
-
 		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, sims, cookies, 0.0);
+				new RenewalProcess[] { pI, pJ }, sims, 0.0);
 
 		return new TTCTask(churnSim, sexp, stats, i, j);
 	}
@@ -194,8 +188,8 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer, I
 	}
 
 	private synchronized void initializeProgress(int sampleId, int size) {
-		fTracker = Progress
-				.newTracker("est. TTC sample " + sampleId + "", size);
+		fTracker = Progress.newTracker("est. TTC sample " + sampleId + " ("
+				+ size + ")", size);
 		fTracker.startTask();
 	}
 

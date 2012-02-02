@@ -48,10 +48,7 @@ public class TestTCExperiment {
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 		sims.add(tce);
 
-		ArrayList<Object> cookies = new ArrayList<Object>();
-		cookies.add(new Object());
-
-		BaseChurnSim bcs = new BaseChurnSim(processes, sims, cookies, 0);
+		BaseChurnSim bcs = new BaseChurnSim(processes, sims, 0);
 		bcs.run();
 		
 		Assert.assertEquals(0.0, tce.reachTime(0));

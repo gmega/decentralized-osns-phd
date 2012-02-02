@@ -14,6 +14,7 @@ import it.unitn.disi.unitsim.ListGraphGenerator;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
+import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.Configuration;
@@ -63,6 +64,6 @@ public class YaoGraphExperiment {
 	}
 
 	protected IDistributionGenerator distributionGenerator() {
-		return YaoPresets.mode(fMode.toUpperCase());
+		return YaoPresets.mode(fMode.toUpperCase(), new Random());
 	}
 }

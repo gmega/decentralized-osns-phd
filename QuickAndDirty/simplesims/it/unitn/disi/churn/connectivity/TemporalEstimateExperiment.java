@@ -192,10 +192,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 			ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 			sims.add(tce);
 
-			ArrayList<Object> cookies = new ArrayList<Object>();
-			cookies.add(new Object());
-
-			BaseChurnSim bcs = new BaseChurnSim(rp, sims, cookies, fBurnin);
+			BaseChurnSim bcs = new BaseChurnSim(rp, sims, fBurnin);
 			bcs.run();
 
 			double[] contrib = new double[fGraph.size()];

@@ -4,36 +4,27 @@ import peersim.util.IncrementalStats;
 
 public class StateAccountant {
 
-	private final IncrementalStats fPermanence;
+	private final IValueObserver fPermanence;
 
-	private final IncrementalStats fTimeToHit;
+	private final IValueObserver fTimeToHit;
 
 	private double fLastEnter;
 
 	private double fLastExit;
 
-	public StateAccountant() {
-		this(new IncrementalStats(), new IncrementalStats());
-	}
-
-	public StateAccountant(IncrementalStats permanence,
-			IncrementalStats timeToHit) {
+	public StateAccountant(IValueObserver permanence,
+			IValueObserver timeToHit) {
 		fPermanence = permanence; 
 		fTimeToHit = timeToHit;
 	}
 
-	public void reset() {
-		fPermanence.reset();
-		fTimeToHit.reset();
-	}
-
 	public void enterState(double time) {
-		fTimeToHit.add(check(time - fLastExit));
+		fTimeToHit.observe(check(time - fLastExit));
 		fLastEnter = time;
 	}
 
 	public void exitState(double time) {
-		fPermanence.add(check(time - fLastEnter));
+		fPermanence.observe(check(time - fLastEnter));
 		fLastExit = time;
 	}
 
@@ -44,11 +35,4 @@ public class StateAccountant {
 		return d;
 	}
 
-	public IncrementalStats permanence() {
-		return fPermanence;
-	}
-
-	public IncrementalStats timeToHit() {
-		return fTimeToHit;
-	}
 }

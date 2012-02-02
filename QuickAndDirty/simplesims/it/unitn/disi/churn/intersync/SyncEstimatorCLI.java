@@ -13,6 +13,8 @@ import peersim.util.IncrementalStats;
 
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
+import it.unitn.disi.churn.IValueObserver;
+import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.network.churn.yao.AveragesFromFile;
@@ -20,7 +22,7 @@ import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.network.churn.yao.YaoPresets;
 
-public class SyncEstimator {
+public class SyncEstimatorCLI {
 
 	static enum ExperimentType {
 		true_average, regular, all;
@@ -103,7 +105,7 @@ public class SyncEstimator {
 			IDistributionGenerator dgen, double[] li, double[] di, int[] pid,
 			int id) {
 
-		List<Object> stats = mkStats();
+		List<IValueObserver> stats = mkStats();
 
 		// With outer repeats, we start one experiment from scratch each time.
 		BaseChurnSim sim = null;
@@ -124,14 +126,16 @@ public class SyncEstimator {
 			sim.run();
 		}
 
-		sim.print();
+		for (IValueObserver stat : stats) {
+			stat.print(System.out);
+		}
 	}
 
-	private List<Object> mkStats() {
-		List<Object> stats = new ArrayList<Object>();
-		stats.add(new IncrementalStats());
+	private List<IValueObserver> mkStats() {
+		List<IValueObserver> stats = new ArrayList<IValueObserver>();
+		stats.add(new IncrementalStatsAdapter(new IncrementalStats()));
 		if (ExperimentType.valueOf(fType) == ExperimentType.all) {
-			stats.add(new IncrementalStats());
+			stats.add(new IncrementalStatsAdapter(new IncrementalStats()));
 		}
 		return stats;
 	}
@@ -139,22 +143,21 @@ public class SyncEstimator {
 	// ------------------------------------------------------------------------
 
 	private BaseChurnSim experiment(RenewalProcess p1, RenewalProcess p2,
-			double burnin, String string, int repeats, List<Object> stats,
-			boolean verbose) {
+			double burnin, String string, int repeats,
+			List<IValueObserver> stats, boolean verbose) {
 
 		List<IChurnSim> sims = new ArrayList<IChurnSim>();
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new TrueSyncEstimator(repeats));
+			sims.add(new TrueSyncEstimator(repeats, stats.remove(0)));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {
-			sims.add(new SyncExperiment(burnin, repeats));
+			sims.add(new BurninSyncEstimator(burnin, repeats, stats.remove(0)));
 		}
 
-		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, stats,
-				0.0);
+		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, 0.0);
 	}
 
 	// ------------------------------------------------------------------------
@@ -198,7 +201,7 @@ public class SyncEstimator {
 	// ------------------------------------------------------------------------
 
 	public static void main(String[] args) throws Exception {
-		new SyncEstimator()._main(args);
+		new SyncEstimatorCLI()._main(args);
 	}
 
 }

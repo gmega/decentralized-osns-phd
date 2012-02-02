@@ -2,13 +2,12 @@ package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
+import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.StateAccountant;
 import it.unitn.disi.churn.RenewalProcess.State;
 
-import peersim.util.IncrementalStats;
-
-public class SyncExperiment implements IChurnSim {
+public class BurninSyncEstimator implements IChurnSim {
 
 	private StateAccountant fWaitSync;
 
@@ -22,19 +21,14 @@ public class SyncExperiment implements IChurnSim {
 
 	private double fBurnin;
 
-	public SyncExperiment(double burnin, int syncs) {
-		this(burnin, syncs, new IncrementalStats());
-	}
-
-	public SyncExperiment(double burnin, int syncs, IncrementalStats stats) {
+	public BurninSyncEstimator(double burnin, int syncs, IValueObserver stats) {
 		fSyncs = syncs;
 		fBurnin = burnin;
+		fWaitSync = new StateAccountant(stats, IValueObserver.NULL_OBSERVER);
 	}
 
 	@Override
-	public void simulationStarted(BaseChurnSim p, Object cookie) {
-		fWaitSync = new StateAccountant((IncrementalStats) cookie,
-				new IncrementalStats());
+	public void simulationStarted(BaseChurnSim p) {
 	}
 
 	@Override
@@ -72,13 +66,6 @@ public class SyncExperiment implements IChurnSim {
 	@Override
 	public boolean isDone() {
 		return fDone;
-	}
-
-	@Override
-	public void printStats(Object stats) {
-		IncrementalStats iStats = (IncrementalStats) stats;
-		System.out.println("E:" + iStats.getSum() + " " + iStats.getN() + " "
-				+ iStats.getAverage() + " " + (iStats.getAverage() * 3600));
 	}
 
 }
