@@ -1,7 +1,5 @@
 package it.unitn.disi.churn;
 
-import peersim.util.IncrementalStats;
-
 public class StateAccountant {
 
 	private final IValueObserver fPermanence;

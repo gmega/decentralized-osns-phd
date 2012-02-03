@@ -1,6 +1,5 @@
 package it.unitn.disi.churn;
 
-import peersim.util.IncrementalStats;
 import it.unitn.disi.random.IDistribution;
 
 public class RenewalProcess implements Comparable<RenewalProcess> {
@@ -11,10 +10,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 
 	private final int fId;
 
-	private IncrementalStats fSession;
-
-	private IncrementalStats fInterSession;
-
 	private final IDistribution fUp;
 
 	private final IDistribution fDown;
@@ -22,8 +17,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	private State fState;
 
 	private double fNextEvent;
-
-	private int fN;
 
 	public RenewalProcess(int id, IDistribution upDown, State initial) {
 		this(id, upDown, upDown, initial);
@@ -35,8 +28,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		fUp = up;
 		fDown = down;
 		fState = initial;
-		fSession = new IncrementalStats();
-		fInterSession = new IncrementalStats();
 	}
 
 	public void next() {
@@ -46,19 +37,16 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		case down:
 			increment = fUp.sample();
 			fState = State.up;
-			fSession.add(increment);
 			break;
 
 		case up:
 			increment = fDown.sample();
 			fState = State.down;
-			fInterSession.add(increment);
 			break;
 
 		}
 
 		fNextEvent += increment;
-		fN++;
 	}
 
 	public boolean isUp() {
@@ -69,10 +57,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		return fState;
 	}
 
-	public int jumps() {
-		return fN;
-	}
-
 	public double nextSwitch() {
 		return fNextEvent;
 	}
@@ -80,14 +64,6 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	@Override
 	public int compareTo(RenewalProcess o) {
 		return (int) Math.signum(this.nextSwitch() - o.nextSwitch());
-	}
-
-	public IncrementalStats upStats() {
-		return fSession;
-	}
-
-	public IncrementalStats downStats() {
-		return fInterSession;
 	}
 
 	public int id() {

@@ -35,10 +35,10 @@ public class YaoGraphExperiment {
 	private String fGraphType;
 
 	@Attribute(value = "yaomode")
-	private String fMode;
+	protected String fMode;
 
 	@Attribute(value = "assignments", defaultValue = "yao")
-	private String fAssignments;
+	protected String fAssignments;
 
 	protected IGraphProvider graphProvider() throws Exception {
 		if (fGraphType.equals("catalog")) {
