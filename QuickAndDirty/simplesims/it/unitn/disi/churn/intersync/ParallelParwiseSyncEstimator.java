@@ -2,6 +2,7 @@ package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
+import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
@@ -18,6 +19,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import org.lambda.functions.Function0;
 
 import peersim.util.IncrementalStats;
 
@@ -41,7 +44,8 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 
 	// ------------------------------------------------------------------------
 
-	public GraphTask estimate(ExecutorService es, int id, IndexedNeighborGraph g) {
+	public GraphTask estimate(Function0<IValueObserver> oFactory,
+			ExecutorService es, IndexedNeighborGraph g, int id) {
 
 		double[] lIs = new double[g.size()];
 		double[] dIs = new double[g.size()];
@@ -63,7 +67,8 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 				}
 				if (g.isEdge(j, k)) {
 					tasks.add(ttcTask(j, k, lIs, dIs,
-							YaoPresets.mode(fMode, new Random())));
+							YaoPresets.mode(fMode, new Random()),
+							oFactory.call()));
 				}
 			}
 		}
@@ -82,7 +87,7 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 	// ------------------------------------------------------------------------
 
 	private EdgeTask ttcTask(int i, int j, double[] lIs, double[] dIs,
-			IDistributionGenerator distGen) {
+			IDistributionGenerator distGen, IValueObserver observer) {
 
 		RenewalProcess pI = new RenewalProcess(i,
 				distGen.uptimeDistribution(lIs[i]),
@@ -95,14 +100,13 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 		IncrementalStats stats = new IncrementalStats();
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions,
-				new IncrementalStatsAdapter(stats));
+		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions, observer);
 		sims.add(sexp);
 
 		BaseChurnSim churnSim = new BaseChurnSim(
 				new RenewalProcess[] { pI, pJ }, sims, 0.0);
 
-		return new EdgeTask(churnSim, stats, i, j);
+		return new EdgeTask(churnSim, observer, i, j);
 	}
 
 	// ------------------------------------------------------------------------
@@ -151,14 +155,14 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 	public static class EdgeTask {
 
 		protected final BaseChurnSim sim;
-		public volatile IncrementalStats stats;
+		public volatile IValueObserver stats;
 
 		public final int i;
 		public final int j;
 
 		private volatile Future<?> fFuture;
 
-		public EdgeTask(BaseChurnSim sim, IncrementalStats stats, int i, int j) {
+		public EdgeTask(BaseChurnSim sim, IValueObserver stats, int i, int j) {
 			this.sim = sim;
 			this.i = i;
 			this.j = j;

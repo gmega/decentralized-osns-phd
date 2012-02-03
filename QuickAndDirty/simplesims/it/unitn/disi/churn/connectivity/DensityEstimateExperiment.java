@@ -7,6 +7,8 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.unitsim.ListGraphGenerator;
 
 @AutoConfig
 public class DensityEstimateExperiment implements ITransformer {
@@ -19,6 +21,10 @@ public class DensityEstimateExperiment implements ITransformer {
 	
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
+		ListGraphGenerator lgg = new ListGraphGenerator();
+		IndexedNeighborGraph graph = lgg.subgraph(fSize);
+
+		// Estimates the pairwise latencies.
 		
 	}
 	

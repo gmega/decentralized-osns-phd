@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.IValueObserver;
+import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.GraphTask;
@@ -21,8 +23,11 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.lambda.functions.implementations.F0;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.util.IncrementalStats;
 
 @AutoConfig
 public class PrepareSample extends YaoGraphExperiment implements ITransformer {
@@ -59,9 +64,13 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer {
 
 			IndexedNeighborGraph subgraph = loader.subgraph(idx);
 			int[] ids = loader.verticesOf(idx);
-			
-			GraphTask gt = ppse.estimate(es, idx, subgraph);
-			
+
+			GraphTask gt = ppse.estimate(new F0<IValueObserver>() {
+				{
+					ret(new IncrementalStatsAdapter(new IncrementalStats()));
+				};
+			}, es, subgraph, idx);
+
 			for (int j = 0; j < subgraph.size(); j++) {
 				fAssignmentWriter.set("id", idx);
 				fAssignmentWriter.set("node", ids[j]);
@@ -69,22 +78,25 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer {
 				fAssignmentWriter.set("di", gt.dIs[j]);
 				fAssignmentWriter.emmitRow();
 			}
-			
+
 			gt.await();
 
 			for (EdgeTask task : gt.edgeTasks) {
+				
+				IncrementalStats stats = (IncrementalStats) task.stats;
+				
 				fSampleWriter.set("id", idx);
 				fSampleWriter.set("source", ids[task.i]);
 				fSampleWriter.set("target", ids[task.j]);
 				fSampleWriter.set("ttcl",
-						StatUtils.lowerConfidenceLimit(task.stats));
-				fSampleWriter.set("ttc", task.stats.getAverage());
+						StatUtils.lowerConfidenceLimit(stats));
+				fSampleWriter.set("ttc", stats.getAverage());
 				fSampleWriter.set("ttcu",
-						StatUtils.upperConfidenceLimit(task.stats));
+						StatUtils.upperConfidenceLimit(stats));
 				fSampleWriter.emmitRow();
 			}
 		}
-		
+
 		es.shutdown();
 		es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 	}
