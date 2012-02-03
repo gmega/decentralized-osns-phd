@@ -17,8 +17,6 @@ public class TrueSyncEstimator implements IChurnSim {
 
 	private volatile int fSyncs;
 
-	private boolean fDone;
-
 	private IValueObserver fObserver;
 
 	private TDoubleArrayList fPendingUps;
@@ -50,18 +48,14 @@ public class TrueSyncEstimator implements IChurnSim {
 			for (int i = 0; i < fPendingUps.size(); i++) {
 				fObserver.observe(time - fPendingUps.get(i));
 			}
-			fPendingUps.clear();
+			fPendingUps.resetQuick();
 			fSyncs--;
-		}
-
-		if (fSyncs == 0) {
-			fDone = true;
 		}
 	}
 
 	@Override
 	public boolean isDone() {
-		return fDone;
+		return fSyncs <= 0;
 	}
 
 }
