@@ -81,7 +81,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	private void DFSExplore(int source, double time) {
 		DFSEntry current = fStack.push().bind(source);
 
-		while (true) {
+		while (!fStack.isEmpty()) {
 			while (current.hasNext()) {
 				int neighbor = current.next();
 				if (isReached(neighbor)) {
@@ -92,17 +92,15 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 					reached(neighbor, time);
 					current = fStack.push().bind(neighbor);
 				}
-				// If not up, means that we need to start a DFS from this node
-				// in the future.
+				// An unreached neighbor that is down means that we need to
+				// start a DFS from this node in the future.
 				else {
 					current.markIncomplete();
 				}
 			}
 
-			if (fStack.isEmpty()) {
-				break;
-			}
-			
+			// We don't need to look at this node again if all of its
+			// neighbors have already been visited.
 			fDone[current.node()] = current.explorationComplete();
 			current = fStack.pop();
 		}
