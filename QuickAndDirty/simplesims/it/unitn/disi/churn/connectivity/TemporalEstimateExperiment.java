@@ -187,7 +187,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 						distGen.downtimeDistribution(fld[i][DI]), State.down);
 			}
 
-			TemporalConnectivityExperiment tce = new TemporalConnectivityExperiment(
+			TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
 					fGraph, fSource);
 			ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 			sims.add(tce);

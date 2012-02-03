@@ -42,7 +42,7 @@ public class TestTCExperiment {
 			processes[i] = createProcess(i, State.up, intervals);
 		}
 
-		TemporalConnectivityExperiment tce = new TemporalConnectivityExperiment(
+		TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
 				graph, 0);
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();

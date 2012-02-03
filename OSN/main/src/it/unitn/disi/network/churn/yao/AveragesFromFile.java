@@ -3,6 +3,7 @@ package it.unitn.disi.network.churn.yao;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -10,14 +11,21 @@ import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.tabular.TableReader;
 
+/**
+ * Pretty hacky/shaky class to allow churn parameters to be read from a file.
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class AveragesFromFile implements IAverageGenerator {
-	
+
 	private final String fFile;
-	
+
 	private TableReader fReader;
 
 	private final boolean fWrap;
+
+	private boolean fMarkDone;
 
 	public AveragesFromFile(@Attribute("file") String file,
 			@Attribute("wrap") boolean wrap) {
@@ -31,7 +39,7 @@ public class AveragesFromFile implements IAverageGenerator {
 			if (fReader != null) {
 				fReader.close();
 			}
-			
+
 			fReader = new TableReader(new FileInputStream(new File(fFile)));
 			fReader.next();
 		} catch (IOException ex) {
@@ -48,8 +56,15 @@ public class AveragesFromFile implements IAverageGenerator {
 	public double nextDI() {
 		double di = Double.parseDouble(fReader.get("di"));
 		try {
-			if (!fReader.hasNext() && fWrap) {
-				reset();
+			if (!fReader.hasNext()) {
+				if (fWrap) {
+					reset();
+				}
+				if (fMarkDone) {
+					throw new NoSuchElementException();
+				} else {
+					fMarkDone = true;
+				}
 			} else {
 				fReader.next();
 			}

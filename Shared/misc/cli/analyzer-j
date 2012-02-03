@@ -1,5 +1,5 @@
 #!/bin/sh
 
-peersim-m-base it.unitn.disi.cli.GenericDriver 512 "$@"
+peersim-m-base it.unitn.disi.cli.GenericDriver 2512 "$@"
 
-#javax -Xmx512m -cp $WORKSPACE_HOME/OSN/bin:$WORKSPACE_HOME/Utilities/lib/args4j-2.0.9.jar:$WORKSPACE_HOME/Utilities/lib/google-collect-1.0-rc3.jar:$WORKSPACE_HOME/Utilities/lib/jep-2.4.1.jar:$WORKSPACE_HOME/peersim/bin:$WORKSPACE_HOME/Utilities/bin:$WORKSPACE_HOME/Utilities/bin:$WORKSPACE_HOME/Utilities/ext-1.1.1.jar:$WORKSPACE_HOME/Utilities/lib/log4j-1.2.16.jar:$WORKSPACE_HOME/Utilities/lib/jep-2.4.1.jar:$WORKSPACE_HOME/QuickAndDirty/bin it.unitn.disi.cli.GenericDriver "$@"
+

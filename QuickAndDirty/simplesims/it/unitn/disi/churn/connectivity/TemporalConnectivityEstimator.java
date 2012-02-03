@@ -13,7 +13,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
  * 
  * @author giuliano
  */
-public class TemporalConnectivityExperiment implements IChurnSim {
+public class TemporalConnectivityEstimator implements IChurnSim {
 
 	private BaseChurnSim fParent;
 
@@ -29,7 +29,7 @@ public class TemporalConnectivityExperiment implements IChurnSim {
 
 	private DFSStack fStack;
 
-	public TemporalConnectivityExperiment(IndexedNeighborGraph graph, int source) {
+	public TemporalConnectivityEstimator(IndexedNeighborGraph graph, int source) {
 		fGraph = graph;
 		fSource = source;
 		fReached = new double[fGraph.size()];

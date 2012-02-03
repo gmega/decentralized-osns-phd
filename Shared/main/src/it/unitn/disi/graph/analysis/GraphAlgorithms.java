@@ -158,9 +158,11 @@ public class GraphAlgorithms {
 				double weight = weights[u][v];
 				double distanceThroughU = minDists[u] + weight;
 				if (distanceThroughU < minDists[v]) {
-					vertexQueue.remove(v);
 					minDists[v] = distanceThroughU;
 					previous[v] = u;
+					
+					// Increase key.
+					vertexQueue.remove(v);
 					vertexQueue.add(v);
 				}
 			}
