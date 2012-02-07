@@ -8,6 +8,16 @@ import java.util.PriorityQueue;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 
+/**
+ * {@link TopKShortest} computes the <i>k</i> shortest paths between a source
+ * and a destination. The class implements a variant of <a
+ * href="http://www.jstor.org/stable/2629312"> Yen's algorithm</a>, most notably
+ * using Lawler's optimizations as described by <a
+ * href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.54.3286"
+ * >Brander and Sinclair</a>.
+ * 
+ * @author giuliano
+ */
 public class TopKShortest {
 
 	private IndexedNeighborGraph fGraph;
@@ -110,7 +120,7 @@ public class TopKShortest {
 		for (BitSet bset : fBranchedEdges) {
 			bset.clear();
 		}
-		
+
 		// The main difficulty with Yen's and Lawler's algorithm is to
 		// filter out the edges and vertexes which are not allowed in
 		// the next spur. To do that, we must:
