@@ -45,6 +45,43 @@ public class TestTopKShortest {
 	}
 	
 	@Test
+	public void testInstance_6_1() {
+		IndexedNeighborGraph idg = LightweightStaticGraph.fromAdjacency(new int [][] {
+				{1, 5},
+				{2, 3, 5},
+				{5},
+				{5},
+				{0, 1, 2, 3},
+				{},
+		});
+		
+		double [][] weights = new double[][] {
+				{0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 1.0, 1.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+		};
+		
+		int [][] refPaths = new int[][] {
+				{4, 0, 5},
+				{4, 1, 5},
+				{4, 2, 5},
+				{4, 3, 5},
+				{4, 1, 2, 5},
+				{4, 0, 1, 5},
+				{4, 1, 3, 5},
+				{4, 0, 1, 2, 5},
+				{4, 0, 1, 3, 5}
+		};
+		
+		double [] costs = {0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0};
+		
+		runTest(idg, weights, refPaths, costs, 4, 5);
+	}
+	
+	@Test
 	public void testInstance_6_2() {
 		IndexedNeighborGraph idg = LightweightStaticGraph.fromAdjacency(new int [][] {
 				{1},
@@ -84,7 +121,7 @@ public class TestTopKShortest {
 
 		TopKShortest tpk = new TopKShortest(idg, weights);
 		ArrayList<PathEntry> paths = tpk.topKShortest(source, target,
-				refPaths.length);
+				Integer.MAX_VALUE);
 		
 		Assert.assertEquals(refPaths.length, paths.size());
 		

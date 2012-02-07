@@ -11,6 +11,7 @@ import it.unitn.disi.graph.CompleteGraphTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.analysis.TestGraphAlgorithms;
+import it.unitn.disi.graph.analysis.TestTopKShortest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
 import it.unitn.disi.graph.large.catalog.CatalogTest;
 import it.unitn.disi.network.churn.tracebased.AVTEventChurnNetworkTest;
@@ -95,7 +96,8 @@ import peersim.config.PluginContainerTest;
 	ResettableFileInputStreamTest.class,
 	CompleteGraphTest.class,
 	TestTCExperiment.class,
-	TestGraphAlgorithms.class
+	TestGraphAlgorithms.class,
+	TestTopKShortest.class
 })
 
 public class AllTests extends PeerSimTest {
