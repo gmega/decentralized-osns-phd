@@ -48,24 +48,54 @@ public class TopKShortest {
 		// Produces the shortest path.
 		paths.add(initialPath(source, target));
 
-		while (paths.size() < k) {
+		while (true) {
 			// Takes the (paths.size() - 1)st shortest path.
 			PathEntry kMinusOne = paths.get(paths.size() - 1);
 
+			// Keeps track of how many "ties" we have at the top of the
+			// heap. The main problem here is that we cannot efficiently ask
+			// that to the heap later, so we need to compute it as we go.
+			double kthCost = Double.POSITIVE_INFINITY;
+			int kthCostCount = 0;
+			if (!queue.isEmpty()) {
+				kthCost = queue.peek().cost;
+				kthCostCount = 1;
+			}
+
 			// Generates and solves the subproblems.
-			for (int i = (kMinusOne.spurIndex + 1); i < (kMinusOne.path.length - 1); i++) {
+			for (int i = kMinusOne.spurIndex; i < (kMinusOne.path.length - 1); i++) {
 				PathEntry path = branch(paths, i, target, kMinusOne);
 				if (path != null) {
+					if (kthCost == path.cost) {
+						kthCostCount++;
+					} else if (path.cost < kthCost) {
+						kthCost = path.cost;
+						kthCostCount = 1;
+					}
 					queue.add(path);
 				}
 			}
 
+			// Empty queue means we cannot produce anymore paths, so we're done.
 			if (queue.isEmpty()) {
+				System.err.println("EMPTY.");
 				break;
 			}
 
 			// Whatever is at the top of the queue, that's our paths.size()-th
 			// longest path.
+			// If we have enough tying paths to stop the algorithm, then stop
+			// it.
+			if (kthCostCount + paths.size() >= k) {
+				while (paths.size() < k) {
+					paths.add(queue.remove());
+				}
+
+				// done.
+				break;
+			}
+
+			// Otherwise pick an arbitrary path to branch next.
 			paths.add(queue.remove());
 		}
 
@@ -75,12 +105,17 @@ public class TopKShortest {
 	private PathEntry branch(ArrayList<PathEntry> paths, int deviation,
 			int target, PathEntry kMinusOne) {
 
+		// Wipe clean the BitSets.
+		fCurrentRoot.clear();
+		for (BitSet bset : fBranchedEdges) {
+			bset.clear();
+		}
+		
 		// The main difficulty with Yen's and Lawler's algorithm is to
 		// filter out the edges and vertexes which are not allowed in
 		// the next spur. To do that, we must:
 		//
 		// 1. Filter out vertices in the root.
-		fCurrentRoot.clear();
 		for (int j = 0; j <= deviation; j++) {
 			fCurrentRoot.set(kMinusOne.path[j]);
 		}
@@ -141,8 +176,8 @@ public class TopKShortest {
 		int[] path = new int[size];
 		GraphAlgorithms.dijkstraPath(fPrevious, destination, path,
 				path.length - 1);
-		
-		return new PathEntry(path, -1, fMinDists[destination]);
+
+		return new PathEntry(path, 0, fMinDists[destination]);
 	}
 
 	public static class PathEntry implements Comparable<PathEntry> {
@@ -200,7 +235,7 @@ public class TopKShortest {
 		public int hashCode() {
 			return hash;
 		}
-		
+
 		@Override
 		public String toString() {
 			return Arrays.toString(path);

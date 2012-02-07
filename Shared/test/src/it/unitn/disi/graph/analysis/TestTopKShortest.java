@@ -43,6 +43,41 @@ public class TestTopKShortest {
 		
 		runTest(idg, weights, refPaths, costs, 0, 4);
 	}
+	
+	@Test
+	public void testInstance_6_2() {
+		IndexedNeighborGraph idg = LightweightStaticGraph.fromAdjacency(new int [][] {
+				{1},
+				{2, 3, 5},
+				{5},
+				{5},
+				{0, 1, 3},
+				{},
+		});
+		
+		double [][] weights = new double[][] {
+				{0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 1.0, 1.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+		};
+		
+		int [][] refPaths = new int[][] {
+				{4, 3, 5},
+				{4, 1, 5},
+				{4, 0, 1, 5},
+				{4, 1, 2, 5},
+				{4, 1, 3, 5},
+				{4, 0, 1, 2, 5},
+				{4, 0, 1, 3, 5}
+		};
+		
+		double [] costs = {0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0};
+		
+		runTest(idg, weights, refPaths, costs, 4, 5);
+	}
 
 	private void runTest(IndexedNeighborGraph idg, double[][] weights,
 			int[][] refPaths, double[] costs, int source, int target) {
@@ -50,6 +85,8 @@ public class TestTopKShortest {
 		TopKShortest tpk = new TopKShortest(idg, weights);
 		ArrayList<PathEntry> paths = tpk.topKShortest(source, target,
 				refPaths.length);
+		
+		Assert.assertEquals(refPaths.length, paths.size());
 		
 		for (int i = 0; i < paths.size(); i++) {
 			PathEntry actual = paths.get(i);			

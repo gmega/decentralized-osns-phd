@@ -240,8 +240,15 @@ public class GraphAlgorithms {
 			size++;
 			current = previous[current];
 		}
-		return size == 0 ? -1 : size + 1;
-
+		
+		if (size == 0) {
+			return -1;
+		} else {
+			if (storage != null) {
+				storage[offset - size] = current;
+			}
+			return size + 1;
+		}
 	}
 
 	public static interface IEdgeFilter {
