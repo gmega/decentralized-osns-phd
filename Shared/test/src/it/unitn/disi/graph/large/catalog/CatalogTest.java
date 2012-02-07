@@ -25,24 +25,21 @@ public class CatalogTest {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		// fFile = new File(CatalogTest.class.getClassLoader()
-		// .getResource("Large.bin").toURI());
-		fFile = new File("/home/giuliano/Graphs/Facebook.bin");
+		fFile = new File(CatalogTest.class.getClassLoader()
+				.getResource("Large.bin").toURI());
 		fOriginal = LightweightStaticGraph.load(new ByteGraphDecoder(
 				new ResettableFileInputStream(fFile)));
-		// GraphIndexer indexer = new GraphIndexer(
-		// CatalogRecordTypes.PROPERTY_RECORD);
-		// ByteArrayOutputStream index = new ByteArrayOutputStream();
-		// ByteArrayOutputStream indexedGraph = new ByteArrayOutputStream();
-		// indexer.indexGraph(fOriginal, index, indexedGraph);
+		GraphIndexer indexer = new GraphIndexer(
+				CatalogRecordTypes.PROPERTY_RECORD);
+		ByteArrayOutputStream index = new ByteArrayOutputStream();
+		ByteArrayOutputStream indexedGraph = new ByteArrayOutputStream();
+		indexer.indexGraph(fOriginal, index, indexedGraph);
 
-		fIndex = load(new File("/home/giuliano/Graphs/Facebook-catalog.bin"))
-				.toByteArray();
-		fRewritten = load(new File("/home/giuliano/Graphs/Facebook-catalogorder.bin"))
-				.toByteArray();
+		fIndex = index.toByteArray();
+		fRewritten = indexedGraph.toByteArray();
 	}
 
-	private static ByteArrayOutputStream load(File file) throws IOException {
+	protected static ByteArrayOutputStream load(File file) throws IOException {
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
 		BufferedInputStream is = new BufferedInputStream(new FileInputStream(
 				file));
@@ -51,7 +48,7 @@ public class CatalogTest {
 		while ((b = is.read()) != -1) {
 			buf.write(b);
 		}
-		
+
 		return buf;
 	}
 }

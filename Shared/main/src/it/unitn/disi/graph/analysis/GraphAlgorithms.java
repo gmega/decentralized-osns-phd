@@ -4,6 +4,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.streams.DisjointSets;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
@@ -131,12 +132,26 @@ public class GraphAlgorithms {
 
 	// --------------------------------------------------------------------------
 
-	/**
-	 * Implementation of Dijkstra's algorithm using priority queues. 
-	 */
 	public static void dijkstra(IndexedNeighborGraph graph, int source,
 			double[][] weights, final double[] minDists, int[] previous) {
+		dijkstra(graph, NULL_FILTER, source, weights, minDists, previous);
+	}
 
+	/**
+	 * Implementation of Dijkstra's algorithm using priority queues.
+	 * 
+	 * @param graph
+	 * @param filter
+	 * @param source
+	 * @param weights
+	 * @param minDists
+	 * @param previous
+	 */
+	public static void dijkstra(IndexedNeighborGraph graph, IEdgeFilter filter,
+			int source, double[][] weights, final double[] minDists,
+			int[] previous) {
+
+		Arrays.fill(previous, Integer.MAX_VALUE);
 		Arrays.fill(minDists, Double.POSITIVE_INFINITY);
 
 		minDists[source] = 0;
@@ -155,12 +170,15 @@ public class GraphAlgorithms {
 			// Visit each edge exiting u
 			for (int i = 0; i < graph.degree(u); i++) {
 				int v = graph.getNeighbor(u, i);
+				if (filter.isForbidden(u, v)) {
+					continue;
+				}
 				double weight = weights[u][v];
 				double distanceThroughU = minDists[u] + weight;
 				if (distanceThroughU < minDists[v]) {
 					minDists[v] = distanceThroughU;
 					previous[v] = u;
-					
+
 					// Increase key.
 					vertexQueue.remove(v);
 					vertexQueue.add(v);
@@ -168,5 +186,73 @@ public class GraphAlgorithms {
 			}
 		}
 	}
+
+	/**
+	 * Computes the size of a path returned by a call do
+	 * {@link #dijkstra(IndexedNeighborGraph, int, double[][], double[], int[])}
+	 * .
+	 * 
+	 * @param previous
+	 *            the "previous" vector used as output parameter in the call to
+	 *            Dijkstra's algorithm.
+	 * 
+	 * @param target
+	 *            the node for which the shortest path size is to be known.
+	 * 
+	 * @return the size of the path. If no path exists, returns -1.
+	 */
+	public static int dijkstraPathSize(int[] previous, int target) {
+		return traverse(previous, target, null, -1);
+	}
+
+	/**
+	 * Reconstructs the path from a "previous" vector returned by a call to
+	 * {@link #dijkstra(IndexedNeighborGraph, int, double[][], double[], int[])}
+	 * .
+	 * 
+	 * @param previous
+	 *            the "previous" vector used as output parameter in the call to
+	 *            Dijkstra's algorithm.
+	 * 
+	 * @param target
+	 *            the node for which the shortest path size is to be known.
+	 * 
+	 * @param path
+	 *            a vector long enough to accommodate the path.
+	 * 
+	 * @param lastPosition
+	 *            let size(p) be the size of the path. This method will write it
+	 *            in path[lastPosition - size(p) : lastPosition].
+	 */
+	public static void dijkstraPath(int[] previous, int target, int[] path,
+			int lastPosition) {
+		traverse(previous, target, path, lastPosition);
+	}
+
+	private static int traverse(int[] previous, int target, int[] storage,
+			int offset) {
+		int size = 0;
+		int current = target;
+		while (previous[current] != Integer.MAX_VALUE) {
+			if (storage != null) {
+				storage[offset - size] = current;
+			}
+			size++;
+			current = previous[current];
+		}
+		return size == 0 ? -1 : size + 1;
+
+	}
+
+	public static interface IEdgeFilter {
+		public boolean isForbidden(int i, int j);
+	}
+
+	public static final IEdgeFilter NULL_FILTER = new IEdgeFilter() {
+		@Override
+		public boolean isForbidden(int i, int j) {
+			return false;
+		}
+	};
 
 }

@@ -3,7 +3,6 @@ package it.unitn.disi.churn.intersync;
 import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -96,8 +95,6 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 		RenewalProcess pJ = new RenewalProcess(j,
 				distGen.uptimeDistribution(lIs[j]),
 				distGen.downtimeDistribution(dIs[j]), State.down);
-
-		IncrementalStats stats = new IncrementalStats();
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions, observer);
