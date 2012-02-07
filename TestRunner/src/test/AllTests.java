@@ -13,7 +13,8 @@ import it.unitn.disi.graph.LSGTransformsTest;
 import it.unitn.disi.graph.analysis.TestGraphAlgorithms;
 import it.unitn.disi.graph.analysis.TestTopKShortest;
 import it.unitn.disi.graph.cli.TestConnectivityComputer;
-import it.unitn.disi.graph.large.catalog.CatalogTest;
+import it.unitn.disi.graph.large.catalog.CatalogReadsTest;
+import it.unitn.disi.graph.large.catalog.PartialLoaderTest;
 import it.unitn.disi.network.churn.tracebased.AVTEventChurnNetworkTest;
 import it.unitn.disi.newscasting.ComponentComputationServiceTest;
 import it.unitn.disi.newscasting.EventStorageTest;
@@ -79,7 +80,8 @@ import peersim.config.PluginContainerTest;
 	BFSIterableTest.class,
 	LSGTransformsTest.class,
 	ComponentComputationServiceTest.class,
-	CatalogTest.class,
+	CatalogReadsTest.class,
+	PartialLoaderTest.class,
 	PluginContainerTest.class,
 	PrefixedOutputStreamTest.class,
 	ComponentSelectorTest.class,
