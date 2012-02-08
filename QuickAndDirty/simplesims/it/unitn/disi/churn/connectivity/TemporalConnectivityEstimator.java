@@ -141,7 +141,7 @@ class DFSStack {
 
 	private DFSEntry[] fEntries;
 
-	private int fPointer = -1;
+	private int fPointer = 0;
 
 	public DFSStack(IndexedNeighborGraph graph) {
 		fGraph = graph;
@@ -164,7 +164,7 @@ class DFSStack {
 	}
 
 	public DFSEntry push() {
-		return fEntries[++fPointer];
+		return fEntries[fPointer++];
 	}
 
 	public DFSEntry pop() {
@@ -172,7 +172,15 @@ class DFSStack {
 	}
 
 	public boolean isEmpty() {
-		return fPointer == -1;
+		return fPointer == 0;
+	}
+
+	@Override
+	public String toString() {
+		if (isEmpty()) {
+			return "[empty]";
+		}
+		return Arrays.toString(Arrays.copyOf(fEntries, fPointer));
 	}
 
 }
@@ -219,5 +227,10 @@ class DFSEntry {
 
 	public int next() {
 		return fGraph.getNeighbor(fNode, fIndex++);
+	}
+	
+	@Override
+	public String toString() {
+		return Integer.toString(fNode);
 	}
 }

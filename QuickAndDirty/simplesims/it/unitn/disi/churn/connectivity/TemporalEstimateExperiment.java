@@ -52,6 +52,9 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	
 	@Attribute("burnin")
 	private double fBurnin;
+	
+	@Attribute("printpaths")
+	private boolean fPrintPaths;
 
 	private final CallbackThreadPoolExecutor<double[]> fExecutor;
 
@@ -91,7 +94,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 		TableWriter result = new TableWriter(new PrefixedWriter("ES:",
 				new OutputStreamWriter(provider.output(Outputs.estimates))),
-				"id", "source", "target", "simulation", "estimate");
+				"id", "source", "target", "simulation", "kestimate", "estimate");
 
 		IndexedNeighborGraph graph = null;
 		int[] ids = null;
@@ -204,10 +207,13 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 		for (int i = 1; i < graph.size(); i++) {
 			int vertex = i;
-			while (previous[vertex] != Integer.MAX_VALUE) {
-				System.err.println(ids[vertex] + " <- " + ids[previous[vertex]]
-						+ " (" + w[previous[vertex]][vertex] + ")");
-				vertex = previous[vertex];
+			if (fPrintPaths) {
+				while (previous[vertex] != Integer.MAX_VALUE) {
+					System.err.println(ids[vertex] + " <- "
+							+ ids[previous[vertex]] + " ("
+							+ w[previous[vertex]][vertex] + ")");
+					vertex = previous[vertex];
+				}
 			}
 		}
 
