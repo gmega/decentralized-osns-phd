@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -19,7 +21,10 @@ import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.TopKShortest;
+import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
@@ -39,11 +44,14 @@ import it.unitn.disi.utils.tabular.TableWriter;
 public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		IMultiTransformer {
 
-	@Attribute("burnin")
-	private double fBurnin;
-
 	@Attribute("repetitions")
 	private int fRepetitions;
+
+	@Attribute("k")
+	private int fK;
+	
+	@Attribute("burnin")
+	private double fBurnin;
 
 	private final CallbackThreadPoolExecutor<double[]> fExecutor;
 
@@ -65,6 +73,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 					@Override
 					public void taskFailed(Future<double[]> task, Exception ex) {
 					}
+
 					@Override
 					public void taskDone(double[] result) {
 					}
@@ -102,7 +111,8 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 			for (int i = 0; i < graph.size(); i++) {
 				double[] estimates = estimate(graph, i, w, ids);
-				double[] simulation = simulate(graph, i, ld, ids);
+				double[] kEstimates = kEstimate(graph, i, w, ld, fK);
+				double[] simulation = simulate(graph, i, ld);
 
 				for (int j = 0; j < graph.size(); j++) {
 					if (i == j) {
@@ -113,10 +123,74 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 					result.set("target", ids[j]);
 					result.set("simulation", simulation[j] / fRepetitions);
 					result.set("estimate", estimates[j]);
+					result.set("kestimate", kEstimates[j] / fRepetitions);
 					result.emmitRow();
 				}
 			}
 		}
+	}
+
+	private double[] kEstimate(IndexedNeighborGraph graph, int source,
+			double[][] w, double[][] lds, int k) throws Exception {
+		TopKShortest tpk = new TopKShortest(graph, w);
+
+		double[] results = new double[graph.size()];
+
+		// For each vertex pair:
+		for (int i = 0; i < graph.size(); i++) {
+			if (i == source) {
+				continue;
+			}
+
+			// 1. computes the top-k shortest paths.
+			int[] vertexes = vertexesOf(tpk.topKShortest(source, i, k));
+			LightweightStaticGraph kPathGraph = LightweightStaticGraph
+					.subgraph((LightweightStaticGraph) graph, vertexes);
+
+			// 2. runs a connectivity simulation on the subgraph
+			// composed by the top-k shortest paths.
+			double ldSub[][] = new double[vertexes.length][2];
+			for (int j = 0; j < ldSub.length; j++) {
+				ldSub[j][0] = lds[vertexes[j]][0];
+				ldSub[j][1] = lds[vertexes[j]][1];
+			}
+
+			int remappedSource = indexOf(source, vertexes);
+			int remappedTarget = indexOf(i, vertexes);
+
+			double[] estimate = simulate(kPathGraph, remappedSource, ldSub);
+			results[i] = estimate[remappedTarget];
+		}
+
+		return results;
+	}
+
+	private int indexOf(int element, int[] vertexes) {
+		for (int i = 0; i < vertexes.length; i++) {
+			if (element == vertexes[i]) {
+				return i;
+			}
+		}
+
+		throw new NoSuchElementException();
+	}
+
+	private int[] vertexesOf(ArrayList<PathEntry> topKShortest) {
+		Set<Integer> vertexSet = new HashSet<Integer>();
+		for (PathEntry entry : topKShortest) {
+			for (int i = 0; i < entry.path.length; i++) {
+				vertexSet.add(entry.path[i]);
+			}
+		}
+
+		int[] vertexes = new int[vertexSet.size()];
+		int i = 0;
+		for (Integer element : vertexSet) {
+			vertexes[i++] = element;
+		}
+		
+		Arrays.sort(vertexes);
+		return vertexes;
 	}
 
 	private double[] estimate(IndexedNeighborGraph graph, int source,
@@ -141,19 +215,19 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	}
 
 	private double[] simulate(IndexedNeighborGraph graph, int source,
-			double[][] ld, int[] ids) throws Exception {
+			double[][] ld) throws Exception {
 
-		ArrayList<Future<double []>> tasks = new ArrayList<Future<double []>>(); 
+		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
 		double[] ttc = new double[graph.size()];
 		for (int j = 0; j < fRepetitions; j++) {
 			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph)));
 		}
 
-		for (Future<double []> task : tasks) {
-			double [] tce = task.get();
+		for (Future<double[]> task : tasks) {
+			double[] tce = task.get();
 			for (int i = 0; i < ttc.length; i++) {
 				ttc[i] += tce[i];
-			} 
+			}
 		}
 
 		return ttc;

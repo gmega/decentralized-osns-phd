@@ -82,17 +82,18 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer {
 			gt.await();
 
 			for (EdgeTask task : gt.edgeTasks) {
-				
-				IncrementalStats stats = (IncrementalStats) task.stats;
-				
+
+				IncrementalStats stats = ((IncrementalStatsAdapter) task.stats)
+						.getStats();
+
 				fSampleWriter.set("id", idx);
 				fSampleWriter.set("source", ids[task.i]);
 				fSampleWriter.set("target", ids[task.j]);
-				fSampleWriter.set("ttcl",
-						StatUtils.lowerConfidenceLimit(stats));
+				fSampleWriter
+						.set("ttcl", StatUtils.lowerConfidenceLimit(stats));
 				fSampleWriter.set("ttc", stats.getAverage());
-				fSampleWriter.set("ttcu",
-						StatUtils.upperConfidenceLimit(stats));
+				fSampleWriter
+						.set("ttcu", StatUtils.upperConfidenceLimit(stats));
 				fSampleWriter.emmitRow();
 			}
 		}
