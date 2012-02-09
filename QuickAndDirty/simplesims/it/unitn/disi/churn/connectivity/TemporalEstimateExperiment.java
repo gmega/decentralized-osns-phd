@@ -55,8 +55,14 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	@Attribute("burnin")
 	private double fBurnin;
 
-	@Attribute("printpaths")
+	@Attribute(value = "printpaths", defaultValue = "false")
 	private boolean fPrintPaths;
+
+	@Attribute(value = "start", defaultValue = "0")
+	private int fStart;
+
+	@Attribute(value = "end", defaultValue = "-1")
+	private int fEnd;
 
 	private int fSampleId;
 
@@ -117,14 +123,34 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		assignments.next();
 		weights.next();
 
+		int count = 0;
+
 		while (assignments.hasNext()) {
 			int root = Integer.parseInt(assignments.get("id"));
+			boolean skip = false;
+			
+			count++;
+			if (count < fStart) {
+				System.err.println("-- Skipping sample " + root + ".");
+				skip = true;
+			}
 
-			graph = loader.subgraph(root);
-			ids = loader.verticesOf(root);
+			if (fEnd > 0 && count >= fEnd) {
+				System.err.println("-- Stopping at sample " + root + ".");
+				break;
+			}
+			
+			if(!skip) {
+				graph = loader.subgraph(root);
+				ids = loader.verticesOf(root);
+			}
 
-			w = readWeights(root, weights, graph, ids);
-			ld = readLiDi(root, assignments, graph, ids);
+			w = readWeights(root, weights, graph, ids, skip);
+			ld = readLiDi(root, assignments, graph, ids, skip);
+			
+			if (skip) {
+				continue;
+			}
 
 			for (int i = 0; i < graph.size(); i++) {
 				setSample(root, i, graph.size());
@@ -178,8 +204,8 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 			int remappedTarget = indexOf(i, vertexes);
 
 			double[] estimate = simulate(sampleString() + ", k-paths (" + i
-					+ "/" + graph.size() + ")", kPathGraph,
-					remappedSource, ldSub);
+					+ "/" + graph.size() + ")", kPathGraph, remappedSource,
+					ldSub);
 			results[i] = estimate[remappedTarget];
 		}
 
@@ -315,19 +341,31 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	}
 
 	private double[][] readLiDi(int root, TableReader assignments,
-			IndexedNeighborGraph graph, int[] ids) throws IOException {
-		double[][] lidi = new double[graph.size()][2];
+			IndexedNeighborGraph graph, int[] ids, boolean skip)
+			throws IOException {
+		double[][] lidi = null;
+		int size = skip ? Integer.MAX_VALUE : graph.size();
+		
+		if (!skip) {
+			lidi = new double[graph.size()][2];
+		}
 
-		for (int i = 0; i < graph.size(); i++) {
+		for (int i = 0; i < size; i++) {
 			int id = Integer.parseInt(assignments.get("id"));
-			int node = idOf(Integer.parseInt(assignments.get("node")), ids);
 
 			if (root != id) {
-				throw new ParseException("ID doesn't match current root.");
+				if (!skip) {
+					throw new ParseException("ID doesn't match current root.");
+				} else {
+					break;
+				}
 			}
 
-			lidi[node][LI] = Double.parseDouble(assignments.get("li"));
-			lidi[node][DI] = Double.parseDouble(assignments.get("di"));
+			if (!skip) {
+				int node = idOf(Integer.parseInt(assignments.get("node")), ids);
+				lidi[node][LI] = Double.parseDouble(assignments.get("li"));
+				lidi[node][DI] = Double.parseDouble(assignments.get("di"));
+			}
 			assignments.next();
 		}
 
@@ -345,10 +383,16 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	}
 
 	private double[][] readWeights(int root, TableReader weights,
-			IndexedNeighborGraph graph, int[] ids) throws IOException {
-		double[][] w = new double[graph.size()][graph.size()];
-		for (int i = 0; i < w.length; i++) {
-			Arrays.fill(w[i], Double.MAX_VALUE);
+			IndexedNeighborGraph graph, int[] ids, boolean skip)
+			throws IOException {
+
+		double[][] w = null;
+
+		if (!skip) {
+			w = new double[graph.size()][graph.size()];
+			for (int i = 0; i < w.length; i++) {
+				Arrays.fill(w[i], Double.MAX_VALUE);
+			}
 		}
 
 		for (int i = 0; weights.hasNext(); i++) {
@@ -357,11 +401,13 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 				break;
 			}
 
-			int source = idOf(Integer.parseInt(weights.get("source")), ids);
-			int target = idOf(Integer.parseInt(weights.get("target")), ids);
-			double weight = Double.parseDouble(weights.get("ttc"));
+			if (!skip) {
+				int source = idOf(Integer.parseInt(weights.get("source")), ids);
+				int target = idOf(Integer.parseInt(weights.get("target")), ids);
+				double weight = Double.parseDouble(weights.get("ttc"));
+				w[source][target] = weight;
+			}
 
-			w[source][target] = weight;
 			weights.next();
 		}
 
