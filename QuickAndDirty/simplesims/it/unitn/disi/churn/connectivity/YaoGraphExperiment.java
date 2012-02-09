@@ -44,9 +44,11 @@ public class YaoGraphExperiment {
 		if (fGraphType.equals("catalog")) {
 			CatalogReader reader = new CatalogReader(new FileInputStream(
 					new File(fCatalog)), CatalogRecordTypes.PROPERTY_RECORD);
+			System.err.print("-- Loading catalog...");
 			PartialLoader loader = new PartialLoader(reader,
 					ByteGraphDecoder.class, new File(fGraph));
 			loader.start(null);
+			System.err.println("done.");
 			return loader;
 		} else if (fGraphType.equals("linegraph")) {
 			return new ListGraphGenerator();

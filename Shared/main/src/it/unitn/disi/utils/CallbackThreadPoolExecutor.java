@@ -1,5 +1,6 @@
 package it.unitn.disi.utils;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,6 +27,9 @@ public class CallbackThreadPoolExecutor<T> extends ThreadPoolExecutor {
 			results = future.get();
 		} catch (Exception ex) {
 			System.err.println("Error while retrieving task results.");
+			if (ex instanceof ExecutionException) {
+				ex = (Exception) ex.getCause();
+			}
 			fCallback.taskFailed(future, ex);
 			if (ex instanceof InterruptedException) {
 				Thread.currentThread().interrupt();

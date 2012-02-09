@@ -52,6 +52,7 @@ public class TopKShortest {
 	}
 
 	public ArrayList<PathEntry> topKShortest(int source, int target, int k) {
+		
 		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();
 		PriorityQueue<PathEntry> queue = new PriorityQueue<PathEntry>();
 
@@ -88,7 +89,6 @@ public class TopKShortest {
 
 			// Empty queue means we cannot produce anymore paths, so we're done.
 			if (queue.isEmpty()) {
-				System.err.println("EMPTY.");
 				break;
 			}
 
@@ -100,7 +100,6 @@ public class TopKShortest {
 				while (paths.size() < k) {
 					paths.add(queue.remove());
 				}
-
 				// done.
 				break;
 			}
@@ -110,6 +109,7 @@ public class TopKShortest {
 		}
 
 		return paths;
+		
 	}
 
 	private PathEntry branch(ArrayList<PathEntry> paths, int deviation,

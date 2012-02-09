@@ -29,6 +29,8 @@ import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.exception.ParseException;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -49,12 +51,20 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 	@Attribute("k")
 	private int fK;
-	
+
 	@Attribute("burnin")
 	private double fBurnin;
-	
+
 	@Attribute("printpaths")
 	private boolean fPrintPaths;
+
+	private int fSampleId;
+
+	private int fSource;
+
+	private int fSize;
+
+	private ProgressTracker fTracker;
 
 	private final CallbackThreadPoolExecutor<double[]> fExecutor;
 
@@ -75,10 +85,13 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 				new IExecutorCallback<double[]>() {
 					@Override
 					public void taskFailed(Future<double[]> task, Exception ex) {
+						ex.printStackTrace();
+						fTracker.tick();
 					}
 
 					@Override
-					public void taskDone(double[] result) {
+					public synchronized void taskDone(double[] result) {
+						fTracker.tick();
 					}
 				});
 	}
@@ -109,13 +122,16 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 			graph = loader.subgraph(root);
 			ids = loader.verticesOf(root);
+
 			w = readWeights(root, weights, graph, ids);
 			ld = readLiDi(root, assignments, graph, ids);
 
 			for (int i = 0; i < graph.size(); i++) {
+				setSample(root, i, graph.size());
 				double[] estimates = estimate(graph, i, w, ids);
 				double[] kEstimates = kEstimate(graph, i, w, ld, fK);
-				double[] simulation = simulate(graph, i, ld);
+				double[] simulation = simulate(sampleString() + ", full",
+						graph, i, ld);
 
 				for (int j = 0; j < graph.size(); j++) {
 					if (i == j) {
@@ -161,7 +177,9 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 			int remappedSource = indexOf(source, vertexes);
 			int remappedTarget = indexOf(i, vertexes);
 
-			double[] estimate = simulate(kPathGraph, remappedSource, ldSub);
+			double[] estimate = simulate(sampleString() + ", k-paths (" + i
+					+ "/" + graph.size() + ")", kPathGraph,
+					remappedSource, ldSub);
 			results[i] = estimate[remappedTarget];
 		}
 
@@ -191,7 +209,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		for (Integer element : vertexSet) {
 			vertexes[i++] = element;
 		}
-		
+
 		Arrays.sort(vertexes);
 		return vertexes;
 	}
@@ -220,11 +238,14 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		return minDists;
 	}
 
-	private double[] simulate(IndexedNeighborGraph graph, int source,
-			double[][] ld) throws Exception {
+	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
+			int source, double[][] ld) throws Exception {
 
 		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
 		double[] ttc = new double[graph.size()];
+
+		fTracker = Progress.newTracker(taskStr, fRepetitions);
+		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
 			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph)));
 		}
@@ -239,6 +260,16 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		return ttc;
 	}
 
+	private void setSample(int sampleId, int sourceId, int totalSources) {
+		fSampleId = sampleId;
+		fSource = sourceId;
+		fSize = totalSources;
+	}
+
+	private String sampleString() {
+		return fSampleId + " (" + fSource + "/" + fSize + ")";
+	}
+
 	class SimulationTask implements Callable<double[]> {
 
 		private final double[][] fld;
@@ -249,7 +280,6 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 		public SimulationTask(double[][] ld, int source,
 				IndexedNeighborGraph graph) {
-			super();
 			this.fld = ld;
 			this.fSource = source;
 			this.fGraph = graph;

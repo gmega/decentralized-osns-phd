@@ -79,6 +79,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	}
 
 	private void DFSExplore(int source, double time) {
+		fStack.push().bind(source);
 		while (!fStack.isEmpty()) {
 			DFSEntry current = fStack.peek();
 			while (current.hasNext()) {
@@ -132,14 +133,13 @@ public class TemporalConnectivityEstimator implements IChurnSim {
  * 
  * @author giuliano
  */
-
 class DFSStack {
 
 	private final IndexedNeighborGraph fGraph;
 
 	private DFSEntry[] fEntries;
 
-	private int fPointer = 0;
+	private int fPointer = -1;
 
 	public DFSStack(IndexedNeighborGraph graph) {
 		fGraph = graph;
@@ -178,7 +178,7 @@ class DFSStack {
 		if (isEmpty()) {
 			return "[empty]";
 		}
-		return Arrays.toString(Arrays.copyOf(fEntries, fPointer));
+		return Arrays.toString(Arrays.copyOf(fEntries, fPointer + 1));
 	}
 
 }
