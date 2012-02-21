@@ -6,12 +6,14 @@ import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.DenseIDMapper;
+import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 
 import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
@@ -76,7 +78,25 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 		DenseIDMapper mapper = init(catalogEntry(subgraph), new NullGraph());
 		return mapper.reverseMappings();
 	}
-	
+
+	public IDMapper mapper(Integer subgraph) {
+		final int[] vertices = verticesOf(subgraph);
+		return new IDMapper() {
+			@Override
+			public int map(int i) {
+				if (!isMapped(i)) {
+					throw new NoSuchElementException();
+				}
+				return vertices[i];
+			}
+
+			@Override
+			public boolean isMapped(int i) {
+				return i < vertices.length && i >= 0;
+			}
+		};
+	}
+
 	public int size(Integer subgraph) {
 		return catalogEntry(subgraph).size + 1;
 	}

@@ -19,7 +19,7 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
  * @author giuliano
  */
 public class TopKShortest {
-
+	
 	private IndexedNeighborGraph fGraph;
 
 	private double[] fMinDists;
@@ -98,18 +98,29 @@ public class TopKShortest {
 			// it.
 			if (kthCostCount + paths.size() >= k) {
 				while (paths.size() < k) {
-					paths.add(queue.remove());
+					transfer(paths, queue);
 				}
 				// done.
 				break;
 			}
 
 			// Otherwise pick an arbitrary path to branch next.
-			paths.add(queue.remove());
+			transfer(paths, queue);
 		}
 
 		return paths;
 		
+	}
+
+	private void transfer(ArrayList<PathEntry> paths,
+			PriorityQueue<PathEntry> queue) {
+		PathEntry next = queue.remove();
+		// Little sanity check...
+		if (next.cost < paths.get(paths.size() - 1).cost) {
+			throw new IllegalStateException("Internal error - algorithm "
+					+ "generated a path with lower cost than previous ones.");
+		}
+		paths.add(next);
 	}
 
 	private PathEntry branch(ArrayList<PathEntry> paths, int deviation,
@@ -203,11 +214,7 @@ public class TopKShortest {
 			this.spurIndex = spurIndex;
 			this.cost = cost;
 
-			int hash = 0;
-			for (int pathElement : path) {
-				hash = hash + 17 * pathElement;
-			}
-			this.hash = hash;
+			this.hash = Arrays.hashCode(path);
 		}
 
 		/**
@@ -244,6 +251,20 @@ public class TopKShortest {
 		@Override
 		public int hashCode() {
 			return hash;
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			if (!(other instanceof PathEntry)) {
+				return false;
+			}
+
+			PathEntry oPath = (PathEntry) other;
+			if (this.hash != oPath.hash) {
+				return false;
+			}
+
+			return Arrays.equals(this.path, oPath.path);
 		}
 
 		@Override

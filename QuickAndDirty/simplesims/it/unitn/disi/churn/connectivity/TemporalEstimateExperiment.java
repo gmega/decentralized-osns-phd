@@ -36,15 +36,16 @@ import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
- * Reads a graph with churn assignments plus pairwise latency estimates, and
- * computes the shortest path.
- * 
+ * "Script" putting together all temporal estimate experiments.
  * 
  * @author giuliano
  */
 @AutoConfig
 public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		IMultiTransformer {
+
+	@Attribute("etype")
+	private String fModeStr;
 
 	@Attribute("repetitions")
 	private int fRepetitions;
@@ -70,9 +71,25 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 	private int fSize;
 
+	private Experiment fMode;
+
 	private ProgressTracker fTracker;
 
 	private final CallbackThreadPoolExecutor<double[]> fExecutor;
+
+	static enum Experiment {
+		all(1 | 2 | 4), simulate(1), estimate(2), kestimate(4);
+
+		private int fMode;
+
+		private Experiment(int mode) {
+			fMode = mode;
+		}
+
+		public boolean should(Experiment exp) {
+			return (fMode & exp.fMode) != 0;
+		}
+	};
 
 	public static enum Inputs {
 		assignments, weights
@@ -104,6 +121,8 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 	@Override
 	public void execute(StreamProvider provider) throws Exception {
+		fMode = Experiment.valueOf(fModeStr.toLowerCase());
+
 		IGraphProvider loader = graphProvider();
 
 		TableReader assignments = new TableReader(
@@ -111,9 +130,32 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 		TableReader weights = new TableReader(provider.input(Inputs.weights));
 
+		ArrayList<String> fields = new ArrayList<String>();
+		fields.add("id");
+		fields.add("source");
+		fields.add("target");
+
+		System.err.print(" -- Will:  ");
+		if (fMode.should(Experiment.estimate)) {
+			System.err.print(" estimate ");
+			fields.add("estimate");
+		}
+
+		if (fMode.should(Experiment.kestimate)) {
+			System.err.print(" k-estimate ");
+			fields.add("kestimate");
+		}
+
+		if (fMode.should(Experiment.simulate)) {
+			System.err.print(" simulate ");
+			fields.add("simulation");
+		}
+
+		System.err.println(".");
+
 		TableWriter result = new TableWriter(new PrefixedWriter("ES:",
 				new OutputStreamWriter(provider.output(Outputs.estimates))),
-				"id", "source", "target", "simulation", "kestimate", "estimate");
+				(String[]) fields.toArray(new String[fields.size()]));
 
 		IndexedNeighborGraph graph = null;
 		int[] ids = null;
@@ -128,7 +170,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		while (assignments.hasNext()) {
 			int root = Integer.parseInt(assignments.get("id"));
 			boolean skip = false;
-			
+
 			count++;
 			if (count < fStart) {
 				System.err.println("-- Skipping sample " + root + ".");
@@ -139,25 +181,37 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 				System.err.println("-- Stopping at sample " + root + ".");
 				break;
 			}
-			
-			if(!skip) {
+
+			if (!skip) {
 				graph = loader.subgraph(root);
 				ids = loader.verticesOf(root);
 			}
 
 			w = readWeights(root, weights, graph, ids, skip);
 			ld = readLiDi(root, assignments, graph, ids, skip);
-			
+
 			if (skip) {
 				continue;
 			}
 
 			for (int i = 0; i < graph.size(); i++) {
 				setSample(root, i, graph.size());
-				double[] estimates = estimate(graph, i, w, ids);
-				double[] kEstimates = kEstimate(graph, i, w, ld, fK);
-				double[] simulation = simulate(sampleString() + ", full",
-						graph, i, ld);
+
+				double[] estimates = null;
+				if (fMode.should(Experiment.estimate)) {
+					estimates = estimate(graph, i, w, ids);
+				}
+
+				double[] kEstimates = null;
+				if (fMode.should(Experiment.kestimate)) {
+					kEstimates = kEstimate(graph, i, w, ld, fK);
+				}
+
+				double[] simulation = null;
+				if (fMode.should(Experiment.simulate)) {
+					simulation = simulate(sampleString() + ", full", graph, i,
+							ld);
+				}
 
 				for (int j = 0; j < graph.size(); j++) {
 					if (i == j) {
@@ -166,13 +220,25 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 					result.set("id", root);
 					result.set("source", ids[i]);
 					result.set("target", ids[j]);
-					result.set("simulation", simulation[j] / fRepetitions);
-					result.set("estimate", estimates[j]);
-					result.set("kestimate", kEstimates[j] / fRepetitions);
+
+					if (simulation != null) {
+						result.set("simulation", simulation[j] / fRepetitions);
+					}
+
+					if (estimates != null) {
+						result.set("estimate", estimates[j]);
+					}
+
+					if (kEstimates != null) {
+						result.set("kestimate", kEstimates[j] / fRepetitions);
+					}
+
 					result.emmitRow();
 				}
 			}
 		}
+
+		fExecutor.shutdown();
 	}
 
 	private double[] kEstimate(IndexedNeighborGraph graph, int source,
@@ -181,13 +247,13 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 		double[] results = new double[graph.size()];
 
-		// For each vertex pair:
+		// For each vertex pair (u, w)
 		for (int i = 0; i < graph.size(); i++) {
 			if (i == source) {
 				continue;
 			}
 
-			// 1. computes the top-k shortest paths.
+			// 1. computes the top-k shortest paths between u and w.
 			int[] vertexes = vertexesOf(tpk.topKShortest(source, i, k));
 			LightweightStaticGraph kPathGraph = LightweightStaticGraph
 					.subgraph((LightweightStaticGraph) graph, vertexes);
@@ -225,6 +291,9 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	private int[] vertexesOf(ArrayList<PathEntry> topKShortest) {
 		Set<Integer> vertexSet = new HashSet<Integer>();
 		for (PathEntry entry : topKShortest) {
+			if (fPrintPaths) {
+				System.out.println(Arrays.toString(entry.path));
+			}
 			for (int i = 0; i < entry.path.length; i++) {
 				vertexSet.add(entry.path[i]);
 			}
@@ -242,6 +311,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 	private double[] estimate(IndexedNeighborGraph graph, int source,
 			double[][] w, int[] ids) {
+
 		System.err.println("Estimating for source " + source + ".");
 		double[] minDists = new double[graph.size()];
 		int[] previous = new int[graph.size()];
@@ -345,7 +415,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 			throws IOException {
 		double[][] lidi = null;
 		int size = skip ? Integer.MAX_VALUE : graph.size();
-		
+
 		if (!skip) {
 			lidi = new double[graph.size()][2];
 		}

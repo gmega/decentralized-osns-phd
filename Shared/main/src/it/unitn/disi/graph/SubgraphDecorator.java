@@ -26,7 +26,7 @@ public class SubgraphDecorator implements Graph, IDMapper {
 
 	private AbstractIDMapper fIDMap;
 
-	private boolean fChecked = false;
+	private final boolean fChecked;
 
 	private final Predicate<Integer> fPredicate = new Predicate<Integer>() {
 		public boolean apply(Integer input) {

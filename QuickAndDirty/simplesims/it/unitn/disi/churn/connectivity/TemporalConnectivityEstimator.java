@@ -21,21 +21,25 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 
 	private int fReachedCount;
 
+	private int[] fReachedFrom;
+
 	private double[] fReached;
 
 	private boolean[] fDone;
 
 	private IndexedNeighborGraph fGraph;
 
-	private DFSStack fStack;
+	private BFSQueue fQueue;
 
 	public TemporalConnectivityEstimator(IndexedNeighborGraph graph, int source) {
 		fGraph = graph;
 		fSource = source;
+		fReachedFrom = new int[fGraph.size()];
 		fReached = new double[fGraph.size()];
 		fDone = new boolean[fGraph.size()];
-		fStack = new DFSStack(fGraph);
+		fQueue = new BFSQueue(fGraph.size());
 		Arrays.fill(fReached, Double.NaN);
+		Arrays.fill(fReachedFrom, Integer.MAX_VALUE);
 		Arrays.fill(fDone, false);
 	}
 
@@ -61,7 +65,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 		// Source being reached for the first time?
 		if (!isReached(fSource)) {
 			if (process.id() == fSource && nw == State.up) {
-				reached(fSource, time);
+				reached(fSource, fSource, time);
 			}
 			// Source not reached yet, just return.
 			else {
@@ -73,39 +77,35 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 			// We start DFSs from all nodes that have
 			// unvisited neighbors.
 			if (!fDone[i] && isReached(i) && isUp(i)) {
-				DFSExplore(i, time);
+				fQueue.addLast(i);
+				BFSExplore(time);
 			}
 		}
 	}
 
-	private void DFSExplore(int source, double time) {
-		fStack.push().bind(source);
-		while (!fStack.isEmpty()) {
-			DFSEntry current = fStack.peek();
-			while (current.hasNext()) {
-				int neighbor = current.next();
-				if (isReached(neighbor)) {
-					continue;
-				}
+	private void BFSExplore(double time) {
+		while (!fQueue.isEmpty()) {
+			int current = fQueue.peekFirst();
+			int degree = fGraph.degree(current);
+			boolean done = true;
+
+			for (int i = 0; i < degree; i++) {
+				int neighbor = fGraph.getNeighbor(current, i);
 				// Found unreached neighbor. If up, visits.
-				if (isUp(neighbor)) {
-					reached(neighbor, time);
-					current = fStack.push().bind(neighbor);
+				if (!isReached(neighbor) && isUp(neighbor)) {
+					reached(current, neighbor, time);
+					fQueue.addLast(neighbor);
 				}
-				// An unreached neighbor that is down means that we need to
-				// start a DFS from this node in the future.
-				else {
-					current.markIncomplete();
-				}
+				done &= isReached(neighbor);
 			}
-			// We don't need to look at this node again if all of its
-			// neighbors have already been visited.
-			fDone[current.node()] = current.explorationComplete();
-			fStack.pop();
+
+			fDone[current] = done;
+			fQueue.removeFirst();
 		}
 	}
 
-	private void reached(int node, double time) {
+	private void reached(int source, int node, double time) {
+		fReachedFrom[node] = source;
 		fReached[node] = time;
 		fReachedCount++;
 	}
@@ -126,109 +126,52 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	public double reachTime(int i) {
 		return fReached[i] - fReached[fSource];
 	}
+	
+	public int reachedFrom(int i) {
+		return fReachedFrom[i];
+	}
 }
 
-/**
- * Data structures for the DFS.
- * 
- * @author giuliano
- */
-class DFSStack {
+class BFSQueue {
 
-	private final IndexedNeighborGraph fGraph;
+	private int fRear = -1;
 
-	private DFSEntry[] fEntries;
+	private int fFront = -1;
 
-	private int fPointer = -1;
+	private int[] fQueue;
 
-	public DFSStack(IndexedNeighborGraph graph) {
-		fGraph = graph;
-		ensure(graph.size());
+	public BFSQueue(int size) {
+		ensure(size);
 	}
 
 	public void ensure(int size) {
-		if (fEntries != null && size <= fEntries.length) {
+		if (fQueue != null && size <= fQueue.length) {
 			return;
 		}
 
-		fEntries = new DFSEntry[size];
-		for (int i = 0; i < fEntries.length; i++) {
-			fEntries[i] = new DFSEntry(fGraph);
-		}
+		fQueue = new int[size];
 	}
-
-	public DFSEntry peek() {
-		return fEntries[fPointer];
-	}
-
-	public DFSEntry push() {
-		return fEntries[++fPointer];
-	}
-
-	public DFSEntry pop() {
-		return fEntries[fPointer--];
+	
+	public int capacity() {
+		return fQueue.length;
 	}
 
 	public boolean isEmpty() {
-		return fPointer == -1;
+		return fFront == fRear;
 	}
 
-	@Override
-	public String toString() {
-		if (isEmpty()) {
-			return "[empty]";
-		}
-		return Arrays.toString(Arrays.copyOf(fEntries, fPointer + 1));
+	public int peekFirst() {
+		return fQueue[(fRear + 1) % fQueue.length];
 	}
 
-}
-
-class DFSEntry {
-
-	private final IndexedNeighborGraph fGraph;
-
-	private int fNode;
-
-	private int fIndex;
-
-	private int fDegree;
-
-	private boolean fAllVisited;
-
-	public DFSEntry(IndexedNeighborGraph graph) {
-		fGraph = graph;
+	public void addLast(int element) {
+		fFront = (fFront + 1) % fQueue.length;
+		fQueue[fFront] = element;
 	}
 
-	public DFSEntry bind(int node) {
-		fNode = node;
-		fDegree = fGraph.degree(node);
-		fIndex = 0;
-		fAllVisited = true;
-		return this;
+	public int removeFirst() {
+		fRear = (fRear + 1) % fQueue.length;
+		return fQueue[fRear];
 	}
 
-	public int node() {
-		return fNode;
-	}
-
-	public void markIncomplete() {
-		fAllVisited = false;
-	}
-
-	public boolean explorationComplete() {
-		return fAllVisited;
-	}
-
-	public boolean hasNext() {
-		return fIndex < fDegree;
-	}
-
-	public int next() {
-		return fGraph.getNeighbor(fNode, fIndex++);
-	}
-	
-	@Override
-	public String toString() {
-		return Integer.toString(fNode);
-	}
 }
