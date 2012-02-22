@@ -125,7 +125,7 @@ public class TestTopKShortest {
 	/**
 	 * This is not a precise test. Rather, it checks a large number of outputs
 	 * and sees if they are sane or not, but that doesn't imply that the outputs
-	 * are correct.
+	 * are correct (they are just not grotesquely incorrect).
 	 * 
 	 * @throws Exception
 	 */

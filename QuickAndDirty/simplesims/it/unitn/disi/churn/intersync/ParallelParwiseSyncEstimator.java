@@ -4,9 +4,9 @@ import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.RenewalProcess;
+import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.network.churn.yao.YaoPresets;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
@@ -14,30 +14,25 @@ import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.lambda.functions.Function0;
 
-import peersim.util.IncrementalStats;
-
 public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
-
-	private final String fMode;
-
-	private final String fAvg;
 
 	private final int fRepetitions;
 
 	private ProgressTracker fTracker;
 
+	private final YaoChurnConfigurator fYaoConf;
+
 	// ------------------------------------------------------------------------
 
-	public ParallelParwiseSyncEstimator(String mode, String avg, int repetitions) {
-		fMode = mode;
-		fAvg = avg;
+	public ParallelParwiseSyncEstimator(YaoChurnConfigurator yaoConf,
+			int repetitions) {
+		fYaoConf = yaoConf;
 		fRepetitions = repetitions;
 	}
 
@@ -49,7 +44,7 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 		double[] lIs = new double[g.size()];
 		double[] dIs = new double[g.size()];
 
-		IAverageGenerator generator = YaoPresets.averageGenerator(fAvg);
+		IAverageGenerator generator = fYaoConf.averageGenerator();
 
 		for (int j = 0; j < g.size(); j++) {
 			lIs[j] = generator.nextLI();
@@ -66,8 +61,7 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 				}
 				if (g.isEdge(j, k)) {
 					tasks.add(ttcTask(j, k, lIs, dIs,
-							YaoPresets.mode(fMode, new Random()),
-							oFactory.call()));
+							fYaoConf.distributionGenerator(), oFactory.call()));
 				}
 			}
 		}

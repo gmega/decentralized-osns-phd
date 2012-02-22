@@ -1,7 +1,9 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.IncrementalStatsAdapter;
+import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.GraphTask;
@@ -27,10 +29,12 @@ import org.lambda.functions.implementations.F0;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
 
 @AutoConfig
-public class PrepareSample extends YaoGraphExperiment implements ITransformer {
+public class PrepareSample implements ITransformer {
 
 	private final TableWriter fSampleWriter = new TableWriter(new PrintWriter(
 			new PrefixedWriter("SM:", new OutputStreamWriter(System.out))),
@@ -46,15 +50,26 @@ public class PrepareSample extends YaoGraphExperiment implements ITransformer {
 	@Attribute("repeats")
 	private int fRepeats;
 
+	private GraphConfigurator fGraphConf;
+
+	private YaoChurnConfigurator fYaoConf;
+
+	public PrepareSample(@Attribute(Attribute.AUTO) IResolver resolver) {
+		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
+				resolver);
+		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
+				resolver);
+	}
+
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		IGraphProvider loader = graphProvider();
+		IGraphProvider loader = fGraphConf.graphProvider();
 		Random random = new Random();
 
 		int[] samples = sampleList(loader, random);
 
 		ParallelParwiseSyncEstimator ppse = new ParallelParwiseSyncEstimator(
-				fMode, fAssignments, fRepeats);
+				fYaoConf, fRepeats);
 
 		ExecutorService es = new CallbackThreadPoolExecutor<Object>(Runtime
 				.getRuntime().availableProcessors(), ppse);

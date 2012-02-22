@@ -141,11 +141,19 @@ public class GraphAlgorithms {
 	 * Implementation of Dijkstra's algorithm using priority queues.
 	 * 
 	 * @param graph
+	 *            the graph over which to compute the shortest paths.
 	 * @param filter
+	 *            an optional filter telling which edges are to be disregarded.
 	 * @param source
+	 *            the source vertex from which shortes paths are to be computed.
 	 * @param weights
+	 *            matrix containing the weights for the graph's edges.
 	 * @param minDists
+	 *            (output) array which will contain the minimum distance between
+	 *            source and each destination.
 	 * @param previous
+	 *            (output) array containing the reverse tree of shortest paths
+	 *            between each destination and the source.
 	 */
 	public static void dijkstra(IndexedNeighborGraph graph, IEdgeFilter filter,
 			int source, double[][] weights, final double[] minDists,
@@ -240,7 +248,7 @@ public class GraphAlgorithms {
 			size++;
 			current = previous[current];
 		}
-		
+
 		if (size == 0) {
 			return -1;
 		} else {

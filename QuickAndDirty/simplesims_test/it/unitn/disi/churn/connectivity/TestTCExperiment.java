@@ -1,6 +1,8 @@
 package it.unitn.disi.churn.connectivity;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -19,6 +21,39 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 
 public class TestTCExperiment {
+
+	@Test
+	public void testQueue() {
+		LinkedList<Integer> refQueue = new LinkedList<Integer>();
+		BFSQueue bQueue = new BFSQueue(7);
+
+		Random r = new Random();
+		
+		int elements = 0;
+
+		for (int i = 0; i < 1000000; i++) {
+			boolean add = (r.nextDouble() < 0.5);
+			if (elements == bQueue.capacity()) {
+				add = false;
+			}
+			
+			if (elements == 0) {
+				Assert.assertTrue(bQueue.isEmpty());
+				add = true;
+			}
+
+			if (add) {
+				Integer element = r.nextInt();
+				bQueue.addLast(element);
+				refQueue.addLast(element);
+				elements++;
+			} else {
+				int element = refQueue.removeFirst();
+				Assert.assertEquals((int) element, (int) bQueue.removeFirst());
+				elements--;
+			}
+		}
+	}
 
 	@Test
 	public void testReachability() {
@@ -50,7 +85,7 @@ public class TestTCExperiment {
 
 		BaseChurnSim bcs = new BaseChurnSim(processes, sims, 0);
 		bcs.run();
-		
+
 		Assert.assertEquals(0.0, tce.reachTime(0));
 		Assert.assertEquals(0.8, tce.reachTime(1));
 		Assert.assertTrue(Math.abs(1.8 - tce.reachTime(2)) < 1e-5);

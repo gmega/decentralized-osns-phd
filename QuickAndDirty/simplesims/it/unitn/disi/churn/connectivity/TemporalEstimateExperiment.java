@@ -12,11 +12,15 @@ import java.util.concurrent.Future;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 
 import it.unitn.disi.churn.BaseChurnSim;
+import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -41,8 +45,7 @@ import it.unitn.disi.utils.tabular.TableWriter;
  * @author giuliano
  */
 @AutoConfig
-public class TemporalEstimateExperiment extends YaoGraphExperiment implements
-		IMultiTransformer {
+public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Attribute("etype")
 	private String fModeStr;
@@ -77,6 +80,10 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 
 	private final CallbackThreadPoolExecutor<double[]> fExecutor;
 
+	private GraphConfigurator fGraphConf;
+
+	private YaoChurnConfigurator fYaoConf;
+
 	static enum Experiment {
 		all(1 | 2 | 4), simulate(1), estimate(2), kestimate(4);
 
@@ -102,7 +109,14 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	private static final int LI = 0;
 	private static final int DI = 1;
 
-	public TemporalEstimateExperiment() {
+	public TemporalEstimateExperiment(
+			@Attribute(Attribute.AUTO) IResolver resolver) {
+
+		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
+				resolver);
+		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
+				resolver);
+
 		fExecutor = new CallbackThreadPoolExecutor<double[]>(Runtime
 				.getRuntime().availableProcessors(),
 				new IExecutorCallback<double[]>() {
@@ -123,7 +137,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 	public void execute(StreamProvider provider) throws Exception {
 		fMode = Experiment.valueOf(fModeStr.toLowerCase());
 
-		IGraphProvider loader = graphProvider();
+		IGraphProvider loader = fGraphConf.graphProvider();
 
 		TableReader assignments = new TableReader(
 				provider.input(Inputs.assignments));
@@ -385,7 +399,7 @@ public class TemporalEstimateExperiment extends YaoGraphExperiment implements
 		public double[] call() throws Exception {
 
 			RenewalProcess[] rp = new RenewalProcess[fGraph.size()];
-			IDistributionGenerator distGen = distributionGenerator();
+			IDistributionGenerator distGen = fYaoConf.distributionGenerator();
 
 			for (int i = 0; i < rp.length; i++) {
 				rp[i] = new RenewalProcess(i,

@@ -19,7 +19,7 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
  * @author giuliano
  */
 public class TopKShortest {
-	
+
 	private IndexedNeighborGraph fGraph;
 
 	private double[] fMinDists;
@@ -52,7 +52,11 @@ public class TopKShortest {
 	}
 
 	public ArrayList<PathEntry> topKShortest(int source, int target, int k) {
-		
+		if (source == target) {
+			throw new IllegalArgumentException("Source can't be the same "
+					+ "as target.");
+		}
+
 		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();
 		PriorityQueue<PathEntry> queue = new PriorityQueue<PathEntry>();
 
@@ -65,7 +69,8 @@ public class TopKShortest {
 
 			// Keeps track of how many "ties" we have at the top of the
 			// heap. The main problem here is that we cannot efficiently ask
-			// that to the heap later, so we need to compute it as we go.
+			// that question to the heap later, so we need to compute it as we
+			// go.
 			double kthCost = Double.POSITIVE_INFINITY;
 			int kthCostCount = 0;
 			if (!queue.isEmpty()) {
@@ -109,7 +114,7 @@ public class TopKShortest {
 		}
 
 		return paths;
-		
+
 	}
 
 	private void transfer(ArrayList<PathEntry> paths,
@@ -201,20 +206,13 @@ public class TopKShortest {
 		return new PathEntry(path, 0, fMinDists[destination]);
 	}
 
-	public static class PathEntry implements Comparable<PathEntry> {
+	public static class PathEntry extends it.unitn.disi.graph.analysis.PathEntry {
 
-		public int[] path;
 		public final int spurIndex;
-		public final double cost;
-
-		private final int hash;
 
 		private PathEntry(int[] path, int spurIndex, double cost) {
-			this.path = path;
+			super(path, cost);
 			this.spurIndex = spurIndex;
-			this.cost = cost;
-
-			this.hash = Arrays.hashCode(path);
 		}
 
 		/**
@@ -241,35 +239,6 @@ public class TopKShortest {
 			}
 
 			return path[index + 1];
-		}
-
-		@Override
-		public int compareTo(PathEntry o) {
-			return (int) Math.signum(this.cost - o.cost);
-		}
-
-		@Override
-		public int hashCode() {
-			return hash;
-		}
-		
-		@Override
-		public boolean equals(Object other) {
-			if (!(other instanceof PathEntry)) {
-				return false;
-			}
-
-			PathEntry oPath = (PathEntry) other;
-			if (this.hash != oPath.hash) {
-				return false;
-			}
-
-			return Arrays.equals(this.path, oPath.path);
-		}
-
-		@Override
-		public String toString() {
-			return Arrays.toString(path);
 		}
 	}
 }
