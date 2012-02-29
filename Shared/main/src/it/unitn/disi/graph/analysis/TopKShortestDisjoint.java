@@ -6,7 +6,7 @@ import java.util.BitSet;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 
-public class TopKShortestDisjoint {
+public class TopKShortestDisjoint implements ITopKEstimator {
 
 	public static enum Mode {
 		VertexDisjoint, EdgeDisjoint
@@ -48,6 +48,10 @@ public class TopKShortestDisjoint {
 	}
 
 	public ArrayList<PathEntry> topKShortest(int source, int target, int k) {
+		fForbiddenVertices.clear();
+		for(BitSet set : fForbiddenEdges) {
+			set.clear();
+		}
 		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();
 		for (int i = 0; i < k; i++) {
 			PathEntry entry = nextPath(source, target);

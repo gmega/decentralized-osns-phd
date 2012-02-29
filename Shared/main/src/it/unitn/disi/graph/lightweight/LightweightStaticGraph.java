@@ -136,11 +136,15 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	 * on the degree, but allows us to obtain significant memory savings.
 	 */
 	public boolean isEdge(int i, int j) {
+		return indexOf(i, j) != -1;
+	}
+	
+	public int indexOf(int i, int j) {
 		int index = Arrays.binarySearch(fAdjacency[i], j);
 		if (index < 0 || index >= fAdjacency[i].length) {
-			return false;
+			return -1;
 		}
-		return fAdjacency[i][index] == j;
+		return fAdjacency[i][index] == j ? index : -1;
 	}
 
 	/**

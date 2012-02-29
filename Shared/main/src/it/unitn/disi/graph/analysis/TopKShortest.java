@@ -1,7 +1,6 @@
 package it.unitn.disi.graph.analysis;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.PriorityQueue;
 
@@ -18,7 +17,7 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
  * 
  * @author giuliano
  */
-public class TopKShortest {
+public class TopKShortest implements ITopKEstimator {
 
 	private IndexedNeighborGraph fGraph;
 

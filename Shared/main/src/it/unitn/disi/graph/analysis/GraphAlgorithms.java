@@ -4,7 +4,6 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.streams.DisjointSets;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
