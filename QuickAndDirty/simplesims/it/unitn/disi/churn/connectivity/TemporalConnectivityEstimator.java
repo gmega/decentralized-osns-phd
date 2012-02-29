@@ -17,6 +17,8 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 
 	private BaseChurnSim fParent;
 
+	private ActivationSampler fSampler;
+
 	private int fSource;
 
 	private int fReachedCount;
@@ -32,12 +34,19 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	private BFSQueue fQueue;
 
 	public TemporalConnectivityEstimator(IndexedNeighborGraph graph, int source) {
+		this(graph, source, null);
+	}
+
+	public TemporalConnectivityEstimator(IndexedNeighborGraph graph,
+			int source, ActivationSampler sampler) {
 		fGraph = graph;
 		fSource = source;
 		fReachedFrom = new int[fGraph.size()];
 		fReached = new double[fGraph.size()];
 		fDone = new boolean[fGraph.size()];
 		fQueue = new BFSQueue(fGraph.size());
+		fSampler = sampler;
+
 		Arrays.fill(fReached, Double.NaN);
 		Arrays.fill(fReachedFrom, Integer.MAX_VALUE);
 		Arrays.fill(fDone, false);
@@ -108,13 +117,16 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 		fReachedFrom[node] = source;
 		fReached[node] = time;
 		fReachedCount++;
+		if (fSampler != null) {
+			fSampler.reached(node, this);
+		}
 	}
 
 	private boolean isUp(int node) {
 		return fParent.process(node).isUp();
 	}
 
-	private boolean isReached(int node) {
+	boolean isReached(int node) {
 		return !Double.isNaN(fReached[node]);
 	}
 
@@ -126,9 +138,17 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	public double reachTime(int i) {
 		return fReached[i] - fReached[fSource];
 	}
-	
+
 	public int reachedFrom(int i) {
 		return fReachedFrom[i];
+	}
+
+	public ActivationSampler getActivationSampler() {
+		return fSampler;
+	}
+
+	BaseChurnSim sim() {
+		return fParent;
 	}
 }
 
@@ -151,7 +171,7 @@ class BFSQueue {
 
 		fQueue = new int[size];
 	}
-	
+
 	public int capacity() {
 		return fQueue.length;
 	}

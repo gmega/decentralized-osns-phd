@@ -25,8 +25,11 @@ import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.ITopKEstimator;
+import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
+import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
+import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
@@ -67,6 +70,15 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Attribute(value = "end", defaultValue = "-1")
 	private int fEnd;
+
+	@Attribute(value = "tpk", defaultValue = "yen")
+	private String fEstimator;
+
+	@Attribute(value = "edgesample", defaultValue = "false")
+	private boolean fSampleActivations;
+
+	@Attribute(value = "pair", defaultValue = Attribute.VALUE_NULL)
+	String fPair;
 
 	private int fSampleId;
 
@@ -208,7 +220,18 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				continue;
 			}
 
+			int[] pair = null;
+			if (!fPair.equals(Attribute.VALUE_NONE)) {
+				pair = new int[2];
+				pair[0] = Integer.parseInt(fPair.split(",")[0]);
+				pair[1] = Integer.parseInt(fPair.split(",")[1]);
+			}
+
 			for (int i = 0; i < graph.size(); i++) {
+				if (pair != null && pair[0] != ids[i]) {
+					continue;
+				}
+				
 				setSample(root, i, graph.size());
 
 				double[] estimates = null;
@@ -218,19 +241,20 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 				double[] kEstimates = null;
 				if (fMode.should(Experiment.kestimate)) {
-					kEstimates = kEstimate(graph, i, w, ld, fK);
+					kEstimates = kEstimate(graph, i, w, ld, fK, ids);
 				}
 
 				double[] simulation = null;
 				if (fMode.should(Experiment.simulate)) {
 					simulation = simulate(sampleString() + ", full", graph, i,
-							ld);
+							ld, ids);
 				}
 
 				for (int j = 0; j < graph.size(); j++) {
-					if (i == j) {
+					if (i == j || !isPair(i, j, ids)) {
 						continue;
 					}
+
 					result.set("id", root);
 					result.set("source", ids[i]);
 					result.set("target", ids[j]);
@@ -255,17 +279,30 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 		fExecutor.shutdown();
 	}
 
+	private boolean isPair(int i, int j, int[] ids) {
+		if (fPair == null) {
+			return true;
+		}
+
+		String[] p = fPair.split(",");
+		int[] pair = { Integer.parseInt(p[0]), Integer.parseInt(p[1]) };
+
+		return pair[0] == ids[i] && pair[1] == ids[j];
+	}
+
 	private double[] kEstimate(IndexedNeighborGraph graph, int source,
-			double[][] w, double[][] lds, int k) throws Exception {
-		TopKShortest tpk = new TopKShortest(graph, w);
+			double[][] w, double[][] lds, int k, int[] ids) throws Exception {
+		ITopKEstimator tpk = estimator(graph, w);
 
 		double[] results = new double[graph.size()];
-
+		
 		// For each vertex pair (u, w)
 		for (int i = 0; i < graph.size(); i++) {
-			if (i == source) {
+			if (i == source || !isPair(source, i, ids)) {
 				continue;
 			}
+			
+			System.out.println("Source: " + source + "(" + ids[source] + ") Target: " + i + "(" + ids[ids[i]]);
 
 			// 1. computes the top-k shortest paths between u and w.
 			int[] vertexes = vertexesOf(tpk.topKShortest(source, i, k));
@@ -285,11 +322,27 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 			double[] estimate = simulate(sampleString() + ", k-paths (" + i
 					+ "/" + graph.size() + ")", kPathGraph, remappedSource,
-					ldSub);
+					ldSub, ids);
 			results[i] = estimate[remappedTarget];
 		}
 
 		return results;
+	}
+
+	private ITopKEstimator estimator(IndexedNeighborGraph graph, double[][] w) {
+		if (fEstimator.equals("yen")) {
+			return new TopKShortest(graph, w);
+		}
+
+		else if (fEstimator.equals("vd")) {
+			return new TopKShortestDisjoint(graph, w, Mode.VertexDisjoint);
+		}
+
+		else if (fEstimator.equals("ed")) {
+			return new TopKShortestDisjoint(graph, w, Mode.EdgeDisjoint);
+		}
+
+		throw new IllegalArgumentException();
 	}
 
 	private int indexOf(int element, int[] vertexes) {
@@ -302,7 +355,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 		throw new NoSuchElementException();
 	}
 
-	private int[] vertexesOf(ArrayList<PathEntry> topKShortest) {
+	private int[] vertexesOf(ArrayList<? extends PathEntry> topKShortest) {
 		Set<Integer> vertexSet = new HashSet<Integer>();
 		for (PathEntry entry : topKShortest) {
 			if (fPrintPaths) {
@@ -344,20 +397,24 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				}
 			}
 		}
-
+		
 		return minDists;
 	}
 
 	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
-			int source, double[][] ld) throws Exception {
+			int source, double[][] ld, int [] ids)
+			throws Exception {
 
 		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
 		double[] ttc = new double[graph.size()];
 
+		ActivationSampler sampler = fSampleActivations ? new ActivationSampler(graph) : null;
+
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph)));
+			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph,
+					sampler)));
 		}
 
 		for (Future<double[]> task : tasks) {
@@ -366,6 +423,9 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				ttc[i] += tce[i];
 			}
 		}
+		
+		// Print activations.
+		sampler.printActivations(ids);
 
 		return ttc;
 	}
@@ -388,11 +448,14 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 		private final IndexedNeighborGraph fGraph;
 
+		private final ActivationSampler fSampler;
+
 		public SimulationTask(double[][] ld, int source,
-				IndexedNeighborGraph graph) {
+				IndexedNeighborGraph graph, ActivationSampler sampler) {
 			this.fld = ld;
 			this.fSource = source;
 			this.fGraph = graph;
+			this.fSampler = sampler;
 		}
 
 		@Override
@@ -408,7 +471,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 			}
 
 			TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
-					fGraph, fSource);
+					fGraph, fSource, fSampler);
 			ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
 			sims.add(tce);
 

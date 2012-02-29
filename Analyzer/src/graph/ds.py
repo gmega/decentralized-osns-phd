@@ -15,6 +15,15 @@ class Edge:
         self._hashcode = 37*(self._source + self._target) 
         
     
+    def source(self):
+        return self._source
+    
+    def target(self):
+        return self._target
+    
+    def is_self_edge(self):
+        return self._source == self._target
+    
     def __hash__(self):
         return self._hashcode
     
