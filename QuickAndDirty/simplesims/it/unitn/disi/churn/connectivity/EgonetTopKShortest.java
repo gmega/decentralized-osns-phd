@@ -16,7 +16,7 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
 import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.WeightReader;
+import it.unitn.disi.churn.MatrixReader;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.TopKShortest;
@@ -57,7 +57,8 @@ public class EgonetTopKShortest implements ITransformer {
 				new PrefixedWriter("SP:", new OutputStreamWriter(System.out))),
 				"id", "source", "target", "pid", "plength", "cost", "path");
 
-		WeightReader reader = new WeightReader(is);
+		MatrixReader reader = new MatrixReader(is, "id", "source", "target",
+				"ttc");
 		Set<String> samples = parseSamples(fSamples);
 		IGraphProvider provider = fGraphConfig.graphProvider();
 
@@ -70,7 +71,7 @@ public class EgonetTopKShortest implements ITransformer {
 
 			int root = Integer.parseInt(strRoot);
 			int[] ids = provider.verticesOf(root);
-			double[][] w = reader.readWeights(ids);
+			double[][] w = reader.read(ids);
 
 			IndexedNeighborGraph ego = provider.subgraph(root);
 			TopKShortest tpk = new TopKShortest(ego, w);
@@ -80,7 +81,7 @@ public class EgonetTopKShortest implements ITransformer {
 			ProgressTracker tracker = Progress.newTracker("processing",
 					w.length * (w.length - 1));
 			tracker.startTask();
-						
+
 			for (int i = 0; i < w.length; i++) {
 				for (int j = 0; j < w.length; j++) {
 					if (i == j) {
@@ -129,15 +130,15 @@ public class EgonetTopKShortest implements ITransformer {
 	}
 
 	static class TOPKTask implements Callable<ArrayList<PathEntry>> {
-		
+
 		private final TopKShortest fEstimator;
-		
+
 		private final int fI;
-		
+
 		private final int fJ;
-		
+
 		private final int fK;
-		
+
 		public TOPKTask(int i, int j, int k, TopKShortest estimator) {
 			fI = i;
 			fJ = j;
@@ -149,6 +150,6 @@ public class EgonetTopKShortest implements ITransformer {
 		public ArrayList<PathEntry> call() throws Exception {
 			return fEstimator.topKShortest(fI, fJ, fK);
 		}
-		
+
 	}
 }

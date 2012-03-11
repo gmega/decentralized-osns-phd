@@ -49,6 +49,7 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 		for (int j = 0; j < g.size(); j++) {
 			lIs[j] = generator.nextLI();
 			dIs[j] = generator.nextDI();
+			System.out.println(lIs[j] + " " + dIs[j]);
 		}
 
 		ArrayList<EdgeTask> tasks = new ArrayList<EdgeTask>();

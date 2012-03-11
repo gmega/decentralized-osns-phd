@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import peersim.config.Attribute;
@@ -15,11 +14,7 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
-import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
@@ -32,7 +27,6 @@ import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
 import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.exception.ParseException;
@@ -76,8 +70,11 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Attribute(value = "edgesample", defaultValue = "false")
 	private boolean fSampleActivations;
+	
+	@Attribute(value = "cores", defaultValue = "-1")
+	private int fCores;
 
-	@Attribute(value = "pair", defaultValue = Attribute.VALUE_NULL)
+	// @Attribute(value = "pair", defaultValue = Attribute.VALUE_NULL)
 	String fPair;
 
 	private int fSampleId;
@@ -221,7 +218,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 			}
 
 			int[] pair = null;
-			if (!fPair.equals(Attribute.VALUE_NONE)) {
+			if (fPair != null) {
 				pair = new int[2];
 				pair[0] = Integer.parseInt(fPair.split(",")[0]);
 				pair[1] = Integer.parseInt(fPair.split(",")[1]);
@@ -231,7 +228,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				if (pair != null && pair[0] != ids[i]) {
 					continue;
 				}
-				
+
 				setSample(root, i, graph.size());
 
 				double[] estimates = null;
@@ -295,14 +292,15 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 		ITopKEstimator tpk = estimator(graph, w);
 
 		double[] results = new double[graph.size()];
-		
+
 		// For each vertex pair (u, w)
 		for (int i = 0; i < graph.size(); i++) {
 			if (i == source || !isPair(source, i, ids)) {
 				continue;
 			}
-			
-			System.out.println("Source: " + source + "(" + ids[source] + ") Target: " + i + "(" + ids[ids[i]]);
+
+			System.out.println("Source: " + source + "(" + ids[source]
+					+ ") Target: " + i + "(" + ids[ids[i]]);
 
 			// 1. computes the top-k shortest paths between u and w.
 			int[] vertexes = vertexesOf(tpk.topKShortest(source, i, k));
@@ -397,24 +395,24 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				}
 			}
 		}
-		
+
 		return minDists;
 	}
 
 	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
-			int source, double[][] ld, int [] ids)
-			throws Exception {
+			int source, double[][] ld, int[] ids) throws Exception {
 
 		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
 		double[] ttc = new double[graph.size()];
 
-		ActivationSampler sampler = fSampleActivations ? new ActivationSampler(graph) : null;
+		ActivationSampler sampler = fSampleActivations ? new ActivationSampler(
+				graph) : null;
 
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, source, graph,
-					sampler)));
+			tasks.add(fExecutor.submit(new SimulationTask(ld, source, fBurnin,
+					graph, sampler, fYaoConf)));
 		}
 
 		for (Future<double[]> task : tasks) {
@@ -423,9 +421,11 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				ttc[i] += tce[i];
 			}
 		}
-		
+
 		// Print activations.
-		sampler.printActivations(ids);
+		if (sampler != null) {
+			sampler.printActivations(ids);
+		}
 
 		return ttc;
 	}
@@ -438,53 +438,6 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	private String sampleString() {
 		return fSampleId + " (" + fSource + "/" + fSize + ")";
-	}
-
-	class SimulationTask implements Callable<double[]> {
-
-		private final double[][] fld;
-
-		private final int fSource;
-
-		private final IndexedNeighborGraph fGraph;
-
-		private final ActivationSampler fSampler;
-
-		public SimulationTask(double[][] ld, int source,
-				IndexedNeighborGraph graph, ActivationSampler sampler) {
-			this.fld = ld;
-			this.fSource = source;
-			this.fGraph = graph;
-			this.fSampler = sampler;
-		}
-
-		@Override
-		public double[] call() throws Exception {
-
-			RenewalProcess[] rp = new RenewalProcess[fGraph.size()];
-			IDistributionGenerator distGen = fYaoConf.distributionGenerator();
-
-			for (int i = 0; i < rp.length; i++) {
-				rp[i] = new RenewalProcess(i,
-						distGen.uptimeDistribution(fld[i][LI]),
-						distGen.downtimeDistribution(fld[i][DI]), State.down);
-			}
-
-			TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
-					fGraph, fSource, fSampler);
-			ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-			sims.add(tce);
-
-			BaseChurnSim bcs = new BaseChurnSim(rp, sims, fBurnin);
-			bcs.run();
-
-			double[] contrib = new double[fGraph.size()];
-			for (int i = 0; i < contrib.length; i++) {
-				contrib[i] = tce.reachTime(i);
-			}
-			return contrib;
-		}
-
 	}
 
 	private double[][] readLiDi(int root, TableReader assignments,
