@@ -53,6 +53,9 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 		estimates
 	}
 
+	@Attribute(value = "printStats", defaultValue = "false")
+	boolean fPrintStats;
+
 	@Attribute("pairs")
 	private int fPairs;
 
@@ -116,7 +119,8 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("RS:",
 				provider.output(Outputs.estimates)), "id", "source",
-				"destination", "kestimate");
+				"destination", "kestimate", "kvertex", "vertex", "kedge",
+				"edge");
 
 		int cNeighborhood = 0;
 		for (int i = 0; i < fPairs; i++) {
@@ -132,22 +136,31 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 					break;
 				}
 			}
+			
+			if (next == null) {
+				System.err.println(" -- Ran out of pairs. Stopping simulation.");
+			}
 
-			IndexedNeighborGraph ing = loader.subgraph(hoods[id].root);
-			double result = kEstimate(ing, next, hoods[id].weights,
-					hoods[id].liDis, fK, hoods[id].ids);
+			LightweightStaticGraph ing = (LightweightStaticGraph) loader
+					.subgraph(hoods[id].root);
+			Pair<LightweightStaticGraph, Double> result = kEstimate(ing, next,
+					hoods[id].weights, hoods[id].liDis, fK, hoods[id].ids);
 
-			writer.set("id", id);
+			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);
 			writer.set("destination", next.b);
-			writer.set("kestimate", result/fRepetitions);
+			writer.set("vertex", ing.size());
+			writer.set("edge", ing.edgeCount());
+			writer.set("kestimate", result.b / fRepetitions);
+			writer.set("kvertex", result.a.size());
+			writer.set("kedge", result.a.edgeCount());
 			writer.emmitRow();
 		}
 	}
 
-	private double kEstimate(IndexedNeighborGraph graph,
-			Pair<Integer, Integer> pair, double[][] w, double[][] lds, int k,
-			int[] ids) throws Exception {
+	private Pair<LightweightStaticGraph, Double> kEstimate(
+			IndexedNeighborGraph graph, Pair<Integer, Integer> pair,
+			double[][] w, double[][] lds, int k, int[] ids) throws Exception {
 
 		ITopKEstimator tpk = estimator(graph, w);
 
@@ -173,7 +186,8 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 		double[] estimate = simulate("(" + pair.a + ", " + pair.b + ")",
 				kPathGraph, remappedSource, ldSub, ids);
 
-		return estimate[remappedTarget];
+		return new Pair<LightweightStaticGraph, Double>(kPathGraph,
+				estimate[remappedTarget]);
 	}
 
 	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
@@ -286,10 +300,30 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 			}
 		}
 
-		return neighborhoods.values().toArray(
+		Neighborhood[] array = neighborhoods.values().toArray(
 				new Neighborhood[neighborhoods.size()]);
+
+		if (fPrintStats) {
+			// Prints statistics.
+			int edgeCount = 0;
+			int vCount = 0;
+			System.out.println("ST:id cid vcount ecount");
+			for (int i = 0; i < array.length; i++) {
+				Neighborhood n = array[i];
+				LightweightStaticGraph lsg = (LightweightStaticGraph) provider
+						.subgraph(n.root);
+				edgeCount += lsg.edgeCount();
+				vCount += lsg.size();
+				System.out.println("ST:" + i + " " + n.root + " " + lsg.size()
+						+ " " + lsg.edgeCount());
+			}
+			System.out.println("TOT:" + vCount + " " + edgeCount);
+			System.exit(0);
+		}
+
+		return array;
 	}
-	
+
 	protected int idOf(int id, int[] ids) {
 		for (int i = 0; i < ids.length; i++) {
 			if (ids[i] == id) {
@@ -305,7 +339,7 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 		public double[][] liDis;
 
 		public double[][] weights;
-		
+
 		public final int root;
 
 		public int[] ids;
@@ -350,6 +384,9 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 		}
 
 		public Pair<Integer, Integer> draw(Random r) {
+			if (pairCount() <= 0) {
+				return null;
+			}
 			int draw = r.nextInt(pairCount());
 			for (int i = fUsed.nextClearBit(0); i >= 0; i = fUsed
 					.nextClearBit(i + 1)) {
