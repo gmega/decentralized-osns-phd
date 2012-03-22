@@ -2,6 +2,7 @@ package it.unitn.disi.unitsim;
 
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.large.catalog.PartialLoader;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -18,6 +19,7 @@ import peersim.config.plugin.IPlugin;
  * doesn't really provide any memory savings graph-wise.
  * 
  * @author giuliano
+ * @deprecated use {@link PartialLoader} instead.
  */
 @AutoConfig
 public class NeighborhoodLoader implements IPlugin, IGraphProvider {

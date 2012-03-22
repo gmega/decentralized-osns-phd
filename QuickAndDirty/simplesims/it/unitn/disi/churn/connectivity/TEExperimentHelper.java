@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.lambda.functions.implementations.F2;
@@ -49,21 +50,24 @@ public class TEExperimentHelper {
 	// ------------------------------------------------------------------------
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> EDGE_DISJOINT = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
+			LightweightStaticGraph.fromAdjacency(new int[][] {}),
+			new double[][] {}) {
 		{
 			ret(new TopKShortestDisjoint(a, b, Mode.EdgeDisjoint));
 		}
 	};
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> VERTEX_DISJOINT = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
+			LightweightStaticGraph.fromAdjacency(new int[][] {}),
+			new double[][] {}) {
 		{
 			ret(new TopKShortestDisjoint(a, b, Mode.VertexDisjoint));
 		}
 	};
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> YENS = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
+			LightweightStaticGraph.fromAdjacency(new int[][] {}),
+			new double[][] {}) {
 		{
 			ret(new TopKShortest(a, b));
 		}
@@ -96,6 +100,9 @@ public class TEExperimentHelper {
 
 	private final F2<IndexedNeighborGraph, double[][], ITopKEstimator> fEstimator;
 
+	private final LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>(
+			100);
+
 	private volatile ProgressTracker fTracker;
 
 	private final int fRepetitions;
@@ -124,13 +131,22 @@ public class TEExperimentHelper {
 				new IExecutorCallback<Object>() {
 					@Override
 					public void taskFailed(Future<Object> task, Exception ex) {
-						ex.printStackTrace();
 						fTracker.tick();
+						queue(ex);
 					}
 
 					@Override
 					public synchronized void taskDone(Object result) {
 						fTracker.tick();
+						queue(result);
+					}
+
+					private void queue(Object result) {
+						try {
+							fReady.offer(result, Long.MAX_VALUE, TimeUnit.DAYS);
+						} catch (InterruptedException ex) {
+							ex.printStackTrace();
+						}
 					}
 				});
 
@@ -207,8 +223,6 @@ public class TEExperimentHelper {
 			double[][] ld, int[] ids, boolean sampleActivations)
 			throws Exception {
 
-		ArrayList<Future<Pair<Integer, double[]>[]>> tasks = new ArrayList<Future<Pair<Integer, double[]>[]>>();
-
 		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
 				graph) : null;
 
@@ -217,10 +231,11 @@ public class TEExperimentHelper {
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, sourceStart,
-					sourceEnd, fBurnin, graph, sampler, fYaoConf)));
+			fExecutor.submit(new SimulationTask(ld, sourceStart, sourceEnd,
+					fBurnin, graph, sampler, fYaoConf));
 		}
 
+		System.err.println("SUBMISSION FASE DONE.");
 		@SuppressWarnings("unchecked")
 		Pair<Integer, double[]>[] result = new Pair[sources];
 		for (int i = 0; i < result.length; i++) {
@@ -228,8 +243,16 @@ public class TEExperimentHelper {
 					new double[graph.size()]);
 		}
 
-		for (Future<Pair<Integer, double[]>[]> task : tasks) {
-			Pair<Integer, double[]>[] tces = task.get();
+		for (int i = 0; i < fRepetitions; i++) {
+			Object taskResult = fReady.poll(Long.MAX_VALUE, TimeUnit.DAYS);
+			if (taskResult instanceof Exception) {
+				Exception ex = (Exception) taskResult;
+				ex.printStackTrace();
+				continue;
+			}
+
+			@SuppressWarnings("unchecked")
+			Pair<Integer, double[]>[] tces = (Pair<Integer, double[]>[]) taskResult;
 			for (int j = 0; j < tces.length; j++) {
 				Pair<Integer, double[]> ttcs = tces[j];
 				for (int k = 0; k < ttcs.b.length; k++) {
@@ -318,7 +341,7 @@ public class TEExperimentHelper {
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate[remappedTarget]);
 	}
-	
+
 	private int indexOf(int element, int[] vertexes) {
 		for (int i = 0; i < vertexes.length; i++) {
 			if (element == vertexes[i]) {
