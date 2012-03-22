@@ -2,6 +2,8 @@ package it.unitn.disi.utils.streams;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 
 /**
@@ -21,6 +23,10 @@ public class PrefixedWriter extends Writer {
 	private Writer fOutput;
 
 	private boolean fShouldWritePrefix = true;
+	
+	public PrefixedWriter(String prefix, OutputStream stream) {
+		this(prefix, new OutputStreamWriter(stream));
+	}
 
 	public PrefixedWriter(String prefix, Writer oWriter) {
 		fPrefix = prefix;

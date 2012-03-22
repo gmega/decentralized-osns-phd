@@ -2,7 +2,6 @@ package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.connectivity.wosn.TEExperimentHelper;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -29,7 +28,7 @@ import peersim.config.ObjectCreator;
  * @author giuliano
  */
 @AutoConfig
-public class TemporalEstimateExperiment implements IMultiTransformer {
+public class AllExperimentsUglyDriver implements IMultiTransformer {
 
 	@Attribute("etype")
 	private String fModeStr;
@@ -100,7 +99,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 	private static final int LI = 0;
 	private static final int DI = 1;
 
-	public TemporalEstimateExperiment(
+	public AllExperimentsUglyDriver(
 			@Attribute(Attribute.AUTO) IResolver resolver) {
 
 		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",

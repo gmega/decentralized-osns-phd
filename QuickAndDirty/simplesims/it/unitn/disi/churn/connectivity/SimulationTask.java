@@ -71,7 +71,7 @@ public class SimulationTask implements Callable<Pair<Integer, double[]>[]> {
 
 		@SuppressWarnings("unchecked")
 		Pair<Integer, double[]>[] results = new Pair[sims.size()];
-		for (int i = 0; i <= sims.size(); i++) {
+		for (int i = 0; i < sims.size(); i++) {
 			results[i] = getResults(sims.get(i), fSourceStart + i);
 		}
 

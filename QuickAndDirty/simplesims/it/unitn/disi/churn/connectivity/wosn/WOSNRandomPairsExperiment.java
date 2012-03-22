@@ -17,6 +17,7 @@ import it.unitn.disi.churn.AssignmentReader;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.MatrixReader;
 import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;

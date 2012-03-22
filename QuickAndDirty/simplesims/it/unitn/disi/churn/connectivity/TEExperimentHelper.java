@@ -1,8 +1,6 @@
-package it.unitn.disi.churn.connectivity.wosn;
+package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.connectivity.ActivationSampler;
-import it.unitn.disi.churn.connectivity.SimulationTask;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
@@ -51,21 +49,21 @@ public class TEExperimentHelper {
 	// ------------------------------------------------------------------------
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> EDGE_DISJOINT = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			null, null) {
+			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
 		{
 			ret(new TopKShortestDisjoint(a, b, Mode.EdgeDisjoint));
 		}
 	};
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> VERTEX_DISJOINT = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			null, null) {
+			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
 		{
 			ret(new TopKShortestDisjoint(a, b, Mode.VertexDisjoint));
 		}
 	};
 
 	public static final F2<IndexedNeighborGraph, double[][], ITopKEstimator> YENS = new F2<IndexedNeighborGraph, double[][], ITopKEstimator>(
-			null, null) {
+			LightweightStaticGraph.fromAdjacency(new int[][]{}), new double[][] {}) {
 		{
 			ret(new TopKShortest(a, b));
 		}

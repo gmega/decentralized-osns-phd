@@ -31,13 +31,15 @@ public class RBind implements ITransformer {
 		ITableWriter writer = new TableWriter(new PrintStream(
 				new BufferedOutputStream(oup)), header);
 
+		int lineCount = 1;
 		while (reader.hasNext()) {
 			try {
+				lineCount++;
 				reader.next();
 			} catch (ParseException ex) {
 				reader = reader.fromCurrentRow();
 				fCurrentTable++;
-				checkHeader(reader, header);
+				checkHeader(reader, header, lineCount);
 				continue;
 			}
 			
@@ -61,13 +63,13 @@ public class RBind implements ITransformer {
 		return true;
 	}
 
-	private void checkHeader(TableReader reader, String[] header) {
+	private void checkHeader(TableReader reader, String[] header, int count) {
 		List <String> newHeader = reader.columns();
 		for (String headerPart : header) {
 			if (!newHeader.contains(headerPart)) {
 				throw new ParseException("Cannot bind by column: table "
 						+ fCurrentTable + " does not contain column "
-						+ headerPart + ".");
+						+ headerPart + " (line " + count + ").");
 			}
 		}
 	}
