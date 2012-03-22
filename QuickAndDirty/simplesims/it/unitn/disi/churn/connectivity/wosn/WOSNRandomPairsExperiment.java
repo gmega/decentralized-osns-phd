@@ -2,16 +2,11 @@ package it.unitn.disi.churn.connectivity.wosn;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -22,22 +17,12 @@ import it.unitn.disi.churn.AssignmentReader;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.MatrixReader;
 import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.connectivity.SimulationTask;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.ITopKEstimator;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -75,9 +60,7 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 
 	private GraphConfigurator fGraphConf;
 
-	private ProgressTracker fTracker;
-
-	private CallbackThreadPoolExecutor<double[]> fExecutor;
+	private TEExperimentHelper fHelper;
 
 	public WOSNRandomPairsExperiment(
 			@Attribute(Attribute.AUTO) IResolver resolver) {
@@ -87,25 +70,8 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
 
-		fExecutor = new CallbackThreadPoolExecutor<double[]>(Runtime
-				.getRuntime().availableProcessors(),
-				new IExecutorCallback<double[]>() {
-					@Override
-					public void taskFailed(Future<double[]> task, Exception ex) {
-						ex.printStackTrace();
-						if (fTracker != null) {
-							fTracker.tick();
-						}
-					}
-
-					@Override
-					public synchronized void taskDone(double[] result) {
-						if (fTracker != null) {
-							fTracker.tick();
-						}
-					}
-				});
-
+		fHelper = new TEExperimentHelper(fYaoConf, fEstimator,
+				TEExperimentHelper.ALL_CORES, fRepetitions, fBurnin);
 	}
 
 	@Override
@@ -136,15 +102,17 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 					break;
 				}
 			}
-			
+
 			if (next == null) {
-				System.err.println(" -- Ran out of pairs. Stopping simulation.");
+				System.err
+						.println(" -- Ran out of pairs. Stopping simulation.");
 			}
 
 			LightweightStaticGraph ing = (LightweightStaticGraph) loader
 					.subgraph(hoods[id].root);
-			Pair<LightweightStaticGraph, Double> result = kEstimate(ing, next,
-					hoods[id].weights, hoods[id].liDis, fK, hoods[id].ids);
+			Pair<IndexedNeighborGraph, Double> result = fHelper.topKEstimate(
+					"", ing, next.a, next.b, hoods[id].weights,
+					hoods[id].liDis, fK, hoods[id].ids);
 
 			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);
@@ -153,108 +121,9 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 			writer.set("edge", ing.edgeCount());
 			writer.set("kestimate", result.b / fRepetitions);
 			writer.set("kvertex", result.a.size());
-			writer.set("kedge", result.a.edgeCount());
+			writer.set("kedge", ((LightweightStaticGraph) result.a).edgeCount());
 			writer.emmitRow();
 		}
-	}
-
-	private Pair<LightweightStaticGraph, Double> kEstimate(
-			IndexedNeighborGraph graph, Pair<Integer, Integer> pair,
-			double[][] w, double[][] lds, int k, int[] ids) throws Exception {
-
-		ITopKEstimator tpk = estimator(graph, w);
-
-		int source = idOf(pair.a, ids);
-		int target = idOf(pair.b, ids);
-
-		// 1. computes the top-k shortest paths between u and w.
-		int[] vertexes = vertexesOf(tpk.topKShortest(source, target, k));
-		LightweightStaticGraph kPathGraph = LightweightStaticGraph.subgraph(
-				(LightweightStaticGraph) graph, vertexes);
-
-		// 2. runs a connectivity simulation on the subgraph
-		// composed by the top-k shortest paths.
-		double ldSub[][] = new double[vertexes.length][2];
-		for (int j = 0; j < ldSub.length; j++) {
-			ldSub[j][0] = lds[vertexes[j]][0];
-			ldSub[j][1] = lds[vertexes[j]][1];
-		}
-
-		int remappedSource = indexOf(source, vertexes);
-		int remappedTarget = indexOf(target, vertexes);
-
-		double[] estimate = simulate("(" + pair.a + ", " + pair.b + ")",
-				kPathGraph, remappedSource, ldSub, ids);
-
-		return new Pair<LightweightStaticGraph, Double>(kPathGraph,
-				estimate[remappedTarget]);
-	}
-
-	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
-			int source, double[][] ld, int[] ids) throws Exception {
-
-		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
-		double[] ttc = new double[graph.size()];
-
-		fTracker = Progress.newTracker(taskStr, fRepetitions);
-		fTracker.startTask();
-		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, source, fBurnin,
-					graph, null, fYaoConf)));
-		}
-
-		for (Future<double[]> task : tasks) {
-			double[] tce = task.get();
-			for (int i = 0; i < ttc.length; i++) {
-				ttc[i] += tce[i];
-			}
-		}
-
-		return ttc;
-	}
-
-	private int indexOf(int element, int[] vertexes) {
-		for (int i = 0; i < vertexes.length; i++) {
-			if (element == vertexes[i]) {
-				return i;
-			}
-		}
-
-		throw new NoSuchElementException();
-	}
-
-	private int[] vertexesOf(ArrayList<? extends PathEntry> topKShortest) {
-		Set<Integer> vertexSet = new HashSet<Integer>();
-		for (PathEntry entry : topKShortest) {
-			for (int i = 0; i < entry.path.length; i++) {
-				vertexSet.add(entry.path[i]);
-			}
-		}
-
-		int[] vertexes = new int[vertexSet.size()];
-		int i = 0;
-		for (Integer element : vertexSet) {
-			vertexes[i++] = element;
-		}
-
-		Arrays.sort(vertexes);
-		return vertexes;
-	}
-
-	private ITopKEstimator estimator(IndexedNeighborGraph graph, double[][] w) {
-		if (fEstimator.equals("yen")) {
-			return new TopKShortest(graph, w);
-		}
-
-		else if (fEstimator.equals("vd")) {
-			return new TopKShortestDisjoint(graph, w, Mode.VertexDisjoint);
-		}
-
-		else if (fEstimator.equals("ed")) {
-			return new TopKShortestDisjoint(graph, w, Mode.EdgeDisjoint);
-		}
-
-		throw new IllegalArgumentException();
 	}
 
 	private Neighborhood[] readPairs(InputStream pairs,

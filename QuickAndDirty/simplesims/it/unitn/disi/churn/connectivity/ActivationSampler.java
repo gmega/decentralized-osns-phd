@@ -7,20 +7,20 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
-class ActivationSampler {
+public class ActivationSampler {
 
 	private final IndexedNeighborGraph fGraph;
 
 	private int[][] fActivationCount;
 
-	ActivationSampler(IndexedNeighborGraph graph) {
+	public ActivationSampler(IndexedNeighborGraph graph) {
 		synchronized (this) {
 			fActivationCount = new int[graph.size()][graph.size()];
 		}
 		fGraph = graph;
 	}
 
-	void reached(int u, TemporalConnectivityEstimator estimator) {
+	public void reached(int u, TemporalConnectivityEstimator estimator) {
 		BaseChurnSim bcs = estimator.sim();
 		for (int i = 0; i < fGraph.degree(u); i++) {
 			int neighbor = fGraph.getNeighbor(u, i);

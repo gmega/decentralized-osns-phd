@@ -22,8 +22,8 @@ public class BaseChurnSim implements Runnable {
 
 	private double fBurnin;
 
-	public BaseChurnSim(RenewalProcess[] processes, List<IChurnSim> delegates,
-			double burnin) {
+	public BaseChurnSim(RenewalProcess[] processes,
+			List<? extends IChurnSim> delegates, double burnin) {
 		fProcesses = processes;
 		fQueue = new PriorityQueue<RenewalProcess>();
 		for (RenewalProcess process : processes) {

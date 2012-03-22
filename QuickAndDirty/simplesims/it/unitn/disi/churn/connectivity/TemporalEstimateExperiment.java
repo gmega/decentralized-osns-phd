@@ -1,40 +1,27 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.GraphConfigurator;
+import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.connectivity.wosn.TEExperimentHelper;
+import it.unitn.disi.cli.IMultiTransformer;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.exception.ParseException;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-
-import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.ITopKEstimator;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
-import it.unitn.disi.utils.exception.ParseException;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
-import it.unitn.disi.utils.streams.PrefixedWriter;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * "Script" putting together all temporal estimate experiments.
@@ -56,9 +43,6 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 	@Attribute("burnin")
 	private double fBurnin;
 
-	@Attribute(value = "printpaths", defaultValue = "false")
-	private boolean fPrintPaths;
-
 	@Attribute(value = "start", defaultValue = "0")
 	private int fStart;
 
@@ -70,7 +54,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	@Attribute(value = "edgesample", defaultValue = "false")
 	private boolean fSampleActivations;
-	
+
 	@Attribute(value = "cores", defaultValue = "-1")
 	private int fCores;
 
@@ -85,13 +69,11 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 	private Experiment fMode;
 
-	private ProgressTracker fTracker;
-
-	private final CallbackThreadPoolExecutor<double[]> fExecutor;
-
 	private GraphConfigurator fGraphConf;
 
 	private YaoChurnConfigurator fYaoConf;
+
+	private TEExperimentHelper fHelper;
 
 	static enum Experiment {
 		all(1 | 2 | 4), simulate(1), estimate(2), kestimate(4);
@@ -125,21 +107,8 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 				resolver);
 		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
-
-		fExecutor = new CallbackThreadPoolExecutor<double[]>(Runtime
-				.getRuntime().availableProcessors(),
-				new IExecutorCallback<double[]>() {
-					@Override
-					public void taskFailed(Future<double[]> task, Exception ex) {
-						ex.printStackTrace();
-						fTracker.tick();
-					}
-
-					@Override
-					public synchronized void taskDone(double[] result) {
-						fTracker.tick();
-					}
-				});
+		fHelper = new TEExperimentHelper(fYaoConf, fEstimator, fCores,
+				fRepetitions, fBurnin);
 	}
 
 	@Override
@@ -233,18 +202,24 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 
 				double[] estimates = null;
 				if (fMode.should(Experiment.estimate)) {
-					estimates = estimate(graph, i, w, ids);
+					estimates = fHelper.upperBound(graph, i, w);
 				}
 
-				double[] kEstimates = null;
+				double[] kEstimates = new double[graph.size()];
 				if (fMode.should(Experiment.kestimate)) {
-					kEstimates = kEstimate(graph, i, w, ld, fK, ids);
+					for (int j = 0; j < graph.size(); j++) {
+						if (j != i) {
+							kEstimates[i] = fHelper.topKEstimate("top-k - " + i
+									+ "/" + graph.size(), graph, i, j, w, ld,
+									fK, ids).b;
+						}
+					}
 				}
 
 				double[] simulation = null;
 				if (fMode.should(Experiment.simulate)) {
-					simulation = simulate(sampleString() + ", full", graph, i,
-							ld, ids);
+					simulation = fHelper.bruteForceSimulate(sampleString()
+							+ ", full", graph, i, ld, ids, fSampleActivations);
 				}
 
 				for (int j = 0; j < graph.size(); j++) {
@@ -273,7 +248,7 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 			}
 		}
 
-		fExecutor.shutdown();
+		fHelper.shutdown(true);
 	}
 
 	private boolean isPair(int i, int j, int[] ids) {
@@ -285,149 +260,6 @@ public class TemporalEstimateExperiment implements IMultiTransformer {
 		int[] pair = { Integer.parseInt(p[0]), Integer.parseInt(p[1]) };
 
 		return pair[0] == ids[i] && pair[1] == ids[j];
-	}
-
-	private double[] kEstimate(IndexedNeighborGraph graph, int source,
-			double[][] w, double[][] lds, int k, int[] ids) throws Exception {
-		ITopKEstimator tpk = estimator(graph, w);
-
-		double[] results = new double[graph.size()];
-
-		// For each vertex pair (u, w)
-		for (int i = 0; i < graph.size(); i++) {
-			if (i == source || !isPair(source, i, ids)) {
-				continue;
-			}
-
-			System.out.println("Source: " + source + "(" + ids[source]
-					+ ") Target: " + i + "(" + ids[ids[i]]);
-
-			// 1. computes the top-k shortest paths between u and w.
-			int[] vertexes = vertexesOf(tpk.topKShortest(source, i, k));
-			LightweightStaticGraph kPathGraph = LightweightStaticGraph
-					.subgraph((LightweightStaticGraph) graph, vertexes);
-
-			// 2. runs a connectivity simulation on the subgraph
-			// composed by the top-k shortest paths.
-			double ldSub[][] = new double[vertexes.length][2];
-			for (int j = 0; j < ldSub.length; j++) {
-				ldSub[j][0] = lds[vertexes[j]][0];
-				ldSub[j][1] = lds[vertexes[j]][1];
-			}
-
-			int remappedSource = indexOf(source, vertexes);
-			int remappedTarget = indexOf(i, vertexes);
-
-			double[] estimate = simulate(sampleString() + ", k-paths (" + i
-					+ "/" + graph.size() + ")", kPathGraph, remappedSource,
-					ldSub, ids);
-			results[i] = estimate[remappedTarget];
-		}
-
-		return results;
-	}
-
-	private ITopKEstimator estimator(IndexedNeighborGraph graph, double[][] w) {
-		if (fEstimator.equals("yen")) {
-			return new TopKShortest(graph, w);
-		}
-
-		else if (fEstimator.equals("vd")) {
-			return new TopKShortestDisjoint(graph, w, Mode.VertexDisjoint);
-		}
-
-		else if (fEstimator.equals("ed")) {
-			return new TopKShortestDisjoint(graph, w, Mode.EdgeDisjoint);
-		}
-
-		throw new IllegalArgumentException();
-	}
-
-	private int indexOf(int element, int[] vertexes) {
-		for (int i = 0; i < vertexes.length; i++) {
-			if (element == vertexes[i]) {
-				return i;
-			}
-		}
-
-		throw new NoSuchElementException();
-	}
-
-	private int[] vertexesOf(ArrayList<? extends PathEntry> topKShortest) {
-		Set<Integer> vertexSet = new HashSet<Integer>();
-		for (PathEntry entry : topKShortest) {
-			if (fPrintPaths) {
-				System.out.println(Arrays.toString(entry.path));
-			}
-			for (int i = 0; i < entry.path.length; i++) {
-				vertexSet.add(entry.path[i]);
-			}
-		}
-
-		int[] vertexes = new int[vertexSet.size()];
-		int i = 0;
-		for (Integer element : vertexSet) {
-			vertexes[i++] = element;
-		}
-
-		Arrays.sort(vertexes);
-		return vertexes;
-	}
-
-	private double[] estimate(IndexedNeighborGraph graph, int source,
-			double[][] w, int[] ids) {
-
-		System.err.println("Estimating for source " + source + ".");
-		double[] minDists = new double[graph.size()];
-		int[] previous = new int[graph.size()];
-		Arrays.fill(previous, Integer.MAX_VALUE);
-
-		GraphAlgorithms.dijkstra(graph, source, w, minDists, previous);
-
-		for (int i = 1; i < graph.size(); i++) {
-			int vertex = i;
-			if (fPrintPaths) {
-				while (previous[vertex] != Integer.MAX_VALUE) {
-					System.err.println(ids[vertex] + " <- "
-							+ ids[previous[vertex]] + " ("
-							+ w[previous[vertex]][vertex] + ")");
-					vertex = previous[vertex];
-				}
-			}
-		}
-
-		return minDists;
-	}
-
-	private double[] simulate(String taskStr, IndexedNeighborGraph graph,
-			int source, double[][] ld, int[] ids) throws Exception {
-
-		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
-		double[] ttc = new double[graph.size()];
-
-		ActivationSampler sampler = fSampleActivations ? new ActivationSampler(
-				graph) : null;
-
-		fTracker = Progress.newTracker(taskStr, fRepetitions);
-		fTracker.startTask();
-		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, source, fBurnin,
-					graph, sampler, fYaoConf)));
-		}
-
-		for (Future<double[]> task : tasks) {
-			double[] tce = task.get();
-			for (int i = 0; i < ttc.length; i++) {
-				ttc[i] += tce[i];
-			}
-		}
-
-		// Print activations.
-		if (sampler != null) {
-			sampler.printActivations(ids);
-		}
-
-		return ttc;
 	}
 
 	private void setSample(int sampleId, int sourceId, int totalSources) {

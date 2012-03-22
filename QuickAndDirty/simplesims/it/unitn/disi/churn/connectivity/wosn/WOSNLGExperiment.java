@@ -21,6 +21,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -97,16 +98,17 @@ public class WOSNLGExperiment implements ITransformer {
 		ArrayList<EdgeTask> edgeTasks = gt.edgeTasks;
 		double[] estimation = new double[graph.size()];
 		Arrays.fill(estimation, Double.POSITIVE_INFINITY);
-		estimation[0] = 0;		
+		estimation[0] = 0;
 		int i = 0;
-		for(EdgeTask task : edgeTasks) {
+		for (EdgeTask task : edgeTasks) {
 			if (i == (graph.size() - 1)) {
 				break;
 			}
-			
+
 			if (task.i == i && task.j == (i + 1)) {
 				IncrementalStatsAdapter adapter = (IncrementalStatsAdapter) task.stats;
-				estimation[i + 1] = estimation[i] + adapter.getStats().getAverage();
+				estimation[i + 1] = estimation[i]
+						+ adapter.getStats().getAverage();
 				i++;
 			}
 		}
@@ -137,7 +139,7 @@ public class WOSNLGExperiment implements ITransformer {
 	private double[] simulate(IndexedNeighborGraph graph, double[][] ld)
 			throws Exception {
 
-		ArrayList<Future<double[]>> tasks = new ArrayList<Future<double[]>>();
+		ArrayList<Future<Pair<Integer, double[]>[]>> tasks = new ArrayList<Future<Pair<Integer, double[]>[]>>();
 		double[] ttc = new double[graph.size()];
 
 		synchronized (fExecutor) {
@@ -146,14 +148,17 @@ public class WOSNLGExperiment implements ITransformer {
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, 0, fBurnin,
+			tasks.add(fExecutor.submit(new SimulationTask(ld, 0, 0, fBurnin,
 					graph, null, fYaoConf)));
 		}
 
-		for (Future<double[]> task : tasks) {
-			double[] tce = task.get();
+		for (Future<Pair<Integer, double[]>[]> task : tasks) {
+			Pair<Integer, double[]>[] tce = task.get();
+			if (tce.length != 1) {
+				throw new IllegalStateException();
+			}
 			for (int i = 0; i < ttc.length; i++) {
-				ttc[i] += tce[i];
+				ttc[i] += tce[0].b[i];
 			}
 		}
 
