@@ -11,10 +11,10 @@ import peersim.config.ObjectCreator;
 public class TEDriver {
 
 	@Attribute("repetitions")
-	private int fRepetitions;
+	protected int fRepetitions;
 
 	@Attribute("burnin")
-	private double fBurnin;
+	protected double fBurnin;
 
 	@Attribute("cores")
 	private int fCores;

@@ -235,7 +235,6 @@ public class TEExperimentHelper {
 					fBurnin, graph, sampler, fYaoConf));
 		}
 
-		System.err.println("SUBMISSION FASE DONE.");
 		@SuppressWarnings("unchecked")
 		Pair<Integer, double[]>[] result = new Pair[sources];
 		for (int i = 0; i < result.length; i++) {
