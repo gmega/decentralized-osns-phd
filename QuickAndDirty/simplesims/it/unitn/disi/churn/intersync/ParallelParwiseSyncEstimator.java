@@ -4,10 +4,8 @@ import it.unitn.disi.churn.BaseChurnSim;
 import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.logging.Progress;
@@ -26,43 +24,29 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 
 	private ProgressTracker fTracker;
 
-	private final YaoChurnConfigurator fYaoConf;
-
 	// ------------------------------------------------------------------------
 
-	public ParallelParwiseSyncEstimator(YaoChurnConfigurator yaoConf,
-			int repetitions) {
-		fYaoConf = yaoConf;
+	public ParallelParwiseSyncEstimator(int repetitions) {
 		fRepetitions = repetitions;
 	}
 
 	// ------------------------------------------------------------------------
 
 	public GraphTask estimate(Function0<IValueObserver> oFactory,
-			ExecutorService es, IndexedNeighborGraph g, int id) {
-
-		double[] lIs = new double[g.size()];
-		double[] dIs = new double[g.size()];
-
-		IAverageGenerator generator = fYaoConf.averageGenerator();
-
-		for (int j = 0; j < g.size(); j++) {
-			lIs[j] = generator.nextLI();
-			dIs[j] = generator.nextDI();
-			System.out.println(lIs[j] + " " + dIs[j]);
-		}
+			ExecutorService es, IndexedNeighborGraph g, double[] li,
+			double[] di, IDistributionGenerator generator, boolean cloud, int id) {
 
 		ArrayList<EdgeTask> tasks = new ArrayList<EdgeTask>();
 
 		// Now estimates the TTC for all edges, in parallel.
-		for (int j = 0; j < lIs.length; j++) {
-			for (int k = 0; k < dIs.length; k++) {
+		for (int j = 0; j < li.length; j++) {
+			for (int k = 0; k < di.length; k++) {
 				if (j == k) {
 					continue;
 				}
 				if (g.isEdge(j, k)) {
-					tasks.add(ttcTask(j, k, lIs, dIs,
-							fYaoConf.distributionGenerator(), oFactory.call()));
+					tasks.add(ttcTask(j, k, li, di, cloud, generator,
+							oFactory.call()));
 				}
 			}
 		}
@@ -75,13 +59,14 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 			}
 		}
 
-		return new GraphTask(lIs, dIs, tasks);
+		return new GraphTask(li, di, tasks);
 	}
 
 	// ------------------------------------------------------------------------
 
 	private EdgeTask ttcTask(int i, int j, double[] lIs, double[] dIs,
-			IDistributionGenerator distGen, IValueObserver observer) {
+			boolean cloud, IDistributionGenerator distGen,
+			IValueObserver observer) {
 
 		RenewalProcess pI = new RenewalProcess(i,
 				distGen.uptimeDistribution(lIs[i]),
@@ -92,7 +77,8 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions, observer);
+		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions, cloud,
+				observer);
 		sims.add(sexp);
 
 		BaseChurnSim churnSim = new BaseChurnSim(

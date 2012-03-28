@@ -18,6 +18,7 @@ import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
@@ -127,13 +128,22 @@ public class WOSNLGExperiment implements ITransformer {
 
 	private GraphTask pairwiseEstimate(IndexedNeighborGraph graph) {
 		ParallelParwiseSyncEstimator ppse = new ParallelParwiseSyncEstimator(
-				fYaoConf, fRepetitions);
+				fRepetitions);
 
+		double [] li = new double[graph.size()];
+		double [] di = new double[graph.size()];
+		IAverageGenerator gen = fYaoConf.averageGenerator();
+		
+		for (int i = 0; i < graph.size(); i++) {
+			li[i] = gen.nextLI();
+			di[i] = gen.nextDI();
+		}
+		
 		return ppse.estimate(new F0<IValueObserver>() {
 			{
 				ret(new IncrementalStatsAdapter(new IncrementalStats()));
 			};
-		}, fExecutor, graph, 1);
+		}, fExecutor, graph, li, di, fYaoConf.distributionGenerator(), false, 1);
 	}
 
 	private double[] simulate(IndexedNeighborGraph graph, double[][] ld)

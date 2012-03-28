@@ -150,7 +150,7 @@ public class SyncEstimatorCLI {
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new TrueSyncEstimator(repeats, stats.remove(0)));
+			sims.add(new TrueSyncEstimator(repeats, false, stats.remove(0)));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {

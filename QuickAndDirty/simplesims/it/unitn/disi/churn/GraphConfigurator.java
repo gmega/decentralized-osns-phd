@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import it.unitn.disi.graph.CompleteGraph;
+import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
@@ -34,6 +36,18 @@ public class GraphConfigurator {
 			loader.start(null);
 			System.err.println("done.");
 			return loader;
+		} else if(fGraphType.equals("cloudcatalog")) {
+			CatalogReader reader = new CatalogReader(new FileInputStream(
+					new File(fCatalog)), CatalogRecordTypes.PROPERTY_RECORD);
+			System.err.print("-- Loading catalog...");
+			PartialLoader loader = new PartialLoader(reader,
+					ByteGraphDecoder.class, new File(fGraph)) {
+				@Override
+				public IndexedNeighborGraph subgraph(Integer id) {
+					return new CompleteGraph(catalogEntry(id).size);
+				}
+			};
+			loader.start(null);
 		} else if (fGraphType.equals("linegraph")) {
 			return new ListGraphGenerator();
 		}
