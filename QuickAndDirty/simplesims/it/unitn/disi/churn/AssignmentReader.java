@@ -15,11 +15,11 @@ public class AssignmentReader extends SequentialAttributeReader<double[][]>{
 	@Override
 	public double[][] read(int[] ids) throws IOException {
 		
-		double [][] lidi = new double[ids.length][2];
+		double [][] lidi = new double[2][ids.length];
 		for (int i = 0; !rootChanged(); i++) {		
 			int node = idOf(Integer.parseInt(get("node")), ids);
-			lidi[node][LI] = Double.parseDouble(get("li"));
-			lidi[node][DI] = Double.parseDouble(get("di"));
+			lidi[LI][node] = Double.parseDouble(get("li"));
+			lidi[DI][node] = Double.parseDouble(get("di"));
 			advance();
 		}
 		

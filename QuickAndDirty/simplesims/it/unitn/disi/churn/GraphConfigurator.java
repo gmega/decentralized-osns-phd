@@ -16,7 +16,7 @@ import it.unitn.disi.unitsim.ListGraphGenerator;
 
 @AutoConfig
 public class GraphConfigurator {
-	
+
 	@Attribute(value = "graph", defaultValue = "none")
 	private String fGraph;
 
@@ -25,8 +25,10 @@ public class GraphConfigurator {
 
 	@Attribute("graphtype")
 	private String fGraphType;
-	
+
 	public IGraphProvider graphProvider() throws Exception {
+		IGraphProvider provider;
+
 		if (fGraphType.equals("catalog")) {
 			CatalogReader reader = new CatalogReader(new FileInputStream(
 					new File(fCatalog)), CatalogRecordTypes.PROPERTY_RECORD);
@@ -35,8 +37,8 @@ public class GraphConfigurator {
 					ByteGraphDecoder.class, new File(fGraph));
 			loader.start(null);
 			System.err.println("done.");
-			return loader;
-		} else if(fGraphType.equals("cloudcatalog")) {
+			provider = loader;
+		} else if (fGraphType.equals("cloudcatalog")) {
 			CatalogReader reader = new CatalogReader(new FileInputStream(
 					new File(fCatalog)), CatalogRecordTypes.PROPERTY_RECORD);
 			System.err.print("-- Loading catalog...");
@@ -48,10 +50,14 @@ public class GraphConfigurator {
 				}
 			};
 			loader.start(null);
+			provider = loader;
 		} else if (fGraphType.equals("linegraph")) {
-			return new ListGraphGenerator();
+			provider = new ListGraphGenerator();
+		} else {
+			throw new IllegalArgumentException("Unknown graph type "
+					+ fGraphType + ".");
 		}
-		
-		return null;
+
+		return provider;
 	}
 }

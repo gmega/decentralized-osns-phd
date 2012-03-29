@@ -13,9 +13,9 @@ import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.churn.connectivity.SimulationTask;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.EdgeTask;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.GraphTask;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
@@ -88,14 +88,6 @@ public class WOSNLGExperiment implements ITransformer {
 
 		gt.await();
 
-		double[][] ld = new double[graph.size()][2];
-		for (int i = 0; i < ld.length; i++) {
-			ld[i][SimulationTask.LI] = gt.lIs[i];
-			ld[i][SimulationTask.DI] = gt.dIs[i];
-			System.out.println(ld[i][SimulationTask.LI] + " "
-					+ ld[i][SimulationTask.DI]);
-		}
-
 		ArrayList<EdgeTask> edgeTasks = gt.edgeTasks;
 		double[] estimation = new double[graph.size()];
 		Arrays.fill(estimation, Double.POSITIVE_INFINITY);
@@ -114,7 +106,7 @@ public class WOSNLGExperiment implements ITransformer {
 			}
 		}
 
-		double[] simulation = simulate(graph, ld);
+		double[] simulation = simulate(graph, gt.lIs, gt.dIs);
 
 		for (i = 0; i < simulation.length; i++) {
 			writer.set("node", i);
@@ -127,27 +119,32 @@ public class WOSNLGExperiment implements ITransformer {
 	}
 
 	private GraphTask pairwiseEstimate(IndexedNeighborGraph graph) {
-		ParallelParwiseSyncEstimator ppse = new ParallelParwiseSyncEstimator(
+		ParallelParwiseEstimator ppse = new ParallelParwiseEstimator(
 				fRepetitions);
 
-		double [] li = new double[graph.size()];
-		double [] di = new double[graph.size()];
+		double[] li = new double[graph.size()];
+		double[] di = new double[graph.size()];
 		IAverageGenerator gen = fYaoConf.averageGenerator();
-		
+
 		for (int i = 0; i < graph.size(); i++) {
 			li[i] = gen.nextLI();
 			di[i] = gen.nextDI();
+			System.out.println(i + " " + li[i] + " " + +di[i]);
 		}
-		
-		return ppse.estimate(new F0<IValueObserver>() {
-			{
-				ret(new IncrementalStatsAdapter(new IncrementalStats()));
-			};
-		}, fExecutor, graph, li, di, fYaoConf.distributionGenerator(), false, 1);
+
+		return ppse
+				.estimate(
+						new F0<IValueObserver>() {
+							{
+								ret(new IncrementalStatsAdapter(
+										new IncrementalStats()));
+							};
+						}, fExecutor, graph, li, di, fYaoConf
+								.distributionGenerator(), false, 1);
 	}
 
-	private double[] simulate(IndexedNeighborGraph graph, double[][] ld)
-			throws Exception {
+	private double[] simulate(IndexedNeighborGraph graph, double[] lis,
+			double[] dis) throws Exception {
 
 		ArrayList<Future<Pair<Integer, double[]>[]>> tasks = new ArrayList<Future<Pair<Integer, double[]>[]>>();
 		double[] ttc = new double[graph.size()];
@@ -158,8 +155,8 @@ public class WOSNLGExperiment implements ITransformer {
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(ld, 0, 0, fBurnin,
-					graph, null, fYaoConf)));
+			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, 0, 0,
+					fBurnin, graph, null, fYaoConf)));
 		}
 
 		for (Future<Pair<Integer, double[]>[]> task : tasks) {

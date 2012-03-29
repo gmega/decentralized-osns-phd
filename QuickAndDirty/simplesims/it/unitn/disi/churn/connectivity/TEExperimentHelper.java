@@ -205,8 +205,12 @@ public class TEExperimentHelper {
 	 *            source interval start.
 	 * @param sourceEnd
 	 *            source interval end.
-	 * @param ld
-	 *            the li/di availability parameters for each vertex.
+	 * @param lIs
+	 *            the li (session length) availability parameter for each
+	 *            vertex.
+	 * @param dIs
+	 *            the di (inter-session length) availability parameter for each
+	 *            vertex.
 	 * @param ids
 	 *            the original ids of the vertices (for printing activations).
 	 * @param sampleActivations
@@ -220,7 +224,7 @@ public class TEExperimentHelper {
 	 */
 	public Pair<Integer, double[]>[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
-			double[][] ld, int[] ids, boolean sampleActivations)
+			double[] lIs, double[] dIs, int[] ids, boolean sampleActivations)
 			throws Exception {
 
 		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
@@ -231,8 +235,8 @@ public class TEExperimentHelper {
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
-			fExecutor.submit(new SimulationTask(ld, sourceStart, sourceEnd,
-					fBurnin, graph, sampler, fYaoConf));
+			fExecutor.submit(new SimulationTask(lIs, dIs, sourceStart,
+					sourceEnd, fBurnin, graph, sampler, fYaoConf));
 		}
 
 		@SuppressWarnings("unchecked")
@@ -277,10 +281,10 @@ public class TEExperimentHelper {
 	 *      double[][], int[], boolean)
 	 */
 	public double[] bruteForceSimulate(String taskStr,
-			IndexedNeighborGraph graph, int source, double[][] ld, int[] ids,
-			boolean sampleActivations) throws Exception {
-		return bruteForceSimulate(taskStr, graph, source, source, ld, ids,
-				sampleActivations)[0].b;
+			IndexedNeighborGraph graph, int source, double[] lIs, double[] dIs,
+			int[] ids, boolean sampleActivations) throws Exception {
+		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
+				ids, sampleActivations)[0].b;
 	}
 
 	/**
@@ -299,8 +303,12 @@ public class TEExperimentHelper {
 	 * @param w
 	 *            the weight matrix (with the inter-activation times for the
 	 *            edges).
-	 * @param lds
-	 *            the availability parameters.
+	 * @param lIs
+	 *            the li (session length) availability parameter for each
+	 *            vertex.
+	 * @param dIs
+	 *            the di (inter-session length) availability parameter for each
+	 *            vertex.
 	 * @param k
 	 *            the k of the top-k.
 	 * @param ids
@@ -311,7 +319,7 @@ public class TEExperimentHelper {
 	 */
 	public Pair<IndexedNeighborGraph, Double> topKEstimate(String taskString,
 			IndexedNeighborGraph graph, int source, int target, double[][] w,
-			double[][] lds, int k, int[] ids) throws Exception {
+			double[] lIs, double[] dIs, int k, int[] ids) throws Exception {
 
 		ITopKEstimator tpk = fEstimator.call(graph, w);
 
@@ -325,17 +333,18 @@ public class TEExperimentHelper {
 
 		// 2. runs a connectivity simulation on the subgraph
 		// composed by the top-k shortest paths.
-		double ldSub[][] = new double[vertexes.length][2];
-		for (int j = 0; j < ldSub.length; j++) {
-			ldSub[j][0] = lds[vertexes[j]][0];
-			ldSub[j][1] = lds[vertexes[j]][1];
+		double liSub[] = new double[lIs.length];
+		double diSub[] = new double[dIs.length];
+		for (int j = 0; j < diSub.length; j++) {
+			liSub[j] = lIs[vertexes[j]];
+			diSub[j] = dIs[vertexes[j]];
 		}
 
 		int remappedSource = indexOf(source, vertexes);
 		int remappedTarget = indexOf(target, vertexes);
 
 		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, ldSub, ids, false)[0].b;
+				remappedSource, remappedSource, liSub, diSub, ids, false)[0].b;
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate[remappedTarget]);

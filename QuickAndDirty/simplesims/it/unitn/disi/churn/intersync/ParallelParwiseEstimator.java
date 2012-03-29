@@ -18,7 +18,7 @@ import java.util.concurrent.Future;
 
 import org.lambda.functions.Function0;
 
-public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
+public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 	private final int fRepetitions;
 
@@ -26,7 +26,7 @@ public class ParallelParwiseSyncEstimator implements IExecutorCallback<Object> {
 
 	// ------------------------------------------------------------------------
 
-	public ParallelParwiseSyncEstimator(int repetitions) {
+	public ParallelParwiseEstimator(int repetitions) {
 		fRepetitions = repetitions;
 	}
 

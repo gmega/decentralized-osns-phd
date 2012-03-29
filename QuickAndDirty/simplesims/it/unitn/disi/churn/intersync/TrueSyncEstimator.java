@@ -8,14 +8,13 @@ import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
 
 /**
- * Very simple experiment for estimating the true average for the the
- * synchronization time of two nodes.
+ * Very simple experiment for sampling the synchronization time of two nodes.
  * 
  * @author giuliano
  */
 public class TrueSyncEstimator implements IChurnSim {
 
-	private volatile int fSyncs;
+	private volatile int fSamples;
 
 	private final IValueObserver fObserver;
 
@@ -25,8 +24,8 @@ public class TrueSyncEstimator implements IChurnSim {
 
 	private volatile int fPId0;
 
-	public TrueSyncEstimator(int syncs, boolean cloud, IValueObserver observer) {
-		fSyncs = syncs;
+	public TrueSyncEstimator(int samples, boolean cloud, IValueObserver observer) {
+		fSamples = samples;
 		fPendingUps = new TDoubleArrayList();
 		fObserver = observer;
 		fCloud = cloud;
@@ -50,9 +49,9 @@ public class TrueSyncEstimator implements IChurnSim {
 		if (senderUp(p) && p.process(1).isUp()) {
 			for (int i = 0; i < fPendingUps.size(); i++) {
 				fObserver.observe(time - fPendingUps.get(i));
+				fSamples--;
 			}
 			fPendingUps.resetQuick();
-			fSyncs--;
 		}
 	}
 
@@ -62,7 +61,7 @@ public class TrueSyncEstimator implements IChurnSim {
 
 	@Override
 	public boolean isDone() {
-		return fSyncs <= 0;
+		return fSamples <= 0;
 	}
 
 }

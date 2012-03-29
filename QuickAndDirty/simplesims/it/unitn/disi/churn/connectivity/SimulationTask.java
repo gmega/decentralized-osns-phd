@@ -13,11 +13,9 @@ import java.util.concurrent.Callable;
 
 public class SimulationTask implements Callable<Pair<Integer, double[]>[]> {
 
-	public static final int LI = 0;
-
-	public static final int DI = 1;
-
-	private final double[][] fld;
+	private final double[] fLis;
+	
+	private final double[] fDis;
 
 	private final int fSourceStart;
 
@@ -31,10 +29,11 @@ public class SimulationTask implements Callable<Pair<Integer, double[]>[]> {
 
 	private final YaoChurnConfigurator fYaoConf;
 
-	public SimulationTask(double[][] ld, int start, int end, double burnin,
-			IndexedNeighborGraph graph, ActivationSampler sampler,
-			YaoChurnConfigurator yaoConf) {
-		fld = ld;
+	public SimulationTask(double[] lIs, double[] dIs, int start, int end,
+			double burnin, IndexedNeighborGraph graph,
+			ActivationSampler sampler, YaoChurnConfigurator yaoConf) {
+		fLis = lIs;
+		fDis = dIs;
 		fSourceStart = start;
 		fSourceEnd = end;
 		fGraph = graph;
@@ -51,8 +50,8 @@ public class SimulationTask implements Callable<Pair<Integer, double[]>[]> {
 
 		for (int i = 0; i < rp.length; i++) {
 			rp[i] = new RenewalProcess(i,
-					distGen.uptimeDistribution(fld[i][LI]),
-					distGen.downtimeDistribution(fld[i][DI]), State.down);
+					distGen.uptimeDistribution(fLis[i]),
+					distGen.downtimeDistribution(fDis[i]), State.down);
 		}
 
 		ArrayList<TemporalConnectivityEstimator> sims = new ArrayList<TemporalConnectivityEstimator>();

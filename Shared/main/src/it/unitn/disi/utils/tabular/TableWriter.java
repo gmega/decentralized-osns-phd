@@ -1,5 +1,6 @@
 package it.unitn.disi.utils.tabular;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -27,6 +28,10 @@ public class TableWriter implements ITableWriter {
 
 	private final String fSeparator;
 
+	public TableWriter(OutputStream output, String... fields) {
+		this(new PrintStream(output), fields);
+	}
+	
 	public TableWriter(PrintStream output, String... fields) {
 		this(FS, output, fields);
 	}

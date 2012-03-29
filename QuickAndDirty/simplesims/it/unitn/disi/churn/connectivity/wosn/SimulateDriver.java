@@ -51,16 +51,15 @@ public class SimulateDriver extends TEDriver implements ITransformer {
 		TableWriter writer = new TableWriter(new PrintStream(oup), "id",
 				"source", "target", "ttc");
 
-		
 		for (int count = 0; assig.hasNext() && count < fEnd; count++) {
-			
+
 			if (count < fStart) {
 				System.err.println("-- Skipping sample " + count + " ("
 						+ assig.currentRoot() + ").");
 				assig.skipCurrent();
 				continue;
 			}
-			
+
 			int root = Integer.parseInt(assig.currentRoot());
 			IndexedNeighborGraph graph = provider.subgraph(root);
 			int ids[] = provider.verticesOf(root);
@@ -74,7 +73,8 @@ public class SimulateDriver extends TEDriver implements ITransformer {
 						.bruteForceSimulate(
 								"(" + (start + 1) + " - " + (end + 1) + ")/"
 										+ graph.size(), graph, start, end,
-								lidi, ids, false);
+								lidi[AssignmentReader.LI],
+								lidi[AssignmentReader.DI], ids, false);
 				printResults(results, writer, root, ids);
 				start = end + 1;
 			} while (start < graph.size());

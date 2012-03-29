@@ -5,9 +5,9 @@ import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.EdgeTask;
-import it.unitn.disi.churn.intersync.ParallelParwiseSyncEstimator.GraphTask;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
@@ -34,13 +34,17 @@ import peersim.util.IncrementalStats;
 @AutoConfig
 public class PairwiseEstimate implements ITransformer {
 
-	private final TableWriter fSampleWriter = new TableWriter(new PrintWriter(
-			new PrefixedWriter("SM:", new OutputStreamWriter(System.out))),
-			"id", "source", "target", "ttcl", "ttc", "ttcu");
+	private final TableWriter fSampleWriter;
+
+	@Attribute("start")
+	private int fStart;
+
+	@Attribute("end")
+	private int fEnd;
 
 	@Attribute("repeats")
 	private int fRepeats;
-	
+
 	@Attribute("cloud")
 	private boolean fCloud;
 
@@ -48,25 +52,51 @@ public class PairwiseEstimate implements ITransformer {
 
 	private YaoChurnConfigurator fYaoConf;
 
-	public PairwiseEstimate(@Attribute(Attribute.AUTO) IResolver resolver) {
+	private String[] fMeasureKeys;
+
+	private static final int LOWER_CONFIDENCE = 0;
+	private static final int AVERAGE = 1;
+	private static final int UPPER_CONFIDENCE = 2;
+
+	public PairwiseEstimate(@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute("measure") String measure) {
 		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
 				resolver);
 		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
+
+		fMeasureKeys = new String[] { measure + "l", measure, measure + "u" };
+
+		fSampleWriter = new TableWriter(new PrintWriter(new PrefixedWriter(
+				"SM:", new OutputStreamWriter(System.out))), "id", "source",
+				"target", fMeasureKeys[LOWER_CONFIDENCE],
+				fMeasureKeys[AVERAGE], fMeasureKeys[UPPER_CONFIDENCE]);
 	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		IGraphProvider loader = fGraphConf.graphProvider();
 
-		ParallelParwiseSyncEstimator ppse = new ParallelParwiseSyncEstimator(
-				fRepeats);
+		ParallelParwiseEstimator ppse = new ParallelParwiseEstimator(fRepeats);
 
 		ExecutorService es = new CallbackThreadPoolExecutor<Object>(Runtime
 				.getRuntime().availableProcessors(), ppse);
 
+		int count = -1;
 		AssignmentReader reader = new AssignmentReader(is, "id");
 		while (reader.hasNext()) {
+			count++;
+			if (count < fStart) {
+				System.err.println("-- Skip neighborhood "
+						+ reader.currentRoot() + ".");
+				reader.skipCurrent();
+				continue;
+			}
+
+			if (count >= fEnd) {
+				break;
+			}
+
 			int idx = Integer.parseInt(reader.currentRoot());
 			int[] ids = loader.verticesOf(idx);
 			double[][] lidi = reader.read(ids);
@@ -90,11 +120,11 @@ public class PairwiseEstimate implements ITransformer {
 				fSampleWriter.set("id", idx);
 				fSampleWriter.set("source", ids[task.i]);
 				fSampleWriter.set("target", ids[task.j]);
-				fSampleWriter
-						.set("ttcl", StatUtils.lowerConfidenceLimit(stats));
-				fSampleWriter.set("ttc", stats.getAverage());
-				fSampleWriter
-						.set("ttcu", StatUtils.upperConfidenceLimit(stats));
+				fSampleWriter.set(fMeasureKeys[LOWER_CONFIDENCE],
+						StatUtils.lowerConfidenceLimit(stats));
+				fSampleWriter.set(fMeasureKeys[AVERAGE], stats.getAverage());
+				fSampleWriter.set(fMeasureKeys[UPPER_CONFIDENCE],
+						StatUtils.upperConfidenceLimit(stats));
 				fSampleWriter.emmitRow();
 			}
 		}

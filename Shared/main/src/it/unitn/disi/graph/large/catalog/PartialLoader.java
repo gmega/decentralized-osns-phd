@@ -59,7 +59,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 		return LightweightStaticGraph.fromGraph(nlg);
 	}
 
-	private CatalogEntry catalogEntry(int id) {
+	protected CatalogEntry catalogEntry(int id) {
 		CatalogEntry entry = fCatalog.get(id);
 		if (entry == null) {
 			throw new IllegalStateException("No catalog entry for element "
@@ -177,7 +177,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 		fStream.close();
 	}
 
-	static class CatalogEntry {
+	protected static class CatalogEntry {
 		public final int root;
 		public final int size;
 		public final long offset;

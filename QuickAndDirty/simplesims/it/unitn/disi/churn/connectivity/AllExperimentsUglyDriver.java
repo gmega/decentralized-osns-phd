@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.AssignmentReader;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.cli.IMultiTransformer;
@@ -209,8 +210,9 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 					for (int j = 0; j < graph.size(); j++) {
 						if (j != i) {
 							kEstimates[i] = fHelper.topKEstimate("top-k - " + i
-									+ "/" + graph.size(), graph, i, j, w, ld,
-									fK, ids).b;
+									+ "/" + graph.size(), graph, i, j, w,
+									ld[AssignmentReader.LI],
+									ld[AssignmentReader.DI], fK, ids).b;
 						}
 					}
 				}
@@ -218,7 +220,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 				double[] simulation = null;
 				if (fMode.should(Experiment.simulate)) {
 					simulation = fHelper.bruteForceSimulate(sampleString()
-							+ ", full", graph, i, ld, ids, fSampleActivations);
+							+ ", full", graph, i, ld[AssignmentReader.LI],
+							ld[AssignmentReader.DI], ids, fSampleActivations);
 				}
 
 				for (int j = 0; j < graph.size(); j++) {
