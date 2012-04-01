@@ -113,8 +113,7 @@ public class WOSNRandomPairsExperiment implements IMultiTransformer {
 					.subgraph(hoods[id].root);
 			Pair<IndexedNeighborGraph, Double> result = fHelper.topKEstimate(
 					"", ing, next.a, next.b, hoods[id].weights,
-					hoods[id].liDis[AssignmentReader.LI],
-					hoods[id].liDis[AssignmentReader.DI], fK, hoods[id].ids);
+					hoods[id].liDis[AssignmentReader.LI], fK, hoods[id].ids);
 
 			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);

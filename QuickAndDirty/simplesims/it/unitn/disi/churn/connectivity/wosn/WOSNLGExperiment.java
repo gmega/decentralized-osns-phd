@@ -155,8 +155,8 @@ public class WOSNLGExperiment implements ITransformer {
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, 0, 0,
-					fBurnin, graph, null, fYaoConf)));
+			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, 0, 0, fBurnin,
+					graph, null, fYaoConf)));
 		}
 
 		for (Future<Pair<Integer, double[]>[]> task : tasks) {
