@@ -25,6 +25,13 @@ public abstract class SequentialAttributeReader<K> {
 		fReader.next();
 		fCurrentRoot = fReader.get(fIdKey);
 	}
+	
+	public void streamRepositioned() throws IOException{
+		fReader.streamRepositioned();
+		fDone = false;
+		advance();
+		fChanged = false;
+	}
 
 	public boolean hasNext() {
 		return fReader.hasNext();

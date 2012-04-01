@@ -65,6 +65,10 @@ public class BaseChurnSim implements Runnable {
 		}
 		return done;
 	}
+	
+	public int size() {
+		return fProcesses.length;
+	}
 
 	public RenewalProcess process(int index) {
 		return fProcesses[index];

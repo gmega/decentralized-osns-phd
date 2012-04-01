@@ -47,14 +47,17 @@ public class TrueSyncEstimator implements IChurnSim {
 
 		// P1 and P2 are synchronized.
 		if (senderUp(p) && p.process(1).isUp()) {
-			for (int i = 0; i < fPendingUps.size(); i++) {
-				fObserver.observe(time - fPendingUps.get(i));
-				fSamples--;
-			}
+			register(time, fPendingUps);
 			fPendingUps.resetQuick();
 		}
 	}
 
+	protected void register(double p2Login, TDoubleArrayList p1Logins) {
+		for (int i = 0; i < p1Logins.size() && fSamples > 0; i++, fSamples--) {
+			fObserver.observe(p2Login - p1Logins.get(i));
+		}
+	}
+	
 	private boolean senderUp(BaseChurnSim p) {
 		return fCloud || p.process(0).isUp();
 	}

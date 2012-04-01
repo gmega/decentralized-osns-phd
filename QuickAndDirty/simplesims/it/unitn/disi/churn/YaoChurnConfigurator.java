@@ -24,6 +24,15 @@ public class YaoChurnConfigurator {
 
 	@Attribute(value = "assignments", defaultValue = "yao")
 	protected String fAssignments;
+	
+	public YaoChurnConfigurator() {
+		
+	}
+	
+	public YaoChurnConfigurator(String mode, String assignments) {
+		fMode = mode;
+		fAssignments = assignments;
+	}
 
 	public IAverageGenerator averageGenerator() {
 		if (fAssignments.toLowerCase().equals("yao")) {

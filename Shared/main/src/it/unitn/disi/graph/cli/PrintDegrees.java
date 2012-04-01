@@ -17,7 +17,7 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class PrintDegrees extends GraphAnalyzer {
 	
-	@Attribute
+	@Attribute(value = "no_header", defaultValue = "false")
 	boolean no_header;
 	
 	public PrintDegrees(@Attribute("decoder") String decoder) {

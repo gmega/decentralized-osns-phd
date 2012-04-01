@@ -1,12 +1,15 @@
 package it.unitn.disi.cli;
 
 import it.unitn.disi.utils.HashMapResolver;
+import it.unitn.disi.utils.exception.ParseException;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,6 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
@@ -44,12 +49,15 @@ public class GenericDriver {
 	@Option(name = "-p", usage = "colon (:) separated list of key=value pairs (transformer-specific)", required = false)
 	private String fParameters = "";
 
+	@Option(name = "-f", aliases = { "--file" }, usage = "file containing key=value pairs (transformer-specific)", required = false)
+	private File fPropertyFile;
+
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
 	private char fSplitChar = ':';
 
-	@Option(name = "-z", aliases = {"--zipped"}, usage = "allows usage of GZipped inputs", required = false)
+	@Option(name = "-z", aliases = { "--zipped" }, usage = "allows usage of GZipped inputs", required = false)
 	private boolean fGZipped;
-		
+
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
 	private boolean fVerbose;
 
@@ -62,6 +70,10 @@ public class GenericDriver {
 	private InputStream[] fIStreams;
 
 	private OutputStream[] fOStreams;
+
+	/** Pattern for matching bash-style variables. */
+	private static final Pattern fVarPattern = Pattern
+			.compile("\\$\\{(.*?)\\}");
 
 	public void _main(String[] args) throws Exception {
 		CmdLineParser parser = new CmdLineParser(this);
@@ -84,7 +96,7 @@ public class GenericDriver {
 			fOStreams = openOutputs(fOutputs);
 
 			Object processor = create(fArguments.get(0), new HashMapResolver(
-					parseProperties(fParameters)));
+					parseProperties(fParameters, fPropertyFile)));
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
@@ -119,18 +131,62 @@ public class GenericDriver {
 		System.err.println();
 	}
 
-	private Map<String, Object> parseProperties(String params) {
+	private Map<String, Object> parseProperties(String params, File input)
+			throws IOException {
+
 		Map<String, Object> props = new HashMap<String, Object>();
+
+		// And props from file, if there's a file.
+		if (input != null) {
+			BufferedReader reader = new BufferedReader(new FileReader(input));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.startsWith("#")) {
+					continue;
+				}
+				parseAdd(line, props);
+			}
+		}
+
+		// Command line properties take precedence.
 		String[] pairs = params.split(Character.toString(fSplitChar));
 		for (String pair : pairs) {
-			String[] kvPair = pair.split("=");
-			if (kvPair.length != 2) {
-				continue;
-			}
-			props.put(kvPair[0], kvPair[1]);
+			parseAdd(pair, props);
 		}
 
 		return props;
+	}
+
+	private void parseAdd(String pair, Map<String, Object> props) {
+		String[] kvPair = pair.split("=");
+		if (kvPair.length != 2) {
+			return;
+		}
+		props.put(kvPair[0], expand(kvPair[1], props));
+	}
+
+	private String expand(String string, Map<String, Object> props) {
+		Matcher matcher = fVarPattern.matcher(string);
+		StringBuffer moldable = new StringBuffer(string);
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			String value;
+			// Lookup properties.
+			if (props.containsKey(key)) {
+				value = props.get(key).toString();
+			}
+			// Lookup system var.
+			else {
+				value = System.getenv(key);
+			}
+
+			if (value == null) {
+				throw new ParseException("Can't resolve variable " + key + ".");
+			}
+
+			moldable.replace(matcher.start(0), matcher.end(0), value);
+		}
+		return moldable.toString();
 	}
 
 	private OutputStream[] openOutputs(String outputString) throws IOException {

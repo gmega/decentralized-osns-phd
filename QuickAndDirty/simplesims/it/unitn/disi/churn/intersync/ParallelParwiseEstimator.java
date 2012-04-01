@@ -5,7 +5,6 @@ import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
-import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.logging.Progress;
@@ -18,23 +17,30 @@ import java.util.concurrent.Future;
 
 import org.lambda.functions.Function0;
 
-public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
+import peersim.graph.Graph;
 
-	private final int fRepetitions;
+public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 	private ProgressTracker fTracker;
 
+	private double fBurnin;
+
 	// ------------------------------------------------------------------------
 
-	public ParallelParwiseEstimator(int repetitions) {
-		fRepetitions = repetitions;
+	public ParallelParwiseEstimator() {
+		this(0);
+	}
+
+	public ParallelParwiseEstimator(double burnin) {
+		fBurnin = burnin;
 	}
 
 	// ------------------------------------------------------------------------
 
 	public GraphTask estimate(Function0<IValueObserver> oFactory,
-			ExecutorService es, IndexedNeighborGraph g, double[] li,
-			double[] di, IDistributionGenerator generator, boolean cloud, int id) {
+			ExecutorService es, Graph g, int repetitions, double[] li,
+			double[] di, IDistributionGenerator generator, boolean cloud,
+			int id, int[] ids) {
 
 		ArrayList<EdgeTask> tasks = new ArrayList<EdgeTask>();
 
@@ -44,9 +50,12 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				if (j == k) {
 					continue;
 				}
+
 				if (g.isEdge(j, k)) {
-					tasks.add(ttcTask(j, k, li, di, cloud, generator,
-							oFactory.call()));
+					System.out.println("R:" + repetitions);
+					tasks.add(ttcTask(j, k, li, di, repetitions, cloud,
+							generator, oFactory.call()));
+					break;
 				}
 			}
 		}
@@ -64,8 +73,8 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 	// ------------------------------------------------------------------------
 
-	private EdgeTask ttcTask(int i, int j, double[] lIs, double[] dIs,
-			boolean cloud, IDistributionGenerator distGen,
+	public EdgeTask ttcTask(int i, int j, double[] lIs, double[] dIs,
+			int repetitions, boolean cloud, IDistributionGenerator distGen,
 			IValueObserver observer) {
 
 		RenewalProcess pI = new RenewalProcess(i,
@@ -77,12 +86,12 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
 		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(fRepetitions, cloud,
+		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
 				observer);
 		sims.add(sexp);
 
 		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, sims, 0.0);
+				new RenewalProcess[] { pI, pJ }, sims, fBurnin);
 
 		return new EdgeTask(churnSim, observer, i, j);
 	}

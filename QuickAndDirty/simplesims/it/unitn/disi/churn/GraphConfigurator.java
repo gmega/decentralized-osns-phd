@@ -46,7 +46,7 @@ public class GraphConfigurator {
 					ByteGraphDecoder.class, new File(fGraph)) {
 				@Override
 				public IndexedNeighborGraph subgraph(Integer id) {
-					return new CompleteGraph(catalogEntry(id).size);
+					return new CompleteGraph(catalogEntry(id).size + 1);
 				}
 			};
 			loader.start(null);
