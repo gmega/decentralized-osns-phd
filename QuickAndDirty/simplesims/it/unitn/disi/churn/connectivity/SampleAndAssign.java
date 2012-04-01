@@ -29,6 +29,7 @@ public class SampleAndAssign implements ITransformer {
 
 	private YaoChurnConfigurator fYaoConf;
 
+	@Attribute("samples")
 	private int fSamples;
 
 	public SampleAndAssign(@Attribute(Attribute.AUTO) IResolver resolver) {

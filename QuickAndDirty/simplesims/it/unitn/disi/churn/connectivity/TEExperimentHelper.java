@@ -195,7 +195,11 @@ public class TEExperimentHelper {
 	 * Performs a "brute-force simulation" to estimate the propagation delay
 	 * between a source and all other vertices in the graph. The addition of the
 	 * sourceStart and sourceEnd parameters allow simulations to be multiplexed
-	 * on top of one single churn simulation, saving on the burn-in time.
+	 * on top of one single churn simulation, saving on the burn-in time. With
+	 * the latest version, a {@link CloudSim} is also stacked on top.
+	 * 
+	 * TODO separate {@link CloudSim} stacking and make this method more
+	 * generic.
 	 * 
 	 * @param taskStr
 	 *            a title for the progress tracker for this task.
@@ -216,13 +220,13 @@ public class TEExperimentHelper {
 	 * @param sampleActivations
 	 *            whether to sample edge activation or not (makes simulation
 	 *            even slower).
-	 * @return a {@link Pair<Integer, double[]>} array, where each entry
-	 *         corresponds to a source (the {@link Integer}, together with the
-	 *         corresponding propagation delay estimates from that source to all
-	 *         other vertices in the graph (the double[] array).
+	 * @return a {@link SimulationResults} array, where each entry corresponds
+	 *         to a source (the {@link Integer}, together with the corresponding
+	 *         propagation delay estimates from that source to all other
+	 *         vertices in the graph, as well as the {@link CloudSim} estimates.
 	 * @throws Exception
 	 */
-	public Pair<Integer, double[]>[] bruteForceSimulate(String taskStr,
+	public SimulationResults[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
 			double[] lIs, double[] dIs, int[] ids, boolean sampleActivations)
 			throws Exception {
@@ -239,27 +243,26 @@ public class TEExperimentHelper {
 					sourceEnd, fBurnin, graph, sampler, fYaoConf));
 		}
 
-		@SuppressWarnings("unchecked")
-		Pair<Integer, double[]>[] result = new Pair[sources];
+		SimulationResults[] result = new SimulationResults[sources];
 		for (int i = 0; i < result.length; i++) {
-			result[i] = new Pair<Integer, double[]>(sourceStart + i,
-					new double[graph.size()]);
+			result[i] = new SimulationResults(sourceStart + i,
+					new double[graph.size()], new double[graph.size()]);
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
 			Object taskResult = fReady.poll(Long.MAX_VALUE, TimeUnit.DAYS);
-			if (taskResult instanceof Exception) {
-				Exception ex = (Exception) taskResult;
+			if (taskResult instanceof Throwable) {
+				Throwable ex = (Throwable) taskResult;
 				ex.printStackTrace();
 				continue;
 			}
 
-			@SuppressWarnings("unchecked")
-			Pair<Integer, double[]>[] tces = (Pair<Integer, double[]>[]) taskResult;
-			for (int j = 0; j < tces.length; j++) {
-				Pair<Integer, double[]> ttcs = tces[j];
-				for (int k = 0; k < ttcs.b.length; k++) {
-					result[ttcs.a - sourceStart].b[k] += ttcs.b[k];
+			SimulationResults[] sourceResults = (SimulationResults[]) taskResult;
+			for (int j = 0; j < sourceResults.length; j++) {
+				SimulationResults sourceResult = sourceResults[j];
+				for (int k = 0; k < sourceResult.bruteForce.length; k++) {
+					result[sourceResult.source - sourceStart].bruteForce[k] += sourceResult.bruteForce[k];
+					result[sourceResult.source - sourceStart].cloud[k] += sourceResult.cloud[k];
 				}
 			}
 		}
@@ -280,11 +283,11 @@ public class TEExperimentHelper {
 	 * @see #bruteForceSimulate(String, IndexedNeighborGraph, int, int,
 	 *      double[][], int[], boolean)
 	 */
-	public double[] bruteForceSimulate(String taskStr,
+	public SimulationResults bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int source, double[] lIs, double[] dIs,
 			int[] ids, boolean sampleActivations) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				ids, sampleActivations)[0].b;
+				ids, sampleActivations)[0];
 	}
 
 	/**
@@ -344,7 +347,7 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, liSub, diSub, ids, false)[0].b;
+				remappedSource, remappedSource, liSub, diSub, ids, false)[0].bruteForce;
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate[remappedTarget]);

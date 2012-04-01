@@ -77,12 +77,13 @@ public class PairwiseEstimate implements ITransformer {
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		IGraphProvider loader = fGraphConf.graphProvider();
 
-		ParallelParwiseEstimator ppse = new ParallelParwiseEstimator(fRepeats);
+		ParallelParwiseEstimator ppse = new ParallelParwiseEstimator();
 
 		ExecutorService es = new CallbackThreadPoolExecutor<Object>(Runtime
 				.getRuntime().availableProcessors(), ppse);
 
 		int count = -1;
+		System.out.println("A: id node li di");
 		AssignmentReader reader = new AssignmentReader(is, "id");
 		while (reader.hasNext()) {
 			count++;
@@ -100,32 +101,40 @@ public class PairwiseEstimate implements ITransformer {
 			int idx = Integer.parseInt(reader.currentRoot());
 			int[] ids = loader.verticesOf(idx);
 			double[][] lidi = reader.read(ids);
+
 			IndexedNeighborGraph subgraph = loader.subgraph(idx);
 
-			GraphTask gt = ppse.estimate(new F0<IValueObserver>() {
-				{
-					ret(new IncrementalStatsAdapter(new IncrementalStats()));
-				};
-			}, es, subgraph, lidi[AssignmentReader.LI],
-					lidi[AssignmentReader.DI],
-					fYaoConf.distributionGenerator(), fCloud, idx);
+			if (idx == 257577) {
+				for (int i = 1; i < fRepeats; i += 500) {
 
-			gt.await();
+					GraphTask gt = ppse.estimate(new F0<IValueObserver>() {
+						{
+							ret(new IncrementalStatsAdapter(
+									new IncrementalStats()));
+						};
+					}, es, subgraph, i, lidi[AssignmentReader.LI],
+							lidi[AssignmentReader.DI], fYaoConf
+									.distributionGenerator(), fCloud, idx, ids);
 
-			for (EdgeTask task : gt.edgeTasks) {
+					gt.await();
 
-				IncrementalStats stats = ((IncrementalStatsAdapter) task.stats)
-						.getStats();
+					for (EdgeTask task : gt.edgeTasks) {
 
-				fSampleWriter.set("id", idx);
-				fSampleWriter.set("source", ids[task.i]);
-				fSampleWriter.set("target", ids[task.j]);
-				fSampleWriter.set(fMeasureKeys[LOWER_CONFIDENCE],
-						StatUtils.lowerConfidenceLimit(stats));
-				fSampleWriter.set(fMeasureKeys[AVERAGE], stats.getAverage());
-				fSampleWriter.set(fMeasureKeys[UPPER_CONFIDENCE],
-						StatUtils.upperConfidenceLimit(stats));
-				fSampleWriter.emmitRow();
+						IncrementalStats stats = ((IncrementalStatsAdapter) task.stats)
+								.getStats();
+
+						fSampleWriter.set("id", idx);
+						fSampleWriter.set("source", ids[task.i]);
+						fSampleWriter.set("target", ids[task.j]);
+						fSampleWriter.set(fMeasureKeys[LOWER_CONFIDENCE],
+								StatUtils.lowerConfidenceLimit(stats));
+						fSampleWriter.set(fMeasureKeys[AVERAGE],
+								stats.getAverage());
+						fSampleWriter.set(fMeasureKeys[UPPER_CONFIDENCE],
+								StatUtils.upperConfidenceLimit(stats));
+						fSampleWriter.emmitRow();
+					}
+				}
 			}
 		}
 

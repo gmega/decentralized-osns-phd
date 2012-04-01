@@ -217,7 +217,7 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 					}
 				}
 
-				double[] simulation = null;
+				SimulationResults simulation = null;
 				if (fMode.should(Experiment.simulate)) {
 					simulation = fHelper.bruteForceSimulate(sampleString()
 							+ ", full", graph, i, ld[AssignmentReader.LI],
@@ -234,7 +234,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 					result.set("target", ids[j]);
 
 					if (simulation != null) {
-						result.set("simulation", simulation[j] / fRepetitions);
+						result.set("simulation", simulation.bruteForce[j]
+								/ fRepetitions);
 					}
 
 					if (estimates != null) {
