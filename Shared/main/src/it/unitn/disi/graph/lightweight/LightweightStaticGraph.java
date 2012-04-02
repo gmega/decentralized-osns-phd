@@ -6,6 +6,7 @@ import it.unitn.disi.graph.cli.GraphRemap;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,8 +20,14 @@ import peersim.graph.Graph;
  * 
  * @author giuliano
  */
-public class LightweightStaticGraph implements IndexedNeighborGraph {
+public class LightweightStaticGraph implements IndexedNeighborGraph,
+		Serializable {
 
+	/**
+	 * Version UID.
+	 */
+	private static final long serialVersionUID = -2004042032852047149L;
+	
 	// --------------------------------------------------------------------------
 	// Static creational and transform methods.
 	// --------------------------------------------------------------------------
@@ -91,7 +98,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 		LSGCreateTransitive transitive = new LSGCreateTransitive(order);
 		return transitive.transform(base);
 	}
-	
+
 	// --------------------------------------------------------------------------
 	// Actual graph implementation.
 	// --------------------------------------------------------------------------
@@ -100,11 +107,11 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 
 	private final int fEdges;
 
-	private Boolean fDirected;
+	private transient Boolean fDirected;
 
-	private Boolean fSimple;
+	private transient Boolean fSimple;
 
-	private Boolean fConnected;
+	private transient Boolean fConnected;
 
 	LightweightStaticGraph(int[][] adjacency) {
 		fAdjacency = adjacency;
@@ -138,7 +145,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph {
 	public boolean isEdge(int i, int j) {
 		return indexOf(i, j) != -1;
 	}
-	
+
 	public int indexOf(int i, int j) {
 		int index = Arrays.binarySearch(fAdjacency[i], j);
 		if (index < 0 || index >= fAdjacency[i].length) {

@@ -194,7 +194,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 			throws RemoteException {
 		WorkerEntry entry = fWorkers.get(workerId);
 		if (entry == null) {
-			throw new RemoteException("Worker " + workerId + " is not valid.");
+			throw new InvalidWorkerException("Worker " + workerId + " is not valid.");
 		}
 
 		for (int i = 0; i < fExperiments.length; i++) {

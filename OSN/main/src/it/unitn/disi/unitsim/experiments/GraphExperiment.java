@@ -1,5 +1,7 @@
 package it.unitn.disi.unitsim.experiments;
 
+import java.rmi.RemoteException;
+
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
@@ -63,9 +65,16 @@ public abstract class GraphExperiment implements IUnitExperiment {
 	public void initialize() {
 		clearNetwork();
 		INodeRegistry registry = NodeRegistry.getInstance();
-		int[] originals = fLoader.verticesOf(fRootId);
-		IndexedNeighborGraph graph = fLoader.subgraph(fRootId);
-		SNNode nodes [] = new SNNode[graph.size()];
+		int[] originals;
+		IndexedNeighborGraph graph;
+		try {
+			originals = fLoader.verticesOf(fRootId);
+			graph = fLoader.subgraph(fRootId);
+		} catch (RemoteException ex) {
+			throw new RuntimeException(ex.getCause());
+		}
+		
+		SNNode nodes[] = new SNNode[graph.size()];
 		for (int i = 0; i < originals.length; i++) {
 			SNNode node = (SNNode) Network.prototype.clone();
 			nodes[i] = node;
@@ -90,7 +99,7 @@ public abstract class GraphExperiment implements IUnitExperiment {
 		return fStartingTime;
 	}
 
-	void initialize(IndexedNeighborGraph neighborhood, SNNode [] nodes) {
+	void initialize(IndexedNeighborGraph neighborhood, SNNode[] nodes) {
 		fGraph = neighborhood;
 		fNodes = nodes;
 		chainInitialize();
@@ -103,7 +112,7 @@ public abstract class GraphExperiment implements IUnitExperiment {
 	protected long ellapsedTime() {
 		return CommonState.getTime() - startTime();
 	}
-	
+
 	protected IndexedNeighborGraph graph() {
 		return fGraph;
 	}

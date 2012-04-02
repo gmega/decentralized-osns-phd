@@ -12,7 +12,9 @@ import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import peersim.config.IResolver;
@@ -33,7 +35,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 
 	private File fGraph;
 
-	private HashMap<Integer, CatalogEntry> fCatalog = new HashMap<Integer, CatalogEntry>();
+	private Map<Integer, CatalogEntry> fCatalog;
 
 	private ResettableFileInputStream fStream;
 
@@ -160,13 +162,17 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 
 	@Override
 	public void start(IResolver resolver) throws Exception {
+		HashMap<Integer, CatalogEntry> catalog = new HashMap<Integer, CatalogEntry>();
+
 		while (fCursor.hasNext()) {
 			fCursor.next();
 			int root = fCursor.get(NeighborhoodRoot.KEY).intValue();
-			fCatalog.put(root,
+			catalog.put(root,
 					new CatalogEntry(root, fCursor.get(NeighborhoodSize.KEY)
 							.intValue(), fCursor.get("offset").longValue()));
 		}
+		
+		fCatalog = Collections.unmodifiableMap(catalog);
 
 		fStream = new ResettableFileInputStream(fGraph);
 		fDecoder = GraphCodecHelper.createDecoder(fDecoderClass, fStream);

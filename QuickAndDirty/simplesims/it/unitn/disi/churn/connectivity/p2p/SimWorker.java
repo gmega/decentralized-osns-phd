@@ -73,6 +73,8 @@ public class SimWorker implements ITransformer {
 		fClient = ObjectCreator.createInstance(
 				DistributedSchedulerClient.class, "", resolver);
 	}
+	
+	// -------------------------------------------------------------------------
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -102,13 +104,20 @@ public class SimWorker implements ITransformer {
 
 			printResults(e.root, results, writer, ids);
 		}
-		
+
 		helper.shutdown(true);
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private ExperimentEntry[] readIndex() throws IOException {
-		TableReader reader = new TableReader(new FileInputStream(new File(
-				fAssignmentIndex)));
+		File f = new File(fAssignmentIndex);
+
+		System.err.println("-- Index -- ");
+		System.err.println("- File is " + f.getName() + ".");
+		System.err.print("- Reading...");
+
+		TableReader reader = new TableReader(new FileInputStream(f));
 		ArrayList<ExperimentEntry> entries = new ArrayList<ExperimentEntry>();
 		while (reader.hasNext()) {
 			reader.next();
@@ -116,12 +125,19 @@ public class SimWorker implements ITransformer {
 					Long.parseLong(reader.get("offset"))));
 		}
 
+		System.err.println("done. ");
+		System.err.print("- Processing/sorting...");
+
 		ExperimentEntry[] index = entries.toArray(new ExperimentEntry[entries
 				.size()]);
 		Arrays.sort(index);
 
+		System.err.println("done. ");
+
 		return index;
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private void printResults(int root, SimulationResults results,
 			TableWriter writer, int[] ids) {
@@ -137,6 +153,8 @@ public class SimWorker implements ITransformer {
 			writer.emmitRow();
 		}
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private Experiment readExperiment(Integer row, IGraphProvider provider)
 			throws IOException {
@@ -156,10 +174,17 @@ public class SimWorker implements ITransformer {
 		return new Experiment(root, source, lidi[AssignmentReader.LI],
 				lidi[AssignmentReader.DI], ids);
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private void resetReader() throws IOException {
-		fSourceReader = new TableReader(new FileInputStream(new File(fSources)));
+		File f = new File(fSources);
+		System.err
+				.println("-- Source will be taken from [" + f.getName() + "]");
+		fSourceReader = new TableReader(new FileInputStream(f));
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private double[][] readLIDI(int root, int[] ids) throws IOException {
 		int idx = Arrays.binarySearch(fIndex, root);
@@ -171,6 +196,8 @@ public class SimWorker implements ITransformer {
 		fAssigReader.streamRepositioned();
 		return fAssigReader.read(ids);
 	}
+	
+	// -------------------------------------------------------------------------
 
 	static class Experiment {
 
@@ -200,11 +227,13 @@ public class SimWorker implements ITransformer {
 
 			throw new NoSuchElementException(Integer.toString(source));
 		}
-		
+
 		public String toString() {
-			return "size " + ids.length + ", source " + source; 
+			return "size " + ids.length + ", source " + source;
 		}
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private static class ExperimentEntry implements Comparable<Object> {
 		public final int root;
@@ -233,4 +262,5 @@ public class SimWorker implements ITransformer {
 		}
 	}
 
+	// -------------------------------------------------------------------------
 }
