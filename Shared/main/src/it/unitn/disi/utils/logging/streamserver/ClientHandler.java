@@ -3,10 +3,12 @@ package it.unitn.disi.utils.logging.streamserver;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
 
@@ -23,6 +25,8 @@ public class ClientHandler implements Runnable {
 	private final StreamServer fParent;
 
 	private volatile String fClientId;
+	
+	private OutputStream fFile;
 
 	private Thread fThread;
 
@@ -48,7 +52,6 @@ public class ClientHandler implements Runnable {
 
 	private void run0() throws Exception {
 		InputStream is = null;
-		BufferedOutputStream oup = null;
 
 		try {
 			is = fSocket.getInputStream();
@@ -58,7 +61,7 @@ public class ClientHandler implements Runnable {
 					+ fSocket.getRemoteSocketAddress() + ".");
 
 			File outFile = new File(fOutputFolder, fClientId);
-			oup = new BufferedOutputStream(new FileOutputStream(outFile));
+			setFileStream(outFile);
 
 			fLogger.info("Output file is " + outFile + ".");
 
@@ -69,14 +72,28 @@ public class ClientHandler implements Runnable {
 				if (read == -1) {
 					break;
 				}
-				oup.write(buffer, 0, read);
+				writeToFile(buffer, read);
 			}
 
 		} finally {
 			safeClose(is);
-			safeClose(oup);
+			safeClose(fFile);
 		}
 
+	}
+
+	private synchronized void writeToFile(byte[] buffer, int read) throws IOException {
+		fFile.write(buffer, 0, read);
+	}
+
+	private synchronized void setFileStream(File outFile) throws FileNotFoundException {
+		fFile = new BufferedOutputStream(new FileOutputStream(outFile));
+	}
+	
+	public synchronized void flushToFile() throws IOException {
+		if (fFile != null) {
+			fFile.flush();
+		}
 	}
 
 	private void safeClose(Closeable closeable) {

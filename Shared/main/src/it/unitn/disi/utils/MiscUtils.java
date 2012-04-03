@@ -17,7 +17,7 @@ import java.util.ArrayList;
  */
 public class MiscUtils {
 	
-	public static void safeClose(Closeable is, boolean rethrow) {
+	public static Exception safeClose(Closeable is, boolean rethrow) {
 		try {
 			if (is != null) {
 				is.close();
@@ -26,8 +26,9 @@ public class MiscUtils {
 			if (rethrow) {
 				throw new RuntimeException(ex);
 			}
-			ex.printStackTrace();
+			return ex;
 		}
+		return null;
 	}
 	
 	public static RuntimeException nestRuntimeException(Exception ex) {

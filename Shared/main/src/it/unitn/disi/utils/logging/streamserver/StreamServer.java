@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -17,24 +17,29 @@ public class StreamServer {
 
 	private static final int MAX_BACKLOG = 128;
 
+	private static final int STREAM_FLUSHING_INTERVAL = 30000;
+
 	@Option(name = "-p", aliases = { "--port" }, usage = "Listening port to server (defaults to 50327).", required = false)
 	private int fPort = 50327;
 
 	@Option(name = "-f", aliases = { "--folder" }, usage = "Folder where to store outputs.", required = true)
 	private File fOutput;
 
-	private final ArrayList<ClientHandler> fActiveHandlers = new ArrayList<ClientHandler>();
+	private final CopyOnWriteArrayList<ClientHandler> fActiveHandlers = new CopyOnWriteArrayList<ClientHandler>();
 
 	private final Logger fLogger;
 
-	private final Thread fThread;
+	private final Thread fMainThread;
+
+	private final Thread fFlusherThread;
 
 	private volatile boolean fShutdownSignalled;
 
 	private StreamServer(Thread thread) {
 		configureLogging();
 		fLogger = Logger.getLogger(StreamServer.class);
-		fThread = thread;
+		fMainThread = thread;
+		fFlusherThread = new Thread(new TimedFlusher(STREAM_FLUSHING_INTERVAL));
 	}
 
 	public void _main(String[] args) {
@@ -53,6 +58,7 @@ public class StreamServer {
 		}
 
 		fLogger.info("Output folder is: " + fOutput + ".");
+		fFlusherThread.start();
 
 		ServerSocket socket = null;
 		try {
@@ -114,7 +120,11 @@ public class StreamServer {
 		msg.append(") terminated ");
 		msg.append(ex == null ? "normally" : "with an error.");
 
-		fLogger.error(msg.toString(), ex);
+		if (ex != null) {
+			fLogger.error(msg.toString(), ex);
+		} else {
+			fLogger.info(msg.toString(), ex);
+		}
 
 		fActiveHandlers.remove(clientHandler);
 	}
@@ -135,28 +145,30 @@ public class StreamServer {
 		public void run() {
 			fLogger.info("Shutdown signalled.");
 			fShutdownSignalled = true;
-			
+
 			fLogger.info("Stopping main loop.");
 
 			// Interrupts main thread.
-			fThread.interrupt();
+			fMainThread.interrupt();
 			// Closes socket.
 			closeSocket();
 
 			try {
-				fThread.join();
+				fMainThread.join();
 			} catch (InterruptedException e) {
 				// Swallows and proceeds.
 			}
 
-			fLogger.info("Stopping client handlers.");
-			ClientHandler[] copy;
-			synchronized (this) {
-				copy = fActiveHandlers
-						.toArray(new ClientHandler[fActiveHandlers.size()]);
+			fLogger.info("Stopping buffer flusher.");
+			fFlusherThread.interrupt();
+			try {
+				fFlusherThread.join();
+			} catch (InterruptedException ex) {
+				// Swallows, again...
 			}
 
-			for (ClientHandler handler : copy) {
+			fLogger.info("Stopping client handlers.");
+			for (ClientHandler handler : fActiveHandlers) {
 				try {
 					handler.synchronousStop();
 				} catch (InterruptedException e) {
@@ -171,6 +183,34 @@ public class StreamServer {
 				fServerSocket.close();
 			} catch (Exception ex) {
 				fLogger.error("Error closing server socket.", ex);
+			}
+		}
+	}
+
+	class TimedFlusher implements Runnable {
+
+		private final long fFlushInterval;
+
+		public TimedFlusher(long flushInterval) {
+			fFlushInterval = flushInterval;
+		}
+
+		@Override
+		public void run() {
+			while (!Thread.interrupted()) {
+				for (ClientHandler handler : fActiveHandlers) {
+					try {
+						handler.flushToFile();
+					} catch (IOException ex) {
+						fLogger.error("Failed to flush buffer", ex);
+					}
+				}
+				try {
+					Thread.sleep(fFlushInterval);
+				} catch (InterruptedException e) {
+					// Restore interruption state.
+					Thread.interrupted();
+				}
 			}
 		}
 	}
