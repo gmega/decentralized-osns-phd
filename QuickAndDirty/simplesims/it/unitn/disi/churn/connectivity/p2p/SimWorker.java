@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -25,6 +26,7 @@ import it.unitn.disi.graph.large.catalog.IGraphProvider;
 
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.distributed.DistributedSchedulerClient;
+import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -50,6 +52,11 @@ public class SimWorker implements ITransformer {
 	@Attribute("burnin")
 	private double fBurnin;
 
+	private double fCloudPercent;
+
+	@Attribute("cloudsims")
+	private boolean fCloudSims;
+
 	private ResettableFileInputStream fAssignmentStream;
 
 	private ExperimentEntry[] fIndex;
@@ -64,6 +71,8 @@ public class SimWorker implements ITransformer {
 
 	private YaoChurnConfigurator fYaoConfig;
 
+	private final Random fRandom = new Random();
+
 	public SimWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
 		fGraphConfig = ObjectCreator.createInstance(GraphConfigurator.class,
@@ -73,7 +82,7 @@ public class SimWorker implements ITransformer {
 		fClient = ObjectCreator.createInstance(
 				DistributedSchedulerClient.class, "", resolver);
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	@Override
@@ -92,22 +101,25 @@ public class SimWorker implements ITransformer {
 		TEExperimentHelper helper = new TEExperimentHelper(fYaoConfig,
 				TEExperimentHelper.EDGE_DISJOINT, fCores, fRepeat, fBurnin);
 
-		Integer row;
-		while ((row = schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
-			Experiment e = readExperiment(row, provider);
+		try {
+			Integer row;
+			while ((row = schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
+				Experiment e = readExperiment(row, provider);
 
-			IndexedNeighborGraph graph = provider.subgraph(e.root);
-			int[] ids = provider.verticesOf(e.root);
+				IndexedNeighborGraph graph = provider.subgraph(e.root);
+				int[] ids = provider.verticesOf(e.root);
 
-			SimulationResults results = helper.bruteForceSimulate(e.toString(),
-					graph, e.source, e.lis, e.dis, ids, false);
+				SimulationResults results = helper.bruteForceSimulate(
+						e.toString(), graph, e.source, e.lis, e.dis, ids,
+						false, fCloudSims);
 
-			printResults(e.root, results, writer, ids);
+				printResults(e.root, results, writer, ids);
+			}
+		} finally {
+			helper.shutdown(true);
 		}
-
-		helper.shutdown(true);
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private ExperimentEntry[] readIndex() throws IOException {
@@ -136,7 +148,7 @@ public class SimWorker implements ITransformer {
 
 		return index;
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private void printResults(int root, SimulationResults results,
@@ -153,7 +165,7 @@ public class SimWorker implements ITransformer {
 			writer.emmitRow();
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private Experiment readExperiment(Integer row, IGraphProvider provider)
@@ -171,10 +183,30 @@ public class SimWorker implements ITransformer {
 		int[] ids = provider.verticesOf(root);
 		double[][] lidi = readLIDI(root, ids);
 
+		// Reassign the "cloud" nodes by setting their li/dis to negative.
+		drawCloud(lidi, root, ids);
+
 		return new Experiment(root, source, lidi[AssignmentReader.LI],
 				lidi[AssignmentReader.DI], ids);
 	}
-	
+
+	// -------------------------------------------------------------------------
+
+	private void drawCloud(double[][] lidi, int root, int[] ids) {
+		int[] nodes = new int[lidi[AssignmentReader.LI].length];
+		for (int i = 0; i < nodes.length; i++) {
+			nodes[i] = i;
+		}
+
+		OrderingUtils.permute(0, nodes.length, nodes, fRandom);
+		int cut = (int) Math.ceil(nodes.length * fCloudPercent);
+		for (int i = 0; i < cut; i++) {
+			System.out.println("CL:" + root + " " + ids[nodes[i]]);
+			lidi[AssignmentReader.LI][nodes[i]] = -1;
+			lidi[AssignmentReader.DI][nodes[i]] = -1;
+		}
+	}
+
 	// -------------------------------------------------------------------------
 
 	private void resetReader() throws IOException {
@@ -183,7 +215,7 @@ public class SimWorker implements ITransformer {
 				.println("-- Source will be taken from [" + f.getName() + "]");
 		fSourceReader = new TableReader(new FileInputStream(f));
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private double[][] readLIDI(int root, int[] ids) throws IOException {
@@ -196,7 +228,7 @@ public class SimWorker implements ITransformer {
 		fAssigReader.streamRepositioned();
 		return fAssigReader.read(ids);
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	static class Experiment {
@@ -232,7 +264,7 @@ public class SimWorker implements ITransformer {
 			return "size " + ids.length + ", source " + source;
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private static class ExperimentEntry implements Comparable<Object> {

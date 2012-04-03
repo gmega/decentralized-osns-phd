@@ -221,7 +221,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 				if (fMode.should(Experiment.simulate)) {
 					simulation = fHelper.bruteForceSimulate(sampleString()
 							+ ", full", graph, i, ld[AssignmentReader.LI],
-							ld[AssignmentReader.DI], ids, fSampleActivations);
+							ld[AssignmentReader.DI], ids, fSampleActivations,
+							false);
 				}
 
 				for (int j = 0; j < graph.size(); j++) {

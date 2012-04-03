@@ -70,20 +70,19 @@ public class SimulateDriver extends TEDriver implements ITransformer {
 			int end;
 			do {
 				end = Math.min(graph.size() - 1, start + fStacking);
-				SimulationResults[] results = helper()
-						.bruteForceSimulate(
-								"(" + (start + 1) + " - " + (end + 1) + ")/"
-										+ graph.size(), graph, start, end,
-								lidi[AssignmentReader.LI],
-								lidi[AssignmentReader.DI], ids, false);
+				SimulationResults[] results = helper().bruteForceSimulate(
+						"(" + (start + 1) + " - " + (end + 1) + ")/"
+								+ graph.size(), graph, start, end,
+						lidi[AssignmentReader.LI], lidi[AssignmentReader.DI],
+						ids, false, false);
 				printResults(results, writer, root, ids);
 				start = end + 1;
 			} while (start < graph.size());
 		}
 	}
 
-	private void printResults(SimulationResults[] results,
-			TableWriter writer, int root, int[] ids) {
+	private void printResults(SimulationResults[] results, TableWriter writer,
+			int root, int[] ids) {
 		for (SimulationResults result : results) {
 			double[] ttc = result.bruteForce;
 			double[] ttcCloud = result.cloud;

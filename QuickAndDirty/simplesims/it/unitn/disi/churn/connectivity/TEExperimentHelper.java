@@ -228,8 +228,8 @@ public class TEExperimentHelper {
 	 */
 	public SimulationResults[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
-			double[] lIs, double[] dIs, int[] ids, boolean sampleActivations)
-			throws Exception {
+			double[] lIs, double[] dIs, int[] ids, boolean sampleActivations,
+			boolean cloudSim) throws Exception {
 
 		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
 				graph) : null;
@@ -240,7 +240,7 @@ public class TEExperimentHelper {
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
 			fExecutor.submit(new SimulationTask(lIs, dIs, sourceStart,
-					sourceEnd, fBurnin, graph, sampler, fYaoConf));
+					sourceEnd, fBurnin, cloudSim, graph, sampler, fYaoConf));
 		}
 
 		SimulationResults[] result = new SimulationResults[sources];
@@ -262,7 +262,9 @@ public class TEExperimentHelper {
 				SimulationResults sourceResult = sourceResults[j];
 				for (int k = 0; k < sourceResult.bruteForce.length; k++) {
 					result[sourceResult.source - sourceStart].bruteForce[k] += sourceResult.bruteForce[k];
-					result[sourceResult.source - sourceStart].cloud[k] += sourceResult.cloud[k];
+					if (cloudSim) {
+						result[sourceResult.source - sourceStart].cloud[k] += sourceResult.cloud[k];
+					}
 				}
 			}
 		}
@@ -285,9 +287,10 @@ public class TEExperimentHelper {
 	 */
 	public SimulationResults bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int source, double[] lIs, double[] dIs,
-			int[] ids, boolean sampleActivations) throws Exception {
+			int[] ids, boolean sampleActivations, boolean cloudSim)
+			throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				ids, sampleActivations)[0];
+				ids, sampleActivations, cloudSim)[0];
 	}
 
 	/**
@@ -347,7 +350,7 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, liSub, diSub, ids, false)[0].bruteForce;
+				remappedSource, remappedSource, liSub, diSub, ids, false, false)[0].bruteForce;
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate[remappedTarget]);

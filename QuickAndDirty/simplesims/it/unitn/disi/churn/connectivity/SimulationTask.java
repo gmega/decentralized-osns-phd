@@ -7,10 +7,13 @@ import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
+import it.unitn.disi.random.IDistribution;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
+// FIXME Hack for cloud sims.
+// FIXME Hack for cloud reassignments.
 public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private final double[] fLis;
@@ -23,6 +26,8 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private final double fBurnin;
 
+	private final boolean fCloud;
+
 	private final IndexedNeighborGraph fGraph;
 
 	private final ActivationSampler fSampler;
@@ -30,7 +35,7 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 	private final YaoChurnConfigurator fYaoConf;
 
 	public SimulationTask(double[] lIs, double[] dIs, int start, int end,
-			double burnin, IndexedNeighborGraph graph,
+			double burnin, boolean cloudSim, IndexedNeighborGraph graph,
 			ActivationSampler sampler, YaoChurnConfigurator yaoConf) {
 		fLis = lIs;
 		fDis = dIs;
@@ -40,6 +45,7 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 		fSampler = sampler;
 		fBurnin = burnin;
 		fYaoConf = yaoConf;
+		fCloud = cloudSim;
 	}
 
 	@Override
@@ -49,8 +55,8 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 		IDistributionGenerator distGen = fYaoConf.distributionGenerator();
 
 		for (int i = 0; i < rp.length; i++) {
-			rp[i] = new RenewalProcess(i, distGen.uptimeDistribution(fLis[i]),
-					distGen.downtimeDistribution(fDis[i]), State.down);
+			rp[i] = new RenewalProcess(i, uptimeDistribution(distGen, fLis[i]),
+					downtimeDistribution(distGen, fDis[i]), State.down);
 		}
 
 		ArrayList<TemporalConnectivityEstimator> tceSims = new ArrayList<TemporalConnectivityEstimator>();
@@ -71,7 +77,10 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 		ArrayList<IChurnSim> allsims = new ArrayList<IChurnSim>();
 		allsims.addAll(tceSims);
-		allsims.addAll(cloudSims);
+
+		if (fCloud) {
+			allsims.addAll(cloudSims);
+		}
 
 		BaseChurnSim bcs = new BaseChurnSim(rp, allsims, fBurnin);
 		bcs.run();
@@ -85,6 +94,44 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 		return results;
 	}
 
+	private IDistribution downtimeDistribution(IDistributionGenerator distGen,
+			double d) {
+		if (d < 0) {
+			return new IDistribution() {
+				@Override
+				public double sample() {
+					return 0;
+				}
+				
+				@Override
+				public double expectation() {
+					return 0;
+				}
+			};
+		}
+		
+		return distGen.downtimeDistribution(d);
+	}
+
+	private IDistribution uptimeDistribution(IDistributionGenerator distGen,
+			double d) {
+		if (d < 0) {
+			return new IDistribution() {
+				@Override
+				public double sample() {
+					return Double.MAX_VALUE;
+				}
+				
+				@Override
+				public double expectation() {
+					return Double.POSITIVE_INFINITY;
+				}
+			};
+		}
+		
+		return distGen.uptimeDistribution(d);
+	}
+	
 	private SimulationResults getResults(TemporalConnectivityEstimator tce,
 			CloudSim cs, int source) {
 		double[] tceResult = new double[fGraph.size()];
@@ -92,7 +139,9 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 		for (int i = 0; i < tceResult.length; i++) {
 			tceResult[i] = tce.reachTime(i);
-			csResult[i] = cs.reachTime(i);
+			if (fCloud) {
+				csResult[i] = cs.reachTime(i);
+			}
 		}
 		return new SimulationResults(source, tceResult, csResult);
 	}
