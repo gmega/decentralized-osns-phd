@@ -9,7 +9,8 @@ import it.unitn.disi.churn.RenewalProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 /**
- * Fast, single-source temporal connectivity experiment.
+ * Fast, single-source temporal connectivity experiment. Supports special
+ * "cloud" nodes that are treated as always up.
  * 
  * @author giuliano
  */
@@ -25,29 +26,48 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 
 	private int[] fReachedFrom;
 
+	private double[] fUptimeSnapshot;
+
+	private double[] fUptimeReached;
+
 	private double[] fReached;
 
 	private boolean[] fDone;
+
+	private boolean[] fCloudNodes;
 
 	private IndexedNeighborGraph fGraph;
 
 	private BFSQueue fQueue;
 
 	public TemporalConnectivityEstimator(IndexedNeighborGraph graph, int source) {
-		this(graph, source, null);
+		this(graph, source, null, null);
 	}
 
 	public TemporalConnectivityEstimator(IndexedNeighborGraph graph,
-			int source, ActivationSampler sampler) {
+			int source, int[] cloudNodes, ActivationSampler sampler) {
 		fGraph = graph;
 		fSource = source;
+		
 		fReachedFrom = new int[fGraph.size()];
 		fReached = new double[fGraph.size()];
+		fUptimeReached = new double[fGraph.size()];
+		fUptimeSnapshot = new double[fGraph.size()];
 		fDone = new boolean[fGraph.size()];
+		
 		fQueue = new BFSQueue(fGraph.size());
 		fSampler = sampler;
+		fCloudNodes = new boolean[graph.size()];
+
+		if (cloudNodes != null) {
+			for (int i = 0; i < cloudNodes.length; i++) {
+				fCloudNodes[cloudNodes[i]] = true;
+			}
+		}
 
 		Arrays.fill(fReached, Double.NaN);
+		Arrays.fill(fUptimeSnapshot, 0);
+		Arrays.fill(fUptimeReached, Double.MAX_VALUE);
 		Arrays.fill(fReachedFrom, Integer.MAX_VALUE);
 		Arrays.fill(fDone, false);
 	}
@@ -74,6 +94,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 		// Source being reached for the first time?
 		if (!isReached(fSource)) {
 			if (process.id() == fSource && nw == State.up) {
+				snapshotUptimes();
 				reached(fSource, fSource, time);
 			}
 			// Source not reached yet, just return.
@@ -116,14 +137,21 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	private void reached(int source, int node, double time) {
 		fReachedFrom[node] = source;
 		fReached[node] = time;
+		fUptimeReached[node] = fParent.process(node).uptime(fParent);
 		fReachedCount++;
 		if (fSampler != null) {
 			fSampler.reached(node, this);
 		}
 	}
 
+	private void snapshotUptimes() {
+		for (int i = 0; i < fUptimeSnapshot.length; i++) {
+			fUptimeSnapshot[i] = fParent.process(i).uptime(fParent);
+		}
+	}
+
 	private boolean isUp(int node) {
-		return fParent.process(node).isUp();
+		return fCloudNodes[node] || fParent.process(node).isUp();
 	}
 
 	boolean isReached(int node) {
@@ -133,6 +161,10 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	@Override
 	public boolean isDone() {
 		return fReachedCount == fReached.length;
+	}
+	
+	public double perceivedDelay(int i) {
+		return fUptimeReached[i] - fUptimeSnapshot[i];
 	}
 
 	public double reachTime(int i) {

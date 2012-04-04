@@ -17,6 +17,8 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 	private State fState;
 
 	private double fNextEvent;
+	
+	private double fUptime;
 
 	public RenewalProcess(int id, IDistribution upDown, State initial) {
 		this(id, upDown, upDown, initial);
@@ -37,6 +39,8 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		case down:
 			increment = fUp.sample();
 			fState = State.up;
+			// Overestimate of uptime. 
+			fUptime += increment;
 			break;
 
 		case up:
@@ -47,6 +51,27 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		}
 
 		fNextEvent += increment;
+	}
+	
+	/**
+	 * Returns the actual uptime of the current node, for instants larger than
+	 * the last state transition of the node.
+	 * 
+	 * @param currentTime
+	 * @return
+	 */
+	public double uptime(BaseChurnSim parent) {
+		double delta = 0;
+		if (isUp()) {
+			// Corrects the uptime overestimation.
+			delta = fNextEvent - parent.currentTime();
+		}
+		
+		if (fUptime - delta < 0){ 
+			throw new IllegalStateException("Internal error.");
+		}
+		
+		return fUptime - delta;
 	}
 
 	public boolean isUp() {

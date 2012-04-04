@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.AssignmentReader;
+import it.unitn.disi.churn.AssignmentReader.Assignment;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.IncrementalStatsAdapter;
@@ -100,7 +101,7 @@ public class PairwiseEstimate implements ITransformer {
 
 			int idx = Integer.parseInt(reader.currentRoot());
 			int[] ids = loader.verticesOf(idx);
-			double[][] lidi = reader.read(ids);
+			Assignment lidi = (Assignment) reader.read(ids);
 
 			IndexedNeighborGraph subgraph = loader.subgraph(idx);
 
@@ -112,9 +113,8 @@ public class PairwiseEstimate implements ITransformer {
 							ret(new IncrementalStatsAdapter(
 									new IncrementalStats()));
 						};
-					}, es, subgraph, i, lidi[AssignmentReader.LI],
-							lidi[AssignmentReader.DI], fYaoConf
-									.distributionGenerator(), fCloud, idx, ids);
+					}, es, subgraph, i, lidi.li, lidi.di, fYaoConf
+							.distributionGenerator(), fCloud, idx, ids);
 
 					gt.await();
 

@@ -10,12 +10,12 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
 import it.unitn.disi.churn.AssignmentReader;
+import it.unitn.disi.churn.AssignmentReader.Assignment;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.SimulationResults;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
@@ -64,7 +64,7 @@ public class SimulateDriver extends TEDriver implements ITransformer {
 			int root = Integer.parseInt(assig.currentRoot());
 			IndexedNeighborGraph graph = provider.subgraph(root);
 			int ids[] = provider.verticesOf(root);
-			double[][] lidi = assig.read(ids);
+			Assignment ass = (Assignment) assig.read(ids);
 
 			int start = 0;
 			int end;
@@ -72,9 +72,8 @@ public class SimulateDriver extends TEDriver implements ITransformer {
 				end = Math.min(graph.size() - 1, start + fStacking);
 				SimulationResults[] results = helper().bruteForceSimulate(
 						"(" + (start + 1) + " - " + (end + 1) + ")/"
-								+ graph.size(), graph, start, end,
-						lidi[AssignmentReader.LI], lidi[AssignmentReader.DI],
-						ids, false, false);
+								+ graph.size(), graph, start, end, ass.li,
+						ass.di, ids, null, false, false);
 				printResults(results, writer, root, ids);
 				start = end + 1;
 			} while (start < graph.size());

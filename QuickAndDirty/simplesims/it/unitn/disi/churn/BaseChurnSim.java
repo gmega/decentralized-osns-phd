@@ -53,6 +53,14 @@ public class BaseChurnSim implements Runnable {
 			}
 		}
 	}
+	
+	public double currentTime() {
+		return fTime;
+	}
+	
+	public double postBurninTime() {
+		return currentTime() - fBurnin;
+	}
 
 	private int runSims(int done, RenewalProcess p, State old) {
 		for (IChurnSim sim : fSim) {

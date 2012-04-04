@@ -14,6 +14,7 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.AssignmentReader;
+import it.unitn.disi.churn.AssignmentReader.Assignment;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.MatrixReader;
 import it.unitn.disi.churn.YaoChurnConfigurator;
@@ -113,8 +114,8 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 					.subgraph(hoods[id].root);
 			Pair<IndexedNeighborGraph, Double> result = fHelper.topKEstimate(
 					"", ing, next.a, next.b, hoods[id].weights,
-					hoods[id].liDis[AssignmentReader.LI],
-					hoods[id].liDis[AssignmentReader.DI], fK, hoods[id].ids);
+					hoods[id].assignment.li, hoods[id].assignment.di, fK,
+					hoods[id].ids);
 
 			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);
@@ -207,7 +208,7 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 
 	static class Neighborhood {
 
-		public double[][] liDis;
+		public Assignment assignment;
 
 		public double[][] weights;
 
@@ -221,11 +222,11 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 
 		private BitSet fUsed;
 
-		public Neighborhood(int id, double[][] assignments, double[][] weights,
+		public Neighborhood(int id, Assignment assignment, double[][] weights,
 				int[] ids) {
 			root = id;
 			this.weights = weights;
-			this.liDis = assignments;
+			this.assignment = assignment;
 			this.ids = ids;
 			fSource = new TIntArrayList();
 			fDestination = new TIntArrayList();

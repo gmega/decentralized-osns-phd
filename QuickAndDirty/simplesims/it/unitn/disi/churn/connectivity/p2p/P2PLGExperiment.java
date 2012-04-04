@@ -152,12 +152,12 @@ public class P2PLGExperiment implements ITransformer {
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, 0, 0,
+			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, null, 0, 0,
 					fBurnin, false, graph, null, fYaoConf)));
 		}
 
 		for (Future<SimulationResults[]> task : tasks) {
-			SimulationResults [] tce = task.get();
+			SimulationResults[] tce = task.get();
 			if (tce.length != 1) {
 				throw new IllegalStateException();
 			}

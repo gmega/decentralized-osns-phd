@@ -228,8 +228,8 @@ public class TEExperimentHelper {
 	 */
 	public SimulationResults[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
-			double[] lIs, double[] dIs, int[] ids, boolean sampleActivations,
-			boolean cloudSim) throws Exception {
+			double[] lIs, double[] dIs, int[] ids, int[] cloudNodes,
+			boolean sampleActivations, boolean cloudSim) throws Exception {
 
 		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
 				graph) : null;
@@ -239,14 +239,16 @@ public class TEExperimentHelper {
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
 		for (int j = 0; j < fRepetitions; j++) {
-			fExecutor.submit(new SimulationTask(lIs, dIs, sourceStart,
-					sourceEnd, fBurnin, cloudSim, graph, sampler, fYaoConf));
+			fExecutor.submit(new SimulationTask(lIs, dIs, cloudNodes,
+					sourceStart, sourceEnd, fBurnin, cloudSim, graph, sampler,
+					fYaoConf));
 		}
 
 		SimulationResults[] result = new SimulationResults[sources];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = new SimulationResults(sourceStart + i,
-					new double[graph.size()], new double[graph.size()]);
+					new double[graph.size()], new double[graph.size()],
+					new double[graph.size()]);
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
@@ -262,6 +264,7 @@ public class TEExperimentHelper {
 				SimulationResults sourceResult = sourceResults[j];
 				for (int k = 0; k < sourceResult.bruteForce.length; k++) {
 					result[sourceResult.source - sourceStart].bruteForce[k] += sourceResult.bruteForce[k];
+					result[sourceResult.source - sourceStart].perceived[k] += sourceResult.perceived[k];
 					if (cloudSim) {
 						result[sourceResult.source - sourceStart].cloud[k] += sourceResult.cloud[k];
 					}
@@ -287,10 +290,10 @@ public class TEExperimentHelper {
 	 */
 	public SimulationResults bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int source, double[] lIs, double[] dIs,
-			int[] ids, boolean sampleActivations, boolean cloudSim)
-			throws Exception {
+			int[] ids, int[] cloudNodes, boolean sampleActivations,
+			boolean cloudSim) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				ids, sampleActivations, cloudSim)[0];
+				ids, cloudNodes, sampleActivations, cloudSim)[0];
 	}
 
 	/**
@@ -350,7 +353,8 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, liSub, diSub, ids, false, false)[0].bruteForce;
+				remappedSource, remappedSource, liSub, diSub, null, ids, false,
+				false)[0].bruteForce;
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate[remappedTarget]);

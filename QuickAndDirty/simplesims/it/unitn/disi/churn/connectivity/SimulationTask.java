@@ -20,6 +20,8 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private final double[] fDis;
 
+	private final int[] fCloudNodes;
+
 	private final int fSourceStart;
 
 	private final int fSourceEnd;
@@ -34,11 +36,13 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private final YaoChurnConfigurator fYaoConf;
 
-	public SimulationTask(double[] lIs, double[] dIs, int start, int end,
-			double burnin, boolean cloudSim, IndexedNeighborGraph graph,
-			ActivationSampler sampler, YaoChurnConfigurator yaoConf) {
+	public SimulationTask(double[] lIs, double[] dIs, int[] cloudNodes,
+			int start, int end, double burnin, boolean cloudSim,
+			IndexedNeighborGraph graph, ActivationSampler sampler,
+			YaoChurnConfigurator yaoConf) {
 		fLis = lIs;
 		fDis = dIs;
+		fCloudNodes = cloudNodes;
 		fSourceStart = start;
 		fSourceEnd = end;
 		fGraph = graph;
@@ -67,8 +71,9 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 				throw new InternalError(
 						"FIXME: activation sampling is broken with multiple sources.");
 			}
+
 			TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
-					fGraph, i, fSampler);
+					fGraph, i, fCloudNodes, fSampler);
 			tceSims.add(tce);
 
 			CloudSim cs = new CloudSim(i);
@@ -96,54 +101,28 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private IDistribution downtimeDistribution(IDistributionGenerator distGen,
 			double d) {
-		if (d < 0) {
-			return new IDistribution() {
-				@Override
-				public double sample() {
-					return 0;
-				}
-				
-				@Override
-				public double expectation() {
-					return 0;
-				}
-			};
-		}
-		
 		return distGen.downtimeDistribution(d);
 	}
 
 	private IDistribution uptimeDistribution(IDistributionGenerator distGen,
 			double d) {
-		if (d < 0) {
-			return new IDistribution() {
-				@Override
-				public double sample() {
-					return Double.MAX_VALUE;
-				}
-				
-				@Override
-				public double expectation() {
-					return Double.POSITIVE_INFINITY;
-				}
-			};
-		}
-		
 		return distGen.uptimeDistribution(d);
 	}
-	
+
 	private SimulationResults getResults(TemporalConnectivityEstimator tce,
 			CloudSim cs, int source) {
 		double[] tceResult = new double[fGraph.size()];
+		double[] pdResult = new double[fGraph.size()];
 		double[] csResult = new double[fGraph.size()];
 
 		for (int i = 0; i < tceResult.length; i++) {
 			tceResult[i] = tce.reachTime(i);
+			pdResult[i] = tce.perceivedDelay(i);
 			if (fCloud) {
 				csResult[i] = cs.reachTime(i);
 			}
 		}
-		return new SimulationResults(source, tceResult, csResult);
+		return new SimulationResults(source, tceResult, pdResult, csResult);
 	}
 
 }

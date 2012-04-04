@@ -97,5 +97,9 @@ public abstract class SequentialAttributeReader<K> {
 
 		throw new NoSuchElementException();
 	}
+	
+	protected int row() {
+		return fReader.currentRow();
+	}
 
 }

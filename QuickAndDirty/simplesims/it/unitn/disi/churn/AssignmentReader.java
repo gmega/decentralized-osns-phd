@@ -3,27 +3,36 @@ package it.unitn.disi.churn;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class AssignmentReader extends SequentialAttributeReader<double[][]>{
+public class AssignmentReader extends SequentialAttributeReader<Object> {
 
-	public static final int LI = 0;
-	public static final int DI = 1;
-	
 	public AssignmentReader(InputStream stream, String id) throws IOException {
 		super(stream, id);
 	}
 
 	@Override
-	public double[][] read(int[] ids) throws IOException {
-		
-		double [][] lidi = new double[2][ids.length];
-		for (int i = 0; !rootChanged(); i++) {		
+	public Assignment read(int[] ids) throws IOException {
+
+		Assignment assignment = new Assignment(ids.length);
+		for (int i = 0; !rootChanged(); i++) {
 			int node = idOf(Integer.parseInt(get("node")), ids);
-			lidi[LI][node] = Double.parseDouble(get("li"));
-			lidi[DI][node] = Double.parseDouble(get("di"));
+			assignment.li[node] = Double.parseDouble(get("li"));
+			assignment.di[node] = Double.parseDouble(get("di"));
+			assignment.nodes[i] = node;
 			advance();
 		}
-		
-		return lidi;
+
+		return assignment;
 	}
 
+	public static class Assignment {
+		public final double[] li;
+		public final double[] di;
+		public final int[] nodes;
+
+		public Assignment(int size) {
+			this.li = new double[size];
+			this.di = new double[size];
+			this.nodes = new int[size];
+		}
+	}
 }

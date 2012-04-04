@@ -25,18 +25,20 @@ public class ExperimentIndexer implements ITransformer {
 		final RandomAccessFile raf = new RandomAccessFile(
 				new File(fAssignments), "r");
 		
-
 		TrackingReader tracker = new TrackingReader(raf);
 		TableReader reader = new TableReader(tracker);
-		TableWriter writer = new TableWriter(oup, "id", "offset");
+		TableWriter writer = new TableWriter(oup, "id", "offset", "row");
 		
 		String root = "";
+		int row = 1;
 		while(reader.hasNext()) {
 			reader.next();
+			row++;
 			String cRoot = reader.get("id");
 			if (!root.equals(cRoot)) {
 				writer.set("id", cRoot);
 				writer.set("offset", tracker.currentLineOffset);
+				writer.set("row", row);
 				writer.emmitRow();
 				root = cRoot;
 			}	

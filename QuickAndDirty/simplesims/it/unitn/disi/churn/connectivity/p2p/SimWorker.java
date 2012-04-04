@@ -4,20 +4,23 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
+import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.AssignmentReader;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.AssignmentReader.Assignment;
 import it.unitn.disi.churn.connectivity.SimulationResults;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.ITransformer;
@@ -26,7 +29,8 @@ import it.unitn.disi.graph.large.catalog.IGraphProvider;
 
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.distributed.DistributedSchedulerClient;
-import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -34,15 +38,34 @@ import it.unitn.disi.utils.tabular.TableWriter;
 @AutoConfig
 public class SimWorker implements ITransformer {
 
+	/**
+	 * File containing the neighborhood/source pairs for us to simulate.
+	 */
 	@Attribute("sources")
 	private String fSources;
 
+	/**
+	 * File containing all neighborhood/node assignments.
+	 */
 	@Attribute("assignments")
 	private String fAssignments;
 
+	/**
+	 * Index with the entry position of each neighborhood in the neighborhood/
+	 * node assignments file.
+	 */
 	@Attribute("index")
 	private String fAssignmentIndex;
 
+	/**
+	 * Bitmap containing which nodes in which neighborhoods are cloud nodes.
+	 */
+	@Attribute(value = "cloudbitmap", defaultValue = Attribute.VALUE_NULL)
+	private String fCloudBitmapFile;
+
+	/**
+	 * How many repetitions to run.
+	 */
 	@Attribute("repeat")
 	private int fRepeat;
 
@@ -51,8 +74,6 @@ public class SimWorker implements ITransformer {
 
 	@Attribute("burnin")
 	private double fBurnin;
-
-	private double fCloudPercent;
 
 	@Attribute("cloudsims")
 	private boolean fCloudSims;
@@ -71,7 +92,7 @@ public class SimWorker implements ITransformer {
 
 	private YaoChurnConfigurator fYaoConfig;
 
-	private final Random fRandom = new Random();
+	private BitSet fCloudBitmap;
 
 	public SimWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
@@ -95,6 +116,7 @@ public class SimWorker implements ITransformer {
 		fAssignmentStream = new ResettableFileInputStream(
 				new File(fAssignments));
 		fAssigReader = new AssignmentReader(fAssignmentStream, "id");
+		fCloudBitmap = readCloudBitmap();
 
 		IScheduleIterator schedule = fClient.iterator();
 		IGraphProvider provider = fGraphConfig.graphProvider();
@@ -111,13 +133,21 @@ public class SimWorker implements ITransformer {
 
 				SimulationResults results = helper.bruteForceSimulate(
 						e.toString(), graph, e.source, e.lis, e.dis, ids,
-						false, fCloudSims);
+						e.cloudNodes, false, fCloudSims);
 
 				printResults(e.root, results, writer, ids);
 			}
 		} finally {
 			helper.shutdown(true);
 		}
+	}
+
+	// -------------------------------------------------------------------------
+
+	private BitSet readCloudBitmap() throws Exception {
+		ObjectInputStream stream = new ObjectInputStream(new FileInputStream(
+				new File(fCloudBitmapFile)));
+		return (BitSet) stream.readObject();
 	}
 
 	// -------------------------------------------------------------------------
@@ -134,7 +164,8 @@ public class SimWorker implements ITransformer {
 		while (reader.hasNext()) {
 			reader.next();
 			entries.add(new ExperimentEntry(Integer.parseInt(reader.get("id")),
-					Long.parseLong(reader.get("offset"))));
+					Long.parseLong(reader.get("offset")), Integer
+							.parseInt(reader.get("row"))));
 		}
 
 		System.err.println("done. ");
@@ -181,30 +212,10 @@ public class SimWorker implements ITransformer {
 		int root = Integer.parseInt(fSourceReader.get("id"));
 		int source = Integer.parseInt(fSourceReader.get("node"));
 		int[] ids = provider.verticesOf(root);
-		double[][] lidi = readLIDI(root, ids);
+		Pair<Assignment, int[]> assignment = readLIDI(root, ids);
 
-		// Reassign the "cloud" nodes by setting their li/dis to negative.
-		drawCloud(lidi, root, ids);
-
-		return new Experiment(root, source, lidi[AssignmentReader.LI],
-				lidi[AssignmentReader.DI], ids);
-	}
-
-	// -------------------------------------------------------------------------
-
-	private void drawCloud(double[][] lidi, int root, int[] ids) {
-		int[] nodes = new int[lidi[AssignmentReader.LI].length];
-		for (int i = 0; i < nodes.length; i++) {
-			nodes[i] = i;
-		}
-
-		OrderingUtils.permute(0, nodes.length, nodes, fRandom);
-		int cut = (int) Math.ceil(nodes.length * fCloudPercent);
-		for (int i = 0; i < cut; i++) {
-			System.out.println("CL:" + root + " " + ids[nodes[i]]);
-			lidi[AssignmentReader.LI][nodes[i]] = -1;
-			lidi[AssignmentReader.DI][nodes[i]] = -1;
-		}
+		return new Experiment(root, source, assignment.a.li, assignment.a.di,
+				ids, assignment.b);
 	}
 
 	// -------------------------------------------------------------------------
@@ -218,15 +229,31 @@ public class SimWorker implements ITransformer {
 
 	// -------------------------------------------------------------------------
 
-	private double[][] readLIDI(int root, int[] ids) throws IOException {
+	private Pair<Assignment, int[]> readLIDI(int root, int[] ids)
+			throws IOException {
+		// Finds index entry.
 		int idx = Arrays.binarySearch(fIndex, root);
 		if (idx < 0 || idx >= fIndex.length || fIndex[idx].root != root) {
 			throw new NoSuchElementException();
 		}
+
+		// Reads assignment.
 		long offset = fIndex[idx].offset;
 		fAssignmentStream.reposition(offset);
 		fAssigReader.streamRepositioned();
-		return fAssigReader.read(ids);
+
+		Assignment ass = (Assignment) fAssigReader.read(ids);
+
+		// Reads cloud nodes.
+		TIntArrayList cloud = new TIntArrayList();
+		for (int i = 0; i < ids.length; i++) {
+			int row = fIndex[idx].rowStart + i;
+			if (fCloudBitmap.get(row)) {
+				cloud.add(ass.nodes[i]);
+			}
+		}
+
+		return new Pair<Assignment, int[]>(ass, cloud.toArray());
 	}
 
 	// -------------------------------------------------------------------------
@@ -238,16 +265,19 @@ public class SimWorker implements ITransformer {
 
 		final int ids[];
 
+		final int[] cloudNodes;
+
 		final double[] lis;
 		final double[] dis;
 
 		public Experiment(int root, int source, double[] lis, double[] dis,
-				int[] ids) {
+				int[] ids, int[] cloudNodes) {
 			this.root = root;
 			this.ids = ids;
 			this.source = idOf(source, ids);
 			this.lis = lis;
 			this.dis = dis;
+			this.cloudNodes = cloudNodes;
 		}
 
 		private int idOf(int source, int[] ids) {
@@ -268,11 +298,14 @@ public class SimWorker implements ITransformer {
 	// -------------------------------------------------------------------------
 
 	private static class ExperimentEntry implements Comparable<Object> {
+
 		public final int root;
+		public final int rowStart;
 		public final long offset;
 
-		public ExperimentEntry(int root, long offset) {
+		public ExperimentEntry(int root, long offset, int rowStart) {
 			this.root = root;
+			this.rowStart = rowStart;
 			this.offset = offset;
 		}
 

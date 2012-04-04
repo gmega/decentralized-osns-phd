@@ -211,8 +211,7 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 						if (j != i) {
 							kEstimates[i] = fHelper.topKEstimate("top-k - " + i
 									+ "/" + graph.size(), graph, i, j, w,
-									ld[AssignmentReader.LI],
-									ld[AssignmentReader.DI], fK, ids).b;
+									ld[LI], ld[DI], fK, ids).b;
 						}
 					}
 				}
@@ -220,9 +219,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 				SimulationResults simulation = null;
 				if (fMode.should(Experiment.simulate)) {
 					simulation = fHelper.bruteForceSimulate(sampleString()
-							+ ", full", graph, i, ld[AssignmentReader.LI],
-							ld[AssignmentReader.DI], ids, fSampleActivations,
-							false);
+							+ ", full", graph, i, ld[LI], ld[DI], ids, null,
+							fSampleActivations, false);
 				}
 
 				for (int j = 0; j < graph.size(); j++) {
