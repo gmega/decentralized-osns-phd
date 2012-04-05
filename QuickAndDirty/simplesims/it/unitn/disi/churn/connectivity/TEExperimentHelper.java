@@ -1,6 +1,8 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
+import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;

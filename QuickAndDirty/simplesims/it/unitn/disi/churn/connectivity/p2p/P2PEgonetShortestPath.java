@@ -70,7 +70,6 @@ public class P2PEgonetShortestPath implements ITransformer {
 						writer.set("estimate", result.mindists()[i]);
 						writer.emmitRow();
 					}
-
 				}
 			}
 		});

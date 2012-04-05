@@ -52,7 +52,6 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				}
 
 				if (g.isEdge(j, k)) {
-					System.out.println("R:" + repetitions);
 					tasks.add(ttcTask(j, k, li, di, repetitions, cloud,
 							generator, oFactory.call()));
 					break;

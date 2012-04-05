@@ -55,14 +55,17 @@ public class RandomSchedulerTest extends PeerSimTest{
 		int [] classes = new int [] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20};
 			
 		for (int i = 0; i < 200; i++) {
-			DegreeClassScheduler scheduler = new DegreeClassScheduler(pid, 14, "42");
-			for (int klass : classes) { degreeClasses.add(klass); }
+			DegreeClassScheduler scheduler = new DegreeClassScheduler(pid, 14,
+					"42");
+			for (int klass : classes) {
+				degreeClasses.add(klass);
+			}
 			selected.clear();
-			
+
 			IScheduleIterator it = scheduler.iterator();
 			
 			Integer integer;
-			while ((integer = it.nextIfAvailable()) != IScheduleIterator.DONE) {
+			while ((integer = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 				Assert.assertFalse(integer.toString(),
 						selected.contains(integer));
 				selected.add(integer);

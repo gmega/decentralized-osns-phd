@@ -13,20 +13,25 @@ public abstract class SequentialAttributeReader<K> {
 	private String fCurrentRoot;
 
 	private TableReader fReader;
-	
+
 	private boolean fChanged;
-	
+
 	private boolean fDone;
-	
+
 	public SequentialAttributeReader(InputStream stream, String id)
 			throws IOException {
+		this(new TableReader(stream), id);
+	}
+
+	public SequentialAttributeReader(TableReader reader, String id)
+			throws IOException {
 		fIdKey = id;
-		fReader = new TableReader(stream);
+		fReader = reader;
 		fReader.next();
 		fCurrentRoot = fReader.get(fIdKey);
 	}
-	
-	public void streamRepositioned() throws IOException{
+
+	public void streamRepositioned() throws IOException {
 		fReader.streamRepositioned();
 		fDone = false;
 		advance();
@@ -51,15 +56,15 @@ public abstract class SequentialAttributeReader<K> {
 		}
 		fCurrentRoot = root;
 	}
-	
+
 	private void checkNotDone() {
 		if (fDone) {
 			throw new IllegalStateException();
 		}
 	}
 
-	public abstract K read(int [] ids) throws IOException;
-	
+	public abstract K read(int[] ids) throws IOException;
+
 	protected String get(String key) {
 		checkNotDone();
 		return fReader.get(key);
@@ -71,7 +76,7 @@ public abstract class SequentialAttributeReader<K> {
 			fDone = true;
 			return;
 		}
-		
+
 		fReader.next();
 		String root = fReader.get(fIdKey);
 		if (!root.equals(fCurrentRoot)) {
@@ -79,7 +84,7 @@ public abstract class SequentialAttributeReader<K> {
 			fChanged = true;
 		}
 	}
-	
+
 	protected boolean rootChanged() {
 		if (fChanged) {
 			fChanged = false;
@@ -97,7 +102,7 @@ public abstract class SequentialAttributeReader<K> {
 
 		throw new NoSuchElementException();
 	}
-	
+
 	protected int row() {
 		return fReader.currentRow();
 	}
