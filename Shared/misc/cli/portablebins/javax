@@ -1,0 +1,12 @@
+#!/bin/bash
+
+${PACKAGE_HOME:?"Need to set PACKAGE_HOME."}
+
+. $PACKAGE_HOME/bin/commons
+
+classpath $PACKAGE_HOME/jars
+
+CLS=$1
+MEMORY=$2
+
+java -server -cp $CP -Xmx${MEMORY}m $CLS "$@"

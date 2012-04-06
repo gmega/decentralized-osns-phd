@@ -44,7 +44,7 @@ public class AliveBitmapScheduler implements ISchedule {
 			return fRemaining;
 		}
 		@Override
-		public Integer nextIfAvailable() {			
+		public Object nextIfAvailable() {			
 			if (fRemaining == 0) {
 				return IScheduleIterator.DONE;
 			}

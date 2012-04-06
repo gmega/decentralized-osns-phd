@@ -1,0 +1,22 @@
+#!/bin/bash
+
+function file_list {
+    LIST=""
+    SEP=${2:-","}
+    for i in `ls $1`
+    do
+	if [ ${LIST} ]
+	then
+	    LIST=${LIST}${SEP}${i}
+	else
+	    LIST=$i
+	fi
+    done
+
+    COMMON_RETURN=$LIST
+}
+
+function classpath {
+    file_list "$1/*.jar" ":"
+    CP=$COMMON_RETURN
+}

@@ -58,7 +58,7 @@ public class IntervalScheduler implements ISchedule {
 			private int fIndex;
 			
 			@Override
-			public Integer nextIfAvailable() {
+			public Object nextIfAvailable() {
 				if (upper() >= fIntervals.size()) {
 					return IScheduleIterator.DONE;
 				}

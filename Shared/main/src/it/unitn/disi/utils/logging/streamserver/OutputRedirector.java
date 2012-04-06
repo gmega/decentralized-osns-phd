@@ -25,10 +25,10 @@ public class OutputRedirector implements ITransformer {
 	@Attribute("job")
 	private String fJobId;
 
-	@Attribute("address")
+	@Attribute("streamserver.address")
 	private String fAddress;
 
-	@Attribute(value = "port", defaultValue="50327")
+	@Attribute(value = "streamserver.port", defaultValue="50327")
 	private int fPort;
 
 	@Override

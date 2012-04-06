@@ -1,8 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
-import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
@@ -100,8 +98,6 @@ public class TEExperimentHelper {
 
 	private final YaoChurnConfigurator fYaoConf;
 
-	private final F2<IndexedNeighborGraph, double[][], ITopKEstimator> fEstimator;
-
 	private final LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>(
 			100);
 
@@ -111,11 +107,6 @@ public class TEExperimentHelper {
 
 	private final double fBurnin;
 
-	public TEExperimentHelper(YaoChurnConfigurator yaoConf, String estimator,
-			int cores, int repetitions, double burnin) {
-		this(yaoConf, estimator(estimator), cores, repetitions, burnin);
-	}
-
 	/**
 	 * Creates a new helper.
 	 * 
@@ -124,9 +115,8 @@ public class TEExperimentHelper {
 	 * @param repetitions
 	 * @param burnin
 	 */
-	public TEExperimentHelper(YaoChurnConfigurator yaoConf,
-			F2<IndexedNeighborGraph, double[][], ITopKEstimator> estimator,
-			int cores, int repetitions, double burnin) {
+	public TEExperimentHelper(YaoChurnConfigurator yaoConf, int cores,
+			int repetitions, double burnin) {
 
 		fExecutor = new CallbackThreadPoolExecutor<Object>(cores > 0 ? cores
 				: Runtime.getRuntime().availableProcessors(),
@@ -153,7 +143,6 @@ public class TEExperimentHelper {
 				});
 
 		fYaoConf = yaoConf;
-		fEstimator = estimator;
 		fBurnin = burnin;
 		fRepetitions = repetitions;
 	}
@@ -329,10 +318,12 @@ public class TEExperimentHelper {
 	 *         subgraph.
 	 */
 	public Pair<IndexedNeighborGraph, Double> topKEstimate(String taskString,
-			IndexedNeighborGraph graph, int source, int target, double[][] w,
-			double[] lIs, double[] dIs, int k, int[] ids) throws Exception {
+			IndexedNeighborGraph graph,
+			F2<IndexedNeighborGraph, double[][], ITopKEstimator> estimator,
+			int source, int target, double[][] w, double[] lIs, double[] dIs,
+			int k, int[] ids) throws Exception {
 
-		ITopKEstimator tpk = fEstimator.call(graph, w);
+		ITopKEstimator tpk = estimator.call(graph, w);
 
 		System.out.println("Source: " + source + "(" + ids[source]
 				+ ") Target: " + target + "(" + ids[target] + ")");

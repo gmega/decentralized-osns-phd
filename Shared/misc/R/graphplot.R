@@ -13,7 +13,7 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
-multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, pos = NULL, names = NULL, xlim=NULL, ...) {
+multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NULL, names = NULL, xlim=NULL, quantiles=FALSE, ...) {
 	
 	# Computes the maximum and minimum.
 	if (is.null(xlim)) {
@@ -32,20 +32,36 @@ multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, pos = NULL, n
 		print(paste(xmin," ",xmax))
 	}
 	
-	lp <- LinePlotter(colorscale=colorRampPalette(colors=c("red", "green", 
-						"blue"), space="rgb"), colorcycle=length(datasets), 
-						xlim=xlim, lwd=lwd, ...)
-
+	first <- TRUE
+	
 	for (i in seq(1, length(datasets))) {
+		x <- NULL
 		if (is.null(freqsets)) {
-			f <- cdf_fun(dataset[[i]])
+			f <- cdf_fun(datasets[[i]])
 			x <- knots(f)
 			y <- f(x)
 		} else {
 			x <- datasets[[i]]
 			y <- freqsets[[i]]
 		}
-		doPlot(lp, y ~ x, lwd=lwd)
+		
+		qtile <- round(quantile(datasets[[i]], c(0.95))[[1]], 3)
+    
+    	if (first) {
+			plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], ...)
+			if (quantiles) {
+				abline(h=c(0.95), lty=2, lwd=lwd, col="lightgray")
+			}
+      		first <- FALSE
+    	} else {
+      		lines(y ~ x, lwd=lwd, type="l", col=col[i])
+    	}
+		
+		if (quantiles) {
+			abline(v=c(qtile), lwd=lwd, col="lightgray", lty=2)
+			axis(3, at=c(qtile))
+		}
+		
 	}
 	
 	if (!is.null(names)) {

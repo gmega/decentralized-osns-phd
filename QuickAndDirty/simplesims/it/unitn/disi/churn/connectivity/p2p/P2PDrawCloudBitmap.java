@@ -21,6 +21,8 @@ public class P2PDrawCloudBitmap implements ITransformer {
 	double percentage;
 	
 	private final Random fRandom = new Random();
+	
+	// -------------------------------------------------------------------------
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -52,6 +54,8 @@ public class P2PDrawCloudBitmap implements ITransformer {
 		ObjectOutputStream oStream = new ObjectOutputStream(oup);
 		oStream.writeObject(cloud);
 	}
+	
+	// -------------------------------------------------------------------------
 
 	private int[] draw(Pair<Integer, Integer> interval) {
 		int size = interval.b - interval.a + 1;
@@ -62,4 +66,7 @@ public class P2PDrawCloudBitmap implements ITransformer {
 		OrderingUtils.permute(0, draw.length, draw, fRandom);
 		return draw;
 	}
+	
+	// -------------------------------------------------------------------------
+
 }

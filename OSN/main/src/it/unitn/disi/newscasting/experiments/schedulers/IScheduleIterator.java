@@ -11,7 +11,7 @@ public interface IScheduleIterator {
 	/**
 	 * Special value returned by {@link #next()}
 	 */
-	public static final int DONE = Integer.MAX_VALUE;
+	public static final Object DONE = Integer.MAX_VALUE;
 
 	/**
 	 * @return the number of remaining IDs in the schedule, or
@@ -23,5 +23,5 @@ public interface IScheduleIterator {
 	 * @return the next {@link Integer} in the ID stream, if available, or
 	 *         {@link #DONE} if none is available.
 	 */
-	public Integer nextIfAvailable();
+	public Object nextIfAvailable();
 }

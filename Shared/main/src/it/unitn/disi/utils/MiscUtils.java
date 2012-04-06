@@ -38,6 +38,32 @@ public class MiscUtils {
 			return new RuntimeException(ex);
 		}
 	}
+
+	public static double log2(double input) {
+		return Math.log(input)/Math.log(2.0);
+	}
+	
+	public static int integers(int count) {
+		int size = Integer.SIZE / Byte.SIZE;
+		return size * count;
+	}
+	
+	public static int pointers(int count) {
+		int size = Integer.parseInt(System.getProperty("sun.arch.data.model"))/Byte.SIZE;
+		return size*count;
+	}
+	
+	public static int safeCast(long other) {
+		if (other >= Long.MAX_VALUE || other <= Long.MIN_VALUE) {
+			throw new IllegalArgumentException("Integer overflow during typecast.");
+		}
+		
+		return (int) other;
+	}
+	
+	// -------------------------------------------------------------------------
+	// To be extracted into CollectionUtils
+	// -------------------------------------------------------------------------
 	
 	public static <T> void grow(ArrayList<T> list, int size, T fill) {
 		while (list.size() < size) {
@@ -84,12 +110,29 @@ public class MiscUtils {
 	}
 	
 	public static <T> boolean contains (T [] array, T object) { 
+		return indexOf(array, object) != -1;
+	}
+	
+	public static boolean contains(int [] array, int element) {
+		return indexOf(array, element) != -1;
+	}
+	
+	public static <T> int indexOf (T [] array, T object) { 
 		for (int i = 0; i < array.length; i++) {
 			if (object.equals(array[i])) {
-				return true;
+				return i;
 			}
 		}
-		return false;
+		return -1;
+	}
+	
+	public static int indexOf(int [] array, int element) {
+		for (int i = 0; i < array.length; i++) {
+			if (array[i] == element) {
+				return i;
+			}
+		}
+		return -1;
 	}
 	
 	public static <T> int lastDifferentFrom(T [] array, T element) {
@@ -110,25 +153,4 @@ public class MiscUtils {
 	}
 
 	
-	public static double log2(double input) {
-		return Math.log(input)/Math.log(2.0);
-	}
-	
-	public static int integers(int count) {
-		int size = Integer.SIZE / Byte.SIZE;
-		return size * count;
-	}
-	
-	public static int pointers(int count) {
-		int size = Integer.parseInt(System.getProperty("sun.arch.data.model"))/Byte.SIZE;
-		return size*count;
-	}
-	
-	public static int safeCast(long other) {
-		if (other >= Long.MAX_VALUE || other <= Long.MIN_VALUE) {
-			throw new IllegalArgumentException("Integer overflow during typecast.");
-		}
-		
-		return (int) other;
-	}
 }

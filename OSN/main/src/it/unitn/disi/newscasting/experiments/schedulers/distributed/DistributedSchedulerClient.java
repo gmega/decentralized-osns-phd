@@ -63,7 +63,18 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 	private IWorker publish() {
 		try {
 			fLogger.info("Publishing RMI reference.");
-			return (IWorker) UnicastRemoteObject.exportObject(this, 0);
+			final IWorker stub = (IWorker) UnicastRemoteObject.exportObject(this, 0);
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						UnicastRemoteObject.unexportObject(stub, false);
+					} catch(Exception ex) {
+						fLogger.error("Failed to unexport object.", ex);
+					}
+				}
+			}));
+			return stub;
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to publish object.");
 			throw MiscUtils.nestRuntimeException(ex);
@@ -109,7 +120,7 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 		}
 
 		@Override
-		public Integer nextIfAvailable() {
+		public Object nextIfAvailable() {
 			releasePrevious();
 			Pair<Integer, Integer> next = acquire();
 			refreshRemaining(next);

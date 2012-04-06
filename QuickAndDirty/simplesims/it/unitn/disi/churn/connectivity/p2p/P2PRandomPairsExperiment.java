@@ -49,9 +49,6 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 	@Attribute("k")
 	private int fK;
 
-	@Attribute("algorithm")
-	private String fEstimator;
-
 	@Attribute("repetitions")
 	private int fRepetitions;
 
@@ -72,7 +69,7 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
 
-		fHelper = new TEExperimentHelper(fYaoConf, fEstimator,
+		fHelper = new TEExperimentHelper(fYaoConf,
 				TEExperimentHelper.ALL_CORES, fRepetitions, fBurnin);
 	}
 
@@ -113,9 +110,9 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 			LightweightStaticGraph ing = (LightweightStaticGraph) loader
 					.subgraph(hoods[id].root);
 			Pair<IndexedNeighborGraph, Double> result = fHelper.topKEstimate(
-					"", ing, next.a, next.b, hoods[id].weights,
-					hoods[id].assignment.li, hoods[id].assignment.di, fK,
-					hoods[id].ids);
+					"", ing, TEExperimentHelper.EDGE_DISJOINT, next.a, next.b,
+					hoods[id].weights, hoods[id].assignment.li,
+					hoods[id].assignment.di, fK, hoods[id].ids);
 
 			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);

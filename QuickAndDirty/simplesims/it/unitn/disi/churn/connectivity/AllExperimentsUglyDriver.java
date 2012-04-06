@@ -1,6 +1,5 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.AssignmentReader;
 import it.unitn.disi.churn.GraphConfigurator;
 import it.unitn.disi.churn.YaoChurnConfigurator;
 import it.unitn.disi.cli.IMultiTransformer;
@@ -48,9 +47,6 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 
 	@Attribute(value = "end", defaultValue = "-1")
 	private int fEnd;
-
-	@Attribute(value = "tpk", defaultValue = "yen")
-	private String fEstimator;
 
 	@Attribute(value = "edgesample", defaultValue = "false")
 	private boolean fSampleActivations;
@@ -107,8 +103,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 				resolver);
 		fGraphConf = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
-		fHelper = new TEExperimentHelper(fYaoConf, fEstimator, fCores,
-				fRepetitions, fBurnin);
+		fHelper = new TEExperimentHelper(fYaoConf, fCores, fRepetitions,
+				fBurnin);
 	}
 
 	@Override
@@ -210,7 +206,8 @@ public class AllExperimentsUglyDriver implements IMultiTransformer {
 					for (int j = 0; j < graph.size(); j++) {
 						if (j != i) {
 							kEstimates[i] = fHelper.topKEstimate("top-k - " + i
-									+ "/" + graph.size(), graph, i, j, w,
+									+ "/" + graph.size(), graph,
+									TEExperimentHelper.EDGE_DISJOINT, i, j, w,
 									ld[LI], ld[DI], fK, ids).b;
 						}
 					}

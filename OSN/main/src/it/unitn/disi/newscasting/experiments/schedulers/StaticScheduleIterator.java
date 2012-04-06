@@ -11,7 +11,7 @@ public class StaticScheduleIterator implements IScheduleIterator {
 	}
 
 	@Override
-	public Integer nextIfAvailable() {
+	public Object nextIfAvailable() {
 		if (fIndex == fSchedule.size()) {
 			return DONE;
 		}

@@ -53,7 +53,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 		synchronized (fExperiments) {
 			for (int i = 0; i < fExperiments.length; i++) {
 				fExperiments[i] = new ExperimentEntry(
-						iterator.nextIfAvailable());
+						(Integer) iterator.nextIfAvailable());
 			}
 			Arrays.sort(fExperiments);
 		}
@@ -194,7 +194,8 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 			throws RemoteException {
 		WorkerEntry entry = fWorkers.get(workerId);
 		if (entry == null) {
-			throw new InvalidWorkerException("Worker " + workerId + " is not valid.");
+			throw new InvalidWorkerException("Worker " + workerId
+					+ " is not valid.");
 		}
 
 		for (int i = 0; i < fExperiments.length; i++) {

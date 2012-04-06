@@ -1,0 +1,6 @@
+#!/bin/bash
+
+${PACKAGE_HOME:?"Need to set PACKAGE_HOME."}
+
+$PACKAGE_HOME/bin/javax it.unitn.disi.cli.GenericDriver 2512 "$@"
+

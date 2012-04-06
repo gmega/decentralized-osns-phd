@@ -86,8 +86,17 @@ public class GenericDriver {
 				return;
 			}
 
+			String pClass;
+			Map<String, Object> props = parseProperties(fParameters,
+					fPropertyFile);
+
 			if (fArguments.isEmpty()) {
-				throw new CmdLineException("No processing class given.");
+				pClass = (String) props.get("processor");
+				if (pClass == null) {
+					throw new CmdLineException("No processing class given.");
+				}
+			} else {
+				pClass = fArguments.get(0);
 			}
 
 			System.err.println("Starting the Java generic driver.");
@@ -95,8 +104,7 @@ public class GenericDriver {
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
 
-			Object processor = create(fArguments.get(0), new HashMapResolver(
-					parseProperties(fParameters, fPropertyFile)));
+			Object processor = create(pClass, new HashMapResolver(props));
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
@@ -290,9 +298,11 @@ public class GenericDriver {
 		try {
 			new GenericDriver()._main(args);
 			System.err.println("Normal termination.");
+			System.exit(0);
 		} catch (Exception ex) {
 			System.err.println("Abnormal termination: exception thrown.");
 			ex.printStackTrace();
+			System.exit(-1);
 		}
 	}
 }

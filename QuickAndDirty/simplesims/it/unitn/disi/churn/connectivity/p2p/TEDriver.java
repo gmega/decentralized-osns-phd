@@ -19,9 +19,6 @@ public class TEDriver {
 	@Attribute("cores")
 	private int fCores;
 
-	@Attribute("estimator")
-	private String fEstimator;
-
 	private YaoChurnConfigurator fYaoConf;
 
 	private volatile TEExperimentHelper helper;
@@ -33,8 +30,8 @@ public class TEDriver {
 
 	protected TEExperimentHelper helper() {
 		if (helper == null) {
-			helper = new TEExperimentHelper(fYaoConf, fEstimator, fCores,
-					fRepetitions, fBurnin);
+			helper = new TEExperimentHelper(fYaoConf, fCores, fRepetitions,
+					fBurnin);
 		}
 		return helper;
 	}

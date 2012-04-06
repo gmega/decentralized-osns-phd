@@ -209,7 +209,7 @@ public class StreamServer {
 					Thread.sleep(fFlushInterval);
 				} catch (InterruptedException e) {
 					// Restore interruption state.
-					Thread.interrupted();
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

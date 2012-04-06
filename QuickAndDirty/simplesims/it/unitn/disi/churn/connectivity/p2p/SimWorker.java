@@ -32,17 +32,19 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	/**
 	 * Bitmap containing which nodes in which neighborhoods are cloud nodes.
 	 */
-	@Attribute(value = "cloudbitmap", defaultValue = Attribute.VALUE_NULL)
+	@Attribute(value = "cloudbitmap", defaultValue = "no")
 	private String fCloudBitmapFile;
 
 	@Attribute("cloudsims")
 	private boolean fCloudSims;
 
 	private BitSet fCloudBitmap;
+	
+	// -------------------------------------------------------------------------
 
 	public SimWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
-		super(resolver, "id", "source");
+		super(resolver, "id", "node");
 	}
 
 	// -------------------------------------------------------------------------
@@ -75,16 +77,24 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	// -------------------------------------------------------------------------
 
 	private BitSet readCloudBitmap() throws Exception {
-		File cloudBitmapFile = new File(fCloudBitmapFile);
-		System.err.println("-- Cloud bitmap is " + cloudBitmapFile.getName()
-				+ ".");
-		System.err.print("- Reading...");
-		ObjectInputStream stream = new ObjectInputStream(new FileInputStream(
-				new File(fCloudBitmapFile)));
-		BitSet cloudbmp = (BitSet) stream.readObject();
-		System.err
-				.println("done. Cloud nodes: " + cloudbmp.cardinality() + ".");
-		return cloudbmp;
+		
+		BitSet cloudBmp;
+		if (fCloudBitmapFile.equals("no")) {
+			cloudBmp = new BitSet();
+		} else {
+			File cloudBitmapFile = new File(fCloudBitmapFile);
+			System.err.println("-- Cloud bitmap is " + cloudBitmapFile.getName()
+					+ ".");
+			System.err.print("- Reading...");
+			ObjectInputStream stream = new ObjectInputStream(new FileInputStream(
+					new File(fCloudBitmapFile)));
+			cloudBmp = (BitSet) stream.readObject();
+			System.err
+				.println("done.");
+		}
+		
+		System.err.println("Cloud nodes: " + cloudBmp.cardinality() + ".");
+		return cloudBmp;
 	}
 
 	// -------------------------------------------------------------------------

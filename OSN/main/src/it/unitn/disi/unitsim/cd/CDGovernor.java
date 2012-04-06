@@ -85,7 +85,7 @@ public class CDGovernor extends
 
 	private SchedulingState scheduleCycle() {
 
-		Integer id = fSchedule.nextIfAvailable();
+		Integer id = (Integer) fSchedule.nextIfAvailable();
 		if (id == null) {
 			return SchedulingState.SCHEDULE;
 		} else if (id == IScheduleIterator.DONE) {
@@ -94,9 +94,9 @@ public class CDGovernor extends
 
 		fCurrent = create(fResolver, fPrefix, id);
 		fCurrent.initialize();
-		
+
 		currentExperimentStarted();
-		
+
 		// Condenses a run cycle here.
 		return runCycle();
 	}

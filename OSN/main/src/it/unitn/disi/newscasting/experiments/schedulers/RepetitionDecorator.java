@@ -37,7 +37,7 @@ public class RepetitionDecorator implements ISchedule {
 
 		private int fCurrentRepeat = 0;
 
-		private int fCurrent;
+		private Object fCurrent;
 
 		public SequentialRepetition(ISchedule delegate, int repetitions) {
 			fDelegate = delegate.iterator();
@@ -45,9 +45,9 @@ public class RepetitionDecorator implements ISchedule {
 		}
 
 		@Override
-		public Integer nextIfAvailable() {
+		public Object nextIfAvailable() {
 			if (fCurrentRepeat == 0) {
-				int next = fDelegate.nextIfAvailable();
+				Object next = fDelegate.nextIfAvailable();
 				if (next == IScheduleIterator.DONE) {
 					return IScheduleIterator.DONE;
 				}
@@ -86,8 +86,8 @@ public class RepetitionDecorator implements ISchedule {
 		}
 
 		@Override
-		public Integer nextIfAvailable() {
-			Integer next;
+		public Object nextIfAvailable() {
+			Object next;
 			while (((next = fIterator.nextIfAvailable()) == IScheduleIterator.DONE)
 					&& fRemaining > 0) {
 				fIterator = (IScheduleIterator) fGenerator.iterator();

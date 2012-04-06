@@ -46,7 +46,7 @@ public class EDGovernor extends
 	}
 
 	private void scheduleNext() {
-		Integer id = fSchedule.nextIfAvailable();
+		Integer id = (Integer) fSchedule.nextIfAvailable();
 		fCurrent = null;
 		if (id == IScheduleIterator.DONE) {
 			return;

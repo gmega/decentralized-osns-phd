@@ -104,8 +104,8 @@ public abstract class AbstractWorker implements ITransformer {
 
 	protected TEExperimentHelper simHelper() throws Exception {
 		if (fHelper == null) {
-			fHelper = new TEExperimentHelper(fYaoConfig,
-					TEExperimentHelper.EDGE_DISJOINT, fCores, fRepeat, fBurnin);
+			fHelper = new TEExperimentHelper(fYaoConfig, fCores, fRepeat,
+					fBurnin);
 		}
 		return fHelper;
 	}
