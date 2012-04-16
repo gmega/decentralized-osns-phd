@@ -35,6 +35,8 @@ public class P2PDrawCloudBitmap implements ITransformer {
 				while(!rootChanged()) {
 					advance();
 				}
+				// We take row() - 1 because when the root changed, we're
+				// already 1 row too late. 
 				return new Pair<Integer, Integer>(start, row() - 1);
 			}
 		};  

@@ -67,6 +67,7 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 			delta = fNextEvent - parent.currentTime();
 		}
 		
+		// Makes sure we're not doing anything funky.
 		if (fUptime - delta < 0){ 
 			throw new IllegalStateException("Internal error.");
 		}

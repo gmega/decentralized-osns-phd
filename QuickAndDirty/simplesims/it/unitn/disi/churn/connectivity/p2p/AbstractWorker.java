@@ -26,7 +26,7 @@ import peersim.config.ObjectCreator;
  * Base class over which the P2P paper simulation workers are built upon.
  * Provides functions for reading indexed availability assignment files, indexed
  * graphs, initializing the parallel simulators, and reading a row-oriented
- * experiment specification set which is to be shared among all workers.
+ * experiment specification file which is to be shared among all workers.
  * 
  * @author giuliano
  */
@@ -89,6 +89,18 @@ public abstract class AbstractWorker implements ITransformer {
 
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Constructor for {@link AbstractWorker}.
+	 * 
+	 * @param resolver
+	 *            the resolver for configuring this worker.
+	 * @param idField
+	 *            the field identifying the ego network in the experiment
+	 *            specification file.
+	 * @param sourceField
+	 *            the field specifying the "source" in the experiment
+	 *            specification file. Some workers don't use this.
+	 */
 	public AbstractWorker(IResolver resolver, String idField, String sourceField) {
 		fGraphConfig = ObjectCreator.createInstance(GraphConfigurator.class,
 				"", resolver);

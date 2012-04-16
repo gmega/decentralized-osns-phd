@@ -96,6 +96,9 @@ public class TableReader {
 		fReader.close();
 	}
 
+	/**
+	 * @return the current row. Rows are numbered from 1.
+	 */
 	public int currentRow() {
 		return fRow;
 	}

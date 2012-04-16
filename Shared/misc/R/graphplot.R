@@ -13,7 +13,7 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
-multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NULL, names = NULL, xlim=NULL, quantiles=FALSE, ...) {
+multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NULL, names = NULL, xlim=NULL, quantiles=FALSE, quantile=0.95, ...) {
 	
 	# Computes the maximum and minimum.
 	if (is.null(xlim)) {
@@ -45,12 +45,12 @@ multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NU
 			y <- freqsets[[i]]
 		}
 		
-		qtile <- round(quantile(datasets[[i]], c(0.95))[[1]], 3)
+		qtile <- round(quantile(datasets[[i]], c(quantile))[[1]], 3)
     
     	if (first) {
 			plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], ...)
 			if (quantiles) {
-				abline(h=c(0.95), lty=2, lwd=lwd, col="lightgray")
+				abline(h=c(quantile), lty=2, lwd=lwd, col="lightgray")
 			}
       		first <- FALSE
     	} else {

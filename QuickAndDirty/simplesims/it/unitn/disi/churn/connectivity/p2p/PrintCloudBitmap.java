@@ -18,7 +18,7 @@ public class PrintCloudBitmap implements ITransformer {
 
 	@Attribute
 	String bmp;
-
+	
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
@@ -28,7 +28,7 @@ public class PrintCloudBitmap implements ITransformer {
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 		String line;
-		for (int i = 0; (line = reader.readLine()) != null; i++) {
+		for (int i = 1; (line = reader.readLine()) != null; i++) {
 			if (bs.get(i)) {
 				System.out.println(line);
 			}
