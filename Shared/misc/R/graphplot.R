@@ -13,7 +13,10 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
-multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NULL, names = NULL, xlim=NULL, quantiles=FALSE, quantile=0.95, ...) {
+multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col, pos = NULL, names = NULL, xlim=NULL, quantiles=FALSE, quantile=0.95, round_dec=2, ...) {
+	
+	qs <- c()
+	qs[1:length(datasets)] <- 0
 	
 	# Computes the maximum and minimum.
 	if (is.null(xlim)) {
@@ -45,21 +48,21 @@ multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NU
 			y <- freqsets[[i]]
 		}
 		
-		qtile <- round(quantile(datasets[[i]], c(quantile))[[1]], 3)
+		qs[i] <- round(quantile(datasets[[i]], c(quantile))[[1]], round_dec)
     
     	if (first) {
-			plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], ...)
+			plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], lty=lty[i], ...)
 			if (quantiles) {
 				abline(h=c(quantile), lty=2, lwd=lwd, col="lightgray")
 			}
       		first <- FALSE
     	} else {
-      		lines(y ~ x, lwd=lwd, type="l", col=col[i])
+      		lines(y ~ x, lwd=lwd, type="l", col=col[i], lty=lty[i])
     	}
 		
 		if (quantiles) {
-			abline(v=c(qtile), lwd=lwd, col="lightgray", lty=2)
-			axis(3, at=c(qtile))
+			abline(v=c(qs[i]), lwd=lwd, col="lightgray", lty=2)
+			axis(3, at=c(qs[i]))
 		}
 		
 	}
@@ -67,6 +70,8 @@ multicdf <- function(datasets, freqsets = NULL, lwd, cdf_fun=ecdf, col, pos = NU
 	if (!is.null(names)) {
 		legends(lp, x=pos, names=names, lwd=lwd)
 	}
+	
+	return(qs)
 }
 
 #' Creates a new multiline plotter.

@@ -3,6 +3,7 @@ package it.unitn.disi.churn.connectivity.p2p;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.channels.IllegalSelectorException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -101,6 +102,9 @@ public class P2PEgonetShortestPath implements ITransformer {
 			IndexedNeighborGraph egoNet = provider.subgraph(root);
 			int[] ids = provider.verticesOf(root);
 			double[][] w = reader.read(ids);
+			
+			check(egoNet, w);
+			
 			for (int i = 0; i < egoNet.size(); i++) {
 				executor.submit(new ShortestPathTask(root, i, w, egoNet, ids));
 			}
@@ -112,6 +116,21 @@ public class P2PEgonetShortestPath implements ITransformer {
 		toPrint.offer(SHUTDOWN, Long.MAX_VALUE, TimeUnit.DAYS);
 		printer.join();
 
+	}
+
+	private void check(IndexedNeighborGraph egoNet, double[][] w) {
+		for (int i = 0; i < egoNet.size(); i++) {
+			for (int j = 0; j < egoNet.size(); j++) {
+				if (i == j) {
+					continue;
+				}
+				if (egoNet.isEdge(i, j)) {
+					if (w[i][j] == Double.MAX_VALUE || w[j][i] == Double.MAX_VALUE) {
+						throw new IllegalStateException();
+					}
+				}
+			}
+		}
 	}
 
 	static class ShortestPathTask implements Callable<ShortestPathTask> {

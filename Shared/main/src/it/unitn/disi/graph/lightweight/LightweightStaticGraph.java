@@ -27,7 +27,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 	 * Version UID.
 	 */
 	private static final long serialVersionUID = -2004042032852047149L;
-	
+
 	// --------------------------------------------------------------------------
 	// Static creational and transform methods.
 	// --------------------------------------------------------------------------
@@ -227,7 +227,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 	 * Returns the number of edges in this graph.
 	 */
 	public int edgeCount() {
-		return fEdges;
+		return directed() ? fEdges : (int) (fEdges / 2.0);
 	}
 
 	public int getNeighbor(int node, int index) {

@@ -325,8 +325,7 @@ public class TEExperimentHelper {
 
 		ITopKEstimator tpk = estimator.call(graph, w);
 
-		System.out.println("Source: " + source + "(" + ids[source]
-				+ ") Target: " + target + "(" + ids[target] + ")");
+		System.out.println("Source: " + source + " Target: " + target + ".");
 
 		// 1. computes the top-k shortest paths between u and w.
 		int[] vertexes = vertexesOf(tpk.topKShortest(source, target, k));
@@ -335,9 +334,9 @@ public class TEExperimentHelper {
 
 		// 2. runs a connectivity simulation on the subgraph
 		// composed by the top-k shortest paths.
-		double liSub[] = new double[lIs.length];
-		double diSub[] = new double[dIs.length];
-		for (int j = 0; j < diSub.length; j++) {
+		double liSub[] = new double[vertexes.length];
+		double diSub[] = new double[vertexes.length];
+		for (int j = 0; j < vertexes.length; j++) {
 			liSub[j] = lIs[vertexes[j]];
 			diSub[j] = dIs[vertexes[j]];
 		}
@@ -346,7 +345,7 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, liSub, diSub, null, ids, false,
+				remappedSource, remappedSource, liSub, diSub, ids, null, false,
 				false)[0].bruteForce;
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,

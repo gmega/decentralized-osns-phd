@@ -5,6 +5,7 @@ import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -28,8 +29,7 @@ public class TopKWorker extends AbstractWorker {
 	@Attribute("weightidx")
 	private String fWeightIdx;
 
-	private IndexedReader fWeights;
-
+	@Attribute("k")
 	private int fK;
 
 	public TopKWorker(@Attribute(Attribute.AUTO) IResolver resolver)
@@ -47,8 +47,8 @@ public class TopKWorker extends AbstractWorker {
 				"source", "target", "ttc");
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
-				"id", "source", "target", "kttc", "kvertex", "vertex", "kedge",
-				"edge");
+				"id", "source", "target", "kedttc", "kyenttc", "kedvertex",
+				"kyenvertex", "vertex", "kededge", "kyenedge", "edge");
 
 		IScheduleIterator iterator = iterator();
 		Integer row;
@@ -61,33 +61,40 @@ public class TopKWorker extends AbstractWorker {
 			Experiment exp = readExperiment(row);
 			IndexedNeighborGraph graph = provider().subgraph(exp.root);
 
+			int rTarget = MiscUtils.indexOf(exp.ids, target);
+
 			// Reads weights.
-			if (fWeights.select(root) == null) {
+			if (reader.select(root) == null) {
 				throw new NoSuchElementException();
 			}
 
 			wReader.streamRepositioned();
 			double[][] w = wReader.read(exp.ids);
+			
+			String ts = "Job " + row;
 
 			Pair<IndexedNeighborGraph, Double> resultED = simHelper()
-					.topKEstimate("", graph, TEExperimentHelper.EDGE_DISJOINT,
-							exp.source, target, w, exp.lis, exp.dis, fK,
+					.topKEstimate(ts + " ED", graph, TEExperimentHelper.EDGE_DISJOINT,
+							exp.source, rTarget, w, exp.lis, exp.dis, fK,
 							exp.ids);
 
 			Pair<IndexedNeighborGraph, Double> resultYen = simHelper()
-					.topKEstimate("", graph, TEExperimentHelper.YENS,
-							exp.source, target, w, exp.lis, exp.dis, fK,
+					.topKEstimate(ts + " Yen", graph, TEExperimentHelper.YENS,
+							exp.source, rTarget, w, exp.lis, exp.dis, fK,
 							exp.ids);
 
 			writer.set("id", root);
-			writer.set("source", exp.source);
+			writer.set("source", exp.ids[exp.source]);
 			writer.set("target", target);
 			writer.set("kedttc", resultED.b / fRepeat);
 			writer.set("kyenttc", resultYen.b / fRepeat);
-			writer.set("kvertex", resultED.a.size());
+			writer.set("kedvertex", resultED.a.size());
+			writer.set("kyenvertex", resultYen.a.size());
 			writer.set("vertex", graph.size());
-			writer.set("kedge",
+			writer.set("kededge",
 					((LightweightStaticGraph) resultED.a).edgeCount());
+			writer.set("kyenedge",
+					((LightweightStaticGraph) resultYen.a).edgeCount());
 			writer.set("edge", ((LightweightStaticGraph) graph).edgeCount());
 			writer.emmitRow();
 		}

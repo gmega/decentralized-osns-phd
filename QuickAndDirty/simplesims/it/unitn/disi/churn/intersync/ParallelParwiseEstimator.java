@@ -5,6 +5,7 @@ import it.unitn.disi.churn.IChurnSim;
 import it.unitn.disi.churn.IValueObserver;
 import it.unitn.disi.churn.RenewalProcess;
 import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.logging.Progress;
@@ -45,6 +46,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 		ArrayList<EdgeTask> tasks = new ArrayList<EdgeTask>();
 
 		// Now estimates the TTC for all edges, in parallel.
+		int tCount = 0;
 		for (int j = 0; j < li.length; j++) {
 			for (int k = 0; k < di.length; k++) {
 				if (j == k) {
@@ -54,8 +56,9 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				if (g.isEdge(j, k)) {
 					tasks.add(ttcTask(j, k, li, di, repetitions, cloud,
 							generator, oFactory.call()));
-					break;
+					tCount++;
 				}
+
 			}
 		}
 

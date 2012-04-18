@@ -38,8 +38,11 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	@Attribute("cloudsims")
 	private boolean fCloudSims;
 
+	@Attribute(value = "printcloudnodes", defaultValue = "false")
+	private boolean fPrintCloud;
+
 	private BitSet fCloudBitmap;
-	
+
 	// -------------------------------------------------------------------------
 
 	public SimWorker(@Attribute(Attribute.AUTO) IResolver resolver)
@@ -63,6 +66,8 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int[] ids = provider().verticesOf(e.root);
 				int[] cloudNodes = cloudNodes(e);
 
+				printCloud(e.root, ids, cloudNodes);
+
 				SimulationResults results = simHelper().bruteForceSimulate(
 						e.toString(), graph, e.source, e.lis, e.dis, ids,
 						cloudNodes, false, fCloudSims);
@@ -76,23 +81,38 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	// -------------------------------------------------------------------------
 
+	private void printCloud(int root, int[] ids, int[] cloudNodes) {
+		if (!fPrintCloud) {
+			return;
+		}
+
+		for (int i = 0; i < cloudNodes.length; i++) {
+			StringBuffer sb = new StringBuffer();
+			sb.append(root);
+			sb.append(" ");
+			sb.append(ids[cloudNodes[i]]);
+			System.out.println(sb);
+		}
+	}
+
+	// -------------------------------------------------------------------------
+
 	private BitSet readCloudBitmap() throws Exception {
-		
+
 		BitSet cloudBmp;
 		if (fCloudBitmapFile.equals("no")) {
 			cloudBmp = new BitSet();
 		} else {
 			File cloudBitmapFile = new File(fCloudBitmapFile);
-			System.err.println("-- Cloud bitmap is " + cloudBitmapFile.getName()
-					+ ".");
+			System.err.println("-- Cloud bitmap is "
+					+ cloudBitmapFile.getName() + ".");
 			System.err.print("- Reading...");
-			ObjectInputStream stream = new ObjectInputStream(new FileInputStream(
-					new File(fCloudBitmapFile)));
+			ObjectInputStream stream = new ObjectInputStream(
+					new FileInputStream(new File(fCloudBitmapFile)));
 			cloudBmp = (BitSet) stream.readObject();
-			System.err
-				.println("done.");
+			System.err.println("done.");
 		}
-		
+
 		System.err.println("Cloud nodes: " + cloudBmp.cardinality() + ".");
 		return cloudBmp;
 	}

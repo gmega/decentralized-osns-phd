@@ -17,13 +17,13 @@ import it.unitn.disi.utils.tabular.TableWriter;
 @AutoConfig
 public class ExperimentIndexer implements ITransformer {
 
-	@Attribute("assignments")
-	private String fAssignments;
+	@Attribute("file")
+	private String fFile;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		final RandomAccessFile raf = new RandomAccessFile(
-				new File(fAssignments), "r");
+				new File(fFile), "r");
 		
 		TrackingReader tracker = new TrackingReader(raf);
 		TableReader reader = new TableReader(tracker);
