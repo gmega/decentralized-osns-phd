@@ -5,10 +5,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import it.unitn.disi.churn.AssignmentReader;
-import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.AssignmentReader.Assignment;
+import it.unitn.disi.churn.config.AssignmentReader;
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.churn.connectivity.p2p.IndexedReader.IndexEntry;
 import it.unitn.disi.cli.ITransformer;

@@ -8,7 +8,7 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.graph.GraphAlgorithms;
-import it.unitn.disi.churn.GraphConfigurator;
+import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;

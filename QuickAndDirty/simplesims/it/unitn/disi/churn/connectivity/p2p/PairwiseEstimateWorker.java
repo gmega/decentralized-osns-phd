@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.IncrementalStatsAdapter;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.statistics.StatUtils;
@@ -59,6 +59,12 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 								.distributionGenerator(), false, e.root, e.ids);
 
 				gt.await();
+				
+				System.err.println("-- err flush -- ");
+				System.err.flush();
+				
+				System.out.println("-- out flush -- ");
+				System.out.flush();
 
 				for (EdgeTask task : gt.edgeTasks) {
 					IncrementalStatsAdapter adapt = (IncrementalStatsAdapter) task.stats;

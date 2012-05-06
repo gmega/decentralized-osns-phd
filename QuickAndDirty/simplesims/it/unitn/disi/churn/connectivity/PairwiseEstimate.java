@@ -1,14 +1,14 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.AssignmentReader;
-import it.unitn.disi.churn.AssignmentReader.Assignment;
-import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.IncrementalStatsAdapter;
-import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.config.AssignmentReader;
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;

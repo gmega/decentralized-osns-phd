@@ -11,16 +11,18 @@ import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
 
 import gnu.trove.list.array.TDoubleArrayList;
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.GeneralizedPareto;
 import it.unitn.disi.random.UniformDistribution;
+import it.unitn.disi.utils.collections.Pair;
 
 @AutoConfig
 public class SamplingExperiment implements ITransformer {
@@ -72,7 +74,7 @@ public class SamplingExperiment implements ITransformer {
 			}
 			burninSamples();
 			break;
-			
+
 		case genandsample:
 			genAndSample();
 			break;
@@ -151,7 +153,7 @@ public class SamplingExperiment implements ITransformer {
 
 		IncrementalStats stats = new IncrementalStats();
 		p1All.shuffle(new Random());
-		
+
 		// Now samples.
 		for (int i = 0; i < fSamples; i++) {
 			double p1Login = p1All.getQuick(i);
@@ -171,7 +173,7 @@ public class SamplingExperiment implements ITransformer {
 
 	}
 
-	private void runSim(double burnin, IChurnSim sim) {
+	private void runSim(double burnin, IEventObserver sim) {
 
 		double[] li = { 0.022671232013507403, 0.15811117888599902 };
 		double[] di = { 0.060429334420225356, 5.098033173656655 };
@@ -187,13 +189,13 @@ public class SamplingExperiment implements ITransformer {
 				distGen.uptimeDistribution(li[1]),
 				distGen.downtimeDistribution(di[1]), State.down);
 
-		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		sims.add(sim);
+		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		sims.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, sim));
 
-		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, sims, burnin);
+		SimpleEDSim churnSim = new SimpleEDSim(new RenewalProcess[] { pI, pJ },
+				sims, burnin);
 
 		churnSim.run();
 	}
-
 }

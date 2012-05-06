@@ -1,4 +1,4 @@
-package it.unitn.disi.churn;
+package it.unitn.disi.churn.config;
 
 import it.unitn.disi.utils.tabular.TableReader;
 

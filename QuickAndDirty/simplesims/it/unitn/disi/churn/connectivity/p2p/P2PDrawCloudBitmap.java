@@ -9,7 +9,7 @@ import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import it.unitn.disi.churn.SequentialAttributeReader;
+import it.unitn.disi.churn.config.SequentialAttributeReader;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.Pair;

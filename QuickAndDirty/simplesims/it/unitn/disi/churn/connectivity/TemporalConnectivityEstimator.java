@@ -2,10 +2,10 @@ package it.unitn.disi.churn.connectivity;
 
 import java.util.Arrays;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.simulator.Schedulable;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 /**
@@ -14,9 +14,9 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
  * 
  * @author giuliano
  */
-public class TemporalConnectivityEstimator implements IChurnSim {
+public class TemporalConnectivityEstimator implements IEventObserver {
 
-	private BaseChurnSim fParent;
+	private SimpleEDSim fParent;
 
 	private ActivationSampler fSampler;
 
@@ -48,13 +48,13 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 			int source, int[] cloudNodes, ActivationSampler sampler) {
 		fGraph = graph;
 		fSource = source;
-		
+
 		fReachedFrom = new int[fGraph.size()];
 		fReached = new double[fGraph.size()];
 		fUptimeReached = new double[fGraph.size()];
 		fUptimeSnapshot = new double[fGraph.size()];
 		fDone = new boolean[fGraph.size()];
-		
+
 		fQueue = new BFSQueue(fGraph.size());
 		fSampler = sampler;
 		fCloudNodes = new boolean[graph.size()];
@@ -73,27 +73,25 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	}
 
 	@Override
-	public void simulationStarted(BaseChurnSim parent) {
+	public void simulationStarted(SimpleEDSim parent) {
 		fParent = parent;
 	}
 
 	@Override
-	public void stateShifted(BaseChurnSim parent, double time,
-			RenewalProcess process, State old, State nw) {
-
-		if (nw != State.up) {
+	public void stateShifted(SimpleEDSim parent, double time,
+			Schedulable schedulable) {
+		RenewalProcess process = (RenewalProcess) schedulable;
+		if (!process.isUp()) {
 			return;
 		}
-
-		recomputeReachabilities(process, old, nw, time);
+		recomputeReachabilities(process, time);
 	}
 
-	private void recomputeReachabilities(RenewalProcess process, State old,
-			State nw, double time) {
+	private void recomputeReachabilities(RenewalProcess process, double time) {
 
 		// Source being reached for the first time?
 		if (!isReached(fSource)) {
-			if (process.id() == fSource && nw == State.up) {
+			if (process.id() == fSource && process.isUp()) {
 				snapshotUptimes();
 				reached(fSource, fSource, time);
 			}
@@ -162,7 +160,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 	public boolean isDone() {
 		return fReachedCount == fReached.length;
 	}
-	
+
 	public double perceivedDelay(int i) {
 		return fUptimeReached[i] - fUptimeSnapshot[i];
 	}
@@ -179,7 +177,7 @@ public class TemporalConnectivityEstimator implements IChurnSim {
 		return fSampler;
 	}
 
-	BaseChurnSim sim() {
+	SimpleEDSim sim() {
 		return fParent;
 	}
 }

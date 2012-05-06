@@ -1,4 +1,5 @@
-package it.unitn.disi.churn;
+package it.unitn.disi.churn.simulator;
+
 
 import java.io.PrintStream;
 

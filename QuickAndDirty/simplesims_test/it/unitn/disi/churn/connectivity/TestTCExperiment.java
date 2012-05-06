@@ -6,13 +6,15 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.utils.collections.Pair;
 
 import org.junit.Test;
 
@@ -28,7 +30,7 @@ public class TestTCExperiment {
 		BFSQueue bQueue = new BFSQueue(7);
 
 		Random r = new Random();
-		
+
 		int elements = 0;
 
 		for (int i = 0; i < 1000000; i++) {
@@ -36,7 +38,7 @@ public class TestTCExperiment {
 			if (elements == bQueue.capacity()) {
 				add = false;
 			}
-			
+
 			if (elements == 0) {
 				Assert.assertTrue(bQueue.isEmpty());
 				add = true;
@@ -80,10 +82,11 @@ public class TestTCExperiment {
 		TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
 				graph, 0);
 
-		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
-		sims.add(tce);
+		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		sims.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, tce));
 
-		BaseChurnSim bcs = new BaseChurnSim(processes, sims, 0);
+		SimpleEDSim bcs = new SimpleEDSim(processes, sims, 0);
 		bcs.run();
 
 		Assert.assertEquals(0.0, tce.reachTime(0));

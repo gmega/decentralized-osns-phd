@@ -2,21 +2,21 @@ package it.unitn.disi.churn.connectivity;
 
 import java.util.Arrays;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
-import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.Schedulable;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 
 /**
  * {@link CloudSim} is a simpler {@link TemporalConnectivityEstimator} which
  * assumes that there is a server separating source and destination. Designed to
  * be stacked with {@link TemporalConnectivityExperiment} over a single
- * {@link BaseChurnSim}.
+ * {@link SimpleEDSim}.
  * 
  * @author giuliano
  */
-public class CloudSim implements IChurnSim {
+public class CloudSim implements IEventObserver {
 
 	private final int fSource;
 
@@ -29,17 +29,19 @@ public class CloudSim implements IChurnSim {
 	}
 
 	@Override
-	public void simulationStarted(BaseChurnSim parent) {
+	public void simulationStarted(SimpleEDSim parent) {
 		fTimes = new double[parent.size()];
 		Arrays.fill(fTimes, Double.MAX_VALUE);
 	}
 
 	@Override
-	public void stateShifted(BaseChurnSim parent, double time,
-			RenewalProcess process, State old, State nw) {
+	public void stateShifted(SimpleEDSim parent, double time,
+			Schedulable schedulable) {
 
+		IProcess process = (IProcess) schedulable;
+		
 		// Not a login event, don't care.
-		if (nw != State.up) {
+		if (!process.isUp()) {
 			return;
 		}
 

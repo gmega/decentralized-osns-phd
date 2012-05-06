@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.churn.MatrixReader;
+import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;

@@ -1,13 +1,14 @@
 package it.unitn.disi.churn.intersync;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 
@@ -46,7 +47,6 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 		ArrayList<EdgeTask> tasks = new ArrayList<EdgeTask>();
 
 		// Now estimates the TTC for all edges, in parallel.
-		int tCount = 0;
 		for (int j = 0; j < li.length; j++) {
 			for (int k = 0; k < di.length; k++) {
 				if (j == k) {
@@ -56,9 +56,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				if (g.isEdge(j, k)) {
 					tasks.add(ttcTask(j, k, li, di, repetitions, cloud,
 							generator, oFactory.call()));
-					tCount++;
 				}
-
 			}
 		}
 
@@ -87,13 +85,14 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				distGen.uptimeDistribution(lIs[j]),
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
-		ArrayList<IChurnSim> sims = new ArrayList<IChurnSim>();
+		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
 				observer);
-		sims.add(sexp);
+		sims.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, sexp));
 
-		BaseChurnSim churnSim = new BaseChurnSim(
-				new RenewalProcess[] { pI, pJ }, sims, fBurnin);
+		SimpleEDSim churnSim = new SimpleEDSim(new IProcess[] { pI, pJ }, sims,
+				fBurnin);
 
 		return new EdgeTask(churnSim, observer, i, j);
 	}
@@ -143,7 +142,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 	public static class EdgeTask {
 
-		protected final BaseChurnSim sim;
+		protected final SimpleEDSim sim;
 		public volatile IValueObserver stats;
 
 		public final int i;
@@ -151,7 +150,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 		private volatile Future<?> fFuture;
 
-		public EdgeTask(BaseChurnSim sim, IValueObserver stats, int i, int j) {
+		public EdgeTask(SimpleEDSim sim, IValueObserver stats, int i, int j) {
 			this.sim = sim;
 			this.i = i;
 			this.j = j;

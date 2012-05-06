@@ -1,13 +1,9 @@
-package it.unitn.disi.churn;
+package it.unitn.disi.churn.simulator;
 
 import it.unitn.disi.random.IDistribution;
 
-public class RenewalProcess implements Comparable<RenewalProcess> {
-
-	public static enum State {
-		up, down;
-	}
-
+public class RenewalProcess extends IProcess {
+	
 	private final int fId;
 
 	private final IDistribution fUp;
@@ -31,8 +27,12 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		fDown = down;
 		fState = initial;
 	}
+	
+	// -------------------------------------------------------------------------
+	// Schedulable interface.
+	// -------------------------------------------------------------------------
 
-	public void next() {
+	public void scheduled(double time, SimpleEDSim sim) {
 		double increment = 0;
 		switch (fState) {
 
@@ -53,14 +53,31 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		fNextEvent += increment;
 	}
 	
-	/**
-	 * Returns the actual uptime of the current node, for instants larger than
-	 * the last state transition of the node.
-	 * 
-	 * @param currentTime
-	 * @return
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#id()
 	 */
-	public double uptime(BaseChurnSim parent) {
+	@Override
+	public boolean isExpired() {
+		return true;
+	}
+
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#id()
+	 */
+	@Override
+	public double time() {
+		return fNextEvent;
+	}
+	
+	// -------------------------------------------------------------------------
+	// IProcess interface.
+	// -------------------------------------------------------------------------
+
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#uptime(it.unitn.disi.churn.simulator.SimpleEDSim)
+	 */
+	@Override
+	public double uptime(SimpleEDSim parent) {
 		double delta = 0;
 		if (isUp()) {
 			// Corrects the uptime overestimation.
@@ -75,26 +92,31 @@ public class RenewalProcess implements Comparable<RenewalProcess> {
 		return fUptime - delta;
 	}
 
+	@Override
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#state()
+	 */
 	public boolean isUp() {
 		return state() == State.up;
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#state()
+	 */
+	@Override
 	public State state() {
 		return fState;
 	}
-
-	public double nextSwitch() {
-		return fNextEvent;
-	}
-
+	
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.IProcess#id()
+	 */
 	@Override
-	public int compareTo(RenewalProcess o) {
-		return (int) Math.signum(this.nextSwitch() - o.nextSwitch());
-	}
-
 	public int id() {
 		return fId;
 	}
+	
+	// -------------------------------------------------------------------------
 	
 	public String toString() {
 		return "[" + fId + ", " + fState + "]";

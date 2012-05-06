@@ -11,16 +11,18 @@ import org.kohsuke.args4j.Option;
 import peersim.config.Configuration;
 import peersim.util.IncrementalStats;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.IncrementalStatsAdapter;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.IncrementalStatsAdapter;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.network.churn.yao.AveragesFromFile;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.network.churn.yao.YaoPresets;
+import it.unitn.disi.utils.collections.Pair;
 
 public class SyncEstimatorCLI {
 
@@ -108,7 +110,7 @@ public class SyncEstimatorCLI {
 		List<IValueObserver> stats = mkStats();
 
 		// With outer repeats, we start one experiment from scratch each time.
-		BaseChurnSim sim = null;
+		SimpleEDSim sim = null;
 		if (fUseOuter) {
 			for (int i = 0; i < fRepeats; i++) {
 				sim = experiment(create(pid[0], dgen, li[0], di[0], i != 0),
@@ -142,22 +144,26 @@ public class SyncEstimatorCLI {
 
 	// ------------------------------------------------------------------------
 
-	private BaseChurnSim experiment(RenewalProcess p1, RenewalProcess p2,
+	private SimpleEDSim experiment(RenewalProcess p1, RenewalProcess p2,
 			double burnin, String string, int repeats,
 			List<IValueObserver> stats, boolean verbose) {
 
-		List<IChurnSim> sims = new ArrayList<IChurnSim>();
+		List<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new TrueSyncEstimator(repeats, false, stats.remove(0)));
+			sims.add(new Pair<Integer, IEventObserver>(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, new TrueSyncEstimator(
+							repeats, false, stats.remove(0))));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {
-			sims.add(new BurninSyncEstimator(burnin, repeats, stats.remove(0)));
+			sims.add(new Pair<Integer, IEventObserver>(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, new BurninSyncEstimator(
+							burnin, repeats, stats.remove(0))));
 		}
 
-		return new BaseChurnSim(new RenewalProcess[] { p1, p2 }, sims, 0.0);
+		return new SimpleEDSim(new RenewalProcess[] { p1, p2 }, sims, 0.0);
 	}
 
 	// ------------------------------------------------------------------------

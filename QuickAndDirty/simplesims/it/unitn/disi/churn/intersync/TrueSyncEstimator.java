@@ -1,18 +1,19 @@
 package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.IValueObserver;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.Schedulable;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 
 /**
  * Very simple experiment for sampling the synchronization time of two nodes.
  * 
  * @author giuliano
  */
-public class TrueSyncEstimator implements IChurnSim {
+public class TrueSyncEstimator implements IEventObserver {
 
 	private volatile int fSamples;
 
@@ -32,16 +33,17 @@ public class TrueSyncEstimator implements IChurnSim {
 	}
 
 	@Override
-	public void simulationStarted(BaseChurnSim p) {
+	public void simulationStarted(SimpleEDSim p) {
 		fPId0 = p.process(0).id();
 	}
 
 	@Override
-	public void stateShifted(BaseChurnSim p, double time,
-			RenewalProcess process, State old, State nw) {
+	public void stateShifted(SimpleEDSim p, double time, Schedulable schedulable) {
+
+		IProcess process = (IProcess) schedulable;
 
 		// We saw a login event for P1.
-		if (process.id() == fPId0 && nw == State.up) {
+		if (process.id() == fPId0 && process.isUp()) {
 			fPendingUps.add(time);
 		}
 
@@ -57,8 +59,8 @@ public class TrueSyncEstimator implements IChurnSim {
 			fObserver.observe(p2Login - p1Logins.get(i));
 		}
 	}
-	
-	private boolean senderUp(BaseChurnSim p) {
+
+	private boolean senderUp(SimpleEDSim p) {
 		return fCloud || p.process(0).isUp();
 	}
 

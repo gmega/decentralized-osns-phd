@@ -1,5 +1,7 @@
 package it.unitn.disi.churn;
 
+import it.unitn.disi.churn.simulator.IValueObserver;
+
 public class StateAccountant {
 
 	private final IValueObserver fPermanence;

@@ -3,7 +3,6 @@ package it.unitn.disi.churn.connectivity.p2p;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.channels.IllegalSelectorException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -14,8 +13,8 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
-import it.unitn.disi.churn.GraphConfigurator;
-import it.unitn.disi.churn.MatrixReader;
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
@@ -102,9 +101,13 @@ public class P2PEgonetShortestPath implements ITransformer {
 			IndexedNeighborGraph egoNet = provider.subgraph(root);
 			int[] ids = provider.verticesOf(root);
 			double[][] w = reader.read(ids);
-			
-			check(egoNet, w);
-			
+
+			String err;
+			if ((err = check(egoNet, root, w, ids)) != null) {
+				System.err.println("Incomplete information: \n " + err);
+				continue;
+			}
+
 			for (int i = 0; i < egoNet.size(); i++) {
 				executor.submit(new ShortestPathTask(root, i, w, egoNet, ids));
 			}
@@ -118,19 +121,22 @@ public class P2PEgonetShortestPath implements ITransformer {
 
 	}
 
-	private void check(IndexedNeighborGraph egoNet, double[][] w) {
+	private String check(IndexedNeighborGraph egoNet, int root, double[][] w,
+			int[] ids) {
 		for (int i = 0; i < egoNet.size(); i++) {
 			for (int j = 0; j < egoNet.size(); j++) {
 				if (i == j) {
 					continue;
 				}
 				if (egoNet.isEdge(i, j)) {
-					if (w[i][j] == Double.MAX_VALUE || w[j][i] == Double.MAX_VALUE) {
-						throw new IllegalStateException();
+					if (w[i][j] == Double.MAX_VALUE
+							|| w[j][i] == Double.MAX_VALUE) {
+						return root + " " + ids[i] + " " + ids[j];
 					}
 				}
 			}
 		}
+		return null;
 	}
 
 	static class ShortestPathTask implements Callable<ShortestPathTask> {

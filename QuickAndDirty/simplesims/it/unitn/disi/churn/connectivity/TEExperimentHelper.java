@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.YaoChurnConfigurator;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
@@ -325,7 +325,7 @@ public class TEExperimentHelper {
 
 		ITopKEstimator tpk = estimator.call(graph, w);
 
-		System.out.println("Source: " + source + " Target: " + target + ".");
+		System.out.println("Source: " + ids[source] + " Target: " + ids[target] + ".");
 
 		// 1. computes the top-k shortest paths between u and w.
 		int[] vertexes = vertexesOf(tpk.topKShortest(source, target, k));

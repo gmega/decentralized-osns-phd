@@ -1,4 +1,4 @@
-package it.unitn.disi.churn;
+package it.unitn.disi.churn.config;
 
 import java.io.IOException;
 import java.io.InputStream;

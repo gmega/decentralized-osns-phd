@@ -1,4 +1,4 @@
-package it.unitn.disi.churn;
+package it.unitn.disi.churn.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -68,7 +68,7 @@ public class GraphConfigurator {
 				provider = (IGraphProvider) registry.lookup(graphId);
 			} catch (RemoteException ex) {
 				fLogger.error("Failed to resolve registry at supplied address/port. "
-						+ "Is the master instance running? Is the queue id right?");
+						+ "Is the server running?");
 				throw MiscUtils.nestRuntimeException(ex);
 			} catch (NotBoundException ex) {
 				fLogger.error("Master not bound under expected registry location "

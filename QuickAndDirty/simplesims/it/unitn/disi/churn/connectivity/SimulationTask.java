@@ -1,19 +1,20 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.BaseChurnSim;
-import it.unitn.disi.churn.IChurnSim;
-import it.unitn.disi.churn.RenewalProcess;
-import it.unitn.disi.churn.YaoChurnConfigurator;
-import it.unitn.disi.churn.RenewalProcess.State;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 // FIXME Hack for cloud sims.
-// FIXME Hack for cloud reassignments.
 public class SimulationTask implements Callable<SimulationResults[]> {
 
 	private final double[] fLis;
@@ -80,14 +81,14 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 			cloudSims.add(cs);
 		}
 
-		ArrayList<IChurnSim> allsims = new ArrayList<IChurnSim>();
-		allsims.addAll(tceSims);
+		ArrayList<Pair<Integer, ? extends IEventObserver>> allsims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		addAll(allsims, tceSims);
 
 		if (fCloud) {
-			allsims.addAll(cloudSims);
+			addAll(allsims, cloudSims);
 		}
 
-		BaseChurnSim bcs = new BaseChurnSim(rp, allsims, fBurnin);
+		SimpleEDSim bcs = new SimpleEDSim(rp, allsims, fBurnin);
 		bcs.run();
 
 		SimulationResults[] results = new SimulationResults[tceSims.size()];
@@ -97,6 +98,15 @@ public class SimulationTask implements Callable<SimulationResults[]> {
 		}
 
 		return results;
+	}
+
+	private void addAll(
+			ArrayList<Pair<Integer, ? extends IEventObserver>> allsims,
+			ArrayList<? extends IEventObserver> sims) {
+		for (IEventObserver observer : sims) {
+			allsims.add(new Pair<Integer, IEventObserver>(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, observer));
+		}
 	}
 
 	private IDistribution downtimeDistribution(IDistributionGenerator distGen,
