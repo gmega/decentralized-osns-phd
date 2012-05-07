@@ -3,6 +3,8 @@ package it.unitn.disi.churn.diffusion;
 import java.util.BitSet;
 import java.util.Random;
 
+import junit.framework.Assert;
+
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
@@ -46,10 +48,10 @@ public class BiasedCentralitySelectorTest {
 		}
 
 		int last = Integer.MIN_VALUE;
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i <= 10; i++) {
 			int selections = counter.count(i);
 			System.out.println("i: " +i + " "+ selections);
-		//	Assert.assertTrue(selections > last);
+			Assert.assertTrue(selections > last);
 			last = selections;
 		}
 

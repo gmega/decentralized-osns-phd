@@ -17,7 +17,7 @@ public interface IPeerSelector {
 	 * @param selecting
 	 *            the peer performing the selection.
 	 * @param neighbors
-	 *            the set of neighbors in the social overlay.
+	 *            the graph representing the social overlay.
 	 * @param forbidden
 	 *            a {@link BitSet} with the neighbor ids which should be
 	 *            excluded from selection.

@@ -23,7 +23,11 @@ public class BiasedCentralitySelector implements IPeerSelector {
 
 	@Override
 	public int selectPeer(int root, IndexedNeighborGraph graph,
-			BitSet forbidden, INetwork sim) {
+			BitSet allForbidden, INetwork sim) {
+
+		// Excludes the forbidden nodes that are not neighbors of
+		// the root.
+		BitSet forbidden = forbidden(allForbidden, root, graph);
 
 		if (graph.degree(root) - forbidden.cardinality() == 0) {
 			return IPeerSelector.NO_PEER;
@@ -39,27 +43,33 @@ public class BiasedCentralitySelector implements IPeerSelector {
 		return pair.a[pair.b.spin()].a;
 	}
 
+	private BitSet forbidden(BitSet allForbidden, int root,
+			IndexedNeighborGraph graph) {
+		BitSet forbidden = new BitSet();
+		for (int i = 0; i < graph.degree(root); i++) {
+			forbidden.set(graph.getNeighbor(root, i));
+		}
+		forbidden.and(allForbidden);
+		return forbidden;
+	}
+
 	private Pair<Pair<Integer, Double>[], RouletteWheel> rouletteWheel(
 			int root, IndexedNeighborGraph graph, BitSet forbidden, INetwork sim) {
 
-		int correction = forbidden.get(root) ? 0 : 1;
-		int eligible = graph.size() - forbidden.cardinality() - correction;
-		if (eligible == 0) {
-			return null;
-		}
+		int eligible = graph.degree(root) - forbidden.cardinality();
 
 		@SuppressWarnings("unchecked")
 		Pair<Integer, Double>[] neighbors = (Pair<Integer, Double>[]) new Pair[eligible];
 
 		double total = 0;
 		int k = -1;
-		for (int i = 0; i < graph.size(); i++) {
-			// Takes into account only these nodes in the graph that are not the
-			// root,
-			// and are not otherwise forbidden.
-			if (i != root && !forbidden.get(i)) {
-				neighbors[++k] = new Pair<Integer, Double>(i, centrality(root,
-						graph, i));
+		for (int i = 0; i < graph.degree(root); i++) {
+			// Takes into account only these nodes in the graph that are not
+			// forbidden.
+			int neighbor = graph.getNeighbor(root, i);
+			if (!forbidden.get(neighbor)) {
+				neighbors[++k] = new Pair<Integer, Double>(neighbor,
+						centrality(root, graph, neighbor));
 				total += neighbors[k].b;
 			}
 		}

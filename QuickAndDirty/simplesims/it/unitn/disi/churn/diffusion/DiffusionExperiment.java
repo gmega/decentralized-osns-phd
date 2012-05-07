@@ -40,6 +40,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute("burnin")
 	private double fBurnin;
 
+	@Attribute("selector")
+	private String fSelector;
+
 	private IResolver fResolver;
 
 	public DiffusionExperiment(@Attribute(Attribute.AUTO) IResolver resolver) {
@@ -64,7 +67,7 @@ public class DiffusionExperiment implements ITransformer {
 			IndexedNeighborGraph graph = provider.subgraph(id);
 			int[] ids = provider.verticesOf(id);
 			double[] latencies = new double[ids.length];
-			
+
 			stats.reset();
 			runExperiment(graph, latencies);
 
@@ -121,8 +124,18 @@ public class DiffusionExperiment implements ITransformer {
 		return ps;
 	}
 
-	private RandomSelector peerSelector(Random r) {
-		return new RandomSelector(r);
+	private IPeerSelector peerSelector(Random r) {
+		switch (fSelector.charAt(0)) {
+		case 'a':
+			return new BiasedCentralitySelector(r, true);
+		case 'r':
+			return new RandomSelector(r);
+		case 'c':
+			return new BiasedCentralitySelector(r, false);
+		default:
+			throw new UnsupportedOperationException();
+		}
+
 	}
 
 }
