@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting.internal.forwarding;
 
 import it.unitn.disi.epidemics.IApplicationInterface;
-import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IGossipMessage;
 import it.unitn.disi.epidemics.IProtocolSet;
@@ -9,7 +8,6 @@ import it.unitn.disi.epidemics.IPushContentExchangeStrategy;
 import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.utils.peersim.SNNode;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import peersim.config.IResolver;

@@ -1,7 +1,6 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
 import it.unitn.disi.newscasting.experiments.schedulers.distributed.DistributedSchedulerClient;
-import it.unitn.disi.utils.peersim.INodeRegistry;
 
 import java.util.Comparator;
 
@@ -13,10 +12,12 @@ import peersim.core.Node;
 
 public class SchedulerFactory {
 
+	private static final String PAR_SCHEDULERTYPE = "scheduler.type";
+	
 	private static final String PAR_ORDERING = "ordering";
 
 	private static final String PAR_REPETITIONS = "repetitions";
-	
+
 	private static final String PAR_LOOP = "loop";
 
 	enum SchedulerType {
@@ -32,9 +33,8 @@ public class SchedulerFactory {
 	private SchedulerFactory() {
 	}
 
-	public ISchedule createScheduler(IResolver resolver, String prefix,
-			INodeRegistry registry) {
-		String type = resolver.getString(prefix, IResolver.NULL_KEY);
+	public ISchedule createScheduler(IResolver resolver, String prefix) {
+		String type = resolver.getString(prefix, PAR_SCHEDULERTYPE);
 		ISchedule base;
 		switch (SchedulerType.valueOf(type.toUpperCase())) {
 
@@ -45,7 +45,7 @@ public class SchedulerFactory {
 
 		case FULL_NETWORK:
 			base = new AliveBitmapScheduler(new OrderedFullNetworkScheduler(),
-					registry);
+					resolver);
 			break;
 
 		case ORDERED_FULLNETWORK:
@@ -53,20 +53,22 @@ public class SchedulerFactory {
 			Comparator<Node> ordering = (Comparator<Node>) Configuration
 					.getInstance(prefix + "." + PAR_ORDERING);
 			base = new AliveBitmapScheduler(new OrderedFullNetworkScheduler(
-					ordering), registry);
+					ordering), resolver);
 			break;
-			
+
 		case INTERVAL:
-			base = ObjectCreator.createInstance(IntervalScheduler.class, prefix, resolver);
+			base = ObjectCreator.createInstance(IntervalScheduler.class,
+					prefix, resolver);
 			break;
 
 		case DEGREE_CLASS_SAMPLING:
 			base = new AliveBitmapScheduler(ObjectCreator.createInstance(
-					DegreeClassScheduler.class, prefix, resolver), registry);
+					DegreeClassScheduler.class, prefix, resolver), resolver);
 			break;
-			
+
 		case DISTRIBUTED:
-			base = ObjectCreator.createInstance(DistributedSchedulerClient.class, prefix, resolver);
+			base = ObjectCreator.createInstance(
+					DistributedSchedulerClient.class, prefix, resolver);
 			break;
 
 		default:

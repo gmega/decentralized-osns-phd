@@ -2,7 +2,7 @@ package it.unitn.disi.churn.connectivity;
 
 import java.io.OutputStreamWriter;
 
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -21,7 +21,7 @@ public class ActivationSampler {
 	}
 
 	public void reached(int u, TemporalConnectivityEstimator estimator) {
-		SimpleEDSim bcs = estimator.sim();
+		INetwork bcs = estimator.sim();
 		for (int i = 0; i < fGraph.degree(u); i++) {
 			int neighbor = fGraph.getNeighbor(u, i);
 			// If neighbor is up and so are we, means we could've been reached

@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
@@ -38,7 +39,7 @@ public class TrueSyncEstimator implements IEventObserver {
 	}
 
 	@Override
-	public void stateShifted(SimpleEDSim p, double time, Schedulable schedulable) {
+	public void stateShifted(INetwork p, double time, Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
 
@@ -60,7 +61,7 @@ public class TrueSyncEstimator implements IEventObserver {
 		}
 	}
 
-	private boolean senderUp(SimpleEDSim p) {
+	private boolean senderUp(INetwork p) {
 		return fCloud || p.process(0).isUp();
 	}
 

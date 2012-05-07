@@ -89,7 +89,7 @@ public class MasterCLI {
 		TableReader reader = fInputLog == null ? null : new TableReader(
 				new FileInputStream(fInputLog));
 		ISchedule scheduler = SchedulerFactory.getInstance().createScheduler(
-				resolver, null, null);
+				resolver, null);
 		MasterImpl master = new MasterImpl(scheduler, reader);
 
 		if (reader != null) {

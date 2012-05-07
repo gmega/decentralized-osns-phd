@@ -17,7 +17,8 @@ import peersim.config.ObjectCreator;
 import peersim.config.plugin.IPlugin;
 import peersim.config.resolvers.CompositeResolver;
 
-public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperimentObserver<T>> implements IPlugin{
+public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperimentObserver<T>>
+		implements IPlugin {
 
 	protected static final String SCHEDULER = "scheduler";
 	/**
@@ -58,10 +59,9 @@ public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperim
 		composite.addResolver(resolver);
 		fResolver = composite.asResolver();
 
-		fSchedule = (IScheduleIterator) SchedulerFactory
-				.getInstance()
-				.createScheduler(fResolver, prefix + "." + SCHEDULER,
-						NodeRegistry.getInstance()).iterator();
+		fSchedule = (IScheduleIterator) SchedulerFactory.getInstance()
+				.createScheduler(fResolver, prefix + "." + SCHEDULER)
+				.iterator();
 
 		fPrefix = prefix;
 		fTracker = new TimeTracker(fSchedule.remaining(), manager);
@@ -77,7 +77,7 @@ public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperim
 		fAttributes.put(IUnitExperiment.ID, Integer.toString(id));
 		return ObjectCreator.createInstance(fExperimentKlass, prefix, resolver);
 	}
-	
+
 	protected void currentExperimentStarted() {
 		for (IExperimentObserver<T> observer : fObservers) {
 			observer.experimentStart(fCurrent);
@@ -89,7 +89,7 @@ public abstract class GovernorBase<T extends IUnitExperiment, K extends IExperim
 		for (IExperimentObserver<T> observer : fObservers) {
 			observer.experimentEnd(fCurrent);
 		}
-	
+
 		fCurrent.done();
 	}
 

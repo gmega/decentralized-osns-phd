@@ -2,7 +2,7 @@ package it.unitn.disi.churn.diffusion;
 
 import java.util.BitSet;
 
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.ICyclicProtocol;
 import it.unitn.disi.churn.simulator.CyclicProtocolRunner;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -37,7 +37,7 @@ public class HistoryForwarding implements ICyclicProtocol {
 	}
 
 	@Override
-	public void nextCycle(double time, SimpleEDSim sim,
+	public void nextCycle(double time, INetwork sim,
 			CyclicProtocolRunner protocols) {
 		// Are we done, or not reached yet?
 		if (fDone || !fHistory.get(fId)) {
@@ -64,7 +64,7 @@ public class HistoryForwarding implements ICyclicProtocol {
 		fHistory.or(neighbor.sendMessage(fHistory, time));
 	}
 
-	private int selectPeer(SimpleEDSim sim) {
+	private int selectPeer(INetwork sim) {
 		return fSelector.selectPeer(fId, fGraph, fHistory, sim);
 	}
 

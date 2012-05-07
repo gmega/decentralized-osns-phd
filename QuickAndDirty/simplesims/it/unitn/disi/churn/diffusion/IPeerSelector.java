@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import java.util.BitSet;
@@ -26,6 +26,6 @@ public interface IPeerSelector {
 	 * @return a peer id.
 	 */
 	public int selectPeer(int selecting, IndexedNeighborGraph neighbors,
-			BitSet forbidden, SimpleEDSim sim);
+			BitSet forbidden, INetwork sim);
 
 }

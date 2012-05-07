@@ -16,7 +16,7 @@ import java.util.NoSuchElementException;
  * 
  * @author giuliano
  */
-public abstract class AbstractIDMapper {
+public abstract class AbstractIDMapper implements IDMapper {
 
 	public static final int UNMAPPED = Integer.MIN_VALUE;
 
@@ -45,10 +45,25 @@ public abstract class AbstractIDMapper {
 		return mapped;
 	}
 
+	/**
+	 * Returns the mapped ID.
+	 * 
+	 * @param id
+	 *            the original ID.
+	 * 
+	 * @return the mapped ID.
+	 */
 	public int map(int id) {
 		return map(id, false);
 	}
 
+	/**
+	 * Returns the original ID.
+	 * 
+	 * @param id
+	 *            a mapped ID.
+	 * @return its original ID.
+	 */
 	public int reverseMap(int id) {
 		return map(id, true);
 	}

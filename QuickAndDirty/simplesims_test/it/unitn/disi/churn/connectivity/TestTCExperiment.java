@@ -60,8 +60,15 @@ public class TestTCExperiment {
 	@Test
 	public void testReachability() {
 		IndexedNeighborGraph graph = LightweightStaticGraph
-				.fromAdjacency(new int[][] { { 1 }, { 0, 2 }, { 1, 3, 5 },
-						{ 2, 4 }, { 3 }, { 2, 6 }, { 5 } });
+				.fromAdjacency(new int[][] { 
+						{ 1 }, 
+						{ 0, 2 }, 
+						{ 1, 3, 5 },
+						{ 2, 4 }, 
+						{ 3 }, 
+						{ 2, 6 }, 
+						{ 5 } 
+				});
 
 		ListMultimap<Integer, Double> intervals = ArrayListMultimap.create();
 

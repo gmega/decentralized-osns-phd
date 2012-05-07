@@ -10,7 +10,7 @@ import java.util.PriorityQueue;
  * 
  * @author giuliano
  */
-public class SimpleEDSim implements Runnable {
+public class SimpleEDSim implements Runnable, INetwork {
 
 	private final IProcess[] fProcesses;
 
@@ -148,6 +148,10 @@ public class SimpleEDSim implements Runnable {
 
 	// -------------------------------------------------------------------------
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.churn.simulator.INetwork#process(int)
+	 */
+	@Override
 	public IProcess process(int index) {
 		return fProcesses[index];
 	}

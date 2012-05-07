@@ -84,6 +84,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 	public IDMapper mapper(Integer subgraph) {
 		final int[] vertices = verticesOf(subgraph);
 		return new IDMapper() {
+			
 			@Override
 			public int map(int i) {
 				if (!isMapped(i)) {
@@ -91,11 +92,18 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 				}
 				return vertices[i];
 			}
+			
+
+			@Override
+			public int reverseMap(int i) {
+				throw new UnsupportedOperationException();
+			}
 
 			@Override
 			public boolean isMapped(int i) {
 				return i < vertices.length && i >= 0;
 			}
+			
 		};
 	}
 

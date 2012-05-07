@@ -2,6 +2,7 @@ package it.unitn.disi.churn.connectivity;
 
 import java.util.Arrays;
 
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.churn.simulator.IEventObserver;
@@ -78,7 +79,7 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 	}
 
 	@Override
-	public void stateShifted(SimpleEDSim parent, double time,
+	public void stateShifted(INetwork parent, double time,
 			Schedulable schedulable) {
 		RenewalProcess process = (RenewalProcess) schedulable;
 		if (!process.isUp()) {
@@ -177,7 +178,7 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 		return fSampler;
 	}
 
-	SimpleEDSim sim() {
+	INetwork sim() {
 		return fParent;
 	}
 }

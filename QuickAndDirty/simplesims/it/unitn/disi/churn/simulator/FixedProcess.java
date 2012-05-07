@@ -48,7 +48,7 @@ public class FixedProcess extends IProcess {
 	}
 
 	@Override
-	public void scheduled(double time, SimpleEDSim parent) {
+	public void scheduled(double time, INetwork parent) {
 		throw new IllegalStateException(
 				"Fixed processes should not be scheduled.");
 	}

@@ -2,6 +2,7 @@ package it.unitn.disi.churn.connectivity;
 
 import java.util.Arrays;
 
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
@@ -35,7 +36,7 @@ public class CloudSim implements IEventObserver {
 	}
 
 	@Override
-	public void stateShifted(SimpleEDSim parent, double time,
+	public void stateShifted(INetwork parent, double time,
 			Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;

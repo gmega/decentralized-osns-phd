@@ -26,7 +26,7 @@ public abstract class Schedulable implements Comparable<Schedulable> {
 	 * @param parent
 	 *            the parent scheduler.
 	 */
-	public abstract void scheduled(double time, SimpleEDSim parent);
+	public abstract void scheduled(double time, INetwork parent);
 
 	/**
 	 * @return the scheduling time for this schedulable.

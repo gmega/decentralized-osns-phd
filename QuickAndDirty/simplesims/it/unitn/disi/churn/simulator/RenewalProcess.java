@@ -32,7 +32,7 @@ public class RenewalProcess extends IProcess {
 	// Schedulable interface.
 	// -------------------------------------------------------------------------
 
-	public void scheduled(double time, SimpleEDSim sim) {
+	public void scheduled(double time, INetwork sim) {
 		double increment = 0;
 		switch (fState) {
 
@@ -58,7 +58,7 @@ public class RenewalProcess extends IProcess {
 	 */
 	@Override
 	public boolean isExpired() {
-		return true;
+		return false;
 	}
 
 	/* (non-Javadoc)

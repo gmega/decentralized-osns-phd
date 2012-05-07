@@ -19,7 +19,7 @@ public class CyclicProtocolRunner implements IEventObserver {
 	}
 
 	@Override
-	public void stateShifted(SimpleEDSim parent, double time,
+	public void stateShifted(INetwork parent, double time,
 			Schedulable schedulable) {
 		
 		for (int i = 0; i < fProtocol.length; i++) {

@@ -18,7 +18,7 @@ public interface IEventObserver {
 	/**
 	 * Called when a schedulable gets scheduled.
 	 */
-	public void stateShifted(SimpleEDSim parent, double time,
+	public void stateShifted(INetwork parent, double time,
 			Schedulable schedulable);
 
 	/**

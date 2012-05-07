@@ -17,7 +17,7 @@ public class PeriodicSchedulable extends Schedulable {
 	}
 	
 	@Override
-	public void scheduled(double time, SimpleEDSim parent) {
+	public void scheduled(double time, INetwork parent) {
 		nextPeriod(time, parent);
 		fTime += fPeriod;
 	}
@@ -32,7 +32,7 @@ public class PeriodicSchedulable extends Schedulable {
 		return false;
 	}
 
-	protected void nextPeriod(double time, SimpleEDSim parent) {
+	protected void nextPeriod(double time, INetwork parent) {
 		// To be overriden by subclasses.
 	}
 

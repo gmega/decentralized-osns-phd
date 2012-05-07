@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
 import it.unitn.disi.utils.peersim.INodeRegistry;
+import it.unitn.disi.utils.peersim.NodeRegistry;
 
-import java.util.Iterator;
-
+import peersim.config.IResolver;
 import peersim.core.Node;
 
 public class AliveBitmapScheduler implements ISchedule {
@@ -11,6 +11,11 @@ public class AliveBitmapScheduler implements ISchedule {
 	private IStaticSchedule fSchedule;
 
 	private INodeRegistry fRegistry;
+
+	public AliveBitmapScheduler(IStaticSchedule delegate, IResolver resolver) {
+		this(delegate, (INodeRegistry) resolver.getObject("",
+				NodeRegistry.class.getSimpleName()));
+	}
 
 	public AliveBitmapScheduler(IStaticSchedule delegate, INodeRegistry registry) {
 		fSchedule = delegate;
@@ -43,12 +48,13 @@ public class AliveBitmapScheduler implements ISchedule {
 		public int remaining() {
 			return fRemaining;
 		}
+
 		@Override
-		public Object nextIfAvailable() {			
+		public Object nextIfAvailable() {
 			if (fRemaining == 0) {
 				return IScheduleIterator.DONE;
 			}
-			
+
 			for (int i = 0; i < fSelected.length; i++) {
 				if (!fSelected[i]) {
 					Node candidate = fRegistry.getNode(fSchedule.get(i));

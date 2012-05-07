@@ -43,8 +43,6 @@ public class RouletteWheel implements Cloneable {
 		}
 
 		fProbabilities = new double[probabilities.length];
-		// Computes the sum of the probabilities to use as normalization
-		// factor.
 		System.arraycopy(probabilities, 0, fProbabilities, 0,
 				probabilities.length);
 		for (int i = 1; i < fProbabilities.length; i++) {

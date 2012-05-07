@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.diffusion;
 
 import gnu.trove.list.array.TIntArrayList;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import java.util.BitSet;
@@ -19,7 +19,7 @@ public class RandomSelector implements IPeerSelector {
 
 	@Override
 	public int selectPeer(int root, IndexedNeighborGraph neighbors,
-			BitSet forbidden, SimpleEDSim sim) {
+			BitSet forbidden, INetwork sim) {
 
 		fNeighbors.resetQuick();
 		for (int i = 0; i < neighbors.degree(root); i++) {

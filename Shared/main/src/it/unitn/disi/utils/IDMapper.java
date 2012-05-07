@@ -10,8 +10,14 @@ import java.util.NoSuchElementException;
 public interface IDMapper {
 
 	public final static IDMapper IDENTITY = new IDMapper() {
+
 		@Override
 		public int map(int i) {
+			return i;
+		}
+
+		@Override
+		public int reverseMap(int i) {
 			return i;
 		}
 
@@ -19,6 +25,7 @@ public interface IDMapper {
 		public boolean isMapped(int i) {
 			return true;
 		}
+
 	};
 
 	/**
@@ -27,6 +34,13 @@ public interface IDMapper {
 	 *             if element isn't mapped.
 	 */
 	public int map(int i);
+
+	/**
+	 * @param i
+	 *            a mapped ID.
+	 * @return the original ID.
+	 */
+	public int reverseMap(int i);
 
 	/**
 	 * @return <code>true</code> if this element is mapped by this map, or
