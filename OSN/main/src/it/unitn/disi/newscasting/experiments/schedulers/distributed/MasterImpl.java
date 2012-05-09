@@ -28,7 +28,10 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 
 	private static final int POLLING_INTERVAL = 1000;
 
-	private static final Logger fLogger = Logger.getLogger(MasterImpl.class);
+	private static final Logger fAssignment = Logger.getLogger(MasterImpl.class
+			.getName() + ".assignment");
+
+	private static final Logger fOther = Logger.getLogger(MasterImpl.class);
 
 	private static final Pair<Integer, Integer> ALL_DONE = new Pair<Integer, Integer>(
 			-1, 0);
@@ -68,7 +71,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 	public void start(String queueId, boolean createRegistry, int port,
 			TableWriter log) {
 		fWriter = log;
-		fLogger.info("Starting registry and publishing object reference.");
+		fOther.info("Starting registry and publishing object reference.");
 		try {
 			if (createRegistry) {
 				LocateRegistry.createRegistry(port);
@@ -77,12 +80,12 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 			Registry registry = LocateRegistry.getRegistry(port);
 			registry.rebind(queueId, this);
 		} catch (RemoteException ex) {
-			fLogger.error("Error while publishing object.", ex);
+			fOther.error("Error while publishing object.", ex);
 			System.exit(-1);
 		}
 		Runtime.getRuntime().addShutdownHook(new Thread(this));
 		fController.start();
-		fLogger.info("All good.");
+		fOther.info("All good.");
 	}
 
 	@Override
@@ -96,7 +99,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 	}
 
 	private void replayLog(TableReader log) throws IOException {
-		fLogger.info("Replaying experiment log file...");
+		fOther.info("Replaying experiment log file...");
 		int done = 0;
 		while (log.hasNext()) {
 			log.next();
@@ -106,7 +109,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 				synchronized (fExperiments) {
 					ExperimentEntry exp = experimentByID(id);
 					if (exp == null) {
-						fLogger.warn("Log entry points to non-existent experiment "
+						fOther.warn("Log entry points to non-existent experiment "
 								+ id + ".");
 						continue;
 					}
@@ -116,7 +119,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 			}
 		}
 
-		fLogger.info("Log replay complete. " + done
+		fOther.info("Log replay complete. " + done
 				+ " experiments marked as done.");
 	}
 
@@ -136,7 +139,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 		try {
 			host = RemoteServer.getClientHost();
 		} catch (ServerNotActiveException e) {
-			fLogger.error("Error while querying for the client's host.", e);
+			fOther.error("Error while querying for the client's host.", e);
 		}
 		fWorkers.put(id, new WorkerEntry(worker, host, id));
 		return id;
@@ -149,19 +152,19 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 		synchronized (fExperiments) {
 			while ((acquired = tryAcquire(workerId)) == null && fRemaining > 0) {
 				try {
-					fLogger.info("Worker " + workerId + " is waiting for jobs.");
+					fOther.info("Worker " + workerId + " is waiting for jobs.");
 					fExperiments.wait();
 				} catch (InterruptedException ex) {
-					fLogger.warn("Thread interrupted.", ex);
+					fOther.warn("Thread interrupted.", ex);
 					break;
 				}
 			}
 
 			if (fRemaining == 0) {
-				fLogger.info("Worker " + workerId + " has no more jobs to run.");
+				fOther.info("Worker " + workerId + " has no more jobs to run.");
 				acquired = ALL_DONE;
 			} else {
-				fLogger.info("Worker " + workerId + " assigned to job "
+				fAssignment.info("Worker " + workerId + " assigned to job "
 						+ acquired.a + ".");
 				fWriter.set("experiment", id(acquired));
 				fWriter.set("status", ExperimentState.assigned);
@@ -174,7 +177,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 	}
 
 	protected void deadWorker(WorkerEntry entry) {
-		fLogger.warn("Worker "
+		fOther.warn("Worker "
 				+ entry.id
 				+ " has died. Now checking if it had any experiments assigned to it.");
 		fWorkers.remove(entry.id);
@@ -182,7 +185,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 			for (ExperimentEntry exp : fExperiments) {
 				if (exp.worker == entry) {
 					exp.worker = null;
-					fLogger.info("Job " + exp.id
+					fOther.info("Job " + exp.id
 							+ " has been returned to the pool.");
 				}
 			}
@@ -231,7 +234,7 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 
 			ExperimentEntry entry = fExperiments[idx];
 
-			fLogger.info("Worker " + entry.worker.id + " done with job "
+			fAssignment.info("Worker " + entry.worker.id + " done with job "
 					+ entry.id + ".");
 
 			fWriter.set("experiment", entry.id);

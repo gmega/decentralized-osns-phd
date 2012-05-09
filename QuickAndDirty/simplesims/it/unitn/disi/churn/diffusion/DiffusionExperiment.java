@@ -80,11 +80,11 @@ public class DiffusionExperiment implements ITransformer {
 				.fieldInject(ExperimentReader.class, fReader, "", resolver);
 
 		fResolver = resolver;
-		fExecutor = new TaskExecutor(fCores);
 	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
+		fExecutor = new TaskExecutor(fCores);
 		IGraphProvider provider = fConfig.graphProvider();
 		IScheduleIterator it = SchedulerFactory.getInstance()
 				.createScheduler(fResolver, "").iterator();
@@ -117,8 +117,8 @@ public class DiffusionExperiment implements ITransformer {
 			IndexedNeighborGraph graph, int repetitions) throws Exception {
 		double[] latencies = new double[graph.size()];
 
-		fExecutor.start(experiment.toString() + ", size: " + graph.size(),
-				repetitions);
+		fExecutor.start(experiment.toString() + ", source: " + source
+				+ " size: " + graph.size(), repetitions);
 		for (int i = 0; i < repetitions; i++) {
 			fExecutor.submit(new SimulationTask(fBurnin, fPeriod, experiment,
 					fYaoChurn, source, fSelector, graph, new Random()));

@@ -4,6 +4,8 @@ import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.churn.connectivity.TestTCExperiment;
+import it.unitn.disi.churn.diffusion.BiasedCentralitySelectorTest;
+import it.unitn.disi.churn.diffusion.TestLiveGraphTransformer;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.f2f.DiscoveryProtocolTest;
 import it.unitn.disi.graph.BFSIterableTest;
@@ -101,7 +103,9 @@ import peersim.config.PluginContainerTest;
 	TestTCExperiment.class,
 	TestGraphAlgorithms.class,
 	TestTopKShortest.class,
-	TestTopKShortestDisjoint.class
+	TestTopKShortestDisjoint.class,
+	TestLiveGraphTransformer.class,
+	BiasedCentralitySelectorTest.class
 })
 
 public class AllTests extends PeerSimTest {

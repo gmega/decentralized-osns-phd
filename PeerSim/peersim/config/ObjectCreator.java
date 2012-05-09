@@ -19,8 +19,8 @@ import peersim.config.resolvers.CompositeResolver;
  * of the underlying object and pass its configuration prefix. <BR>
  * To summarize, classes must either:
  * <ol>
- * <li>use the {@link AutoConfig} and {@link Attribute} annotations;
- * <li>implement a constructor which takes a {@link String} as a parameter.
+ * <li>use the {@link AutoConfig} and {@link Attribute} annotations;</li>
+ * <li>implement a constructor which takes a {@link String} as a parameter.</li>
  * </ol>
  * 
  * @param <T>
@@ -109,7 +109,7 @@ public class ObjectCreator implements IAttributeSource {
 		}
 	}
 
-	private <T> T constructorInject(String prefix, Class<T> klass)
+	public <T> T constructorInject(String prefix, Class<T> klass)
 			throws InstantiationException, InvocationTargetException,
 			IllegalArgumentException, IllegalAccessException {
 
@@ -244,7 +244,7 @@ public class ObjectCreator implements IAttributeSource {
 		return annotations;
 	}
 
-	private <T> T fieldInject(Class<T> klass, T instance, String prefix)
+	public <T> T fieldInject(Class<T> klass, T instance, String prefix)
 			throws IllegalArgumentException, IllegalAccessException {
 
 		ArrayList<Field> fields = new ArrayList<Field>();
@@ -347,13 +347,44 @@ public class ObjectCreator implements IAttributeSource {
 		try {
 			return creator.create(prefix, klass);
 		} catch (Exception ex) {
-			if (!(ex instanceof RuntimeException)) {
-				throw new RuntimeException(ex);
-			} else {
-				throw (RuntimeException) ex;
-			}
+			throw launder(ex);
 		}
 	}
+
+	/**
+	 * Convenience shortcut method for injecting attributes into an already
+	 * existing object instance.
+	 * 
+	 * @param klass
+	 *            the object's class.
+	 * @param instance
+	 *            the instance.
+	 * 
+	 * @throws RuntimeException
+	 *             if an exception is thrown by
+	 *             {@link ObjectCreator#fieldInject(Class, Object, String)}. The
+	 *             underlying exception can be recovered by calling
+	 *             {@link RuntimeException#getCause()}.
+	 */
+	public static <K> void fieldInject(Class<K> klass, K instance,
+			String prefix, IResolver resolver) {
+		try {
+			ObjectCreator creator = new ObjectCreator(resolver);
+			creator.fieldInject(klass, instance, prefix);
+		} catch (Exception ex) {
+			throw launder(ex);
+		}
+	}
+
+	private static RuntimeException launder(Exception ex)
+			throws RuntimeException {
+		if (!(ex instanceof RuntimeException)) {
+			throw new RuntimeException(ex);
+		} else {
+			throw (RuntimeException) ex;
+		}
+	}
+
 }
 
 /**
@@ -366,7 +397,7 @@ class DefaultValueResolver extends StringValueResolver {
 	public DefaultValueResolver(IAttributeSource source) {
 		fSource = source;
 	}
-	
+
 	@Override
 	public Object getObject(String prefix, String key) {
 		Attribute attribute = fSource.attribute(prefix, key);

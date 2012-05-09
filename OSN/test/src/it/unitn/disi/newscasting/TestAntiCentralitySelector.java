@@ -4,6 +4,7 @@ import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.BiasedCentralitySelector;
 import it.unitn.disi.newscasting.internal.selectors.DegreeCentrality;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
+import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.SparseMultiCounter;
@@ -18,7 +19,7 @@ import org.junit.Test;
 import peersim.core.Linkable;
 import peersim.core.Node;
 
-public class TestAntiCentralitySelector {
+public class TestAntiCentralitySelector extends PeerSimTest{
 	@Test
 	public void selectPeer() throws Exception {
 		TestNetworkBuilder builder = new TestNetworkBuilder();
@@ -61,7 +62,7 @@ public class TestAntiCentralitySelector {
 			Node neighbor = lnk.getNeighbor(i);
 			Assert.assertEquals(i + 1, neighbor.getID());
 			int selections = counter.count(neighbor);
-			System.out.println("i: " + selections);
+			System.out.println("i: " + i + " " + selections);
 			Assert.assertTrue(selections > last);
 			last = selections;
 		}

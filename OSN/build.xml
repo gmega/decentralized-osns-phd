@@ -16,7 +16,7 @@
 		<!-- Create the build directory structure used by compile -->
 		<mkdir dir="${build}" />
 		<!-- Compile the java code from ${src} into ${build} -->
-		<javac srcdir="${src}" destdir="${build}" classpathref="compile.path" />
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.path" includeantruntime="true" />
 	</target>
 
 	<target name="build-osns-jar" depends="compile-osns">

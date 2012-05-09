@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -54,6 +56,9 @@ public class MasterCLI {
 	@Option(name = "-m", aliases = { "--mode" }, usage = "Scheduling mode.", required = false)
 	private String fMode;
 
+	@Option(name = "-i", aliases = { "--quiet" }, usage = "Don't print messages on job assignment.", required = false)
+	private boolean fQuiet = false;
+
 	@Argument
 	private List<String> fProperties = new ArrayList<String>();
 
@@ -77,7 +82,7 @@ public class MasterCLI {
 				printStatus(parser);
 			} catch (NotBoundException e) {
 				System.err.println("Can't find queue " + fQueueId
-						+ " (not bound).");				
+						+ " (not bound).");
 			}
 		} else {
 			launch(parser, resolver);
@@ -146,7 +151,7 @@ public class MasterCLI {
 			throw new CmdLineException("Scheduling mode required.");
 		}
 
-		pars.put(IResolver.NULL_KEY, fMode);
+		pars.put("scheduler.type", fMode);
 		for (String property : fProperties) {
 			int idx = property.indexOf('=');
 			if (idx == -1) {
@@ -162,6 +167,10 @@ public class MasterCLI {
 
 	private void configureLogging() {
 		BasicConfigurator.configure();
+		if (fQuiet) {
+			Logger.getLogger(MasterImpl.class.getName() + ".assignment")
+					.setLevel(Level.ERROR);
+		}
 	}
 
 	public static void main(String[] args) throws IOException {

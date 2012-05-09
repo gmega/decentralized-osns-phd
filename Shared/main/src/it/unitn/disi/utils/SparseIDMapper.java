@@ -21,7 +21,7 @@ public class SparseIDMapper extends AbstractIDMapper {
 
 	@Override
 	protected int reverseGet(int id) {
-		if (id >= fReverseMap.size()) {
+		if (id >= fReverseMap.size() || id < 0) {
 			return UNMAPPED;
 		}
 		return fReverseMap.get(id);
