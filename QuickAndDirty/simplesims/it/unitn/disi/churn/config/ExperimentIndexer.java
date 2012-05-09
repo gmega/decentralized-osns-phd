@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity.p2p;
+package it.unitn.disi.churn.config;
 
 import java.io.File;
 import java.io.IOException;

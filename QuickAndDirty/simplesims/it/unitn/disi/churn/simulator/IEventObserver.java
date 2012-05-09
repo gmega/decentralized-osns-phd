@@ -26,5 +26,10 @@ public interface IEventObserver {
 	 *         not.
 	 */
 	public boolean isDone();
-	
+
+	/**
+	 * @return when all binding {@link IEventObserver}s are done, the simualtion
+	 *         ends.
+	 */
+	public boolean isBinding();
 }

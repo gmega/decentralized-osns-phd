@@ -2,8 +2,10 @@ package it.unitn.disi.churn.simulator;
 
 import it.unitn.disi.utils.collections.Pair;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * Simple discrete event simulator tailored for churn simulations.
@@ -17,12 +19,16 @@ public class SimpleEDSim implements Runnable, INetwork {
 	private final PriorityQueue<Schedulable> fQueue;
 
 	private final IEventObserver[][] fSim;
-	
-	private final int fObservers;
 
-	private double fTime = -1;
+	private Set<IEventObserver> fBindingObservers = new HashSet<IEventObserver>();
+	
+	private boolean fDone;
+	
+	private double fTime = 0.0;
 
 	private double fBurnin;
+
+	private int fLive;
 
 	// -------------------------------------------------------------------------
 
@@ -32,10 +38,16 @@ public class SimpleEDSim implements Runnable, INetwork {
 
 		fProcesses = processes;
 		fQueue = new PriorityQueue<Schedulable>();
-		for (Schedulable process : processes) {
+
+		// Counts initially live processes.
+		for (IProcess process : processes) {
+			if (process.isUp()) {
+				fLive++;
+			}
 			fQueue.add(process);
 		}
 
+		// Allocates event observer arrays.
 		fSim = new IEventObserver[maxType(delegates) + 1][];
 		for (int i = 0; i < fSim.length; i++) {
 			fSim[i] = new IEventObserver[count(delegates, i)];
@@ -45,25 +57,27 @@ public class SimpleEDSim implements Runnable, INetwork {
 						.get(j);
 				if (delegate.a == i) {
 					fSim[i][k++] = delegate.b;
+					if (delegate.b.isBinding()) {
+						fBindingObservers.add(delegate.b);
+					}
 				}
 			}
 		}
 
 		fBurnin = burnin;
-		fObservers = delegates.size();
 	}
 
 	// -------------------------------------------------------------------------
 
 	public void run() {
+
 		for (int i = 0; i < fSim.length; i++) {
 			for (int j = 0; j < fSim[i].length; j++) {
-				fSim[i][j].simulationStarted(this);				
+				fSim[i][j].simulationStarted(this);
 			}
 		}
 
-		int done = 0;
-		while (!fQueue.isEmpty() && !(done == fObservers)) {
+		while (!fQueue.isEmpty() && !fDone) {
 			Schedulable p = fQueue.remove();
 			fTime = p.time();
 			p.scheduled(fTime, this);
@@ -71,9 +85,11 @@ public class SimpleEDSim implements Runnable, INetwork {
 				fQueue.add(p);
 			}
 
+			updateProcessCount(p);
+
 			// Only run the simulations if burn in time is over.
 			if (fTime >= fBurnin) {
-				done = notifyObservers(done, p);
+				notifyObservers(p);
 			}
 		}
 	}
@@ -81,7 +97,7 @@ public class SimpleEDSim implements Runnable, INetwork {
 	// -------------------------------------------------------------------------
 
 	public void schedule(Schedulable schedulable) {
-		if (schedulable.time() <= fTime) {
+		if (schedulable.time() < fTime) {
 			throw new IllegalStateException("Can't schedule "
 					+ "event in the past.");
 		}
@@ -102,16 +118,36 @@ public class SimpleEDSim implements Runnable, INetwork {
 
 	// -------------------------------------------------------------------------
 
-	private int notifyObservers(int done, Schedulable p) {
+	private void notifyObservers(Schedulable p) {
 		for (IEventObserver sim : fSim[p.type()]) {
 			if (!sim.isDone()) {
 				sim.stateShifted(this, fTime - fBurnin, p);
-				if (sim.isDone()) {
-					done++;
-				}
 			}
 		}
-		return done;
+	}
+	
+	// -------------------------------------------------------------------------
+
+	private void updateProcessCount(Schedulable p) {
+		if (!(p instanceof IProcess)) {
+			return;
+		}
+
+		IProcess proc = (IProcess) p;
+		if (proc.isUp()) {
+			fLive++;
+		} else {
+			fLive--;
+		}
+	}
+	
+	// -------------------------------------------------------------------------
+	
+	public void done(IEventObserver observer) {
+		fBindingObservers.remove(observer);
+		if (fBindingObservers.size() == 0) {
+			fDone = true;
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -136,23 +172,36 @@ public class SimpleEDSim implements Runnable, INetwork {
 				mx = pair.a;
 			}
 		}
-		
+
 		return mx;
 	}
 
 	// -------------------------------------------------------------------------
+	// INetwork interface.
+	// -------------------------------------------------------------------------
 
+	@Override
 	public int size() {
 		return fProcesses.length;
 	}
 
 	// -------------------------------------------------------------------------
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.churn.simulator.INetwork#process(int)
-	 */
 	@Override
 	public IProcess process(int index) {
 		return fProcesses[index];
+	}
+
+	// -------------------------------------------------------------------------
+
+	public int live() {
+		return fLive;
+	}
+
+	// -------------------------------------------------------------------------
+
+	@Override
+	public double version() {
+		return fTime;
 	}
 }

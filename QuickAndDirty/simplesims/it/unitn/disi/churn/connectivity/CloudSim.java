@@ -7,7 +7,6 @@ import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.RenewalProcess;
 
 /**
  * {@link CloudSim} is a simpler {@link TemporalConnectivityEstimator} which
@@ -88,6 +87,11 @@ public class CloudSim implements IEventObserver {
 
 	public double reachTime(int i) {
 		return fTimes[i] - fTimes[fSource];
+	}
+
+	@Override
+	public boolean isBinding() {
+		return true;
 	}
 
 }

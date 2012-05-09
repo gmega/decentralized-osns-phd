@@ -3,7 +3,7 @@ package it.unitn.disi.churn.simulator;
 import peersim.config.AutoConfig;
 
 @AutoConfig
-public class PeriodicSchedulable extends Schedulable {
+public class CyclicSchedulable extends Schedulable {
 
 	private double fPeriod;
 
@@ -11,7 +11,7 @@ public class PeriodicSchedulable extends Schedulable {
 	
 	private int fType;
 	
-	public PeriodicSchedulable(double period, int type) {
+	public CyclicSchedulable(double period, int type) {
 		fPeriod = period;
 		fType = type;
 	}

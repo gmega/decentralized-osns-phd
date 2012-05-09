@@ -141,6 +141,10 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 		if (fSampler != null) {
 			fSampler.reached(node, this);
 		}
+
+		if (isDone()) {
+			fParent.done(this);
+		}
 	}
 
 	private void snapshotUptimes() {
@@ -180,6 +184,11 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 
 	INetwork sim() {
 		return fParent;
+	}
+
+	@Override
+	public boolean isBinding() {
+		return true;
 	}
 }
 

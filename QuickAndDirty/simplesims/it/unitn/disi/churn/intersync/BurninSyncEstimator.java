@@ -7,10 +7,11 @@ import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IValueObserver;
-import it.unitn.disi.churn.simulator.RenewalProcess;
 
 public class BurninSyncEstimator implements IEventObserver {
 
+	private SimpleEDSim fParent;
+	
 	private StateAccountant fWaitSync;
 
 	private boolean fWaitingLogin = true;
@@ -31,6 +32,7 @@ public class BurninSyncEstimator implements IEventObserver {
 
 	@Override
 	public void simulationStarted(SimpleEDSim p) {
+		fParent = p;
 	}
 
 	@Override
@@ -64,12 +66,18 @@ public class BurninSyncEstimator implements IEventObserver {
 
 		if (fSyncs == 0) {
 			fDone = true;
+			fParent.done(this);
 		}
 	}
 
 	@Override
 	public boolean isDone() {
 		return fDone;
+	}
+
+	@Override
+	public boolean isBinding() {
+		return true;
 	}
 
 }

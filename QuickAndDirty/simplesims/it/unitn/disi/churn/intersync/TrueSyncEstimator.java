@@ -7,7 +7,6 @@ import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IValueObserver;
-import it.unitn.disi.churn.simulator.RenewalProcess;
 
 /**
  * Very simple experiment for sampling the synchronization time of two nodes.
@@ -16,6 +15,8 @@ import it.unitn.disi.churn.simulator.RenewalProcess;
  */
 public class TrueSyncEstimator implements IEventObserver {
 
+	private SimpleEDSim fParent;
+	
 	private volatile int fSamples;
 
 	private final IValueObserver fObserver;
@@ -35,6 +36,7 @@ public class TrueSyncEstimator implements IEventObserver {
 
 	@Override
 	public void simulationStarted(SimpleEDSim p) {
+		fParent = p;
 		fPId0 = p.process(0).id();
 	}
 
@@ -53,6 +55,10 @@ public class TrueSyncEstimator implements IEventObserver {
 			register(time, fPendingUps);
 			fPendingUps.resetQuick();
 		}
+		
+		if (isDone()) {
+			fParent.done(this);
+		}
 	}
 
 	protected void register(double p2Login, TDoubleArrayList p1Logins) {
@@ -68,6 +74,11 @@ public class TrueSyncEstimator implements IEventObserver {
 	@Override
 	public boolean isDone() {
 		return fSamples <= 0;
+	}
+
+	@Override
+	public boolean isBinding() {
+		return true;
 	}
 
 }

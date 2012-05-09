@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.config.IndexedReader;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -34,7 +36,7 @@ public class TopKWorker extends AbstractWorker {
 
 	public TopKWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
-		super(resolver, "id", "source");
+		super(resolver, "id");
 	}
 
 	@Override
@@ -53,38 +55,39 @@ public class TopKWorker extends AbstractWorker {
 		IScheduleIterator iterator = iterator();
 		Integer row;
 		while ((row = (Integer) iterator.nextIfAvailable()) != IScheduleIterator.DONE) {
-			seekSourceRow(row);
-			int root = Integer.parseInt(sourceReader().get("id"));
-			int target = Integer.parseInt(sourceReader().get("target"));
-
 			// Reads availabilities.
-			Experiment exp = readExperiment(row);
+			Experiment exp = experimentReader().readExperiment(row, provider());
 			IndexedNeighborGraph graph = provider().subgraph(exp.root);
+			int [] ids = provider().verticesOf(exp.root);
+			
+			int target = Integer.parseInt(exp.attributes.get("target"));
+			int source = Integer.parseInt(exp.attributes.get("source"));
 
-			int rTarget = MiscUtils.indexOf(exp.ids, target);
+			int rTarget = MiscUtils.indexOf(ids, target);
+			int rSource = MiscUtils.indexOf(ids, source);
 
 			// Reads weights.
-			if (reader.select(root) == null) {
+			if (reader.select(exp.root) == null) {
 				throw new NoSuchElementException();
 			}
 
 			wReader.streamRepositioned();
-			double[][] w = wReader.read(exp.ids);
+			double[][] w = wReader.read(ids);
 			
 			String ts = "Job " + row;
 
 			Pair<IndexedNeighborGraph, Double> resultED = simHelper()
 					.topKEstimate(ts + " ED", graph, TEExperimentHelper.EDGE_DISJOINT,
-							exp.source, rTarget, w, exp.lis, exp.dis, fK,
-							exp.ids);
+							rSource, rTarget, w, exp.lis, exp.dis, fK,
+							ids);
 
 			Pair<IndexedNeighborGraph, Double> resultYen = simHelper()
 					.topKEstimate(ts + " Yen", graph, TEExperimentHelper.YENS,
-							exp.source, rTarget, w, exp.lis, exp.dis, fK,
-							exp.ids);
+							rSource, rTarget, w, exp.lis, exp.dis, fK,
+							ids);
 
-			writer.set("id", root);
-			writer.set("source", exp.ids[exp.source]);
+			writer.set("id", exp.root);
+			writer.set("source", source);
 			writer.set("target", target);
 			writer.set("kedttc", resultED.b / fRepeat);
 			writer.set("kyenttc", resultYen.b / fRepeat);

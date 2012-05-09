@@ -13,11 +13,13 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 
 import gnu.trove.list.array.TIntArrayList;
+import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.connectivity.SimulationResults;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -47,7 +49,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	public SimWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
-		super(resolver, "id", "node");
+		super(resolver, "id");
 	}
 
 	// -------------------------------------------------------------------------
@@ -61,16 +63,20 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 			IScheduleIterator schedule = this.iterator();
 			Integer row;
 			while ((row = (Integer) schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
-				Experiment e = readExperiment(row);
+				Experiment e = experimentReader().readExperiment(row,
+						provider());
 				IndexedNeighborGraph graph = provider().subgraph(e.root);
 				int[] ids = provider().verticesOf(e.root);
-				int[] cloudNodes = cloudNodes(e);
+				int[] cloudNodes = cloudNodes(e, ids);
 
 				printCloud(e.root, ids, cloudNodes);
+				
+				int source = MiscUtils.indexOf(ids, Integer.parseInt(e.attributes.get("node")));
 
 				SimulationResults results = simHelper().bruteForceSimulate(
-						e.toString(), graph, e.source, e.lis, e.dis, ids,
-						cloudNodes, false, fCloudSims);
+						e.toString(), graph,
+						source, e.lis,
+						e.dis, ids, cloudNodes, false, fCloudSims);
 
 				printResults(e.root, results, writer, ids);
 			}
@@ -119,14 +125,14 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	// -------------------------------------------------------------------------
 
-	private int[] cloudNodes(Experiment exp) throws Exception {
+	private int[] cloudNodes(Experiment exp, int[] ids) throws Exception {
 		if (fCloudBitmap == null) {
 			fCloudBitmap = readCloudBitmap();
 		}
 
 		// Reads cloud nodes.
 		TIntArrayList cloud = new TIntArrayList();
-		for (int i = 0; i < exp.ids.length; i++) {
+		for (int i = 0; i < ids.length; i++) {
 			int row = exp.entry.rowStart + i;
 			if (fCloudBitmap.get(row)) {
 				cloud.add(i);

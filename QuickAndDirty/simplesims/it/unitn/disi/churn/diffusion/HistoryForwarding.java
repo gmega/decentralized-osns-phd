@@ -2,10 +2,18 @@ package it.unitn.disi.churn.diffusion;
 
 import java.util.BitSet;
 
+import it.unitn.disi.churn.diffusion.churn.ILiveTransformer;
+import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.ICyclicProtocol;
 import it.unitn.disi.churn.simulator.CyclicProtocolRunner;
+import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.Schedulable;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.utils.AbstractIDMapper;
+import it.unitn.disi.utils.IDMapper;
+import it.unitn.disi.utils.collections.Triplet;
 
 public class HistoryForwarding implements ICyclicProtocol {
 
@@ -17,17 +25,23 @@ public class HistoryForwarding implements ICyclicProtocol {
 
 	private BitSet fHistory;
 
+	private BitSet fMappedHistory;
+
 	private final IPeerSelector fSelector;
+
+	private final ILiveTransformer fTransformer;
 
 	private boolean fDone;
 
 	public HistoryForwarding(IndexedNeighborGraph graph,
-			IPeerSelector selector, int id) {
+			IPeerSelector selector, ILiveTransformer transformer, int id) {
 		fId = id;
 		fGraph = graph;
 		fHistory = new BitSet();
+		fMappedHistory = new BitSet();
 		fSelector = selector;
-		
+		fTransformer = transformer;
+
 		clearState();
 	}
 
@@ -38,23 +52,18 @@ public class HistoryForwarding implements ICyclicProtocol {
 
 	@Override
 	public void nextCycle(double time, INetwork sim,
-			CyclicProtocolRunner protocols) {
-		// Are we done, or not reached yet?
-		if (fDone || !fHistory.get(fId)) {
+			CyclicProtocolRunner<? extends ICyclicProtocol> protocols) {
+
+		// Are we done, down, or not reached yet?
+		if (fDone || !sim.process(fId).isUp() || !fHistory.get(fId)) {
 			return;
 		}
 
 		// Tries to get a peer.
 		int neighborId = selectPeer(sim);
 
-		// No more neighbors to send to, we're done.
-		if (neighborId == IPeerSelector.NO_PEER) {
-			fDone = true;
-			return;
-		}
-
-		// No live neighbors at the moment. Wait.
-		if (neighborId == IPeerSelector.NO_LIVE_PEER) {
+		// No live neighbors at the moment.
+		if (neighborId < 0) {
 			return;
 		}
 
@@ -62,15 +71,60 @@ public class HistoryForwarding implements ICyclicProtocol {
 		HistoryForwarding neighbor = (HistoryForwarding) protocols
 				.get(neighborId);
 		fHistory.or(neighbor.sendMessage(fHistory, time));
+
+		checkDone();
+	}
+
+	private void checkDone() {
+		if (fDone) {
+			return;
+		}
+		
+		// Checks if all of our neighbors have gotten the message,
+		// including us.
+		if(!fHistory.get(fId)) {
+			return;
+		}
+		
+		for (int i = 0; i < fGraph.degree(fId); i++) {
+			if(!fHistory.get(fGraph.getNeighbor(fId, i))) {
+				return;
+			}
+		}
+
+		fDone = true;
 	}
 
 	private int selectPeer(INetwork sim) {
-		return fSelector.selectPeer(fId, fGraph, fHistory, sim);
+		Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> transform = fTransformer
+				.live(fGraph, sim);
+
+		if (transform == null) {
+			return fSelector.selectPeer(fId, fGraph, fHistory, sim);
+		}
+
+		IDMapper mapper = transform.a;
+		int selected = fSelector.selectPeer(mapper.map(fId), transform.c,
+				remapHistory(mapper, fHistory), transform.b);
+
+		return selected >= 0 ? mapper.reverseMap(selected) : selected;
+	}
+
+	private BitSet remapHistory(IDMapper mapper, BitSet history) {
+		fMappedHistory.clear();
+		for (int i = history.nextSetBit(0); i >= 0; i = history
+				.nextSetBit(i + 1)) {
+			if (mapper.isMapped(i)) {
+				fMappedHistory.set(mapper.map(i));
+			}
+		}
+		return fMappedHistory;
 	}
 
 	private BitSet sendMessage(BitSet history, double time) {
 		reached(time);
 		fHistory.or(history);
+		checkDone();
 		return fHistory;
 	}
 
@@ -80,13 +134,54 @@ public class HistoryForwarding implements ICyclicProtocol {
 			fHistory.set(fId);
 		}
 	}
-	
+
 	public double latency() {
 		return fReachTime;
 	}
 
 	public boolean isDone() {
 		return fDone;
+	}
+
+	/**
+	 * If we want to make this node the source, we should register the protocol
+	 * as a listener to state changes for the network.
+	 * 
+	 * @return an {@link IEventObserver} which will mark the enclosing
+	 *         {@link HistoryForwarding} instance as "reached" as soon as the
+	 *         {@link IProcess} with the sharing id logs in for the first time.
+	 */
+	public IEventObserver sourceEventObserver() {
+		return new IEventObserver() {
+			
+			private SimpleEDSim fParent;
+
+			@Override
+			public void stateShifted(INetwork parent, double time,
+					Schedulable schedulable) {
+				IProcess process = (IProcess) schedulable;
+				if (process.id() == fId && process.isUp()) {
+					reached(time);
+					fParent.done(this);
+				}
+			}
+
+			@Override
+			public void simulationStarted(SimpleEDSim parent) {
+				fParent = parent;
+				stateShifted(parent, parent.currentTime(), parent.process(fId));
+			}
+
+			@Override
+			public boolean isDone() {
+				return fHistory.get(fId);
+			}
+
+			@Override
+			public boolean isBinding() {
+				return true;
+			}
+		};
 	}
 
 }

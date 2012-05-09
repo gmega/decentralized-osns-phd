@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
@@ -29,7 +30,7 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 
 	public PairwiseEstimateWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
-		super(resolver, "id", "id");
+		super(resolver, "id");
 	}
 
 	@Override
@@ -46,8 +47,11 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 			IScheduleIterator iterator = iterator();
 			Integer row;
 			while ((row = (Integer) iterator.nextIfAvailable()) != IScheduleIterator.DONE) {
-				Experiment e = readExperiment(row);
+				Experiment e = experimentReader().readExperiment(row,
+						provider());
 				IndexedNeighborGraph graph = provider().subgraph(e.root);
+
+				int[] ids = provider().verticesOf(e.root);
 
 				GraphTask gt = ppe.estimate(
 						new F0<IValueObserver>() {
@@ -56,13 +60,13 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 										new IncrementalStats()));
 							};
 						}, executor, graph, fRepeat, e.lis, e.dis, fYaoConfig
-								.distributionGenerator(), false, e.root, e.ids);
+								.distributionGenerator(), false, e.root, ids);
 
 				gt.await();
-				
+
 				System.err.println("-- err flush -- ");
 				System.err.flush();
-				
+
 				System.out.println("-- out flush -- ");
 				System.out.flush();
 
@@ -71,8 +75,8 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 					IncrementalStats stats = adapt.getStats();
 
 					writer.set("id", e.root);
-					writer.set("source", e.ids[task.i]);
-					writer.set("target", e.ids[task.j]);
+					writer.set("source", ids[task.i]);
+					writer.set("target", ids[task.j]);
 					writer.set("ttcl", StatUtils.lowerConfidenceLimit(stats));
 					writer.set("ttc", stats.getAverage());
 					writer.set("ttcu", StatUtils.upperConfidenceLimit(stats));

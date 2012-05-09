@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity.p2p;
+package it.unitn.disi.churn.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,14 +69,14 @@ public class IndexedReader {
 
 		return fIndex[idx];
 	}
-	
+
 	public ResettableFileInputStream getStream() {
 		return fStream;
 	}
 
 	// -------------------------------------------------------------------------
 
-	static class IndexEntry implements Comparable<Object> {
+	public static class IndexEntry implements Comparable<Object> {
 
 		public final int id;
 		public final int rowStart;
