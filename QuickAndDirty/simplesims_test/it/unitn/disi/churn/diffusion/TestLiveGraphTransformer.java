@@ -8,6 +8,7 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
@@ -18,6 +19,7 @@ import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.collections.Triplet;
 
 import org.junit.Test;
 
@@ -29,9 +31,9 @@ public class TestLiveGraphTransformer {
 
 	@Test
 	public void testMapping() {
-		
+
 		Random rnd = new Random();
-		
+
 		IndexedNeighborGraph random = LightweightStaticGraph
 				.fromGraph(GraphFactory.wireKOut(new NeighbourListGraph(5000,
 						false), 10, rnd));
@@ -41,9 +43,9 @@ public class TestLiveGraphTransformer {
 		SubgraphDecorator reference = new SubgraphDecorator(random, false);
 		reference.setVertexList(collectLive(network));
 
-		LiveGraphTransformer lgt = new LiveGraphTransformer();
-		Pair<AbstractIDMapper, IndexedNeighborGraph> result = lgt.liveGraph(
-				random, network);
+		LiveTransformer lgt = new LiveTransformer();
+		Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> result = lgt
+				.live(random, network);
 
 		Assert.assertEquals(result.b.size(), reference.size());
 
@@ -53,7 +55,7 @@ public class TestLiveGraphTransformer {
 			int testId = result.a.map(originalId);
 
 			Set<Integer> neighborsRefr = collect(reference, i, reference);
-			Set<Integer> neighborsTest = collect(result.b, testId, result.a);
+			Set<Integer> neighborsTest = collect(result.c, testId, result.a);
 
 			Assert.assertTrue(neighborsRefr.containsAll(neighborsTest));
 			Assert.assertTrue(neighborsTest.containsAll(neighborsRefr));
@@ -82,21 +84,37 @@ public class TestLiveGraphTransformer {
 
 	private INetwork random(int size, Random rnd) {
 		final ArrayList<IProcess> processes = new ArrayList<IProcess>();
+		int alive = 0;
 		for (int j = 0; j < size; j++) {
-			processes.add(new FixedProcess(j, rnd.nextDouble() < 0.5 ? State.up
-					: State.down));
+			State state = rnd.nextDouble() < 0.5 ? State.up : State.down;
+			if (state == State.up) {
+				alive++;
+			}
+			processes.add(new FixedProcess(j, state));
 		}
-		
+
+		final int fAlive = alive;
+
 		return new INetwork() {
-			
+
 			@Override
 			public int size() {
 				return processes.size();
 			}
-			
+
 			@Override
 			public IProcess process(int index) {
 				return processes.get(index);
+			}
+
+			@Override
+			public int live() {
+				return fAlive;
+			}
+
+			@Override
+			public double version() {
+				return 0;
 			}
 		};
 	}

@@ -84,7 +84,7 @@ public class ExperimentReader {
 			throw new MissingParameterException("assignments or index");
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private Experiment readChurn(Integer row, IGraphProvider provider)
@@ -189,7 +189,7 @@ public class ExperimentReader {
 		}
 
 		public String toString() {
-			return "size " + lis.length;
+			return "root: " + root;
 		}
 	}
 

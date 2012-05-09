@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.simulator.TaskExecutor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
@@ -9,8 +10,6 @@ import it.unitn.disi.graph.analysis.TopKShortest;
 import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
 import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
@@ -20,9 +19,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.lambda.functions.implementations.F2;
 
@@ -94,18 +90,15 @@ public class TEExperimentHelper {
 	//
 	// ------------------------------------------------------------------------
 
-	private final CallbackThreadPoolExecutor<Object> fExecutor;
-
 	private final YaoChurnConfigurator fYaoConf;
-
-	private final LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>(
-			100);
 
 	private volatile ProgressTracker fTracker;
 
 	private final int fRepetitions;
 
 	private final double fBurnin;
+	
+	private final TaskExecutor fExecutor;
 
 	/**
 	 * Creates a new helper.
@@ -117,41 +110,14 @@ public class TEExperimentHelper {
 	 */
 	public TEExperimentHelper(YaoChurnConfigurator yaoConf, int cores,
 			int repetitions, double burnin) {
-
-		fExecutor = new CallbackThreadPoolExecutor<Object>(cores > 0 ? cores
-				: Runtime.getRuntime().availableProcessors(),
-				new IExecutorCallback<Object>() {
-					@Override
-					public void taskFailed(Future<Object> task, Exception ex) {
-						fTracker.tick();
-						queue(ex);
-					}
-
-					@Override
-					public synchronized void taskDone(Object result) {
-						fTracker.tick();
-						queue(result);
-					}
-
-					private void queue(Object result) {
-						try {
-							fReady.offer(result, Long.MAX_VALUE, TimeUnit.DAYS);
-						} catch (InterruptedException ex) {
-							ex.printStackTrace();
-						}
-					}
-				});
-
 		fYaoConf = yaoConf;
 		fBurnin = burnin;
 		fRepetitions = repetitions;
+		fExecutor = new TaskExecutor(cores);
 	}
 
 	public void shutdown(boolean wait) throws InterruptedException {
-		fExecutor.shutdown();
-		if (wait) {
-			fExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-		}
+		fExecutor.shutdown(wait);
 	}
 
 	/**
@@ -243,7 +209,7 @@ public class TEExperimentHelper {
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
-			Object taskResult = fReady.poll(Long.MAX_VALUE, TimeUnit.DAYS);
+			Object taskResult = fExecutor.consume();
 			if (taskResult instanceof Throwable) {
 				Throwable ex = (Throwable) taskResult;
 				ex.printStackTrace();

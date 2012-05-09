@@ -74,6 +74,16 @@ public class BiasedCentralitySelectorTest {
 			public IProcess process(int index) {
 				return p[index];
 			}
+
+			@Override
+			public int live() {
+				return p.length;
+			}
+
+			@Override
+			public double version() {
+				return 0;
+			}
 		};
 	}
 }
