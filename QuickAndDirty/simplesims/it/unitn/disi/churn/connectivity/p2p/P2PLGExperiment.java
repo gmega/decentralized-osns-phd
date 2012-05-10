@@ -59,7 +59,7 @@ public class P2PLGExperiment implements ITransformer {
 				.getRuntime().availableProcessors(),
 				new IExecutorCallback<double[]>() {
 					@Override
-					public void taskFailed(Future<double[]> task, Exception ex) {
+					public void taskFailed(Future<double[]> task, Throwable ex) {
 						ex.printStackTrace();
 						if (fTracker != null) {
 							fTracker.tick();

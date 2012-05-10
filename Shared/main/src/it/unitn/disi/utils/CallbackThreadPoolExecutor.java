@@ -25,10 +25,10 @@ public class CallbackThreadPoolExecutor<T> extends ThreadPoolExecutor {
 
 		try {
 			results = future.get();
-		} catch (Exception ex) {
+		} catch (Throwable ex) {
 			System.err.println("Error while retrieving task results.");
 			if (ex instanceof ExecutionException) {
-				ex = (Exception) ex.getCause();
+				ex = (Throwable) ex.getCause();
 			}
 			fCallback.taskFailed(future, ex);
 			if (ex instanceof InterruptedException) {

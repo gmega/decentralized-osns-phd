@@ -108,7 +108,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 	// ------------------------------------------------------------------------
 
 	@Override
-	public synchronized void taskFailed(Future<Object> task, Exception ex) {
+	public synchronized void taskFailed(Future<Object> task, Throwable ex) {
 		ex.printStackTrace();
 		fTracker.tick();
 	}

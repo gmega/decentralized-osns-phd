@@ -15,7 +15,7 @@ import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 
-public class HistoryForwarding implements ICyclicProtocol {
+public class HFlood implements ICyclicProtocol {
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -31,9 +31,9 @@ public class HistoryForwarding implements ICyclicProtocol {
 
 	private final ILiveTransformer fTransformer;
 
-	private boolean fDone;
+	private State fState = State.WAITING;
 
-	public HistoryForwarding(IndexedNeighborGraph graph,
+	public HFlood(IndexedNeighborGraph graph,
 			IPeerSelector selector, ILiveTransformer transformer, int id) {
 		fId = id;
 		fGraph = graph;
@@ -55,20 +55,25 @@ public class HistoryForwarding implements ICyclicProtocol {
 			CyclicProtocolRunner<? extends ICyclicProtocol> protocols) {
 
 		// Are we done, down, or not reached yet?
-		if (fDone || !sim.process(fId).isUp() || !fHistory.get(fId)) {
+		if (fState == State.DONE || !sim.process(fId).isUp()
+				|| !fHistory.get(fId)) {
 			return;
 		}
 
 		// Tries to get a peer.
 		int neighborId = selectPeer(sim);
 
-		// No live neighbors at the moment.
+		// No live neighbors at the moment, so we have to wait.
 		if (neighborId < 0) {
+			fState = State.WAITING;
 			return;
 		}
+		
+		// Otherwise we're active.
+		fState = State.ACTIVE;
 
 		// Sends the message and gets the feedback.
-		HistoryForwarding neighbor = (HistoryForwarding) protocols
+		HFlood neighbor = (HFlood) protocols
 				.get(neighborId);
 		fHistory.or(neighbor.sendMessage(fHistory, time));
 
@@ -76,23 +81,23 @@ public class HistoryForwarding implements ICyclicProtocol {
 	}
 
 	private void checkDone() {
-		if (fDone) {
+		if (fState == State.DONE) {
 			return;
 		}
-		
+
 		// Checks if all of our neighbors have gotten the message,
 		// including us.
-		if(!fHistory.get(fId)) {
+		if (!fHistory.get(fId)) {
 			return;
 		}
-		
+
 		for (int i = 0; i < fGraph.degree(fId); i++) {
-			if(!fHistory.get(fGraph.getNeighbor(fId, i))) {
+			if (!fHistory.get(fGraph.getNeighbor(fId, i))) {
 				return;
 			}
 		}
 
-		fDone = true;
+		fState = State.DONE;
 	}
 
 	private int selectPeer(INetwork sim) {
@@ -132,6 +137,7 @@ public class HistoryForwarding implements ICyclicProtocol {
 		if (fReachTime == Double.NEGATIVE_INFINITY) {
 			fReachTime = time;
 			fHistory.set(fId);
+			fState = State.ACTIVE;
 		}
 	}
 
@@ -139,8 +145,9 @@ public class HistoryForwarding implements ICyclicProtocol {
 		return fReachTime;
 	}
 
-	public boolean isDone() {
-		return fDone;
+	@Override
+	public State getState() {
+		return fState;
 	}
 
 	/**
@@ -148,12 +155,12 @@ public class HistoryForwarding implements ICyclicProtocol {
 	 * as a listener to state changes for the network.
 	 * 
 	 * @return an {@link IEventObserver} which will mark the enclosing
-	 *         {@link HistoryForwarding} instance as "reached" as soon as the
+	 *         {@link HFlood} instance as "reached" as soon as the
 	 *         {@link IProcess} with the sharing id logs in for the first time.
 	 */
 	public IEventObserver sourceEventObserver() {
 		return new IEventObserver() {
-			
+
 			private SimpleEDSim fParent;
 
 			@Override

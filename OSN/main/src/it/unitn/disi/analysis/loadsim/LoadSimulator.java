@@ -19,13 +19,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -363,17 +360,16 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim,
 	public IndexedNeighborGraph getGraph() {
 		return fGraph;
 	}
-	
+
 	@Override
-	public synchronized void taskFailed(Future<TaskResult> future, Exception ex) {
+	public synchronized void taskFailed(Future<TaskResult> future, Throwable ex) {
 		releaseCore();
 		ex.printStackTrace();
 	}
-	
-	@Override 
+
+	@Override
 	public synchronized void taskDone(TaskResult result) {
 		releaseCore();
 		printSummary(result);
 	}
 }
-

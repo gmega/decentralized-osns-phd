@@ -82,7 +82,7 @@ public class P2PEgonetShortestPath implements ITransformer {
 
 					@Override
 					public void taskFailed(Future<ShortestPathTask> task,
-							Exception ex) {
+							Throwable ex) {
 						ex.printStackTrace();
 					}
 

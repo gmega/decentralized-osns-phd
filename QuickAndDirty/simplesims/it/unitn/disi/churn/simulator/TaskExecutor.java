@@ -26,7 +26,7 @@ public class TaskExecutor {
 	private volatile ProgressTracker fTracker;
 
 	private int fTasks;
-	
+
 	private int fConsumed;
 
 	public TaskExecutor(int cores) {
@@ -35,7 +35,7 @@ public class TaskExecutor {
 				: Runtime.getRuntime().availableProcessors(),
 				new IExecutorCallback<Object>() {
 					@Override
-					public void taskFailed(Future<Object> task, Exception ex) {
+					public void taskFailed(Future<Object> task, Throwable ex) {
 						fTracker.tick();
 						queue(ex);
 					}
@@ -54,7 +54,7 @@ public class TaskExecutor {
 						}
 					}
 				});
-		
+
 	}
 
 	public void start(String task, int taskBlock) {

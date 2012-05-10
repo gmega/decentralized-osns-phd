@@ -5,7 +5,7 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class CyclicSchedulable extends Schedulable {
 
-	private double fPeriod;
+	protected final double fPeriod;
 
 	private double fTime = 0;
 	
@@ -34,6 +34,10 @@ public class CyclicSchedulable extends Schedulable {
 
 	protected void nextPeriod(double time, INetwork parent) {
 		// To be overriden by subclasses.
+	}
+	
+	protected void setTime(double time) {
+		fTime = time;
 	}
 
 	@Override

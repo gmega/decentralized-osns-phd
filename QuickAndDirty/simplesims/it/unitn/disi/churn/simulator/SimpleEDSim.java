@@ -21,9 +21,9 @@ public class SimpleEDSim implements Runnable, INetwork {
 	private final IEventObserver[][] fSim;
 
 	private Set<IEventObserver> fBindingObservers = new HashSet<IEventObserver>();
-	
+
 	private boolean fDone;
-	
+
 	private double fTime = 0.0;
 
 	private double fBurnin;
@@ -95,11 +95,17 @@ public class SimpleEDSim implements Runnable, INetwork {
 	}
 
 	// -------------------------------------------------------------------------
-
+	
 	public void schedule(Schedulable schedulable) {
-		if (schedulable.time() < fTime) {
+		schedule(schedulable, false);
+	}
+
+	public void schedule(Schedulable schedulable, boolean postBurnin) {
+		double time = postBurnin ? postBurninTime() : currentTime();
+		if (schedulable.time() < time) {
 			throw new IllegalStateException("Can't schedule "
-					+ "event in the past.");
+					+ "event in the past (" + fTime + " > "
+					+ schedulable.time() + ")");
 		}
 		fQueue.add(schedulable);
 	}
@@ -125,7 +131,7 @@ public class SimpleEDSim implements Runnable, INetwork {
 			}
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	private void updateProcessCount(Schedulable p) {
@@ -140,9 +146,9 @@ public class SimpleEDSim implements Runnable, INetwork {
 			fLive--;
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public void done(IEventObserver observer) {
 		fBindingObservers.remove(observer);
 		if (fBindingObservers.size() == 0) {

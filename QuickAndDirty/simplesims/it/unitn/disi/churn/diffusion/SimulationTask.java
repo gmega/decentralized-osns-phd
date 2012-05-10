@@ -4,11 +4,10 @@ import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.churn.CachingTransformer;
 import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
-import it.unitn.disi.churn.simulator.CyclicProtocolRunner;
-import it.unitn.disi.churn.simulator.CyclicSchedulable;
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.PausingCyclicProtocolRunner;
 import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.churn.simulator.IProcess.State;
@@ -55,26 +54,34 @@ public class SimulationTask implements Callable<double[]> {
 	@Override
 	public double[] call() throws Exception {
 
-		CyclicProtocolRunner<HistoryForwarding> ps = protocols(fGraph, fRandom);
+		PausingCyclicProtocolRunner<HFlood> ps = protocols(fGraph, fRandom);
 		IProcess[] processes = processes(fExperiment, fSource, fGraph, fRandom);
 
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+
+		// Triggers the dissemination process from the first login of the
+		// sender.
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, ps.get(fSource)
 						.sourceEventObserver()));
+
+		// Resumes the cyclic protocol whenever the network state changes.
+		observers.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, ps.networkObserver()));
+
+		// Cyclic protocol observer.
 		observers.add(new Pair<Integer, IEventObserver>(1, ps));
 
 		SimpleEDSim bcs = new SimpleEDSim(processes, observers, fBurnin);
-		bcs.schedule(new CyclicSchedulable(fPeriod, 1));
 		bcs.run();
 
-		double base = ((HistoryForwarding) ps.get(fSource)).latency();
+		double base = ((HFlood) ps.get(fSource)).latency();
 
-		double [] latencies = new double[fGraph.size()];
+		double[] latencies = new double[fGraph.size()];
 		for (int i = 0; i < processes.length; i++) {
-			latencies[i] = (((HistoryForwarding) ps.get(i)).latency() - base);
+			latencies[i] = (((HFlood) ps.get(i)).latency() - base);
 		}
-		
+
 		return latencies;
 	}
 
@@ -101,19 +108,18 @@ public class SimulationTask implements Callable<double[]> {
 		return experiment.lis == null;
 	}
 
-	private CyclicProtocolRunner<HistoryForwarding> protocols(
+	private PausingCyclicProtocolRunner<HFlood> protocols(
 			IndexedNeighborGraph graph, Random r) {
-		HistoryForwarding[] protos = new HistoryForwarding[graph.size()];
+		HFlood[] protos = new HFlood[graph.size()];
 		CachingTransformer caching = new CachingTransformer(
 				new LiveTransformer());
 
 		for (int i = 0; i < graph.size(); i++) {
-			protos[i] = new HistoryForwarding(graph, peerSelector(r), caching,
-					i);
+			protos[i] = new HFlood(graph, peerSelector(r), caching, i);
 		}
 
-		CyclicProtocolRunner<HistoryForwarding> ps = new CyclicProtocolRunner<HistoryForwarding>(
-				protos);
+		PausingCyclicProtocolRunner<HFlood> ps = new PausingCyclicProtocolRunner<HFlood>(
+				protos, fPeriod, 1);
 		return ps;
 	}
 
