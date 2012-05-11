@@ -5,7 +5,7 @@ import it.unitn.disi.churn.simulator.ICyclicProtocol.State;
 public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		IEventObserver {
 
-	private K[] fProtocol;
+	protected K[] fProtocol;
 
 	private boolean fDone;
 
@@ -31,12 +31,11 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		int done = 0;
 		for (int i = 0; i < fProtocol.length; i++) {
 			State state = fProtocol[i].getState();
-			if (state == State.ACTIVE) {
+			if (state != State.DONE) {
 				fProtocol[i].nextCycle(time, parent, this);
-			} else if (state == State.DONE) {
+			} else {
 				done++;
 			}
-			protocolState(i, state);
 		}
 
 		if (done == fProtocol.length) {
@@ -55,14 +54,6 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		return true;
 	}
 
-	// -------------------------------------------------------------------------
-	// Hooks for subclasses interested in protocol state.
-	// -------------------------------------------------------------------------
-	
-	protected void protocolState(int index, State state) {
-		
-	}
-	
 	protected SimpleEDSim parent() {
 		return fParent;
 	}

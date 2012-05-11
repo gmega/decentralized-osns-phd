@@ -81,15 +81,16 @@ public class SimpleEDSim implements Runnable, INetwork {
 			Schedulable p = fQueue.remove();
 			fTime = p.time();
 			p.scheduled(fTime, this);
-			if (!p.isExpired()) {
-				fQueue.add(p);
-			}
-
+			
 			updateProcessCount(p);
-
+			
 			// Only run the simulations if burn in time is over.
 			if (fTime >= fBurnin) {
 				notifyObservers(p);
+			}
+			
+			if (!p.isExpired()) {
+				fQueue.add(p);
 			}
 		}
 	}
@@ -97,12 +98,7 @@ public class SimpleEDSim implements Runnable, INetwork {
 	// -------------------------------------------------------------------------
 	
 	public void schedule(Schedulable schedulable) {
-		schedule(schedulable, false);
-	}
-
-	public void schedule(Schedulable schedulable, boolean postBurnin) {
-		double time = postBurnin ? postBurninTime() : currentTime();
-		if (schedulable.time() < time) {
+		if (schedulable.time() < fTime) {
 			throw new IllegalStateException("Can't schedule "
 					+ "event in the past (" + fTime + " > "
 					+ schedulable.time() + ")");

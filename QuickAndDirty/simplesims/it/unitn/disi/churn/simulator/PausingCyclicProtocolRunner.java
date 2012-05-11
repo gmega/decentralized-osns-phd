@@ -5,35 +5,37 @@ import it.unitn.disi.churn.simulator.ICyclicProtocol.State;
 public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		CyclicProtocolRunner<K> {
 
-	private boolean[] fActive;
-
-	private int fActiveCount = 0;
-
 	private PausingSchedulable fSchedulable;
 
 	public PausingCyclicProtocolRunner(K[] protocols, double period, int type) {
 		super(protocols);
-		fActive = new boolean[protocols.length];
 		fSchedulable = new PausingSchedulable(period, type);
-		for (int i = 0; i < protocols.length; i++) {
-			protocolState(i, protocols[i].getState());
-		}
+		update();
 	}
 
 	@Override
-	protected void protocolState(int index, State state) {
-		fActiveCount = mark(fActive, index, state == State.ACTIVE, fActiveCount);
-		if (fActiveCount == 0) {
-			fSchedulable.pause();
-		}
+	public void stateShifted(INetwork parent, double time,
+			Schedulable schedulable) {
+		super.stateShifted(parent, time, schedulable);
+		update();
 	}
 
-	private int mark(boolean[] array, int index, boolean state, int cardinality) {
-		if (array[index] != state) {
-			cardinality += state ? 1 : -1;
-			array[index] = state;
+	private void update() {
+		int active = 0;
+		for (int i = 0; i < fProtocol.length; i++) {
+			if (fProtocol[i].getState() == State.ACTIVE) {
+				active++;
+			}
 		}
-		return cardinality;
+		
+		if (active == 0) {
+			/**
+			 * Stops scheduling the cyclic protocol. It will only be scheduled
+			 * again once our IEventObserver is triggered, i.e, when some node
+			 * comes up in the network.
+			 */
+			fSchedulable.pause();
+		} 
 	}
 
 	public IEventObserver networkObserver() {
@@ -45,7 +47,7 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 				if (!process.isUp()) {
 					return;
 				}
-				fSchedulable.resume(time);
+				fSchedulable.resume();
 			}
 
 			@Override
@@ -81,14 +83,17 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 			fPaused = true;
 		}
 
-		public void resume(double time) {
+		public void resume() {
 			if (!fPaused) {
 				return;
 			}
 			fPaused = false;
-			setTime(Math.ceil(time / fPeriod) * fPeriod);
-			parent().schedule(this, true);
+			setTime(Math.ceil(parent().currentTime() / fPeriod) * fPeriod);
+			parent().schedule(this);
 		}
 
+		public String toString() {
+			return "Protocol cycle at " + time();
+		}
 	}
 }
