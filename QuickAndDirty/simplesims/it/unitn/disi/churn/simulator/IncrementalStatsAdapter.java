@@ -1,8 +1,6 @@
 package it.unitn.disi.churn.simulator;
 
 
-import java.io.PrintStream;
-
 import peersim.util.IncrementalStats;
 
 public class IncrementalStatsAdapter implements IValueObserver {
@@ -23,8 +21,8 @@ public class IncrementalStatsAdapter implements IValueObserver {
 	}
 
 	@Override
-	public void print(PrintStream out) {
-		out.println(fStats.toString());
+	public String toString() {
+		return fStats.toString();
 	}
 	
 }

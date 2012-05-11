@@ -129,7 +129,7 @@ public class SyncEstimatorCLI {
 		}
 
 		for (IValueObserver stat : stats) {
-			stat.print(System.out);
+			System.out.println(stats.toString());
 		}
 	}
 

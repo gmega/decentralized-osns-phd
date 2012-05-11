@@ -2,6 +2,15 @@ package it.unitn.disi.churn.simulator;
 
 import it.unitn.disi.churn.simulator.ICyclicProtocol.State;
 
+/**
+ * {@link PausingCyclicProtocolRunner} stops scheduling the cyclic protocol when
+ * all nodes go quiescent, until there is a change in the underlying network (a
+ * node logs in).
+ * 
+ * @author giuliano
+ * 
+ * @param <K>
+ */
 public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		CyclicProtocolRunner<K> {
 
@@ -27,7 +36,7 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 				active++;
 			}
 		}
-		
+
 		if (active == 0) {
 			/**
 			 * Stops scheduling the cyclic protocol. It will only be scheduled
@@ -35,7 +44,7 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 			 * comes up in the network.
 			 */
 			fSchedulable.pause();
-		} 
+		}
 	}
 
 	public IEventObserver networkObserver() {

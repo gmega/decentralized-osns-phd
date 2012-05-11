@@ -99,10 +99,6 @@ public class SamplingExperiment implements ITransformer {
 		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
 				new IValueObserver() {
 					@Override
-					public void print(PrintStream out) {
-					}
-
-					@Override
 					public void observe(double value) {
 						stats.add(value);
 						System.out.println(stats.getAverage());
@@ -115,10 +111,6 @@ public class SamplingExperiment implements ITransformer {
 	private void burninSamples() {
 		final IncrementalStats stats = new IncrementalStats();
 		IValueObserver obs = new IValueObserver() {
-			@Override
-			public void print(PrintStream out) {
-			}
-
 			@Override
 			public void observe(double value) {
 				stats.add(value);
