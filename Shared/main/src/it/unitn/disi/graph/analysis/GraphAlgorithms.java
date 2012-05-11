@@ -136,6 +136,8 @@ public class GraphAlgorithms {
 		dijkstra(graph, NULL_FILTER, source, weights, minDists, previous);
 	}
 
+	// --------------------------------------------------------------------------
+
 	/**
 	 * Implementation of Dijkstra's algorithm using priority queues.
 	 * 
@@ -194,6 +196,8 @@ public class GraphAlgorithms {
 		}
 	}
 
+	// --------------------------------------------------------------------------
+
 	/**
 	 * Computes the size of a path returned by a call do
 	 * {@link #dijkstra(IndexedNeighborGraph, int, double[][], double[], int[])}
@@ -211,6 +215,8 @@ public class GraphAlgorithms {
 	public static int dijkstraPathSize(int[] previous, int target) {
 		return traverse(previous, target, null, -1);
 	}
+
+	// --------------------------------------------------------------------------
 
 	/**
 	 * Reconstructs the path from a "previous" vector returned by a call to
@@ -236,6 +242,8 @@ public class GraphAlgorithms {
 		traverse(previous, target, path, lastPosition);
 	}
 
+	// --------------------------------------------------------------------------
+
 	private static int traverse(int[] previous, int target, int[] storage,
 			int offset) {
 		int size = 0;
@@ -258,9 +266,67 @@ public class GraphAlgorithms {
 		}
 	}
 
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Performs a depth-first search on a graph starting from a given source.
+	 * 
+	 * @param graph
+	 *            the graph on which to perform the DFS.
+	 * @param source
+	 *            source to start the search from.
+	 * @param reachable
+	 *            boolean array over which nodes that are reachable from the
+	 *            source will be marked as <code>true</code>, and the others
+	 *            will be marked as <code>false</code>.
+	 * @param filter
+	 *            an optional filter to exclude edges from the graph. If no
+	 *            filtering is desided, use {@link #NULL_FILTER}.
+	 */
+	public static void dfs(IndexedNeighborGraph graph, int source,
+			boolean[] reachable, IEdgeFilter filter) {
+		Arrays.fill(reachable, false);
+		reachable[source] = true;
+		recDFS(graph, source, reachable, filter);
+	}
+
+	// --------------------------------------------------------------------------
+
+	private static void recDFS(IndexedNeighborGraph graph, int source,
+			boolean[] reachable, IEdgeFilter filter) {
+		for (int i = 0; i < graph.degree(source); i++) {
+			int neighbor = graph.getNeighbor(source, i);
+			if (!reachable[neighbor] && !filter.isForbidden(source, neighbor)) {
+				reachable[neighbor] = true;
+				recDFS(graph, neighbor, reachable, filter);
+			}
+		}
+	}
+
+	// --------------------------------------------------------------------------
+
+	/**
+	 * An {@link IEdgeFilter} is a convenient way of excluding certain edges
+	 * from consideration under the graph algorithms which support them.
+	 * 
+	 * @author giuliano
+	 */
 	public static interface IEdgeFilter {
+
+		/**
+		 * Tells whether or not an edge should be excluded from consideration.
+		 * 
+		 * @param i
+		 *            the vertex from which the edge departs.
+		 * @param j
+		 *            the vertex in which the edge is incident.
+		 * @return <code>true</code> if the edge should be considered, or
+		 *         <code>false</code> otherwise.
+		 */
 		public boolean isForbidden(int i, int j);
 	}
+
+	// --------------------------------------------------------------------------
 
 	public static final IEdgeFilter NULL_FILTER = new IEdgeFilter() {
 		@Override
@@ -269,4 +335,5 @@ public class GraphAlgorithms {
 		}
 	};
 
+	// --------------------------------------------------------------------------
 }
