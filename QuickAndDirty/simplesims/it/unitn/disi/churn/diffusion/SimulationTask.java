@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-public class SimulationTask implements Callable<double[]> {
+public class SimulationTask implements Callable<HFlood[]> {
 
 	private final double fBurnin;
 
@@ -37,6 +37,8 @@ public class SimulationTask implements Callable<double[]> {
 	private final YaoChurnConfigurator fYaoConf;
 
 	private final String fPeerSelector;
+	
+	private HFlood [] fProtocols;
 
 	public SimulationTask(double burnin, double period, Experiment experiment,
 			YaoChurnConfigurator yaoConf, int source, String peerSelector,
@@ -52,19 +54,19 @@ public class SimulationTask implements Callable<double[]> {
 	}
 
 	@Override
-	public double[] call() throws Exception {
+	public HFlood[] call() throws Exception {
 
-		HFlood[] protocols = protocols(fGraph, fRandom);
+		fProtocols = protocols(fGraph, fRandom);
 
 		PausingCyclicProtocolRunner<HFlood> ps = new PausingCyclicProtocolRunner<HFlood>(
 				fPeriod, 1, 0);
 
 		IProcess[] processes = processes(fExperiment, fSource, fGraph, fRandom,
-				protocols);
+				fProtocols);
 
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
-		HFlood source = protocols[fSource];
+		HFlood source = fProtocols[fSource];
 
 		// Triggers the dissemination process from the first login of the
 		// sender.
@@ -83,14 +85,7 @@ public class SimulationTask implements Callable<double[]> {
 		SimpleEDSim bcs = new SimpleEDSim(processes, observers, fBurnin);
 		bcs.run();
 
-		double base = source.latency();
-
-		double[] latencies = new double[fGraph.size()];
-		for (int i = 0; i < processes.length; i++) {
-			latencies[i] = (protocols[i].latency() - base);
-		}
-
-		return latencies;
+		return fProtocols;
 	}
 
 	private IProcess[] processes(Experiment experiment, int source,

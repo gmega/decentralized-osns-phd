@@ -5,7 +5,7 @@ import it.unitn.disi.churn.simulator.ICyclicProtocol.State;
 public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		IEventObserver {
 
-	private int fPid;
+	protected final int fPid;
 
 	private boolean fDone;
 

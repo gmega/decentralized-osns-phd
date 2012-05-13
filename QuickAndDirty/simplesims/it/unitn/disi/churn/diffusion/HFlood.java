@@ -154,11 +154,11 @@ public class HFlood implements ICyclicProtocol {
 		return fState;
 	}
 
-	private void markInitiallyReachable(boolean mark) {
+	private void partOfConnectedCore(boolean mark) {
 		fInitiallyReachable = mark;
 	}
 
-	public boolean wasInitiallyReachable() {
+	public boolean isPartOfConnectedCore() {
 		return fInitiallyReachable;
 	}
 
@@ -201,14 +201,10 @@ public class HFlood implements ICyclicProtocol {
 				}
 
 				HFlood protocol = (HFlood) process.getProtocol(fPid);
-				if (protocol.wasInitiallyReachable()
+				if (protocol.isPartOfConnectedCore()
 						&& protocol.latency() == Double.NEGATIVE_INFINITY) {
-					protocol.markInitiallyReachable(false);
+					protocol.partOfConnectedCore(false);
 					fReachable--;
-				}
-
-				if (fReachable == 0) {
-					fParent.done(this);
 				}
 			}
 
@@ -222,6 +218,7 @@ public class HFlood implements ICyclicProtocol {
 				if (process.id() == fId && process.isUp()) {
 					reached(time);
 					markReachable(network);
+					fParent.done(this);
 				}
 			}
 
@@ -234,14 +231,15 @@ public class HFlood implements ICyclicProtocol {
 				GraphAlgorithms.dfs(fGraph, fId, reachable, new IEdgeFilter() {
 					@Override
 					public boolean isForbidden(int i, int j) {
-						return network.process(j).isUp();
+						return !network.process(j).isUp();
 					}
 				});
 
+				fReachable = 0;
 				for (int i = 0; i < reachable.length; i++) {
 					if (reachable[i]) {
 						((HFlood) network.process(i).getProtocol(fPid))
-								.markInitiallyReachable(true);
+								.partOfConnectedCore(true);
 						fReachable++;
 					}
 				}

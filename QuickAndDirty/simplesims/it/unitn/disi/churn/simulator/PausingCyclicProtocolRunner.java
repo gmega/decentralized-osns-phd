@@ -31,7 +31,7 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 	private void update(INetwork net) {
 		int active = 0;
 		for (int i = 0; i < net.size(); i++) {
-			if (((ICyclicProtocol) net.process(i).getProtocol(i)).getState() == State.ACTIVE) {
+			if (((ICyclicProtocol) net.process(i).getProtocol(fPid)).getState() == State.ACTIVE) {
 				active++;
 			}
 		}
@@ -76,7 +76,7 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 
 	class PausingSchedulable extends CyclicSchedulable {
 
-		private boolean fPaused;
+		private boolean fPaused = true;
 
 		public PausingSchedulable(double period, int type) {
 			super(period, type);

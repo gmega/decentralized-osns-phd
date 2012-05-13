@@ -22,6 +22,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
+import peersim.util.IncrementalStats;
 
 @AutoConfig
 public class DiffusionExperiment implements ITransformer {
@@ -78,6 +79,9 @@ public class DiffusionExperiment implements ITransformer {
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
 				"id", "source", "target", "lsum");
 
+		TableWriter cCore = new TableWriter(new PrefixedWriter("CO:", oup),
+				"id", "source", "lsum", "size");
+
 		Integer row;
 		while ((row = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(row, provider);
@@ -87,7 +91,7 @@ public class DiffusionExperiment implements ITransformer {
 
 			int[] ids = provider.verticesOf(experiment.root);
 			double[] latencies = runExperiments(experiment,
-					MiscUtils.indexOf(ids, source), graph, fRepeats);
+					MiscUtils.indexOf(ids, source), ids, graph, fRepeats, cCore);
 
 			for (int i = 0; i < latencies.length; i++) {
 				writer.set("id", experiment.root);
@@ -100,7 +104,8 @@ public class DiffusionExperiment implements ITransformer {
 	}
 
 	private double[] runExperiments(Experiment experiment, int source,
-			IndexedNeighborGraph graph, int repetitions) throws Exception {
+			int[] ids, IndexedNeighborGraph graph, int repetitions,
+			TableWriter core) throws Exception {
 		double[] latencies = new double[graph.size()];
 
 		fExecutor.start(experiment.toString() + ", source: " + source
@@ -110,15 +115,33 @@ public class DiffusionExperiment implements ITransformer {
 					fYaoChurn, source, fSelector, graph, new Random()));
 		}
 
+		IncrementalStats stats = new IncrementalStats();
+
 		for (int i = 0; i < repetitions; i++) {
+			stats.reset();
+
 			Object value = fExecutor.consume();
 			if (value instanceof Throwable) {
 				((Throwable) value).printStackTrace();
 			} else {
-				double[] result = (double[]) value;
+				HFlood[] result = (HFlood[]) value;
+				double base = result[source].latency();
 				for (int j = 0; j < result.length; j++) {
-					latencies[j] += result[j];
+					double latency = result[j].latency() - base;
+					latencies[j] += latency;
+					if (result[j].isPartOfConnectedCore()) {
+						stats.add(latency);
+					}
 				}
+			}
+			
+			if (fYaoChurn != null) {
+				core.set("id", experiment.root);
+				core.set("source", ids[source]);
+				core.set("lsum", stats.getSum());
+				core.set("lsqrsum", stats.getSqrSum());
+				core.set("size", stats.getN());
+				core.emmitRow();
 			}
 		}
 
