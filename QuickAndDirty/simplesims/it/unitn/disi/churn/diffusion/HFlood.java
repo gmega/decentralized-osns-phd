@@ -1,25 +1,28 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.BitSet;
-
 import it.unitn.disi.churn.diffusion.churn.ILiveTransformer;
+import it.unitn.disi.churn.simulator.ICyclicProtocol;
 import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.ICyclicProtocol;
-import it.unitn.disi.churn.simulator.CyclicProtocolRunner;
 import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;
+
+import java.util.BitSet;
 
 public class HFlood implements ICyclicProtocol {
 
 	private final IndexedNeighborGraph fGraph;
 
 	private final int fId;
+
+	private final int fPid;
 
 	private double fReachTime;
 
@@ -33,9 +36,12 @@ public class HFlood implements ICyclicProtocol {
 
 	private State fState = State.WAITING;
 
-	public HFlood(IndexedNeighborGraph graph,
-			IPeerSelector selector, ILiveTransformer transformer, int id) {
+	private boolean fInitiallyReachable = false;
+
+	public HFlood(IndexedNeighborGraph graph, IPeerSelector selector,
+			ILiveTransformer transformer, int id, int pid) {
 		fId = id;
+		fPid = pid;
 		fGraph = graph;
 		fHistory = new BitSet();
 		fMappedHistory = new BitSet();
@@ -51,8 +57,7 @@ public class HFlood implements ICyclicProtocol {
 	}
 
 	@Override
-	public void nextCycle(double time, INetwork sim,
-			CyclicProtocolRunner<? extends ICyclicProtocol> protocols) {
+	public void nextCycle(double time, INetwork sim, IProcess process) {
 
 		// Are we done, down, or not reached yet?
 		if (fState == State.DONE || !sim.process(fId).isUp()
@@ -68,13 +73,12 @@ public class HFlood implements ICyclicProtocol {
 			fState = State.WAITING;
 			return;
 		}
-		
+
 		// Otherwise we're active.
 		fState = State.ACTIVE;
 
 		// Sends the message and gets the feedback.
-		HFlood neighbor = (HFlood) protocols
-				.get(neighborId);
+		HFlood neighbor = (HFlood) sim.process(neighborId).getProtocol(fPid);
 		fHistory.or(neighbor.sendMessage(fHistory, time));
 
 		checkDone();
@@ -150,6 +154,14 @@ public class HFlood implements ICyclicProtocol {
 		return fState;
 	}
 
+	private void markInitiallyReachable(boolean mark) {
+		fInitiallyReachable = mark;
+	}
+
+	public boolean wasInitiallyReachable() {
+		return fInitiallyReachable;
+	}
+
 	/**
 	 * If we want to make this node the source, we should register the protocol
 	 * as a listener to state changes for the network.
@@ -163,13 +175,75 @@ public class HFlood implements ICyclicProtocol {
 
 			private SimpleEDSim fParent;
 
+			private int fReachable = -1;
+
 			@Override
-			public void stateShifted(INetwork parent, double time,
+			public void stateShifted(INetwork network, double time,
 					Schedulable schedulable) {
+
 				IProcess process = (IProcess) schedulable;
+
+				if (sourceReached()) {
+					removeIfDown(network, time, process);
+				} else {
+					exploreFromSource(network, time, process);
+				}
+			}
+
+			/**
+			 * Removes from the initial search any node that went down before
+			 * being reached by the push protocol.
+			 */
+			private void removeIfDown(INetwork network, double time,
+					IProcess process) {
+				if (process.isUp()) {
+					return;
+				}
+
+				HFlood protocol = (HFlood) process.getProtocol(fPid);
+				if (protocol.wasInitiallyReachable()
+						&& protocol.latency() == Double.NEGATIVE_INFINITY) {
+					protocol.markInitiallyReachable(false);
+					fReachable--;
+				}
+
+				if (fReachable == 0) {
+					fParent.done(this);
+				}
+			}
+
+			/**
+			 * Identifies the initial connected core of nodes, marking those
+			 * that are reachable from a depth-first search started from the
+			 * source.
+			 */
+			private void exploreFromSource(INetwork network, double time,
+					IProcess process) {
 				if (process.id() == fId && process.isUp()) {
 					reached(time);
-					fParent.done(this);
+					markReachable(network);
+				}
+			}
+
+			private boolean sourceReached() {
+				return fReachable >= 0;
+			}
+
+			private void markReachable(final INetwork network) {
+				boolean[] reachable = new boolean[fGraph.size()];
+				GraphAlgorithms.dfs(fGraph, fId, reachable, new IEdgeFilter() {
+					@Override
+					public boolean isForbidden(int i, int j) {
+						return network.process(j).isUp();
+					}
+				});
+
+				for (int i = 0; i < reachable.length; i++) {
+					if (reachable[i]) {
+						((HFlood) network.process(i).getProtocol(fPid))
+								.markInitiallyReachable(true);
+						fReachable++;
+					}
 				}
 			}
 

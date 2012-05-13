@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.utils.streams.ResettableFileInputStream;
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import it.unitn.disi.utils.streams.ResettableFileInputStream;
-import it.unitn.disi.utils.tabular.TableReader;
 
 public class IndexedReader {
 

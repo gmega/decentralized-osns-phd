@@ -1,16 +1,16 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.diffusion.churn.CachingTransformer;
 import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IProcess.State;
 import it.unitn.disi.churn.simulator.PausingCyclicProtocolRunner;
 import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
-import it.unitn.disi.churn.simulator.IProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.collections.Pair;
@@ -54,16 +54,24 @@ public class SimulationTask implements Callable<double[]> {
 	@Override
 	public double[] call() throws Exception {
 
-		PausingCyclicProtocolRunner<HFlood> ps = protocols(fGraph, fRandom);
-		IProcess[] processes = processes(fExperiment, fSource, fGraph, fRandom);
+		HFlood[] protocols = protocols(fGraph, fRandom);
+
+		PausingCyclicProtocolRunner<HFlood> ps = new PausingCyclicProtocolRunner<HFlood>(
+				fPeriod, 1, 0);
+
+		IProcess[] processes = processes(fExperiment, fSource, fGraph, fRandom,
+				protocols);
 
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
+		HFlood source = protocols[fSource];
+
 		// Triggers the dissemination process from the first login of the
 		// sender.
-		observers.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, ps.get(fSource)
-						.sourceEventObserver()));
+		observers
+				.add(new Pair<Integer, IEventObserver>(
+						IProcess.PROCESS_SCHEDULABLE_TYPE, source
+								.sourceEventObserver()));
 
 		// Resumes the cyclic protocol whenever the network state changes.
 		observers.add(new Pair<Integer, IEventObserver>(
@@ -75,30 +83,31 @@ public class SimulationTask implements Callable<double[]> {
 		SimpleEDSim bcs = new SimpleEDSim(processes, observers, fBurnin);
 		bcs.run();
 
-		double base = ((HFlood) ps.get(fSource)).latency();
+		double base = source.latency();
 
 		double[] latencies = new double[fGraph.size()];
 		for (int i = 0; i < processes.length; i++) {
-			latencies[i] = (((HFlood) ps.get(i)).latency() - base);
+			latencies[i] = (protocols[i].latency() - base);
 		}
 
 		return latencies;
 	}
 
 	private IProcess[] processes(Experiment experiment, int source,
-			IndexedNeighborGraph graph, Random r) {
+			IndexedNeighborGraph graph, Random r, HFlood[] protos) {
 
 		IProcess[] rp = new IProcess[graph.size()];
 
 		for (int i = 0; i < rp.length; i++) {
+			Object[] pArray = new Object[] { protos[i] };
 			if (staticExperiment(experiment)) {
-				rp[i] = new FixedProcess(i, State.up);
+				rp[i] = new FixedProcess(i, State.up, pArray);
 			} else {
 				IDistributionGenerator dgen = fYaoConf.distributionGenerator();
 				rp[i] = new RenewalProcess(i,
 						dgen.uptimeDistribution(experiment.lis[i]),
 						dgen.downtimeDistribution(experiment.dis[i]),
-						State.down);
+						State.down, pArray);
 			}
 		}
 		return rp;
@@ -108,19 +117,16 @@ public class SimulationTask implements Callable<double[]> {
 		return experiment.lis == null;
 	}
 
-	private PausingCyclicProtocolRunner<HFlood> protocols(
-			IndexedNeighborGraph graph, Random r) {
+	private HFlood[] protocols(IndexedNeighborGraph graph, Random r) {
 		HFlood[] protos = new HFlood[graph.size()];
 		CachingTransformer caching = new CachingTransformer(
 				new LiveTransformer());
 
 		for (int i = 0; i < graph.size(); i++) {
-			protos[i] = new HFlood(graph, peerSelector(r), caching, i);
+			protos[i] = new HFlood(graph, peerSelector(r), caching, i, 0);
 		}
 
-		PausingCyclicProtocolRunner<HFlood> ps = new PausingCyclicProtocolRunner<HFlood>(
-				protos, fPeriod, 1);
-		return ps;
+		return protos;
 	}
 
 	private IPeerSelector peerSelector(Random r) {

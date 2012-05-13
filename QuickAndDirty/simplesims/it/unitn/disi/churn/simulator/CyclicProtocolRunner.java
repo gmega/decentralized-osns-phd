@@ -5,18 +5,14 @@ import it.unitn.disi.churn.simulator.ICyclicProtocol.State;
 public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		IEventObserver {
 
-	protected K[] fProtocol;
+	private int fPid;
 
 	private boolean fDone;
 
 	private SimpleEDSim fParent;
 
-	public CyclicProtocolRunner(K[] protocols) {
-		fProtocol = protocols;
-	}
-
-	public K get(int idx) {
-		return fProtocol[idx];
+	public CyclicProtocolRunner(int pid) {
+		fPid = pid;
 	}
 
 	@Override
@@ -29,16 +25,19 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 			Schedulable schedulable) {
 
 		int done = 0;
-		for (int i = 0; i < fProtocol.length; i++) {
-			State state = fProtocol[i].getState();
+		for (int i = 0; i < parent.size(); i++) {
+			IProcess process = parent.process(i);
+			ICyclicProtocol protocol = (ICyclicProtocol) process
+					.getProtocol(fPid);
+			State state = protocol.getState();
 			if (state != State.DONE) {
-				fProtocol[i].nextCycle(time, parent, this);
+				protocol.nextCycle(time, parent, process);
 			} else {
 				done++;
 			}
 		}
 
-		if (done == fProtocol.length) {
+		if (done == parent.size()) {
 			fDone = true;
 			fParent.done(this);
 		}

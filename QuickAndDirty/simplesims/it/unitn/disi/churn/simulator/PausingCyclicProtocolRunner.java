@@ -16,23 +16,22 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 
 	private PausingSchedulable fSchedulable;
 
-	public PausingCyclicProtocolRunner(K[] protocols, double period, int type) {
-		super(protocols);
+	public PausingCyclicProtocolRunner(double period, int type, int pid) {
+		super(pid);
 		fSchedulable = new PausingSchedulable(period, type);
-		update();
 	}
 
 	@Override
 	public void stateShifted(INetwork parent, double time,
 			Schedulable schedulable) {
 		super.stateShifted(parent, time, schedulable);
-		update();
+		update(parent);
 	}
 
-	private void update() {
+	private void update(INetwork net) {
 		int active = 0;
-		for (int i = 0; i < fProtocol.length; i++) {
-			if (fProtocol[i].getState() == State.ACTIVE) {
+		for (int i = 0; i < net.size(); i++) {
+			if (((ICyclicProtocol) net.process(i).getProtocol(i)).getState() == State.ACTIVE) {
 				active++;
 			}
 		}

@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.util.Arrays;
-
+import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.INetwork;
+import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.RenewalProcess;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+
+import java.util.Arrays;
 
 /**
  * Fast, single-source temporal connectivity experiment. Supports special

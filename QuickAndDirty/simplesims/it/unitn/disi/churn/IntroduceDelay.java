@@ -1,5 +1,9 @@
 package it.unitn.disi.churn;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -7,10 +11,6 @@ import java.io.PrintStream;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
-
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class IntroduceDelay implements ITransformer {

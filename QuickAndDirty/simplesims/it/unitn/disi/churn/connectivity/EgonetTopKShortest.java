@@ -1,5 +1,17 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.MatrixReader;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.analysis.TopKShortest;
+import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -15,17 +27,6 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.MatrixReader;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
-import it.unitn.disi.utils.streams.PrefixedWriter;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class EgonetTopKShortest implements ITransformer {

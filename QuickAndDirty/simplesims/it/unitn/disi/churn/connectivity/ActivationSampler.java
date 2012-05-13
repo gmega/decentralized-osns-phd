@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.io.OutputStreamWriter;
-
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.io.OutputStreamWriter;
 
 public class ActivationSampler {
 

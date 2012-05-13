@@ -1,9 +1,9 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.config.AssignmentReader;
+import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;

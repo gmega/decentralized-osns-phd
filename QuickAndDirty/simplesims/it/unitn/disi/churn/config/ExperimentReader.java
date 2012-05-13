@@ -1,5 +1,11 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.churn.config.AssignmentReader.Assignment;
+import it.unitn.disi.churn.config.IndexedReader.IndexEntry;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,12 +17,6 @@ import java.util.NoSuchElementException;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.MissingParameterException;
-
-import it.unitn.disi.churn.config.AssignmentReader.Assignment;
-import it.unitn.disi.churn.config.IndexedReader.IndexEntry;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.tabular.TableReader;
 
 @AutoConfig
 public class ExperimentReader {

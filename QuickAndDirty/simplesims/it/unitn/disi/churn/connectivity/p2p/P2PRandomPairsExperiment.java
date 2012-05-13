@@ -1,5 +1,22 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import gnu.trove.list.array.TIntArrayList;
+import it.unitn.disi.churn.config.AssignmentReader;
+import it.unitn.disi.churn.config.AssignmentReader.Assignment;
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.MatrixReader;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.connectivity.TEExperimentHelper;
+import it.unitn.disi.cli.IMultiTransformer;
+import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.BitSet;
@@ -12,22 +29,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-import gnu.trove.list.array.TIntArrayList;
-import it.unitn.disi.churn.config.AssignmentReader;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.MatrixReader;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.config.AssignmentReader.Assignment;
-import it.unitn.disi.churn.connectivity.TEExperimentHelper;
-import it.unitn.disi.cli.IMultiTransformer;
-import it.unitn.disi.cli.StreamProvider;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.streams.PrefixedWriter;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class P2PRandomPairsExperiment implements IMultiTransformer {

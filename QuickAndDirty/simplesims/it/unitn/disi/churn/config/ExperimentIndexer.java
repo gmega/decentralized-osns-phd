@@ -1,5 +1,10 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableReader.ILineReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,11 +13,6 @@ import java.io.RandomAccessFile;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableReader.ILineReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class ExperimentIndexer implements ITransformer {

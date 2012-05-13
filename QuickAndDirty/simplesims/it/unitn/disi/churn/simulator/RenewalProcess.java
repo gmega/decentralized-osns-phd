@@ -3,7 +3,7 @@ package it.unitn.disi.churn.simulator;
 import it.unitn.disi.random.IDistribution;
 
 public class RenewalProcess extends IProcess {
-	
+
 	private final int fId;
 
 	private final IDistribution fUp;
@@ -13,21 +13,27 @@ public class RenewalProcess extends IProcess {
 	private State fState;
 
 	private double fNextEvent;
-	
+
 	private double fUptime;
 
 	public RenewalProcess(int id, IDistribution upDown, State initial) {
-		this(id, upDown, upDown, initial);
+		this(id, upDown, upDown, initial, null);
 	}
 
 	public RenewalProcess(int id, IDistribution up, IDistribution down,
 			State initial) {
+		this(id, up, down, initial, null);
+	}
+
+	public RenewalProcess(int id, IDistribution up, IDistribution down,
+			State initial, Object[] protocols) {
+		super(protocols);
 		fId = id;
 		fUp = up;
 		fDown = down;
 		fState = initial;
 	}
-	
+
 	// -------------------------------------------------------------------------
 	// Schedulable interface.
 	// -------------------------------------------------------------------------
@@ -39,7 +45,7 @@ public class RenewalProcess extends IProcess {
 		case down:
 			increment = fUp.sample();
 			fState = State.up;
-			// Overestimate of uptime. 
+			// Overestimate of uptime.
 			fUptime += increment;
 			break;
 
@@ -52,8 +58,10 @@ public class RenewalProcess extends IProcess {
 
 		fNextEvent += increment;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.churn.simulator.IProcess#id()
 	 */
 	@Override
@@ -61,20 +69,26 @@ public class RenewalProcess extends IProcess {
 		return false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.churn.simulator.IProcess#id()
 	 */
 	@Override
 	public double time() {
 		return fNextEvent;
 	}
-	
+
 	// -------------------------------------------------------------------------
 	// IProcess interface.
 	// -------------------------------------------------------------------------
 
-	/* (non-Javadoc)
-	 * @see it.unitn.disi.churn.simulator.IProcess#uptime(it.unitn.disi.churn.simulator.SimpleEDSim)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * it.unitn.disi.churn.simulator.IProcess#uptime(it.unitn.disi.churn.simulator
+	 * .SimpleEDSim)
 	 */
 	@Override
 	public double uptime(SimpleEDSim parent) {
@@ -83,41 +97,47 @@ public class RenewalProcess extends IProcess {
 			// Corrects the uptime overestimation.
 			delta = fNextEvent - parent.currentTime();
 		}
-		
+
 		// Makes sure we're not doing anything funky.
-		if (fUptime - delta < 0){ 
+		if (fUptime - delta < 0) {
 			throw new IllegalStateException("Internal error.");
 		}
-		
+
 		return fUptime - delta;
 	}
 
 	@Override
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.churn.simulator.IProcess#state()
 	 */
 	public boolean isUp() {
 		return state() == State.up;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.churn.simulator.IProcess#state()
 	 */
 	@Override
 	public State state() {
 		return fState;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see it.unitn.disi.churn.simulator.IProcess#id()
 	 */
 	@Override
 	public int id() {
 		return fId;
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public String toString() {
 		return "[" + fId + ", " + fState + "]";
 	}

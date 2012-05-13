@@ -1,9 +1,9 @@
 package it.unitn.disi.churn.config;
 
 import it.unitn.disi.network.churn.yao.AveragesFromFile;
-import it.unitn.disi.network.churn.yao.YaoPresets;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
+import it.unitn.disi.network.churn.yao.YaoPresets;
 
 import java.util.Properties;
 import java.util.Random;

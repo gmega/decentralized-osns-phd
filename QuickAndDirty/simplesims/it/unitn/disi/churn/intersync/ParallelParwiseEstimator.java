@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.intersync;
 
+import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.IProcess.State;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
-import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.IValueObserver;
 import it.unitn.disi.churn.simulator.RenewalProcess;
+import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.collections.Pair;

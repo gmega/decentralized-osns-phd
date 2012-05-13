@@ -1,14 +1,5 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Random;
-
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.config.IResolver;
-import peersim.config.ObjectCreator;
-
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
@@ -22,6 +13,15 @@ import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Random;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 
 @AutoConfig
 public class DiffusionExperiment implements ITransformer {

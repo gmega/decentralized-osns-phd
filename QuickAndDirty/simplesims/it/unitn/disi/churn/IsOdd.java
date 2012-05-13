@@ -1,13 +1,13 @@
 package it.unitn.disi.churn;
 
+import it.unitn.disi.random.GeneralizedPareto;
+import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.random.UniformDistribution;
+
 import java.util.PriorityQueue;
 import java.util.Random;
 
 import peersim.util.IncrementalStats;
-
-import it.unitn.disi.random.GeneralizedPareto;
-import it.unitn.disi.random.IDistribution;
-import it.unitn.disi.random.UniformDistribution;
 
 public class IsOdd {
 	public static void main(String[] args) {

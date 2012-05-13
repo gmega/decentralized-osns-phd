@@ -10,12 +10,17 @@ public class FixedProcess extends IProcess {
 	private final State fState;
 
 	private final int fId;
-	
+
 	public FixedProcess(int id, State state) {
+		this(id, state, null);
+	}
+
+	public FixedProcess(int id, State state, Object[] protocols) {
+		super(protocols);
 		fState = state;
 		fId = id;
 	}
-	
+
 	@Override
 	public double uptime(SimpleEDSim parent) {
 		switch (fState) {

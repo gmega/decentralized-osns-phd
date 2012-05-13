@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
+import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
+import it.unitn.disi.churn.simulator.IValueObserver;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.IValueObserver;
 
 /**
  * Very simple experiment for sampling the synchronization time of two nodes.

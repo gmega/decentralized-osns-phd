@@ -1,5 +1,10 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.churn.config.SequentialAttributeReader;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.collections.Pair;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
@@ -9,10 +14,6 @@ import java.util.Random;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import it.unitn.disi.churn.config.SequentialAttributeReader;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.collections.Pair;
 
 @AutoConfig
 public class P2PDrawCloudBitmap implements ITransformer {

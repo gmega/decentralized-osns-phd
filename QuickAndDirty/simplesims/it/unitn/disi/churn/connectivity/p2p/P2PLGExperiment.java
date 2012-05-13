@@ -1,14 +1,5 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.Future;
-
-import org.lambda.functions.implementations.F0;
-
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.connectivity.SimulationResults;
 import it.unitn.disi.churn.connectivity.SimulationTask;
@@ -23,10 +14,19 @@ import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.Future;
+
+import org.lambda.functions.implementations.F0;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;

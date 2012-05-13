@@ -1,5 +1,13 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.large.catalog.CatalogReader;
+import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.large.catalog.PartialLoader;
+import it.unitn.disi.unitsim.ListGraphGenerator;
+import it.unitn.disi.utils.MiscUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.rmi.NotBoundException;
@@ -12,13 +20,6 @@ import org.apache.log4j.Logger;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
-import it.unitn.disi.unitsim.ListGraphGenerator;
-import it.unitn.disi.utils.MiscUtils;
 
 @AutoConfig
 public class GraphConfigurator {

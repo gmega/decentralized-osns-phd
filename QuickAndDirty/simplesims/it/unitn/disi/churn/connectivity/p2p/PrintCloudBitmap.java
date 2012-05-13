@@ -1,5 +1,8 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -9,8 +12,6 @@ import java.util.BitSet;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.utils.tabular.TableReader;
 
 @AutoConfig
 public class PrintCloudBitmap implements ITransformer {

@@ -1,10 +1,5 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.BitSet;
-import java.util.Random;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
@@ -13,6 +8,11 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.SparseMultiCounter;
+
+import java.util.BitSet;
+import java.util.Random;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

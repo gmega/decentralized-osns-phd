@@ -1,12 +1,13 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.util.Arrays;
-
+import it.unitn.disi.churn.simulator.IEventObserver;
 import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.churn.simulator.Schedulable;
 import it.unitn.disi.churn.simulator.SimpleEDSim;
-import it.unitn.disi.churn.simulator.IEventObserver;
+import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
+
+import java.util.Arrays;
 
 /**
  * {@link CloudSim} is a simpler {@link TemporalConnectivityEstimator} which

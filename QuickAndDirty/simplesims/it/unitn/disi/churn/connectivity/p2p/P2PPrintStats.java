@@ -1,5 +1,12 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -8,12 +15,6 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.graph.GraphAlgorithms;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class P2PPrintStats implements ITransformer {

@@ -1,5 +1,15 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.MatrixReader;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.CallbackThreadPoolExecutor;
+import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -12,16 +22,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.MatrixReader;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class P2PEgonetShortestPath implements ITransformer {

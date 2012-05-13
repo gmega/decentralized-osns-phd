@@ -1,13 +1,5 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
 import it.unitn.disi.churn.simulator.FixedProcess;
 import it.unitn.disi.churn.simulator.INetwork;
@@ -18,8 +10,15 @@ import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.collections.Triplet;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

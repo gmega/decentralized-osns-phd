@@ -1,5 +1,13 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
+import it.unitn.disi.utils.OrderingUtils;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Random;
@@ -8,13 +16,6 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
-import it.unitn.disi.utils.OrderingUtils;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 /**
  * Selects an ego-centric network sample uniformly at random from the underlying

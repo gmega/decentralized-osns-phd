@@ -6,8 +6,7 @@ public interface ICyclicProtocol {
 		ACTIVE, WAITING, DONE;
 	}
 
-	public void nextCycle(double time, INetwork sim,
-			CyclicProtocolRunner<? extends ICyclicProtocol> protocols);
+	public void nextCycle(double time, INetwork sim, IProcess process);
 
 	public State getState();
 
