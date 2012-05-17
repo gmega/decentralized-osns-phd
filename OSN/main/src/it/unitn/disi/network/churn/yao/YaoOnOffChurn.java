@@ -2,7 +2,7 @@ package it.unitn.disi.network.churn.yao;
 
 import it.unitn.disi.network.churn.OnOffState;
 import it.unitn.disi.network.churn.RenewalChurnNetwork;
-import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.simulator.random.IDistribution;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;

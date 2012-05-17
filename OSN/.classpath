@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/args4j-2.0.9.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/Lambda.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -6,7 +6,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
-import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.simulator.random.IDistribution;
 
 /**
  * Random number generators for distributions taken from Leskovec and Horvitz's

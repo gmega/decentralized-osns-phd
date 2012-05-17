@@ -1,6 +1,6 @@
 package it.unitn.disi.network.churn.yao;
 
-import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.tabular.ITableWriter;

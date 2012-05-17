@@ -6,10 +6,10 @@ import org.lambda.functions.implementations.F1;
 
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
-import it.unitn.disi.random.Exponential;
-import it.unitn.disi.random.GeneralizedPareto;
-import it.unitn.disi.random.IDistribution;
-import it.unitn.disi.random.UniformDistribution;
+import it.unitn.disi.simulator.random.Exponential;
+import it.unitn.disi.simulator.random.GeneralizedPareto;
+import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.random.UniformDistribution;
 import peersim.core.CommonState;
 
 @SuppressWarnings("unchecked")

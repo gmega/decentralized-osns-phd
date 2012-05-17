@@ -10,7 +10,7 @@ import peersim.config.ObjectCreator;
 import peersim.config.resolvers.CompositeResolver;
 
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
-import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
 
