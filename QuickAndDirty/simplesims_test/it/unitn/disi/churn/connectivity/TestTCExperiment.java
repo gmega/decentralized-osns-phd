@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.IProcess.State;
-import it.unitn.disi.churn.simulator.RenewalProcess;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.random.IDistribution;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.IProcess.State;
+import it.unitn.disi.simulator.RenewalProcess;
+import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;

@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.simulator.FixedProcess;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.IProcess.State;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.simulator.FixedProcess;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.IProcess.State;
 import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.SparseMultiCounter;
 
