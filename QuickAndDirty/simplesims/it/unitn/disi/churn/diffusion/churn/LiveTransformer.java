@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.diffusion.churn;
 
 import gnu.trove.list.array.TIntArrayList;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.IProcess;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.SparseIDMapper;
 import it.unitn.disi.utils.collections.Triplet;

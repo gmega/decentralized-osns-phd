@@ -4,12 +4,12 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.simulator.TaskExecutor;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
+import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -43,6 +43,9 @@ public class DiffusionExperiment implements ITransformer {
 
 	@Attribute("cores")
 	private int fCores;
+
+	@Attribute(value = "summaryonly", defaultValue = "false")
+	private boolean fSummary;
 
 	private YaoChurnConfigurator fYaoChurn;
 
@@ -78,10 +81,12 @@ public class DiffusionExperiment implements ITransformer {
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
 				"id", "source", "target", "lsum");
-
+		
 		TableWriter cCore = new TableWriter(new PrefixedWriter("CO:", oup),
 				"id", "source", "lsum", "size");
 
+		IncrementalStats stats = new IncrementalStats();
+		
 		Integer row;
 		while ((row = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(row, provider);
@@ -93,12 +98,26 @@ public class DiffusionExperiment implements ITransformer {
 			double[] latencies = runExperiments(experiment,
 					MiscUtils.indexOf(ids, source), ids, graph, fRepeats, cCore);
 
-			for (int i = 0; i < latencies.length; i++) {
+			if (fSummary) {
+				stats.reset();
+				for (int i = 0; i < latencies.length; i++) {
+					stats.add(latencies[i]);
+				}
+				
 				writer.set("id", experiment.root);
 				writer.set("source", source);
-				writer.set("target", ids[i]);
-				writer.set("lsum", latencies[i]);
+				writer.set("target", stats.getN());
+				writer.set("lsum", stats.getSum());
 				writer.emmitRow();
+				
+			} else {
+				for (int i = 0; i < latencies.length; i++) {
+					writer.set("id", experiment.root);
+					writer.set("source", source);
+					writer.set("target", ids[i]);
+					writer.set("lsum", latencies[i]);
+					writer.emmitRow();
+				}
 			}
 		}
 	}
@@ -134,7 +153,7 @@ public class DiffusionExperiment implements ITransformer {
 					}
 				}
 			}
-			
+
 			if (fYaoChurn != null) {
 				core.set("id", experiment.root);
 				core.set("source", ids[source]);

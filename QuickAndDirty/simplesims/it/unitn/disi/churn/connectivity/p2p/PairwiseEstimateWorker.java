@@ -4,10 +4,9 @@ import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
-import it.unitn.disi.churn.simulator.IValueObserver;
-import it.unitn.disi.churn.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.statistics.StatUtils;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.streams.PrefixedWriter;
@@ -54,7 +53,7 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 				int[] ids = provider().verticesOf(e.root);
 
 				GraphTask gt = ppe.estimate(
-						new F0<IValueObserver>() {
+						new F0<it.unitn.disi.simulator.IValueObserver>() {
 							{
 								ret(new IncrementalStatsAdapter(
 										new IncrementalStats()));

@@ -1,6 +1,6 @@
 package it.unitn.disi.churn;
 
-import it.unitn.disi.churn.simulator.IValueObserver;
+import it.unitn.disi.simulator.IValueObserver;
 
 public class StateAccountant {
 

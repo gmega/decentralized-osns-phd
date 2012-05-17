@@ -4,15 +4,17 @@ import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.diffusion.churn.CachingTransformer;
 import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
-import it.unitn.disi.churn.simulator.FixedProcess;
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.IProcess.State;
-import it.unitn.disi.churn.simulator.PausingCyclicProtocolRunner;
-import it.unitn.disi.churn.simulator.RenewalProcess;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
+import it.unitn.disi.simulator.CyclicProtocolRunner;
+import it.unitn.disi.simulator.CyclicSchedulable;
+import it.unitn.disi.simulator.FixedProcess;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.IProcess.State;
+import it.unitn.disi.simulator.PausingCyclicProtocolRunner;
+import it.unitn.disi.simulator.RenewalProcess;
+import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
@@ -21,6 +23,8 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 
 public class SimulationTask implements Callable<HFlood[]> {
+
+	private final static int HFLOOD_PID = 0;
 
 	private final double fBurnin;
 
@@ -37,8 +41,8 @@ public class SimulationTask implements Callable<HFlood[]> {
 	private final YaoChurnConfigurator fYaoConf;
 
 	private final String fPeerSelector;
-	
-	private HFlood [] fProtocols;
+
+	private HFlood[] fProtocols;
 
 	public SimulationTask(double burnin, double period, Experiment experiment,
 			YaoChurnConfigurator yaoConf, int source, String peerSelector,
@@ -58,9 +62,6 @@ public class SimulationTask implements Callable<HFlood[]> {
 
 		fProtocols = protocols(fGraph, fRandom);
 
-		PausingCyclicProtocolRunner<HFlood> ps = new PausingCyclicProtocolRunner<HFlood>(
-				fPeriod, 1, 0);
-
 		IProcess[] processes = processes(fExperiment, fSource, fGraph, fRandom,
 				fProtocols);
 
@@ -75,14 +76,30 @@ public class SimulationTask implements Callable<HFlood[]> {
 						IProcess.PROCESS_SCHEDULABLE_TYPE, source
 								.sourceEventObserver()));
 
-		// Resumes the cyclic protocol whenever the network state changes.
-		observers.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, ps.networkObserver()));
+		CyclicProtocolRunner<HFlood> cpr;
+
+		if (!staticExperiment(fExperiment)) {
+			PausingCyclicProtocolRunner<HFlood> pcpr = new PausingCyclicProtocolRunner<HFlood>(
+					fPeriod, 1, HFLOOD_PID);
+
+			// Resumes the cyclic protocol whenever the network state changes.
+			observers.add(new Pair<Integer, IEventObserver>(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, pcpr.networkObserver()));
+
+			cpr = pcpr;
+		} else {
+			cpr = new CyclicProtocolRunner<HFlood>(HFLOOD_PID);
+		}
 
 		// Cyclic protocol observer.
-		observers.add(new Pair<Integer, IEventObserver>(1, ps));
+		observers.add(new Pair<Integer, IEventObserver>(1, cpr));
 
 		SimpleEDSim bcs = new SimpleEDSim(processes, observers, fBurnin);
+		
+		if (staticExperiment(fExperiment)) {
+			bcs.schedule(new CyclicSchedulable(fPeriod, 1));
+		}
+		
 		bcs.run();
 
 		return fProtocols;
@@ -118,7 +135,8 @@ public class SimulationTask implements Callable<HFlood[]> {
 				new LiveTransformer());
 
 		for (int i = 0; i < graph.size(); i++) {
-			protos[i] = new HFlood(graph, peerSelector(r), caching, i, 0);
+			protos[i] = new HFlood(graph, peerSelector(r), caching, i,
+					HFLOOD_PID);
 		}
 
 		return protos;

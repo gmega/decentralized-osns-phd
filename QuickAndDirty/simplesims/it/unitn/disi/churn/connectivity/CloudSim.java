@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.Schedulable;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.Schedulable;
+import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 
 import java.util.Arrays;

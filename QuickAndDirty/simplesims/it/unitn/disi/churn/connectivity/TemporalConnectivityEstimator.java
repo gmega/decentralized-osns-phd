@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.RenewalProcess;
-import it.unitn.disi.churn.simulator.Schedulable;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.RenewalProcess;
+import it.unitn.disi.simulator.Schedulable;
+import it.unitn.disi.simulator.SimpleEDSim;
 
 import java.util.Arrays;
 

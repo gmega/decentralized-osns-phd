@@ -1,8 +1,8 @@
 package it.unitn.disi.churn;
 
-import it.unitn.disi.random.GeneralizedPareto;
-import it.unitn.disi.random.IDistribution;
-import it.unitn.disi.random.UniformDistribution;
+import it.unitn.disi.simulator.random.GeneralizedPareto;
+import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.random.UniformDistribution;
 
 import java.util.PriorityQueue;
 import java.util.Random;

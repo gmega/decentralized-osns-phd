@@ -1,15 +1,15 @@
 package it.unitn.disi.churn.diffusion;
 
 import it.unitn.disi.churn.diffusion.churn.ILiveTransformer;
-import it.unitn.disi.churn.simulator.ICyclicProtocol;
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.Schedulable;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
+import it.unitn.disi.simulator.ICyclicProtocol;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.Schedulable;
+import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;

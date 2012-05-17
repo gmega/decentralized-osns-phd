@@ -1,7 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.simulator.TaskExecutor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
@@ -10,6 +9,7 @@ import it.unitn.disi.graph.analysis.TopKShortest;
 import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
 import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;

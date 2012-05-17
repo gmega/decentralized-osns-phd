@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.StateAccountant;
-import it.unitn.disi.churn.simulator.IEventObserver;
-import it.unitn.disi.churn.simulator.INetwork;
-import it.unitn.disi.churn.simulator.IProcess;
-import it.unitn.disi.churn.simulator.IValueObserver;
-import it.unitn.disi.churn.simulator.Schedulable;
-import it.unitn.disi.churn.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.IValueObserver;
+import it.unitn.disi.simulator.Schedulable;
+import it.unitn.disi.simulator.SimpleEDSim;
 
 public class BurninSyncEstimator implements IEventObserver {
 

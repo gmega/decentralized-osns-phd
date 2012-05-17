@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.simulator.INetwork;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.INetwork;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
