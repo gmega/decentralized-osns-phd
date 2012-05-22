@@ -9,6 +9,7 @@
 		<pathelement location="${lib.path}/jep-2.4.1.jar" />
 		<pathelement location="${lib.path}/ext-1.1.1.jar" />
 		<pathelement location="${output.lib.path}/analyzer-j.jar" />
+		<pathelement location="${output.lib.path}/edsim.jar" />
 		<pathelement location="${output.lib.path}/osns-protocols.jar" />
 	</path>
 

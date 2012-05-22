@@ -4,6 +4,8 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
+import it.unitn.disi.churn.diffusion.cloud.CloudSimulationTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
@@ -11,6 +13,7 @@ import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -47,6 +50,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute(value = "summaryonly", defaultValue = "false")
 	private boolean fSummary;
 
+	@Attribute(value = "cloudassisted", defaultValue = "false")
+	private boolean fCloudAssisted;
+
 	private YaoChurnConfigurator fYaoChurn;
 
 	private IResolver fResolver;
@@ -81,12 +87,16 @@ public class DiffusionExperiment implements ITransformer {
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
 				"id", "source", "target", "lsum");
-		
+
 		TableWriter cCore = new TableWriter(new PrefixedWriter("CO:", oup),
 				"id", "source", "lsum", "size");
 
+		TableWriter cloudStats = new TableWriter(
+				new PrefixedWriter("CS:", oup), "id", "source", "accessed",
+				"suppressed", "unfired");
+
 		IncrementalStats stats = new IncrementalStats();
-		
+
 		Integer row;
 		while ((row = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(row, provider);
@@ -95,21 +105,33 @@ public class DiffusionExperiment implements ITransformer {
 			int source = Integer.parseInt(experiment.attributes.get("node"));
 
 			int[] ids = provider.verticesOf(experiment.root);
-			double[] latencies = runExperiments(experiment,
+			Pair<int[], double[]> result = runExperiments(experiment,
 					MiscUtils.indexOf(ids, source), ids, graph, fRepeats, cCore);
+
+			int[] cloud = result.a;
+			double[] latencies = result.b;
+
+			if (fCloudAssisted) {
+				cloudStats.set("id", experiment.root);
+				cloudStats.set("source", source);
+				cloudStats.set("accesses", cloud[CloudAccessor.ACCESSED]);
+				cloudStats.set("suppressed", cloud[CloudAccessor.SUPPRESSED]);
+				cloudStats.set("unfired", cloud[CloudAccessor.UNFIRED]);
+				cloudStats.emmitRow();
+			}
 
 			if (fSummary) {
 				stats.reset();
 				for (int i = 0; i < latencies.length; i++) {
 					stats.add(latencies[i]);
 				}
-				
+
 				writer.set("id", experiment.root);
 				writer.set("source", source);
 				writer.set("target", stats.getN());
 				writer.set("lsum", stats.getSum());
 				writer.emmitRow();
-				
+
 			} else {
 				for (int i = 0; i < latencies.length; i++) {
 					writer.set("id", experiment.root);
@@ -122,16 +144,17 @@ public class DiffusionExperiment implements ITransformer {
 		}
 	}
 
-	private double[] runExperiments(Experiment experiment, int source,
-			int[] ids, IndexedNeighborGraph graph, int repetitions,
+	private Pair<int[], double[]> runExperiments(Experiment experiment,
+			int source, int[] ids, IndexedNeighborGraph graph, int repetitions,
 			TableWriter core) throws Exception {
+
 		double[] latencies = new double[graph.size()];
+		int[] counters = new int[3];
 
 		fExecutor.start(experiment.toString() + ", source: " + source
 				+ " size: " + graph.size(), repetitions);
 		for (int i = 0; i < repetitions; i++) {
-			fExecutor.submit(new SimulationTask(fBurnin, fPeriod, experiment,
-					fYaoChurn, source, fSelector, graph, new Random()));
+			fExecutor.submit(createTask(experiment, source, graph));
 		}
 
 		IncrementalStats stats = new IncrementalStats();
@@ -143,15 +166,8 @@ public class DiffusionExperiment implements ITransformer {
 			if (value instanceof Throwable) {
 				((Throwable) value).printStackTrace();
 			} else {
-				HFlood[] result = (HFlood[]) value;
-				double base = result[source].latency();
-				for (int j = 0; j < result.length; j++) {
-					double latency = result[j].latency() - base;
-					latencies[j] += latency;
-					if (result[j].isPartOfConnectedCore()) {
-						stats.add(latency);
-					}
-				}
+				collectLatencies(source, value, latencies, stats);
+				collectCloudAccesses(value, counters);
 			}
 
 			if (fYaoChurn != null) {
@@ -164,6 +180,50 @@ public class DiffusionExperiment implements ITransformer {
 			}
 		}
 
-		return latencies;
+		return new Pair<int[], double[]>(counters, latencies);
+	}
+
+	private void collectLatencies(int source, Object value, double[] latencies,
+			IncrementalStats stats) {
+		HFlood[] result = ((ChurnSimulationTask) value).protocols();
+		double base = result[source].latency();
+		for (int j = 0; j < result.length; j++) {
+			double latency = result[j].latency() - base;
+			latencies[j] += latency;
+			if (result[j].isPartOfConnectedCore()) {
+				stats.add(latency);
+			}
+		}
+	}
+
+	private void collectCloudAccesses(Object value, int[] counters) {
+		if (!fCloudAssisted) {
+			return;
+		}
+
+		CloudAccessor[] accessors = ((CloudSimulationTask) value).accessors();
+		for (int i = 0; i < accessors.length; i++) {
+			counters[accessors[i].outcome()]++;
+		}
+	}
+
+	private DiffusionSimulationTask createTask(Experiment experiment,
+			int source, IndexedNeighborGraph graph) {
+
+		Random rnd = new Random();
+
+		// Static experiment.
+		if (experiment.lis == null) {
+			return new StaticSimulationTask(fBurnin, fPeriod, experiment,
+					source, fSelector, graph, rnd);
+		}
+
+		if (fCloudAssisted) {
+			return new CloudSimulationTask(fBurnin, fPeriod, experiment,
+					fYaoChurn, source, fSelector, graph, rnd);
+		} else {
+			return new ChurnSimulationTask(fBurnin, fPeriod, experiment,
+					fYaoChurn, source, fSelector, graph, rnd);
+		}
 	}
 }
