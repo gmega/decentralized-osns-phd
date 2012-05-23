@@ -106,13 +106,11 @@ public class CloudAccessor implements IProcessObserver {
 			}
 
 			if (fDelegate.isReached()) {
-				System.err.println(fDelegate.id() + " is suppressed.");
 				fOutcome = SUPPRESSED;
 			} else {
-				System.err.println(fDelegate.id() + " accessed the cloud.");
 				fOutcome = ACCESSED;
 				// Accessing the cloud means reaching the node out of nowhere.
-				fDelegate.markReached(time);
+				fDelegate.markReached(fSim.postBurninTime());
 				// Wakes up the protocol runner, otherwise it will keep on
 				// sleeping and our node won't be scheduled for dissemination.
 				fRunner.wakeUp();

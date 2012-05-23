@@ -114,7 +114,7 @@ public class DiffusionExperiment implements ITransformer {
 			if (fCloudAssisted) {
 				cloudStats.set("id", experiment.root);
 				cloudStats.set("source", source);
-				cloudStats.set("accesses", cloud[CloudAccessor.ACCESSED]);
+				cloudStats.set("accessed", cloud[CloudAccessor.ACCESSED]);
 				cloudStats.set("suppressed", cloud[CloudAccessor.SUPPRESSED]);
 				cloudStats.set("unfired", cloud[CloudAccessor.UNFIRED]);
 				cloudStats.emmitRow();
