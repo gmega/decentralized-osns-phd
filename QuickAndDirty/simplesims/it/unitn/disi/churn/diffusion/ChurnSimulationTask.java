@@ -32,7 +32,7 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 
 	protected final Random fRandom;
 
-	protected final YaoChurnConfigurator fYaoConf;
+	protected final IDistributionGenerator fGen;
 
 	protected final String fPeerSelector;
 
@@ -45,10 +45,10 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 		fSource = source;
 		fGraph = graph;
 		fRandom = random;
-		fYaoConf = yaoConf;
+		fGen = yaoConf.distributionGenerator();
 		fPeerSelector = peerSelector;
 	}
-
+	
 	@Override
 	public ChurnSimulationTask call() throws Exception {
 
@@ -105,10 +105,9 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 
 	@Override
 	protected IProcess create(int i, Experiment experiment, Object[] pArray) {
-		IDistributionGenerator dgen = fYaoConf.distributionGenerator();
 		return new RenewalProcess(i,
-				dgen.uptimeDistribution(experiment.lis[i]),
-				dgen.downtimeDistribution(experiment.dis[i]), State.down,
+				fGen.uptimeDistribution(experiment.lis[i]),
+				fGen.downtimeDistribution(experiment.dis[i]), State.down,
 				pArray);
 	}
 }

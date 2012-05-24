@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
+import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
