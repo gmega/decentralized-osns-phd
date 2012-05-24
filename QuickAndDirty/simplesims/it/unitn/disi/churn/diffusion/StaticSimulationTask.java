@@ -1,8 +1,8 @@
 package it.unitn.disi.churn.diffusion;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.diffusion.churn.CachingTransformer;
-import it.unitn.disi.churn.diffusion.churn.LiveTransformer;
+import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
+import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.CyclicProtocolRunner;
 import it.unitn.disi.simulator.CyclicSchedulable;

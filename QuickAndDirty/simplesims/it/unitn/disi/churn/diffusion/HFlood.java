@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.diffusion.churn.ILiveTransformer;
+import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;

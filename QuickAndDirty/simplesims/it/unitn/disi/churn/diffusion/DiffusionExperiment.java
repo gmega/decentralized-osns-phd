@@ -46,7 +46,7 @@ public class DiffusionExperiment implements ITransformer {
 
 	@Attribute("cores")
 	private int fCores;
-
+	
 	@Attribute(value = "summaryonly", defaultValue = "false")
 	private boolean fSummary;
 
@@ -220,7 +220,7 @@ public class DiffusionExperiment implements ITransformer {
 
 		if (fCloudAssisted) {
 			return new CloudSimulationTask(fBurnin, fPeriod, experiment,
-					fYaoChurn, source, fSelector, graph, rnd);
+					fYaoChurn, source, fSelector, graph, rnd, fResolver);
 		} else {
 			return new ChurnSimulationTask(fBurnin, fPeriod, experiment,
 					fYaoChurn, source, fSelector, graph, rnd);
