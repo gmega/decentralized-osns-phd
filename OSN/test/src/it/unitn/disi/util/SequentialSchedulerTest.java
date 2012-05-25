@@ -1,8 +1,8 @@
 package it.unitn.disi.util;
 
-import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
-import it.unitn.disi.newscasting.experiments.schedulers.IntervalScheduler;
 
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IntervalScheduler;
 import junit.framework.Assert;
 
 import org.junit.Test;

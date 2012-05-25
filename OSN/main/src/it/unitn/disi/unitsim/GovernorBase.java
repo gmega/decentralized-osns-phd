@@ -1,6 +1,6 @@
 package it.unitn.disi.unitsim;
 
-import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.unitsim.cd.ICDExperimentObserver;
 import it.unitn.disi.utils.HashMapResolver;

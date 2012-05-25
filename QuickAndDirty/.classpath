@@ -17,5 +17,6 @@
 	<classpathentry kind="lib" path="/Utilities/lib/trove-3.0.0rc2.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/Lambda.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/DistSim"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

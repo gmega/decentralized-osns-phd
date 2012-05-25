@@ -1,6 +1,6 @@
 package it.unitn.disi.unitsim.cd;
 
-import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.utils.logging.TabularLogManager;
 

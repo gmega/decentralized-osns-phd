@@ -1,6 +1,10 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
-import it.unitn.disi.newscasting.experiments.schedulers.distributed.DistributedSchedulerClient;
+import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
+import it.unitn.disi.distsim.scheduler.generators.IDListScheduler;
+import it.unitn.disi.distsim.scheduler.generators.ISchedule;
+import it.unitn.disi.distsim.scheduler.generators.IntervalScheduler;
+import it.unitn.disi.distsim.scheduler.generators.RepetitionDecorator;
 
 import java.util.Comparator;
 

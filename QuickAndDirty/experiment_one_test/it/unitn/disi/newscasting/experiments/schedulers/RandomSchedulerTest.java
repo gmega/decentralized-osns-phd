@@ -1,5 +1,6 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.test.framework.PeerSimTest;
 import it.unitn.disi.test.framework.TestNetworkBuilder;
 

@@ -1,5 +1,9 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IStaticSchedule;
+import it.unitn.disi.distsim.scheduler.generators.StaticScheduleIterator;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;

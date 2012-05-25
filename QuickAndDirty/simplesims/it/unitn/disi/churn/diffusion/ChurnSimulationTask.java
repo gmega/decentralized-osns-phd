@@ -38,17 +38,19 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 
 	public ChurnSimulationTask(double burnin, double period,
 			Experiment experiment, YaoChurnConfigurator yaoConf, int source,
-			String peerSelector, IndexedNeighborGraph graph, Random random) {
+			String peerSelector, IndexedNeighborGraph graph, Random random,
+			Long seed) {
 		fBurnin = burnin;
 		fPeriod = period;
 		fExperiment = experiment;
 		fSource = source;
 		fGraph = graph;
 		fRandom = random;
-		fGen = yaoConf.distributionGenerator();
+		fGen = seed != null ? yaoConf.distributionGenerator(seed) : yaoConf
+				.distributionGenerator();
 		fPeerSelector = peerSelector;
 	}
-	
+
 	@Override
 	public ChurnSimulationTask call() throws Exception {
 
@@ -59,7 +61,6 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 				fProtocols);
 
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-
 		HFlood source = fProtocols[fSource];
 
 		// Triggers the dissemination process from the first login of the
@@ -78,18 +79,16 @@ public class ChurnSimulationTask extends DiffusionSimulationTask {
 
 		// Cyclic protocol observer.
 		observers.add(new Pair<Integer, IEventObserver>(1, pcpr));
-
 		extraObservers(observers);
 
 		SimpleEDSim bcs = new SimpleEDSim(processes, observers, fBurnin);
 		otherConfig(bcs, pcpr);
 
 		bcs.run();
-
 		return this;
 	}
-	
-	public HFlood[] protocols(){
+
+	public HFlood[] protocols() {
 		return fProtocols;
 	}
 

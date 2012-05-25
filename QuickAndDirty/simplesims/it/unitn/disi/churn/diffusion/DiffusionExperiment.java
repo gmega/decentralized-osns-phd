@@ -7,10 +7,9 @@ import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.CloudSimulationTask;
 import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.network.churn.yao.ISeedStream;
-import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
 import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.utils.MiscUtils;
@@ -54,6 +53,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute(value = "cloudassisted", defaultValue = "false")
 	private boolean fCloudAssisted;
 
+	@Attribute(value = "fixedseeds", defaultValue = "false")
+	private boolean fFixSeed;
+
 	private YaoChurnConfigurator fYaoChurn;
 
 	private IResolver fResolver;
@@ -63,33 +65,13 @@ public class DiffusionExperiment implements ITransformer {
 	private TaskExecutor fExecutor;
 
 	public DiffusionExperiment(@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute(value = "churn", defaultValue = "false") boolean churn,
-			@Attribute(value = "churnseed", defaultValue = "none") String churnSeed) {
+			@Attribute(value = "churn", defaultValue = "false") boolean churn) {
 		fConfig = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver);
 
 		if (churn) {
 			fYaoChurn = ObjectCreator.createInstance(
 					YaoChurnConfigurator.class, "", resolver);
-			if (!churnSeed.equals("none")) {
-				final Random seedStream = new Random(Long.parseLong(churnSeed));
-				System.out.println("-- Master seed is: " + churnSeed);
-				fYaoChurn.setSeedStream(new ISeedStream() {
-
-					@Override
-					public long nextSeed() {
-						long seed = seedStream.nextLong();
-						System.out.println("SE:" + seed);
-						return seed;
-					}
-
-					@Override
-					public boolean shouldReseed() {
-						return true;
-					}
-
-				});
-			}
 		}
 
 		fReader = new ExperimentReader("id");
@@ -171,11 +153,17 @@ public class DiffusionExperiment implements ITransformer {
 
 		double[] latencies = new double[graph.size()];
 		int[] counters = new int[3];
-
 		fExecutor.start(experiment.toString() + ", source: " + source
 				+ " size: " + graph.size(), repetitions);
+
+		Random seedGen = null;
+		if (fFixSeed) {
+			seedGen = new Random(Long.parseLong(experiment.attributes.get("seed")));
+		}
+
 		for (int i = 0; i < repetitions; i++) {
-			fExecutor.submit(createTask(experiment, source, graph));
+			fExecutor.submit(createTask(experiment, source, graph,
+					seedGen != null ? seedGen.nextLong() : null));
 		}
 
 		IncrementalStats stats = new IncrementalStats();
@@ -229,7 +217,7 @@ public class DiffusionExperiment implements ITransformer {
 	}
 
 	private DiffusionSimulationTask createTask(Experiment experiment,
-			int source, IndexedNeighborGraph graph) {
+			int source, IndexedNeighborGraph graph, Long seed) {
 
 		Random rnd = new Random();
 
@@ -241,10 +229,10 @@ public class DiffusionExperiment implements ITransformer {
 
 		if (fCloudAssisted) {
 			return new CloudSimulationTask(fBurnin, fPeriod, experiment,
-					fYaoChurn, source, fSelector, graph, rnd, fResolver);
+					fYaoChurn, source, fSelector, graph, rnd, fResolver, seed);
 		} else {
 			return new ChurnSimulationTask(fBurnin, fPeriod, experiment,
-					fYaoChurn, source, fSelector, graph, rnd);
+					fYaoChurn, source, fSelector, graph, rnd, seed);
 		}
 	}
 }

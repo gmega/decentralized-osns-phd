@@ -1,5 +1,8 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.distsim.scheduler.generators.ISchedule;
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IStaticSchedule;
 import it.unitn.disi.utils.peersim.INodeRegistry;
 import it.unitn.disi.utils.peersim.NodeRegistry;
 

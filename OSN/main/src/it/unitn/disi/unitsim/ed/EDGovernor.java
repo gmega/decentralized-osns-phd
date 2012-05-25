@@ -5,7 +5,7 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.core.Control;
 import peersim.edsim.EDProtocol;
-import it.unitn.disi.newscasting.experiments.schedulers.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.utils.logging.TabularLogManager;

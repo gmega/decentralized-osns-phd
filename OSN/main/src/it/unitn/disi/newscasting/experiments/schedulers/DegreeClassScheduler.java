@@ -1,5 +1,8 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
+import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.IStaticSchedule;
+import it.unitn.disi.distsim.scheduler.generators.StaticScheduleIterator;
 import it.unitn.disi.graph.GraphProtocol;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.collections.ArrayExchanger;

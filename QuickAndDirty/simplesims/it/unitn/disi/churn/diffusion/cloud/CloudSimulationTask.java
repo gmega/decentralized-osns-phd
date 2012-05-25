@@ -32,9 +32,9 @@ public class CloudSimulationTask extends ChurnSimulationTask {
 	public CloudSimulationTask(double burnin, double period,
 			Experiment experiment, YaoChurnConfigurator yaoConf, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random,
-			IResolver resolver) {
+			IResolver resolver, Long seed) {
 		super(burnin, period, experiment, yaoConf, source, peerSelector, graph,
-				random);
+				random, seed);
 
 		fResolver = resolver;
 		fType = DelayType.valueOf(resolver.getString("", "delay_type")
