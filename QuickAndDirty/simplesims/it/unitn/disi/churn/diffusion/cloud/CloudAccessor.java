@@ -25,6 +25,10 @@ public class CloudAccessor implements IProcessObserver {
 
 	public static final int ACCESSED = 2;
 
+	public static final int UPTIME = 0;
+
+	public static final int WALLCLOCK = 1;
+
 	private final PausingCyclicProtocolRunner<HFlood> fRunner;
 
 	private final IDistribution fDistribution;
@@ -35,20 +39,23 @@ public class CloudAccessor implements IProcessObserver {
 
 	private final SimpleEDSim fSim;
 
+	private final int fClockMode;
+
 	private double fRemaining;
 
 	private int fOutcome = UNFIRED;
 
 	public CloudAccessor(IDistribution distribution, HFlood source,
 			HFlood delegate, PausingCyclicProtocolRunner<HFlood> runner,
-			SimpleEDSim sim) {
+			SimpleEDSim sim, int clockMode) {
 		fDistribution = distribution;
 		fSource = source;
 		fDelegate = delegate;
 		fRunner = runner;
 		fSim = sim;
+		fClockMode = clockMode;
 
-		reset();
+		reset(0.0);
 	}
 
 	public int outcome() {
@@ -65,22 +72,64 @@ public class CloudAccessor implements IProcessObserver {
 			return;
 		}
 
-		// Checks if our timer will expire during this section.
-		double length = next - time;
-		if (fRemaining > length) {
-			// Nope, just return.
-			fRemaining -= length;
-			// Sanity check.
-			return;
+		double accessTime = updateTimer(time, next);
+		if (accessTime > 0) {
+			// It will, so we schedule a cloud access for when it does.
+			fSim.schedule(new CloudAccess(accessTime));
 		}
-
-		// It will, so we schedule a cloud access for when it does.
-		fSim.schedule(new CloudAccess(time + fRemaining));
 
 	}
 
-	private void reset() {
-		fRemaining = fDistribution.sample();
+	private double updateTimer(double time, double next) {
+
+		double expired = -1;
+
+		switch (fClockMode) {
+
+		// Timer is relative to uptime.
+		case UPTIME:
+			// Session length.
+			double length = next - time;
+			// Will timer expire during this session?
+			if (fRemaining <= length) {
+				// Yes, so we need to return exactly when.
+				expired = time + fRemaining;
+			} else {
+				// Nope, just decrement the remaining time.
+				fRemaining -= length;
+			}
+			break;
+
+		case WALLCLOCK:
+			// Has the timer expired while we were logged off?
+			if (fRemaining < time) {
+				// Yes, so we access the cloud immediately.
+				expired = 0.0;
+			} 
+			// Will it expire now?
+			else if (fRemaining < next) {
+				// Yes, schedule for the future.
+				expired = next - fRemaining;
+			}
+			
+			expired = fRemaining < time ? time : -1;
+			break;
+		}
+
+		return expired;
+	}
+
+	private void reset(double time) {
+		switch (fClockMode) {
+		
+		case UPTIME:
+			fRemaining = fDistribution.sample();
+			break;
+		
+		case WALLCLOCK:
+			fRemaining = time + fDistribution.sample();
+			break;
+		}
 	}
 
 	private class CloudAccess extends Schedulable {
@@ -94,7 +143,7 @@ public class CloudAccessor implements IProcessObserver {
 		@Override
 		public void scheduled(double time, INetwork parent) {
 			// Resets the timer.
-			reset();
+			reset(time);
 
 			// If the source hasn't been reached, doesn't do anything.
 			if (!fSource.isReached()) {

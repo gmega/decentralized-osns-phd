@@ -27,16 +27,19 @@ public class CloudSimulationTask extends ChurnSimulationTask {
 
 	private IResolver fResolver;
 
+	private final int fClockType;
+
 	private final DelayType fType;
 
 	public CloudSimulationTask(double burnin, double period,
 			Experiment experiment, YaoChurnConfigurator yaoConf, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random,
-			IResolver resolver, Long seed) {
+			IResolver resolver, Long seed, int clockType) {
 		super(burnin, period, experiment, yaoConf, source, peerSelector, graph,
 				random, seed);
 
 		fResolver = resolver;
+		fClockType = clockType;
 		fType = DelayType.valueOf(resolver.getString("", "delay_type")
 				.toLowerCase());
 	}
@@ -48,7 +51,7 @@ public class CloudSimulationTask extends ChurnSimulationTask {
 		for (int i = 0; i < fProtocols.length; i++) {
 			IProcess process = sim.process(i);
 			fAccessors[i] = new CloudAccessor(distribution(process, i),
-					fProtocols[fSource], fProtocols[i], runner, sim);
+					fProtocols[fSource], fProtocols[i], runner, sim, fClockType);
 			process.addProcessObserver(fAccessors[i]);
 		}
 	}

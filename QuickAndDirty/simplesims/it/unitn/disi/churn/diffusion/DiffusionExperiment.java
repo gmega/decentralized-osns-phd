@@ -56,6 +56,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute(value = "fixedseeds", defaultValue = "false")
 	private boolean fFixSeed;
 
+	@Attribute(value = "clocktype", defaultValue = "uptime")
+	private String fClockType;
+
 	private YaoChurnConfigurator fYaoChurn;
 
 	private IResolver fResolver;
@@ -98,6 +101,15 @@ public class DiffusionExperiment implements ITransformer {
 				new PrefixedWriter("CS:", oup), "id", "source", "accessed",
 				"suppressed", "unfired");
 
+		System.err.println("-- Simulation seeds are "
+				+ (fFixSeed ? "fixed" : "variable") + ".");
+
+		System.err.println("-- Cloud accessor clock type uses " + fClockType
+				+ ".");
+
+		int clockType = fClockType.equals("uptime") ? CloudAccessor.UPTIME
+				: CloudAccessor.WALLCLOCK;
+
 		IncrementalStats stats = new IncrementalStats();
 
 		Integer row;
@@ -109,7 +121,8 @@ public class DiffusionExperiment implements ITransformer {
 
 			int[] ids = provider.verticesOf(experiment.root);
 			Pair<int[], double[]> result = runExperiments(experiment,
-					MiscUtils.indexOf(ids, source), ids, graph, fRepeats, cCore);
+					MiscUtils.indexOf(ids, source), ids, graph, fRepeats,
+					cCore, clockType);
 
 			int[] cloud = result.a;
 			double[] latencies = result.b;
@@ -149,7 +162,7 @@ public class DiffusionExperiment implements ITransformer {
 
 	private Pair<int[], double[]> runExperiments(Experiment experiment,
 			int source, int[] ids, IndexedNeighborGraph graph, int repetitions,
-			TableWriter core) throws Exception {
+			TableWriter core, int clockType) throws Exception {
 
 		double[] latencies = new double[graph.size()];
 		int[] counters = new int[3];
@@ -158,12 +171,13 @@ public class DiffusionExperiment implements ITransformer {
 
 		Random seedGen = null;
 		if (fFixSeed) {
-			seedGen = new Random(Long.parseLong(experiment.attributes.get("seed")));
+			seedGen = new Random(Long.parseLong(experiment.attributes
+					.get("seed")));
 		}
 
 		for (int i = 0; i < repetitions; i++) {
 			fExecutor.submit(createTask(experiment, source, graph,
-					seedGen != null ? seedGen.nextLong() : null));
+					seedGen != null ? seedGen.nextLong() : null, clockType));
 		}
 
 		IncrementalStats stats = new IncrementalStats();
@@ -217,7 +231,7 @@ public class DiffusionExperiment implements ITransformer {
 	}
 
 	private DiffusionSimulationTask createTask(Experiment experiment,
-			int source, IndexedNeighborGraph graph, Long seed) {
+			int source, IndexedNeighborGraph graph, Long seed, int clockType) {
 
 		Random rnd = new Random();
 
@@ -229,7 +243,8 @@ public class DiffusionExperiment implements ITransformer {
 
 		if (fCloudAssisted) {
 			return new CloudSimulationTask(fBurnin, fPeriod, experiment,
-					fYaoChurn, source, fSelector, graph, rnd, fResolver, seed);
+					fYaoChurn, source, fSelector, graph, rnd, fResolver, seed,
+					clockType);
 		} else {
 			return new ChurnSimulationTask(fBurnin, fPeriod, experiment,
 					fYaoChurn, source, fSelector, graph, rnd, seed);
