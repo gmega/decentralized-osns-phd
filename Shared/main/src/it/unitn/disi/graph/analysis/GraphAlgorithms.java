@@ -1,10 +1,12 @@
 package it.unitn.disi.graph.analysis;
 
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.stack.array.TIntArrayStack;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.streams.DisjointSets;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
@@ -319,7 +321,9 @@ public class GraphAlgorithms {
 		public TIntArrayStack counter = new TIntArrayStack();
 		public TIntArrayStack element = new TIntArrayStack();
 		public TIntArrayStack current = new TIntArrayStack();
-		
+
+		public ArrayList<TIntArrayList> components = new ArrayList<TIntArrayList>();
+
 		public int visitCounter = 0;
 
 		public void ensureSize(int size) {
@@ -328,27 +332,27 @@ public class GraphAlgorithms {
 			onstack = ensureSize(size, onstack);
 		}
 
-		private int [] ensureSize(int size, int[] array) {
+		private int[] ensureSize(int size, int[] array) {
 			if (array.length < size) {
 				return Arrays.copyOf(array, size);
 			}
 			return array;
 		}
 	}
-	
+
 	// --------------------------------------------------------------------------
-	
+
 	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
 		// Initializes.
 		initState(graph, state);
-		
+
 		int ncomps = 0;
 		for (int i = 0; i < graph.size(); i++) {
 			if (state.visit[i] == -1) {
 				ncomps += tarjan(i, state, graph);
 			}
-		} 
-		
+		}
+
 		return ncomps;
 	}
 
@@ -389,12 +393,16 @@ public class GraphAlgorithms {
 
 			// SCC root
 			if (s.visit[node] == s.lowlink[node]) {
+				TIntArrayList component = new TIntArrayList();
+				
 				upstream++;
 				int popped;
 				do {
 					popped = s.current.pop();
 					s.onstack[popped] = 0;
+					component.add(popped);
 				} while (popped != node);
+				s.components.add(component);
 			}
 
 			int neighbor = s.element.pop();
@@ -429,6 +437,10 @@ public class GraphAlgorithms {
 		state.counter.clear();
 		state.current.clear();
 		state.element.clear();
+		
+		// Clear rest.
+		state.visitCounter = 0;
+		state.components.clear();
 	}
 
 	private static void checkArray(int size, int[] array) {
