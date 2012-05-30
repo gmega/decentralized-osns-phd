@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.analysis;
 
+import gnu.trove.stack.array.TIntArrayStack;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.streams.DisjointSets;
@@ -29,8 +30,13 @@ public class GraphAlgorithms {
 	// --------------------------------------------------------------------------
 
 	public static int[] components(Graph graph) {
+		return components(graph, new int[graph.size()]);
+	}
+
+	// --------------------------------------------------------------------------
+
+	public static int[] components(Graph graph, int[] components) {
 		DisjointSets sets = GraphAlgorithms.computeComponents(graph);
-		int[] components = new int[graph.size()];
 		for (int i = 0; i < graph.size(); i++) {
 			components[sets.find(i)]++;
 		}
@@ -304,6 +310,138 @@ public class GraphAlgorithms {
 	}
 
 	// --------------------------------------------------------------------------
+
+	public static class TarjanState {
+		public int[] visit = new int[100];
+		public int[] lowlink = new int[100];
+		public int[] onstack = new int[100];
+
+		public TIntArrayStack counter = new TIntArrayStack();
+		public TIntArrayStack element = new TIntArrayStack();
+		public TIntArrayStack current = new TIntArrayStack();
+		
+		public int visitCounter = 0;
+
+		public void ensureSize(int size) {
+			visit = ensureSize(size, visit);
+			lowlink = ensureSize(size, lowlink);
+			onstack = ensureSize(size, onstack);
+		}
+
+		private int [] ensureSize(int size, int[] array) {
+			if (array.length < size) {
+				return Arrays.copyOf(array, size);
+			}
+			return array;
+		}
+	}
+	
+	// --------------------------------------------------------------------------
+	
+	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
+		// Initializes.
+		initState(graph, state);
+		
+		int ncomps = 0;
+		for (int i = 0; i < graph.size(); i++) {
+			if (state.visit[i] == -1) {
+				ncomps += tarjan(i, state, graph);
+			}
+		} 
+		
+		return ncomps;
+	}
+
+	// --------------------------------------------------------------------------
+
+	public static int tarjan(int starting, TarjanState s, IndexedNeighborGraph graph) {
+
+		int upstream = 0;
+		s.counter.push(0);
+		s.element.push(starting);
+
+		dfs: while (true) {
+
+			int node = s.element.peek();
+
+			if (s.visit[node] == -1) {
+				s.lowlink[node] = s.visit[node] = s.visitCounter++;
+				s.current.push(node);
+				s.onstack[node] = 1;
+			}
+
+			for (int c = s.counter.peek(); c < graph.degree(node); c++) {
+				int neighbor = graph.getNeighbor(node, c);
+				if (s.visit[neighbor] == -1) {
+					// Replace last element.
+					s.counter.pop();
+					s.counter.push(c + 1);
+
+					s.element.push(neighbor);
+					s.counter.push(0);
+					continue dfs;
+				} else if (s.onstack[neighbor] == 1
+						&& (s.visit[neighbor] < s.visit[node])) {
+					s.lowlink[node] = Math.min(s.lowlink[node],
+							s.visit[neighbor]);
+				}
+			}
+
+			// SCC root
+			if (s.visit[node] == s.lowlink[node]) {
+				upstream++;
+				int popped;
+				do {
+					popped = s.current.pop();
+					s.onstack[popped] = 0;
+				} while (popped != node);
+			}
+
+			int neighbor = s.element.pop();
+			if (s.element.size() == 0) {
+				break;
+			}
+			s.counter.pop();
+			node = s.element.peek();
+			s.lowlink[node] = Math.min(s.lowlink[node],
+					s.lowlink[neighbor]);
+		}
+
+		return upstream;
+	}
+
+	// --------------------------------------------------------------------------
+
+	private static void initState(IndexedNeighborGraph graph, TarjanState state) {
+
+		checkArray(graph.size(), state.visit);
+		checkArray(graph.size(), state.onstack);
+		checkArray(graph.size(), state.lowlink);
+
+		// Clears arrays.
+		for (int i = 0; i < graph.size(); i++) {
+			state.visit[i] = -1;
+			state.onstack[i] = 0;
+			state.lowlink[i] = i;
+		}
+
+		// Clears stacks.
+		state.counter.clear();
+		state.current.clear();
+		state.element.clear();
+	}
+
+	private static void checkArray(int size, int[] array) {
+		if (array == null) {
+			throw new NullPointerException();
+		}
+
+		if (array.length < size) {
+			throw new IllegalArgumentException(
+					"Arrays need to be as large as the number of vertices "
+							+ "in the the graph.");
+		}
+	}
 
 	/**
 	 * An {@link IEdgeFilter} is a convenient way of excluding certain edges

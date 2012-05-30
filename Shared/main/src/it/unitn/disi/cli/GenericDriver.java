@@ -15,9 +15,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +54,9 @@ public class GenericDriver {
 
 	@Option(name = "-f", aliases = { "--file" }, usage = "file containing key=value pairs (transformer-specific)", required = false)
 	private File fPropertyFile;
+
+	@Option(name = "-w", aliases = { "--wallclock" }, usage = "specifies a wallclock time after which this process will be killed", required = false)
+	private double fWallClock = -1;
 
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
 	private char fSplitChar = ':';
@@ -105,6 +111,11 @@ public class GenericDriver {
 			fOStreams = openOutputs(fOutputs);
 
 			Object processor = create(pClass, new HashMapResolver(props));
+
+			if (fWallClock > 0) {
+				startTimer(fWallClock);
+			}
+
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
@@ -123,6 +134,25 @@ public class GenericDriver {
 			close(fIStreams);
 			close(fOStreams);
 		}
+	}
+
+	private void startTimer(double wallclock) {
+		TimerTask shutdown = new TimerTask() {
+			@Override
+			public void run() {
+				System.err
+						.println("Wallclock timer ellapsed. Shutting down...");
+				System.exit(-2);
+			}
+		};
+
+		Date expiry = new Date(System.currentTimeMillis() + (long) (fWallClock
+				* 3600 * 1000));
+		System.err.println("Wallclock timer: process will be killed at "
+				+ expiry.toString());
+
+		Timer timer = new Timer("Wallclock Watchdog");
+		timer.schedule(shutdown, expiry);
 	}
 
 	private void configLogging() {
