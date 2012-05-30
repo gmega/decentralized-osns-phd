@@ -1,10 +1,10 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
+
 import java.io.IOException;
 
 import junit.framework.Assert;
@@ -28,52 +28,39 @@ public class TestConnectivityComputer {
 
 	@Test
 	public void testTarjanWithSubgraphs() throws IOException {
-		int[][] graph = new int[][] { { 1, 2, 13 }, { 2, 13 }, { 3, 13 },
-				{ 0, 4, 13 }, { 5, 6, 13 }, { 6, 10, 13 }, { 7, 13 },
-				{ 8, 13 }, { 9, 13 }, { 7, 13 }, { 11, 13 }, { 12, 13 },
-				{ 10, 13 }, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 } };
-
-		runTarjanTest(graph, new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-				12, 13 }, 1);
-		Assert.assertEquals(
-				6,
-				create(graph).tarjan(
-						new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }));
+		int [][]graph = new int[][] {
+				{ 1, 2, 13},
+				{ 2, 13 },
+				{ 3, 13 },
+				{ 0, 4, 13 },
+				{ 5, 6, 13 },
+				{ 6, 10, 13 }, 
+				{ 7, 13 },
+				{ 8, 13 },
+				{ 9, 13 },
+				{ 7, 13 },
+				{ 11, 13 },
+				{ 12, 13 },
+				{ 10, 13 },
+				{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
+			};	
+		
+		runTarjanTest(graph, new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 1);
+		runTarjanTest(graph, new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 6);
 	}
-
-	private void runTarjanTest(int[][] graph, int[] subgraph, int expected)
+	
+	private void runTarjanTest(int[][] graphAdj, int[] subgraphAdj, int expected)
 			throws IOException {
-		Assert.assertEquals(expected, create(graph).tarjan(subgraph));
-	}
 
-	private ComputeConnectivity create(int[][] graph) throws IOException {
-		ComputeConnectivity computer = new ComputeConnectivity(ByteGraphDecoder.class.getName());
-		byte[] encGraph = encode(graph);
-		computer.setBaseGraph(LightweightStaticGraph
-				.load(new ByteGraphDecoder(new ByteArrayInputStream(encGraph))));
-		computer.initTarjan();
-		return computer;
-	}
+		TarjanState state = new TarjanState();
+		state.ensureSize(subgraphAdj.length);
+		LightweightStaticGraph graph = LightweightStaticGraph
+				.fromAdjacency(graphAdj);
+		
+		LightweightStaticGraph subgraph = LightweightStaticGraph
+				.subgraph(graph, subgraphAdj); 
 
-	private byte[] encode(int[][] graph) throws IOException {
-		ByteArrayOutputStream oup = new ByteArrayOutputStream();
-		byte[] buffer = new byte[4];
-		for (int i = 0; i < graph.length; i++) {
-			for (int j = 0; j < graph[i].length; j++) {
-				oup.write(toBytes(i, buffer));
-				oup.write(toBytes(graph[i][j], buffer));
-			}
-		}
-
-		return oup.toByteArray();
-	}
-
-	private byte[] toBytes(int num, byte[] buf) {
-		buf[3] = (byte) ((num & 0xff000000) >>> 24);
-		buf[2] = (byte) ((num & 0x00ff0000) >>> 16);
-		buf[1] = (byte) ((num & 0x0000ff00) >>> 8);
-		buf[0] = (byte) ((num & 0x000000ff));
-		return buf;
+		Assert.assertEquals(expected, GraphAlgorithms.tarjan(state, subgraph));
 	}
 
 }
