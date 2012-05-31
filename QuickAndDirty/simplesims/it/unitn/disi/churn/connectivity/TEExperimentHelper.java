@@ -94,8 +94,6 @@ public class TEExperimentHelper {
 
 	private final YaoChurnConfigurator fYaoConf;
 
-	private volatile ProgressTracker fTracker;
-
 	private final int fRepetitions;
 
 	private final double fBurnin;
@@ -196,17 +194,16 @@ public class TEExperimentHelper {
 
 		int sources = sourceEnd - sourceStart + 1;
 
-		fTracker = Progress.newTracker(taskStr, fRepetitions);
-		fTracker.startTask();
+		fExecutor.start(taskStr, fRepetitions);
 
 		for (int j = 0; j < fRepetitions; j++) {
 			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
-					ids);
+					ids, root);
 			// Stacks sources.
 			for (int i = sourceStart; i <= sourceEnd; i++) {
 				builder.addConnectivitySimulation(i, cloudNodes, null);
 				if (monitorComponents) {
-					builder.andComponentTracker(root);
+					builder.andComponentTracker();
 				}
 
 				if (cloudSim) {
@@ -233,9 +230,12 @@ public class TEExperimentHelper {
 			}
 
 			@SuppressWarnings("unchecked")
-			Pair<Integer, List<INetworkMetric>> result = (Pair<Integer, List<INetworkMetric>>) taskResult;
-			for (INetworkMetric networkMetric : result.b) {
-				addMatchingMetric(metric[result.a], networkMetric, graph.size());
+			Pair<Integer, List<INetworkMetric>>[] results = (Pair<Integer, List<INetworkMetric>>[]) taskResult;
+			
+			for(Pair<Integer, List<INetworkMetric>> result : results) {
+				for (INetworkMetric networkMetric : result.b) {
+					addMatchingMetric(metric[result.a - sourceStart], networkMetric, graph.size());
+				}
 			}
 		}
 
@@ -382,6 +382,7 @@ public class TEExperimentHelper {
 			for (int i = 0; i < value.length; i++) {
 				value[i] = metric.getMetric(i);
 			}
+			fMetric = value;
 		}
 
 		@Override

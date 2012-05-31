@@ -11,6 +11,7 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
 import it.unitn.disi.simulator.IEventObserver;
 import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.IProcess;
 import it.unitn.disi.simulator.Schedulable;
 import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.utils.AbstractIDMapper;
@@ -31,9 +32,11 @@ public class ComponentTracker implements IEventObserver {
 
 	private final int fId;
 
-	private final int fRoot;
+	private final int fSource;
+	
+	private final int fMappedSource;
 
-		private final Comparator<TIntArrayList> fSizeComparator = new Comparator<TIntArrayList>() {
+	private final Comparator<TIntArrayList> fSizeComparator = new Comparator<TIntArrayList>() {
 		@Override
 		public int compare(TIntArrayList o1, TIntArrayList o2) {
 			return o1.size() - o2.size();
@@ -41,16 +44,18 @@ public class ComponentTracker implements IEventObserver {
 	};
 
 	public ComponentTracker(TemporalConnectivityEstimator estimator,
-			IndexedNeighborGraph graph, OutputStream oup, int id, int root) {
+			IndexedNeighborGraph graph, OutputStream oup, int id, int source,
+			int mappedSource) {
 		fGraph = graph;
 		fId = id;
-		fRoot = root;
+		fSource = source;
+		fMappedSource = mappedSource;
 		fTransformer = new LiveTransformer();
 		fState = new TarjanState();
 		fEstimator = estimator;
 		fState.ensureSize(fGraph.size());
 		fWriter = new TableWriter(oup, "id", "source", "time", "rc", "urc",
-				"rc1", "rc2", "rc3", "urc1", "urc2", "urc3");
+				"rc1", "rc2", "rc3", "urc1", "urc2", "urc3", "rte");
 	}
 
 	@Override
@@ -60,6 +65,11 @@ public class ComponentTracker implements IEventObserver {
 	@Override
 	public void stateShifted(INetwork network, double time,
 			Schedulable schedulable) {
+		
+		if (!fEstimator.isReached(fMappedSource)) {
+			return;
+		}
+		
 		Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> result = fTransformer
 				.live(fGraph, network);
 		GraphAlgorithms.tarjan(fState, result.c);
@@ -84,11 +94,20 @@ public class ComponentTracker implements IEventObserver {
 				}
 			}
 		}
-
+		
 		fWriter.set("time", time);
 		fWriter.set("id", fId);
-		fWriter.set("source", fRoot);
+		fWriter.set("source", fSource);
+		fWriter.set("rc", rc);
+		fWriter.set("urc", urc);
 
+		IProcess process = (IProcess) schedulable;
+		if (process.id() == 0) {
+			fWriter.set("rte", process.isUp() ? 1 : 0);
+		} else {
+			fWriter.set("rte", -1);
+		}
+		
 		fWriter.emmitRow();
 	}
 

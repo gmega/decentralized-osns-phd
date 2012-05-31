@@ -189,7 +189,14 @@ public class ExperimentReader {
 		}
 
 		public String toString() {
-			return "root: " + root;
+			StringBuffer info = new StringBuffer();
+			info.append("root: ");
+			info.append(root);
+			if (lis != null) {
+				info.append(", size: ");
+				info.append(lis.length);
+			}
+			return info.toString();
 		}
 	}
 

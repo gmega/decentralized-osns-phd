@@ -109,7 +109,7 @@ public abstract class AbstractWorker implements ITransformer {
 		if (fHelper == null) {
 			return;
 		}
-		fHelper.shutdown(true);
+		fHelper.shutdown(false);
 	}
 
 	// -------------------------------------------------------------------------

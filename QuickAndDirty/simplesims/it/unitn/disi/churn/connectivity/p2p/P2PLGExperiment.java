@@ -14,7 +14,6 @@ import it.unitn.disi.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.InputStream;
@@ -48,8 +47,6 @@ public class P2PLGExperiment implements ITransformer {
 	private int fCores;
 
 	private YaoChurnConfigurator fYaoConf;
-
-	private ProgressTracker fTracker;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -135,7 +132,7 @@ public class P2PLGExperiment implements ITransformer {
 
 		for (int j = 0; j < fRepetitions; j++) {
 			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
-					ids);
+					ids, 0);
 			builder.addConnectivitySimulation(0, new int[] {}, null);
 			taskExecutor.submit(builder.simulationTask(lis, dis, fBurnin,
 					fYaoConf));

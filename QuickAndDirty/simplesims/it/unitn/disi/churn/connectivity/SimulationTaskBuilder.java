@@ -19,15 +19,18 @@ public class SimulationTaskBuilder {
 	private final IndexedNeighborGraph fGraph;
 
 	private final int[] fIds;
+	
+	private final int fRoot;
 
 	private TemporalConnectivityEstimator fLast;
 
 	private HashMap<Integer, List<INetworkMetric>> fMap = new HashMap<Integer, List<INetworkMetric>>();
 
-	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids) {
+	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids, int root) {
 		fSims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		fGraph = graph;
 		fIds = ids;
+		fRoot = root;
 	}
 
 	public SimulationTaskBuilder addConnectivitySimulation(int source,
@@ -80,12 +83,12 @@ public class SimulationTaskBuilder {
 		});
 	}
 
-	public void andComponentTracker(int source) {
+	public void andComponentTracker() {
 		if (fLast == null) {
 			throw new IllegalStateException();
 		}
-		addSim(new ComponentTracker(fLast, fGraph, System.out, source,
-				fIds[fLast.source()]));
+		addSim(new ComponentTracker(fLast, fGraph, System.out, fRoot,
+				fIds[fLast.source()], fLast.source()));
 	}
 
 	private void addSim(IEventObserver observer) {
@@ -109,7 +112,7 @@ public class SimulationTaskBuilder {
 		Pair<Integer, List<INetworkMetric>>[] metrics = new Pair[fMap.size()];
 		int k = 0;
 		for (int key : fMap.keySet()) {
-			metrics[k] = new Pair<Integer, List<INetworkMetric>>(key,
+			metrics[k++] = new Pair<Integer, List<INetworkMetric>>(key,
 					fMap.get(key));
 		}
 
