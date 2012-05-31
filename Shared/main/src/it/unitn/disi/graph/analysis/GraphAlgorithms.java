@@ -313,6 +313,32 @@ public class GraphAlgorithms {
 
 	// --------------------------------------------------------------------------
 
+	/**
+	 * Runs Tarjan's algorithm on a graph.
+	 * 
+	 * @param state
+	 *            a {@link TarjanState} object which will be used to hold the
+	 *            state and outputs of the algorithm.
+	 * @param graph
+	 *            the graph over which to run the algorithm.
+	 * @return the number of components in the graph.
+	 */
+	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
+		// Initializes.
+		initState(graph, state);
+
+		int ncomps = 0;
+		for (int i = 0; i < graph.size(); i++) {
+			if (state.visit[i] == -1) {
+				ncomps += tarjan(i, state, graph);
+			}
+		}
+
+		return ncomps;
+	}
+	
+	// --------------------------------------------------------------------------
+
 	public static class TarjanState {
 		public int[] visit = new int[100];
 		public int[] lowlink = new int[100];
@@ -342,23 +368,8 @@ public class GraphAlgorithms {
 
 	// --------------------------------------------------------------------------
 
-	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
-		// Initializes.
-		initState(graph, state);
-
-		int ncomps = 0;
-		for (int i = 0; i < graph.size(); i++) {
-			if (state.visit[i] == -1) {
-				ncomps += tarjan(i, state, graph);
-			}
-		}
-
-		return ncomps;
-	}
-
-	// --------------------------------------------------------------------------
-
-	public static int tarjan(int starting, TarjanState s, IndexedNeighborGraph graph) {
+	private static int tarjan(int starting, TarjanState s,
+			IndexedNeighborGraph graph) {
 
 		int upstream = 0;
 		s.counter.push(0);
@@ -394,7 +405,7 @@ public class GraphAlgorithms {
 			// SCC root
 			if (s.visit[node] == s.lowlink[node]) {
 				TIntArrayList component = new TIntArrayList();
-				
+
 				upstream++;
 				int popped;
 				do {
@@ -411,8 +422,7 @@ public class GraphAlgorithms {
 			}
 			s.counter.pop();
 			node = s.element.peek();
-			s.lowlink[node] = Math.min(s.lowlink[node],
-					s.lowlink[neighbor]);
+			s.lowlink[node] = Math.min(s.lowlink[node], s.lowlink[neighbor]);
 		}
 
 		return upstream;
@@ -437,11 +447,13 @@ public class GraphAlgorithms {
 		state.counter.clear();
 		state.current.clear();
 		state.element.clear();
-		
+
 		// Clear rest.
 		state.visitCounter = 0;
 		state.components.clear();
 	}
+	
+	// --------------------------------------------------------------------------
 
 	private static void checkArray(int size, int[] array) {
 		if (array == null) {
@@ -454,6 +466,8 @@ public class GraphAlgorithms {
 							+ "in the the graph.");
 		}
 	}
+	
+	// --------------------------------------------------------------------------
 
 	/**
 	 * An {@link IEdgeFilter} is a convenient way of excluding certain edges

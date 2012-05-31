@@ -6,7 +6,15 @@ import java.util.BitSet;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 
-public class TopKShortestDisjoint implements ITopKEstimator {
+/**
+ * Returns the top-k edge or vertex-disjoint least cost paths in a graph by
+ * using an iterated application of Dijktra's algorithm. This is a heuristic
+ * method not unlike <a href="">Dunn's heuristic</a>, and doesn't give
+ * guarantees on the aggregated cost of the paths.
+ * 
+ * @author giuliano
+ */
+public class DunnTopK implements ITopKEstimator {
 
 	public static enum Mode {
 		VertexDisjoint, EdgeDisjoint
@@ -33,8 +41,7 @@ public class TopKShortestDisjoint implements ITopKEstimator {
 		}
 	};
 
-	public TopKShortestDisjoint(IndexedNeighborGraph graph, double[][] weights,
-			Mode mode) {
+	public DunnTopK(IndexedNeighborGraph graph, double[][] weights, Mode mode) {
 		fGraph = graph;
 		fPrevious = new int[graph.size()];
 		fMinDists = new double[graph.size()];
@@ -49,7 +56,7 @@ public class TopKShortestDisjoint implements ITopKEstimator {
 
 	public ArrayList<PathEntry> topKShortest(int source, int target, int k) {
 		fForbiddenVertices.clear();
-		for(BitSet set : fForbiddenEdges) {
+		for (BitSet set : fForbiddenEdges) {
 			set.clear();
 		}
 		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();

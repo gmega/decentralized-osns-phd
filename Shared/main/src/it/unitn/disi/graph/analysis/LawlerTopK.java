@@ -8,7 +8,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 
 /**
- * {@link TopKShortest} computes the <i>k</i> shortest paths between a source
+ * {@link LawlerTopK} computes the <i>k</i> shortest paths between a source
  * and a destination. The class implements a variant of <a
  * href="http://www.jstor.org/stable/2629312"> Yen's algorithm</a>, most notably
  * using Lawler's optimizations as described by <a
@@ -17,7 +17,7 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
  * 
  * @author giuliano
  */
-public class TopKShortest implements ITopKEstimator {
+public class LawlerTopK implements ITopKEstimator {
 
 	private IndexedNeighborGraph fGraph;
 
@@ -38,7 +38,7 @@ public class TopKShortest implements ITopKEstimator {
 		}
 	};
 
-	public TopKShortest(IndexedNeighborGraph graph, double[][] weights) {
+	public LawlerTopK(IndexedNeighborGraph graph, double[][] weights) {
 		fGraph = graph;
 		fWeights = weights;
 		fBranchedEdges = new BitSet[graph.size()];

@@ -2,7 +2,7 @@ package it.unitn.disi.churn.connectivity.p2p;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.connectivity.SimulationResults;
+import it.unitn.disi.churn.connectivity.INetworkMetric;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.util.BitSet;
+import java.util.List;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -41,6 +42,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	@Attribute(value = "printcloudnodes", defaultValue = "false")
 	private boolean fPrintCloud;
+
+	@Attribute(value = "monitorclusters", defaultValue = "false")
+	private boolean fMonitorClusters;
 
 	private BitSet fCloudBitmap;
 
@@ -69,15 +73,16 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int[] cloudNodes = cloudNodes(e, ids);
 
 				printCloud(e.root, ids, cloudNodes);
-				
-				int source = MiscUtils.indexOf(ids, Integer.parseInt(e.attributes.get("node")));
 
-				SimulationResults results = simHelper().bruteForceSimulate(
-						e.toString(), graph,
-						source, e.lis,
-						e.dis, ids, cloudNodes, false, fCloudSims);
+				int source = MiscUtils.indexOf(ids,
+						Integer.parseInt(e.attributes.get("node")));
 
-				printResults(e.root, results, writer, ids);
+				List<? extends INetworkMetric> metric = simHelper()
+						.bruteForceSimulate(e.toString(), graph, e.root,
+								source, e.lis, e.dis, ids, cloudNodes, false,
+								fCloudSims, fMonitorClusters);
+
+				printResults(e.root, source, metric, writer, ids);
 			}
 		} finally {
 			shutdown();
@@ -144,18 +149,24 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	// -------------------------------------------------------------------------
 
-	private void printResults(int root, SimulationResults results,
-			TableWriter writer, int[] ids) {
-		for (int i = 0; i < results.bruteForce.length; i++) {
-			if (results.source == i) {
+	private void printResults(int root, int source,
+			List<? extends INetworkMetric> results, TableWriter writer,
+			int[] ids) {
+
+		INetworkMetric ed = Utils.lookup(results, "ed");
+		INetworkMetric rd = Utils.lookup(results, "rd");
+		INetworkMetric cloud = Utils.lookup(results, "cloud_delay");
+
+		for (int i = 0; i < ids.length; i++) {
+			if (source == i) {
 				continue;
 			}
 			writer.set("id", root);
-			writer.set("source", ids[results.source]);
+			writer.set("source", ids[source]);
 			writer.set("target", ids[i]);
-			writer.set("ttc", results.bruteForce[i] / fRepeat);
-			writer.set("ttcloud", results.cloud[i] / fRepeat);
-			writer.set("pl", results.perceived[i] / fRepeat);
+			writer.set("ttc", ed.getMetric(i) / fRepeat);
+			writer.set("ttcloud", cloud.getMetric(i) / fRepeat);
+			writer.set("pl", rd.getMetric(i) / fRepeat);
 			writer.emmitRow();
 		}
 	}

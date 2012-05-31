@@ -1,13 +1,14 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
+import it.unitn.disi.churn.connectivity.p2p.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.ITopKEstimator;
 import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
+import it.unitn.disi.graph.analysis.LawlerTopK;
+import it.unitn.disi.graph.analysis.DunnTopK;
+import it.unitn.disi.graph.analysis.DunnTopK.Mode;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.utils.collections.Pair;
@@ -17,6 +18,7 @@ import it.unitn.disi.utils.logging.ProgressTracker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -49,7 +51,7 @@ public class TEExperimentHelper {
 			LightweightStaticGraph.fromAdjacency(new int[][] {}),
 			new double[][] {}) {
 		{
-			ret(new TopKShortestDisjoint(a, b, Mode.EdgeDisjoint));
+			ret(new DunnTopK(a, b, Mode.EdgeDisjoint));
 		}
 	};
 
@@ -57,7 +59,7 @@ public class TEExperimentHelper {
 			LightweightStaticGraph.fromAdjacency(new int[][] {}),
 			new double[][] {}) {
 		{
-			ret(new TopKShortestDisjoint(a, b, Mode.VertexDisjoint));
+			ret(new DunnTopK(a, b, Mode.VertexDisjoint));
 		}
 	};
 
@@ -65,7 +67,7 @@ public class TEExperimentHelper {
 			LightweightStaticGraph.fromAdjacency(new int[][] {}),
 			new double[][] {}) {
 		{
-			ret(new TopKShortest(a, b));
+			ret(new LawlerTopK(a, b));
 		}
 	};
 
@@ -97,7 +99,7 @@ public class TEExperimentHelper {
 	private final int fRepetitions;
 
 	private final double fBurnin;
-	
+
 	private final TaskExecutor fExecutor;
 
 	/**
@@ -183,10 +185,11 @@ public class TEExperimentHelper {
 	 *         vertices in the graph, as well as the {@link CloudSim} estimates.
 	 * @throws Exception
 	 */
-	public SimulationResults[] bruteForceSimulate(String taskStr,
+	public List<? extends INetworkMetric>[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
-			double[] lIs, double[] dIs, int[] ids, int[] cloudNodes,
-			boolean sampleActivations, boolean cloudSim) throws Exception {
+			double[] lIs, double[] dIs, int root, int[] ids, int[] cloudNodes,
+			boolean sampleActivations, boolean cloudSim,
+			boolean monitorComponents) throws Exception {
 
 		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
 				graph) : null;
@@ -195,17 +198,30 @@ public class TEExperimentHelper {
 
 		fTracker = Progress.newTracker(taskStr, fRepetitions);
 		fTracker.startTask();
+
 		for (int j = 0; j < fRepetitions; j++) {
-			fExecutor.submit(new SimulationTask(lIs, dIs, cloudNodes,
-					sourceStart, sourceEnd, fBurnin, cloudSim, graph, sampler,
-					fYaoConf));
+			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
+					ids);
+			// Stacks sources.
+			for (int i = sourceStart; i <= sourceEnd; i++) {
+				builder.addConnectivitySimulation(i, cloudNodes, null);
+				if (monitorComponents) {
+					builder.andComponentTracker(root);
+				}
+
+				if (cloudSim) {
+					builder.addCloudSimulation(i);
+				}
+			}
+
+			fExecutor.submit(builder
+					.simulationTask(lIs, dIs, fBurnin, fYaoConf));
 		}
 
-		SimulationResults[] result = new SimulationResults[sources];
-		for (int i = 0; i < result.length; i++) {
-			result[i] = new SimulationResults(sourceStart + i,
-					new double[graph.size()], new double[graph.size()],
-					new double[graph.size()]);
+		@SuppressWarnings("unchecked")
+		List<AccumulatorMetric>[] metric = new List[sources];
+		for (int i = 0; i < metric.length; i++) {
+			metric[i] = new ArrayList<AccumulatorMetric>();
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
@@ -216,16 +232,10 @@ public class TEExperimentHelper {
 				continue;
 			}
 
-			SimulationResults[] sourceResults = (SimulationResults[]) taskResult;
-			for (int j = 0; j < sourceResults.length; j++) {
-				SimulationResults sourceResult = sourceResults[j];
-				for (int k = 0; k < sourceResult.bruteForce.length; k++) {
-					result[sourceResult.source - sourceStart].bruteForce[k] += sourceResult.bruteForce[k];
-					result[sourceResult.source - sourceStart].perceived[k] += sourceResult.perceived[k];
-					if (cloudSim) {
-						result[sourceResult.source - sourceStart].cloud[k] += sourceResult.cloud[k];
-					}
-				}
+			@SuppressWarnings("unchecked")
+			Pair<Integer, List<INetworkMetric>> result = (Pair<Integer, List<INetworkMetric>>) taskResult;
+			for (INetworkMetric networkMetric : result.b) {
+				addMatchingMetric(metric[result.a], networkMetric, graph.size());
 			}
 		}
 
@@ -234,7 +244,17 @@ public class TEExperimentHelper {
 			sampler.printActivations(ids);
 		}
 
-		return result;
+		return metric;
+	}
+
+	private void addMatchingMetric(List<AccumulatorMetric> list,
+			INetworkMetric networkMetric, int length) {
+		for (AccumulatorMetric aggregate : list) {
+			if (aggregate.id().equals(networkMetric.id())) {
+				aggregate.add(networkMetric);
+			}
+		}
+		list.add(new AccumulatorMetric(networkMetric, length));
 	}
 
 	/**
@@ -245,12 +265,14 @@ public class TEExperimentHelper {
 	 * @see #bruteForceSimulate(String, IndexedNeighborGraph, int, int,
 	 *      double[][], int[], boolean)
 	 */
-	public SimulationResults bruteForceSimulate(String taskStr,
-			IndexedNeighborGraph graph, int source, double[] lIs, double[] dIs,
-			int[] ids, int[] cloudNodes, boolean sampleActivations,
-			boolean cloudSim) throws Exception {
+	public List<? extends INetworkMetric> bruteForceSimulate(String taskStr,
+			IndexedNeighborGraph graph, int root, int source, double[] lIs,
+			double[] dIs, int[] ids, int[] cloudNodes,
+			boolean sampleActivations, boolean cloudSim,
+			boolean monitorComponents) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				ids, cloudNodes, sampleActivations, cloudSim)[0];
+				root, ids, cloudNodes, sampleActivations, cloudSim,
+				monitorComponents)[0];
 	}
 
 	/**
@@ -291,7 +313,8 @@ public class TEExperimentHelper {
 
 		ITopKEstimator tpk = estimator.call(graph, w);
 
-		System.out.println("Source: " + ids[source] + " Target: " + ids[target] + ".");
+		System.out.println("Source: " + ids[source] + " Target: " + ids[target]
+				+ ".");
 
 		// 1. computes the top-k shortest paths between u and w.
 		int[] vertexes = vertexesOf(tpk.topKShortest(source, target, k));
@@ -310,12 +333,13 @@ public class TEExperimentHelper {
 		int remappedSource = indexOf(source, vertexes);
 		int remappedTarget = indexOf(target, vertexes);
 
-		double[] estimate = bruteForceSimulate(taskString, kPathGraph,
-				remappedSource, remappedSource, liSub, diSub, ids, null, false,
-				false)[0].bruteForce;
+		INetworkMetric estimate = Utils.lookup(
+				bruteForceSimulate(taskString, kPathGraph, remappedSource,
+						remappedSource, liSub, diSub, ids, null, false, false,
+						false), "ed");
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
-				estimate[remappedTarget]);
+				estimate.getMetric(remappedTarget));
 	}
 
 	private int indexOf(int element, int[] vertexes) {
@@ -344,5 +368,36 @@ public class TEExperimentHelper {
 
 		Arrays.sort(vertexes);
 		return vertexes;
+	}
+
+	static class AccumulatorMetric implements INetworkMetric {
+
+		private double[] fMetric;
+
+		private Object fId;
+
+		public AccumulatorMetric(INetworkMetric metric, int length) {
+			fId = metric.id();
+			double[] value = new double[length];
+			for (int i = 0; i < value.length; i++) {
+				value[i] = metric.getMetric(i);
+			}
+		}
+
+		@Override
+		public Object id() {
+			return fId;
+		}
+
+		@Override
+		public double getMetric(int i) {
+			return fMetric[i];
+		}
+
+		public void add(INetworkMetric metric) {
+			for (int i = 0; i < fMetric.length; i++) {
+				fMetric[i] += metric.getMetric(i);
+			}
+		}
 	}
 }

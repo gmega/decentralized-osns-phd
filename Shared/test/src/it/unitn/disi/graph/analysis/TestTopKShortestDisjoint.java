@@ -6,7 +6,7 @@ import java.util.Arrays;
 import junit.framework.Assert;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.TopKShortestDisjoint.Mode;
+import it.unitn.disi.graph.analysis.DunnTopK.Mode;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import org.junit.Test;
@@ -75,7 +75,7 @@ public class TestTopKShortestDisjoint {
 			double[] costs, Mode mode, int[][] refPaths, int source,
 			int destination, int k) {
 
-		TopKShortestDisjoint tsd = new TopKShortestDisjoint(lsg, weights,
+		DunnTopK tsd = new DunnTopK(lsg, weights,
 				Mode.EdgeDisjoint);
 
 		ArrayList<PathEntry> paths = tsd.topKShortest(source, destination, k);

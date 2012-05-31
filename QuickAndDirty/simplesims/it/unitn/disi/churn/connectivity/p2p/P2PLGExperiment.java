@@ -1,8 +1,8 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
 import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.connectivity.SimulationResults;
-import it.unitn.disi.churn.connectivity.SimulationTask;
+import it.unitn.disi.churn.connectivity.INetworkMetric;
+import it.unitn.disi.churn.connectivity.SimulationTaskBuilder;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
@@ -11,10 +11,9 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
 import it.unitn.disi.simulator.IValueObserver;
 import it.unitn.disi.simulator.IncrementalStatsAdapter;
+import it.unitn.disi.simulator.TaskExecutor;
 import it.unitn.disi.unitsim.ListGraphGenerator;
-import it.unitn.disi.utils.CallbackThreadPoolExecutor;
-import it.unitn.disi.utils.IExecutorCallback;
-import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -23,14 +22,14 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.Future;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.lambda.functions.implementations.F0;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.IResolver;
-import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
 
 @AutoConfig
@@ -45,36 +44,12 @@ public class P2PLGExperiment implements ITransformer {
 	@Attribute("burnin")
 	private double fBurnin;
 
+	@Attribute("cores")
+	private int fCores;
+
 	private YaoChurnConfigurator fYaoConf;
 
-	private CallbackThreadPoolExecutor<double[]> fExecutor;
-
 	private ProgressTracker fTracker;
-
-	public P2PLGExperiment(@Attribute(Attribute.AUTO) IResolver resolver) {
-		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
-				resolver);
-
-		fExecutor = new CallbackThreadPoolExecutor<double[]>(Runtime
-				.getRuntime().availableProcessors(),
-				new IExecutorCallback<double[]>() {
-					@Override
-					public void taskFailed(Future<double[]> task, Throwable ex) {
-						ex.printStackTrace();
-						if (fTracker != null) {
-							fTracker.tick();
-						}
-					}
-
-					@Override
-					public synchronized void taskDone(double[] result) {
-						if (fTracker != null) {
-							fTracker.tick();
-						}
-					}
-				});
-
-	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -85,7 +60,9 @@ public class P2PLGExperiment implements ITransformer {
 		ListGraphGenerator lgg = new ListGraphGenerator();
 		IndexedNeighborGraph graph = lgg.subgraph(fN);
 
-		GraphTask gt = pairwiseEstimate(graph);
+		ExecutorService es = Executors.newScheduledThreadPool(fCores);
+		
+		GraphTask gt = pairwiseEstimate(es, graph);
 
 		gt.await();
 
@@ -106,6 +83,8 @@ public class P2PLGExperiment implements ITransformer {
 				i++;
 			}
 		}
+		
+		es.shutdown();
 
 		double[] simulation = simulate(graph, gt.lIs, gt.dIs);
 
@@ -115,11 +94,11 @@ public class P2PLGExperiment implements ITransformer {
 			writer.set("simulation", simulation[i] / fRepetitions);
 			writer.emmitRow();
 		}
-
-		fExecutor.shutdown();
 	}
 
-	private GraphTask pairwiseEstimate(IndexedNeighborGraph graph) {
+	private GraphTask pairwiseEstimate(ExecutorService es,
+			IndexedNeighborGraph graph) {
+
 		ParallelParwiseEstimator ppse = new ParallelParwiseEstimator();
 
 		double[] li = new double[graph.size()];
@@ -136,35 +115,43 @@ public class P2PLGExperiment implements ITransformer {
 			{
 				ret(new IncrementalStatsAdapter(new IncrementalStats()));
 			};
-		}, fExecutor, graph, fRepetitions, li, di,
-				fYaoConf.distributionGenerator(), false, 1, null);
+		}, es, graph, fRepetitions, li, di, fYaoConf.distributionGenerator(),
+				false, 1, null);
 	}
 
 	private double[] simulate(IndexedNeighborGraph graph, double[] lis,
 			double[] dis) throws Exception {
 
-		ArrayList<Future<SimulationResults[]>> tasks = new ArrayList<Future<SimulationResults[]>>();
+		int ids[] = new int[graph.size()];
+		for (int i = 0; i < ids.length; i++) {
+			ids[i] = i;
+		}
+
 		double[] ttc = new double[graph.size()];
 
-		synchronized (fExecutor) {
-			fTracker = Progress.newTracker("simulate", fRepetitions);
-			fTracker.startTask();
+		TaskExecutor taskExecutor = new TaskExecutor(fCores);
+
+		taskExecutor.start("simulate", fRepetitions);
+
+		for (int j = 0; j < fRepetitions; j++) {
+			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
+					ids);
+			builder.addConnectivitySimulation(0, new int[] {}, null);
+			taskExecutor.submit(builder.simulationTask(lis, dis, fBurnin,
+					fYaoConf));
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			tasks.add(fExecutor.submit(new SimulationTask(lis, dis, null, 0, 0,
-					fBurnin, false, graph, null, fYaoConf)));
-		}
-
-		for (Future<SimulationResults[]> task : tasks) {
-			SimulationResults[] tce = task.get();
-			if (tce.length != 1) {
-				throw new IllegalStateException();
-			}
+			@SuppressWarnings("unchecked")
+			Pair<Integer, List<? extends INetworkMetric>> result = ((Pair<Integer, List<? extends INetworkMetric>>[]) taskExecutor
+					.consume())[0];
+			INetworkMetric ed = Utils.lookup(result.b, "ed");
 			for (int i = 0; i < ttc.length; i++) {
-				ttc[i] += tce[0].bruteForce[i];
+				ttc[i] += ed.getMetric(i);
 			}
 		}
+		
+		taskExecutor.shutdown(true);
 
 		return ttc;
 	}

@@ -72,6 +72,10 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 		Arrays.fill(fReachedFrom, Integer.MAX_VALUE);
 		Arrays.fill(fDone, false);
 	}
+	
+	public int source() {
+		return fSource;
+	}
 
 	@Override
 	public void simulationStarted(SimpleEDSim parent) {

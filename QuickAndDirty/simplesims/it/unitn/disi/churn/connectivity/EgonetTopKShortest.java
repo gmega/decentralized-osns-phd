@@ -4,8 +4,8 @@ import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.TopKShortest;
-import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
+import it.unitn.disi.graph.analysis.LawlerTopK;
+import it.unitn.disi.graph.analysis.LawlerTopK.PathEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;
@@ -75,7 +75,7 @@ public class EgonetTopKShortest implements ITransformer {
 			double[][] w = reader.read(ids);
 
 			IndexedNeighborGraph ego = provider.subgraph(root);
-			TopKShortest tpk = new TopKShortest(ego, w);
+			LawlerTopK tpk = new LawlerTopK(ego, w);
 
 			IncrementalStats stats = new IncrementalStats();
 
@@ -132,7 +132,7 @@ public class EgonetTopKShortest implements ITransformer {
 
 	static class TOPKTask implements Callable<ArrayList<PathEntry>> {
 
-		private final TopKShortest fEstimator;
+		private final LawlerTopK fEstimator;
 
 		private final int fI;
 
@@ -140,7 +140,7 @@ public class EgonetTopKShortest implements ITransformer {
 
 		private final int fK;
 
-		public TOPKTask(int i, int j, int k, TopKShortest estimator) {
+		public TOPKTask(int i, int j, int k, LawlerTopK estimator) {
 			fI = i;
 			fJ = j;
 			fK = k;

@@ -8,7 +8,7 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.TopKShortest.PathEntry;
+import it.unitn.disi.graph.analysis.LawlerTopK.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import org.junit.Test;
@@ -149,7 +149,7 @@ public class TestTopKShortest {
 			}
 		}
 
-		TopKShortest tpk = new TopKShortest(lsg, w);
+		LawlerTopK tpk = new LawlerTopK(lsg, w);
 		for (int i = 0; i < 100; i++) {
 			int source = r.nextInt(lsg.size());
 			int destination = r.nextInt(lsg.size());
@@ -191,7 +191,7 @@ public class TestTopKShortest {
 	private void runTest(IndexedNeighborGraph idg, double[][] weights,
 			int[][] refPaths, double[] costs, int source, int target) {
 
-		TopKShortest tpk = new TopKShortest(idg, weights);
+		LawlerTopK tpk = new LawlerTopK(idg, weights);
 		ArrayList<PathEntry> paths = tpk.topKShortest(source, target,
 				Integer.MAX_VALUE);
 		
