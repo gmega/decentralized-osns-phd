@@ -1,10 +1,7 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.io.OutputStream;
-import java.util.Collections;
-import java.util.Comparator;
-
 import gnu.trove.list.array.TIntArrayList;
+import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
@@ -17,6 +14,10 @@ import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class ComponentTracker implements IEventObserver {
 
@@ -33,7 +34,7 @@ public class ComponentTracker implements IEventObserver {
 	private final int fId;
 
 	private final int fSource;
-	
+
 	private final int fMappedSource;
 
 	private final Comparator<TIntArrayList> fSizeComparator = new Comparator<TIntArrayList>() {
@@ -65,14 +66,18 @@ public class ComponentTracker implements IEventObserver {
 	@Override
 	public void stateShifted(INetwork network, double time,
 			Schedulable schedulable) {
-		
+
 		if (!fEstimator.isReached(fMappedSource)) {
 			return;
 		}
-		
+
 		Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> result = fTransformer
 				.live(fGraph, network);
-		GraphAlgorithms.tarjan(fState, result.c);
+
+		IndexedNeighborGraph graph = (result == ILiveTransformer.NO_LIVE_PEER) ? fGraph
+				: result.c;
+
+		GraphAlgorithms.tarjan(fState, graph);
 		Collections.sort(fState.components, fSizeComparator);
 
 		int urc = 0;
@@ -94,7 +99,7 @@ public class ComponentTracker implements IEventObserver {
 				}
 			}
 		}
-		
+
 		fWriter.set("time", time);
 		fWriter.set("id", fId);
 		fWriter.set("source", fSource);
@@ -107,12 +112,12 @@ public class ComponentTracker implements IEventObserver {
 		} else {
 			fWriter.set("rte", -1);
 		}
-		
+
 		fWriter.emmitRow();
 	}
 
 	private boolean isReached(AbstractIDMapper mapper, TIntArrayList component) {
-		int member = mapper.reverseMap(component.get(0));
+		int member = mapper == null ? 0 : mapper.reverseMap(component.get(0));
 		return fEstimator.isReached(member);
 	}
 

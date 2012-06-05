@@ -45,6 +45,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	@Attribute(value = "monitorclusters", defaultValue = "false")
 	private boolean fMonitorClusters;
+	
+	@Attribute(value = "skipmetrics", defaultValue = "false")
+	private boolean fSkipMetrics;
 
 	private BitSet fCloudBitmap;
 
@@ -152,6 +155,10 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	private void printResults(int root, int source,
 			List<? extends INetworkMetric> results, TableWriter writer,
 			int[] ids) {
+		
+		if (fSkipMetrics) {
+			return;
+		}
 
 		INetworkMetric ed = Utils.lookup(results, "ed");
 		INetworkMetric rd = Utils.lookup(results, "rd");
