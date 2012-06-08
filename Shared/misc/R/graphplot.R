@@ -71,7 +71,7 @@ multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col,
 	}
 	
 	if (!is.null(names)) {
-		legends(lp, x=pos, names=names, lwd=lwd, cex=legend.cex)
+		legend(pos, names, lwd=lwd, lty=lty, col=col)
 	}
 	
 	return(qs)

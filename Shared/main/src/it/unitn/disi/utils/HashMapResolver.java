@@ -7,9 +7,9 @@ import peersim.config.StringValueResolver;
 
 public class HashMapResolver extends StringValueResolver {
 	
-	private final Map<String, Object> fAttributes;
+	private final Map<String, ? extends Object> fAttributes;
 	
-	public HashMapResolver(Map<String, Object> attributes) {
+	public HashMapResolver(Map<String, ? extends Object> attributes) {
 		fAttributes = attributes;
 	}
 	

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 
+import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 import it.unitn.disi.cli.ITransformer;
@@ -16,13 +17,20 @@ import it.unitn.disi.utils.exception.ParseException;
  * Binds several tables by row. The header of the first table becomes the
  * "defining header". All subsequent tables being bound must have either the
  * same columns, or a superset of them.
- *  
+ * 
  * @author giuliano
  */
 @AutoConfig
 public class RBind implements ITransformer {
-	
+
+	@Attribute(value = "indulging", defaultValue = "false")
+	private boolean fIndulging;
+
 	private int fCurrentTable = 1;
+
+	private int fCurrentLine = 1;
+
+	private int fIndulged = 0;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -31,18 +39,15 @@ public class RBind implements ITransformer {
 		ITableWriter writer = new TableWriter(new PrintStream(
 				new BufferedOutputStream(oup)), header);
 
-		int lineCount = 1;
 		while (reader.hasNext()) {
 			try {
-				lineCount++;
+				fCurrentLine++;
 				reader.next();
 			} catch (ParseException ex) {
-				reader = reader.fromCurrentRow();
-				fCurrentTable++;
-				checkHeader(reader, header, lineCount);
+				reader = nextTable(reader, header);
 				continue;
 			}
-			
+
 			// Is the current row a header?
 			if (pMatches(header, reader)) {
 				// Yes, don't transfer.
@@ -53,7 +58,16 @@ public class RBind implements ITransformer {
 			writer.emmitRow();
 		}
 	}
-	
+
+	private TableReader nextTable(TableReader old, String[] header) {
+		TableReader newReader = old.fromCurrentRow();
+		if (checkHeader(newReader, header, fCurrentLine)) {
+			fCurrentTable++;
+			return newReader;
+		}
+		return old;
+	}
+
 	private boolean pMatches(String[] header, TableReader reader) {
 		for (String key : header) {
 			if (!reader.get(key).equals(key)) {
@@ -63,15 +77,22 @@ public class RBind implements ITransformer {
 		return true;
 	}
 
-	private void checkHeader(TableReader reader, String[] header, int count) {
-		List <String> newHeader = reader.columns();
+	private boolean checkHeader(TableReader reader, String[] header, int count) {
+		List<String> newHeader = reader.columns();
 		for (String headerPart : header) {
 			if (!newHeader.contains(headerPart)) {
+				if (fIndulging) {
+					System.err.println("-- Skipping bad line " + count + ".");
+					return false;
+				}
+
 				throw new ParseException("Cannot bind by column: table "
 						+ fCurrentTable + " does not contain column "
 						+ headerPart + " (line " + count + ").");
 			}
 		}
+
+		return true;
 	}
 
 	private void transfer(TableReader reader, ITableWriter writer,
