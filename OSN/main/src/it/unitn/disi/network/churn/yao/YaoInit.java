@@ -1,6 +1,9 @@
 package it.unitn.disi.network.churn.yao;
 
 import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.yao.YaoPresets;
+import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
+import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.tabular.ITableWriter;
@@ -23,26 +26,6 @@ import peersim.dynamics.NodeInitializer;
 @StructuredLog(key = "YaoInit", fields = { "id", "li", "di", "eli", "edi", "ai" })
 @AutoConfig
 public class YaoInit implements Control, NodeInitializer {
-
-	// ------------------------------------------------------------------------
-	// Configuration machinery.
-	// ------------------------------------------------------------------------
-
-	public static interface IDistributionGenerator extends Cloneable {
-		IDistribution uptimeDistribution(double li);
-
-		IDistribution downtimeDistribution(double di);
-
-		String id();
-	}
-
-	public static interface IAverageGenerator {
-		double nextLI();
-
-		double nextDI();
-
-		String id();
-	}
 
 	// ------------------------------------------------------------------------
 

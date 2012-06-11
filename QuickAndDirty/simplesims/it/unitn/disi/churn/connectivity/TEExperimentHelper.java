@@ -1,6 +1,5 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.connectivity.p2p.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
@@ -10,7 +9,9 @@ import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.DunnTopK;
 import it.unitn.disi.graph.analysis.DunnTopK.Mode;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.simulator.INetworkMetric;
 import it.unitn.disi.simulator.TaskExecutor;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.logging.ProgressTracker;

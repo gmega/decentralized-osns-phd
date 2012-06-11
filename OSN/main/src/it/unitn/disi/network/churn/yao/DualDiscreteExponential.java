@@ -1,9 +1,9 @@
 package it.unitn.disi.network.churn.yao;
 
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.simulator.random.DiscreteExponential;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.simulator.random.UniformDistribution;
+import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 
 import java.util.Random;
 

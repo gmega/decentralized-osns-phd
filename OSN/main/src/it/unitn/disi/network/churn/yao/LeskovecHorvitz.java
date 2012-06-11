@@ -5,8 +5,8 @@ import java.util.Random;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 
 /**
  * Random number generators for distributions taken from Leskovec and Horvitz's

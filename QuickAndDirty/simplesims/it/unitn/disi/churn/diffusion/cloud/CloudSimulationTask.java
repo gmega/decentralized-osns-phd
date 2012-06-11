@@ -5,7 +5,6 @@ import java.util.Random;
 import peersim.config.IResolver;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.diffusion.ChurnSimulationTask;
 import it.unitn.disi.churn.diffusion.HFlood;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -14,6 +13,7 @@ import it.unitn.disi.simulator.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.simulator.random.UniformDistribution;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 
 public class CloudSimulationTask extends ChurnSimulationTask {
 

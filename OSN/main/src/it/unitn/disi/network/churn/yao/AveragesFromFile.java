@@ -7,7 +7,7 @@ import java.util.NoSuchElementException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
+import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.tabular.TableReader;
 

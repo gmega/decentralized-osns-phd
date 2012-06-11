@@ -2,10 +2,10 @@ package it.unitn.disi.churn.connectivity.p2p;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.connectivity.INetworkMetric;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.INetworkMetric;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;

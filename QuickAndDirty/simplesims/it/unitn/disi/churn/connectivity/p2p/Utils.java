@@ -1,8 +1,9 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.churn.connectivity.INetworkMetric;
-
 import java.util.List;
+
+import it.unitn.disi.simulator.INetworkMetric;
+
 
 public class Utils {
 	public static INetworkMetric lookup(List<? extends INetworkMetric> list,

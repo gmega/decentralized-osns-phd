@@ -1,9 +1,11 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.IEventObserver;
+import it.unitn.disi.simulator.INetworkMetric;
 import it.unitn.disi.simulator.IProcess;
+import it.unitn.disi.simulator.concurrent.SimulationTask;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ public class SimulationTaskBuilder {
 	private final IndexedNeighborGraph fGraph;
 
 	private final int[] fIds;
-	
+
 	private final int fRoot;
 
 	private TemporalConnectivityEstimator fLast;
@@ -126,7 +128,7 @@ public class SimulationTaskBuilder {
 					}
 				});
 
-		return new SimulationTask(lIs, dIs, burnIn, fGraph, conf, fSims,
-				metrics);
+		return new SimulationTask(lIs, dIs, burnIn, fGraph,
+				conf.distributionGenerator(), fSims, metrics);
 	}
 }

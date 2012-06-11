@@ -1,6 +1,6 @@
 package it.unitn.disi.network.churn.yao;
 
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
+import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 

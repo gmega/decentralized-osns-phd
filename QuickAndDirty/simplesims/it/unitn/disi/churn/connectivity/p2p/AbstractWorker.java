@@ -2,12 +2,12 @@ package it.unitn.disi.churn.connectivity.p2p;
 
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import peersim.config.Attribute;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;

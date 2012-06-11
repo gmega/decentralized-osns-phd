@@ -1,9 +1,7 @@
 package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.simulator.IEventObserver;
 import it.unitn.disi.simulator.IProcess;
 import it.unitn.disi.simulator.IProcess.State;
@@ -12,6 +10,8 @@ import it.unitn.disi.simulator.RenewalProcess;
 import it.unitn.disi.simulator.SimpleEDSim;
 import it.unitn.disi.simulator.random.GeneralizedPareto;
 import it.unitn.disi.simulator.random.UniformDistribution;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.io.InputStream;

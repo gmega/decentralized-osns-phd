@@ -6,7 +6,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.plugin.IPlugin;
-import it.unitn.disi.network.churn.yao.ISeedStream;
+import it.unitn.disi.simulator.yao.ISeedStream;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.ed.EDGovernor;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;

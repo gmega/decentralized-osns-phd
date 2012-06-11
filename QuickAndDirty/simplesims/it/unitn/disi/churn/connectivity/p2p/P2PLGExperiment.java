@@ -1,17 +1,17 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
-import it.unitn.disi.churn.connectivity.INetworkMetric;
 import it.unitn.disi.churn.connectivity.SimulationTaskBuilder;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.network.churn.yao.YaoInit.IAverageGenerator;
+import it.unitn.disi.simulator.INetworkMetric;
 import it.unitn.disi.simulator.IValueObserver;
 import it.unitn.disi.simulator.IncrementalStatsAdapter;
 import it.unitn.disi.simulator.TaskExecutor;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableWriter;

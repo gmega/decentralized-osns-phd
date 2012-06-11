@@ -1,17 +1,17 @@
 package it.unitn.disi.churn.diffusion;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.config.YaoChurnConfigurator;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.network.churn.yao.YaoInit.IDistributionGenerator;
 import it.unitn.disi.simulator.IEventObserver;
 import it.unitn.disi.simulator.IProcess;
 import it.unitn.disi.simulator.IProcess.State;
 import it.unitn.disi.simulator.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.RenewalProcess;
 import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
