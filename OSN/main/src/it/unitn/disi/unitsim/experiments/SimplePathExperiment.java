@@ -10,8 +10,8 @@ import peersim.util.IncrementalStats;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.unitsim.IExperimentObserver;
 import it.unitn.disi.unitsim.ed.IEDUnitExperiment;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
 import it.unitn.disi.utils.peersim.INodeStateListener;
@@ -46,7 +46,7 @@ public class SimplePathExperiment extends GraphExperiment implements
 
 	private ITableWriter fLog;
 
-	private ProgressTracker fTracker;
+	private IProgressTracker fTracker;
 
 	public SimplePathExperiment(@Attribute(Attribute.PREFIX) String prefix,
 			@Attribute("id") Integer id,

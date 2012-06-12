@@ -9,8 +9,8 @@ import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -193,7 +193,7 @@ public class LoadSimulator implements IMultiTransformer, ILoadSim,
 
 		emmitHeader();
 
-		ProgressTracker tracker = Progress.newTracker(
+		IProgressTracker tracker = Progress.newTracker(
 				"Running load simulations", fExperiments.values().size());
 		tracker.startTask();
 		Iterator<UnitExperiment> it = fExperiments.values().iterator();
