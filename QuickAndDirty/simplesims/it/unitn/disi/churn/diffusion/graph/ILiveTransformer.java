@@ -1,7 +1,8 @@
 package it.unitn.disi.churn.diffusion.graph;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;
@@ -26,7 +27,7 @@ public interface ILiveTransformer {
 	 *            the source graph.
 	 * 
 	 * @param network
-	 *            the {@link SimpleEDSim} from which peer state can be queried.
+	 *            the {@link EDSimulationEngine} from which peer state can be queried.
 	 * 
 	 * @return a {@link Triplet}, with:
 	 *         <ol>

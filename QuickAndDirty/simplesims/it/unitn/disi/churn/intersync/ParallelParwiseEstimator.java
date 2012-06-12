@@ -1,16 +1,16 @@
 package it.unitn.disi.churn.intersync;
 
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IProcess.State;
-import it.unitn.disi.simulator.IValueObserver;
-import it.unitn.disi.simulator.RenewalProcess;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.RenewalProcess;
+import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
 import it.unitn.disi.utils.IExecutorCallback;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
@@ -23,7 +23,7 @@ import peersim.graph.Graph;
 
 public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
-	private ProgressTracker fTracker;
+	private IProgressTracker fTracker;
 
 	private double fBurnin;
 
@@ -85,13 +85,13 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				distGen.uptimeDistribution(lIs[j]),
 				distGen.downtimeDistribution(dIs[j]), State.down);
 
-		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		ArrayList<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
 		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
 				observer);
-		sims.add(new Pair<Integer, IEventObserver>(
+		sims.add(new Pair<Integer, ISimulationObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, sexp));
 
-		SimpleEDSim churnSim = new SimpleEDSim(new IProcess[] { pI, pJ }, sims,
+		EDSimulationEngine churnSim = new EDSimulationEngine(new IProcess[] { pI, pJ }, sims,
 				fBurnin);
 
 		return new EdgeTask(churnSim, observer, i, j);
@@ -142,7 +142,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 	public static class EdgeTask {
 
-		protected final SimpleEDSim sim;
+		protected final EDSimulationEngine sim;
 		public volatile IValueObserver stats;
 
 		public final int i;
@@ -150,7 +150,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 		private volatile Future<?> fFuture;
 
-		public EdgeTask(SimpleEDSim sim, IValueObserver stats, int i, int j) {
+		public EdgeTask(EDSimulationEngine sim, IValueObserver stats, int i, int j) {
 			this.sim = sim;
 			this.i = i;
 			this.j = j;

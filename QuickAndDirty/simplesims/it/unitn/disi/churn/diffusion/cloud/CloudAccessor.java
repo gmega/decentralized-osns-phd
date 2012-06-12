@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
 import it.unitn.disi.churn.diffusion.HFlood;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IProcess.State;
-import it.unitn.disi.simulator.IProcessObserver;
-import it.unitn.disi.simulator.PausingCyclicProtocolRunner;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.IProcessObserver;
+import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.random.IDistribution;
 
 /**
@@ -37,7 +37,7 @@ public class CloudAccessor implements IProcessObserver {
 
 	private final HFlood fDelegate;
 
-	private final SimpleEDSim fSim;
+	private final EDSimulationEngine fSim;
 
 	private final int fClockMode;
 
@@ -47,7 +47,7 @@ public class CloudAccessor implements IProcessObserver {
 
 	public CloudAccessor(IDistribution distribution, HFlood source,
 			HFlood delegate, PausingCyclicProtocolRunner<HFlood> runner,
-			SimpleEDSim sim, int clockMode) {
+			EDSimulationEngine sim, int clockMode) {
 		fDistribution = distribution;
 		fSource = source;
 		fDelegate = delegate;

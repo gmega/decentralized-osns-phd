@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.network.churn.yao.AveragesFromFile;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IProcess.State;
-import it.unitn.disi.simulator.IValueObserver;
-import it.unitn.disi.simulator.IncrementalStatsAdapter;
-import it.unitn.disi.simulator.RenewalProcess;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.RenewalProcess;
+import it.unitn.disi.simulator.measure.IValueObserver;
+import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.simulator.yao.YaoPresets;
 import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.yao.YaoPresets.IDistributionGenerator;
@@ -110,7 +110,7 @@ public class SyncEstimatorCLI {
 		List<IValueObserver> stats = mkStats();
 
 		// With outer repeats, we start one experiment from scratch each time.
-		SimpleEDSim sim = null;
+		EDSimulationEngine sim = null;
 		if (fUseOuter) {
 			for (int i = 0; i < fRepeats; i++) {
 				sim = experiment(create(pid[0], dgen, li[0], di[0], i != 0),
@@ -144,26 +144,26 @@ public class SyncEstimatorCLI {
 
 	// ------------------------------------------------------------------------
 
-	private SimpleEDSim experiment(RenewalProcess p1, RenewalProcess p2,
+	private EDSimulationEngine experiment(RenewalProcess p1, RenewalProcess p2,
 			double burnin, String string, int repeats,
 			List<IValueObserver> stats, boolean verbose) {
 
-		List<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		List<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new Pair<Integer, IEventObserver>(
+			sims.add(new Pair<Integer, ISimulationObserver>(
 					IProcess.PROCESS_SCHEDULABLE_TYPE, new TrueSyncEstimator(
 							repeats, false, stats.remove(0))));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {
-			sims.add(new Pair<Integer, IEventObserver>(
+			sims.add(new Pair<Integer, ISimulationObserver>(
 					IProcess.PROCESS_SCHEDULABLE_TYPE, new BurninSyncEstimator(
 							burnin, repeats, stats.remove(0))));
 		}
 
-		return new SimpleEDSim(new RenewalProcess[] { p1, p2 }, sims, 0.0);
+		return new EDSimulationEngine(new RenewalProcess[] { p1, p2 }, sims, 0.0);
 	}
 
 	// ------------------------------------------------------------------------

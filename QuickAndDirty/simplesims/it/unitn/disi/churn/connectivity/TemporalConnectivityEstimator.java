@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.RenewalProcess;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.RenewalProcess;
+import it.unitn.disi.simulator.core.Schedulable;
 
 import java.util.Arrays;
 
@@ -15,9 +15,9 @@ import java.util.Arrays;
  * 
  * @author giuliano
  */
-public class TemporalConnectivityEstimator implements IEventObserver {
+public class TemporalConnectivityEstimator implements ISimulationObserver {
 
-	private SimpleEDSim fParent;
+	private EDSimulationEngine fParent;
 
 	private ActivationSampler fSampler;
 
@@ -78,12 +78,12 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 	}
 
 	@Override
-	public void simulationStarted(SimpleEDSim parent) {
+	public void simulationStarted(EDSimulationEngine parent) {
 		fParent = parent;
 	}
 
 	@Override
-	public void stateShifted(INetwork parent, double time,
+	public void eventPerformed(INetwork parent, double time,
 			Schedulable schedulable) {
 		RenewalProcess process = (RenewalProcess) schedulable;
 		if (!process.isUp()) {
@@ -147,7 +147,7 @@ public class TemporalConnectivityEstimator implements IEventObserver {
 		}
 
 		if (isDone()) {
-			fParent.done(this);
+			fParent.unbound(this);
 		}
 	}
 

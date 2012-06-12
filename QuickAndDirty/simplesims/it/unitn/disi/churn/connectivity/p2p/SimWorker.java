@@ -5,7 +5,7 @@ import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.INetworkMetric;
+import it.unitn.disi.simulator.measure.INetworkMetric;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;

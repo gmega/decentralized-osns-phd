@@ -2,7 +2,7 @@ package it.unitn.disi.churn.diffusion;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.INetwork;
+import it.unitn.disi.simulator.core.INetwork;
 
 import java.util.BitSet;
 import java.util.Random;

@@ -6,11 +6,11 @@ import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -19,7 +19,7 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Comparator;
 
-public class ComponentTracker implements IEventObserver {
+public class ComponentTracker implements ISimulationObserver {
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -60,11 +60,11 @@ public class ComponentTracker implements IEventObserver {
 	}
 
 	@Override
-	public void simulationStarted(SimpleEDSim parent) {
+	public void simulationStarted(EDSimulationEngine parent) {
 	}
 
 	@Override
-	public void stateShifted(INetwork network, double time,
+	public void eventPerformed(INetwork network, double time,
 			Schedulable schedulable) {
 
 		if (!fEstimator.isReached(fMappedSource)) {

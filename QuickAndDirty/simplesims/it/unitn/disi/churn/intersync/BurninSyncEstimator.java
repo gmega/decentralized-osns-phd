@@ -1,16 +1,16 @@
 package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.StateAccountant;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IValueObserver;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.measure.IValueObserver;
 
-public class BurninSyncEstimator implements IEventObserver {
+public class BurninSyncEstimator implements ISimulationObserver {
 
-	private SimpleEDSim fParent;
+	private EDSimulationEngine fParent;
 	
 	private StateAccountant fWaitSync;
 
@@ -31,12 +31,12 @@ public class BurninSyncEstimator implements IEventObserver {
 	}
 
 	@Override
-	public void simulationStarted(SimpleEDSim p) {
+	public void simulationStarted(EDSimulationEngine p) {
 		fParent = p;
 	}
 
 	@Override
-	public void stateShifted(INetwork parent, double time,
+	public void eventPerformed(INetwork parent, double time,
 			Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
@@ -66,7 +66,7 @@ public class BurninSyncEstimator implements IEventObserver {
 
 		if (fSyncs == 0) {
 			fDone = true;
-			fParent.done(this);
+			fParent.unbound(this);
 		}
 	}
 

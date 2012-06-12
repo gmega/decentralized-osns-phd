@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 
 import java.util.Arrays;
@@ -13,11 +13,11 @@ import java.util.Arrays;
  * {@link CloudSim} is a simpler {@link TemporalConnectivityEstimator} which
  * assumes that there is a server separating source and destination. Designed to
  * be stacked with {@link TemporalConnectivityExperiment} over a single
- * {@link SimpleEDSim}.
+ * {@link EDSimulationEngine}.
  * 
  * @author giuliano
  */
-public class CloudSim implements IEventObserver {
+public class CloudSim implements ISimulationObserver {
 
 	private final int fSource;
 
@@ -30,13 +30,13 @@ public class CloudSim implements IEventObserver {
 	}
 
 	@Override
-	public void simulationStarted(SimpleEDSim parent) {
+	public void simulationStarted(EDSimulationEngine parent) {
 		fTimes = new double[parent.size()];
 		Arrays.fill(fTimes, Double.MAX_VALUE);
 	}
 
 	@Override
-	public void stateShifted(INetwork parent, double time,
+	public void eventPerformed(INetwork parent, double time,
 			Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;

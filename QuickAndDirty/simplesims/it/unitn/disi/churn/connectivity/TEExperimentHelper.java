@@ -2,19 +2,18 @@ package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.churn.connectivity.p2p.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.ITopKEstimator;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.DunnTopK;
 import it.unitn.disi.graph.analysis.DunnTopK.Mode;
+import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.ITopKEstimator;
+import it.unitn.disi.graph.analysis.LawlerTopK;
+import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.simulator.INetworkMetric;
-import it.unitn.disi.simulator.TaskExecutor;
+import it.unitn.disi.simulator.concurrent.TaskExecutor;
+import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.SumAccumulation;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -217,9 +216,9 @@ public class TEExperimentHelper {
 		}
 
 		@SuppressWarnings("unchecked")
-		List<AccumulatorMetric>[] metric = new List[sources];
+		List<SumAccumulation>[] metric = new List[sources];
 		for (int i = 0; i < metric.length; i++) {
-			metric[i] = new ArrayList<AccumulatorMetric>();
+			metric[i] = new ArrayList<SumAccumulation>();
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
@@ -248,14 +247,14 @@ public class TEExperimentHelper {
 		return metric;
 	}
 
-	private void addMatchingMetric(List<AccumulatorMetric> list,
+	private void addMatchingMetric(List<SumAccumulation> list,
 			INetworkMetric networkMetric, int length) {
-		for (AccumulatorMetric aggregate : list) {
+		for (SumAccumulation aggregate : list) {
 			if (aggregate.id().equals(networkMetric.id())) {
 				aggregate.add(networkMetric);
 			}
 		}
-		list.add(new AccumulatorMetric(networkMetric, length));
+		list.add(new SumAccumulation(networkMetric, length));
 	}
 
 	/**
@@ -370,36 +369,5 @@ public class TEExperimentHelper {
 		Arrays.sort(vertexes);
 		return vertexes;
 	}
-
-	static class AccumulatorMetric implements INetworkMetric {
-
-		private double[] fMetric;
-
-		private Object fId;
-
-		public AccumulatorMetric(INetworkMetric metric, int length) {
-			fId = metric.id();
-			double[] value = new double[length];
-			for (int i = 0; i < value.length; i++) {
-				value[i] = metric.getMetric(i);
-			}
-			fMetric = value;
-		}
-
-		@Override
-		public Object id() {
-			return fId;
-		}
-
-		@Override
-		public double getMetric(int i) {
-			return fMetric[i];
-		}
-
-		public void add(INetworkMetric metric) {
-			for (int i = 0; i < fMetric.length; i++) {
-				fMetric[i] += metric.getMetric(i);
-			}
-		}
-	}
+	
 }

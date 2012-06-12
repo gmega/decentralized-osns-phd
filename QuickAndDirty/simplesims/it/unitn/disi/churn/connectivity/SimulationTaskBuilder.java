@@ -1,10 +1,11 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetworkMetric;
-import it.unitn.disi.simulator.IProcess;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.measure.INetworkMetric;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -16,7 +17,7 @@ import java.util.List;
 
 public class SimulationTaskBuilder {
 
-	private final ArrayList<Pair<Integer, ? extends IEventObserver>> fSims;
+	private final ArrayList<Pair<Integer, ? extends ISimulationObserver>> fSims;
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -29,7 +30,7 @@ public class SimulationTaskBuilder {
 	private HashMap<Integer, List<INetworkMetric>> fMap = new HashMap<Integer, List<INetworkMetric>>();
 
 	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids, int root) {
-		fSims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		fSims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
 		fGraph = graph;
 		fIds = ids;
 		fRoot = root;
@@ -93,8 +94,8 @@ public class SimulationTaskBuilder {
 				fIds[fLast.source()], fLast.source()));
 	}
 
-	private void addSim(IEventObserver observer) {
-		fSims.add(new Pair<Integer, IEventObserver>(
+	private void addSim(ISimulationObserver observer) {
+		fSims.add(new Pair<Integer, ISimulationObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, observer));
 	}
 
@@ -128,7 +129,9 @@ public class SimulationTaskBuilder {
 					}
 				});
 
-		return new SimulationTask(lIs, dIs, burnIn, fGraph,
-				conf.distributionGenerator(), fSims, metrics);
+		EDSimulationEngine engine = new EDSimulationEngine(
+				conf.createProcesses(lIs, dIs, lIs.length), fSims, burnIn);
+		
+		return new SimulationTask(null, engine, metrics);
 	}
 }

@@ -2,11 +2,11 @@ package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IProcess.State;
-import it.unitn.disi.simulator.RenewalProcess;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -89,11 +89,11 @@ public class TestTCExperiment {
 		TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
 				graph, 0);
 
-		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-		sims.add(new Pair<Integer, IEventObserver>(
+		ArrayList<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		sims.add(new Pair<Integer, ISimulationObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, tce));
 
-		SimpleEDSim bcs = new SimpleEDSim(processes, sims, 0);
+		EDSimulationEngine bcs = new EDSimulationEngine(processes, sims, 0);
 		bcs.run();
 
 		Assert.assertEquals(0.0, tce.reachTime(0));

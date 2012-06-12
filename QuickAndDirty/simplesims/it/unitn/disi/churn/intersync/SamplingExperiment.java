@@ -2,12 +2,12 @@ package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
 import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IProcess.State;
-import it.unitn.disi.simulator.IValueObserver;
-import it.unitn.disi.simulator.RenewalProcess;
-import it.unitn.disi.simulator.SimpleEDSim;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.RenewalProcess;
+import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.random.GeneralizedPareto;
 import it.unitn.disi.simulator.random.UniformDistribution;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
@@ -164,7 +164,7 @@ public class SamplingExperiment implements ITransformer {
 
 	}
 
-	private void runSim(double burnin, IEventObserver sim) {
+	private void runSim(double burnin, ISimulationObserver sim) {
 
 		double[] li = { 0.022671232013507403, 0.15811117888599902 };
 		double[] di = { 0.060429334420225356, 5.098033173656655 };
@@ -180,11 +180,11 @@ public class SamplingExperiment implements ITransformer {
 				distGen.uptimeDistribution(li[1]),
 				distGen.downtimeDistribution(di[1]), State.down);
 
-		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-		sims.add(new Pair<Integer, IEventObserver>(
+		ArrayList<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		sims.add(new Pair<Integer, ISimulationObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, sim));
 
-		SimpleEDSim churnSim = new SimpleEDSim(new RenewalProcess[] { pI, pJ },
+		EDSimulationEngine churnSim = new EDSimulationEngine(new RenewalProcess[] { pI, pJ },
 				sims, burnin);
 
 		churnSim.run();

@@ -7,8 +7,8 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.LawlerTopK.PathEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -79,7 +79,7 @@ public class EgonetTopKShortest implements ITransformer {
 
 			IncrementalStats stats = new IncrementalStats();
 
-			ProgressTracker tracker = Progress.newTracker("processing",
+			IProgressTracker tracker = Progress.newTracker("processing",
 					w.length * (w.length - 1));
 			tracker.startTask();
 

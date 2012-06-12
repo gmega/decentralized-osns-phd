@@ -1,21 +1,21 @@
 package it.unitn.disi.churn.intersync;
 
-import it.unitn.disi.simulator.IEventObserver;
-import it.unitn.disi.simulator.INetwork;
-import it.unitn.disi.simulator.IProcess;
-import it.unitn.disi.simulator.IValueObserver;
-import it.unitn.disi.simulator.Schedulable;
-import it.unitn.disi.simulator.SimpleEDSim;
 import gnu.trove.list.array.TDoubleArrayList;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.measure.IValueObserver;
 
 /**
  * Very simple experiment for sampling the synchronization time of two nodes.
  * 
  * @author giuliano
  */
-public class TrueSyncEstimator implements IEventObserver {
+public class TrueSyncEstimator implements ISimulationObserver {
 
-	private SimpleEDSim fParent;
+	private EDSimulationEngine fParent;
 	
 	private volatile int fSamples;
 
@@ -35,13 +35,13 @@ public class TrueSyncEstimator implements IEventObserver {
 	}
 
 	@Override
-	public void simulationStarted(SimpleEDSim p) {
+	public void simulationStarted(EDSimulationEngine p) {
 		fParent = p;
 		fPId0 = p.process(0).id();
 	}
 
 	@Override
-	public void stateShifted(INetwork p, double time, Schedulable schedulable) {
+	public void eventPerformed(INetwork p, double time, Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
 
@@ -57,7 +57,7 @@ public class TrueSyncEstimator implements IEventObserver {
 		}
 		
 		if (isDone()) {
-			fParent.done(this);
+			fParent.unbound(this);
 		}
 	}
 
