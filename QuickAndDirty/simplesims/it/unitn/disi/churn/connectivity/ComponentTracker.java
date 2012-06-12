@@ -11,6 +11,7 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -64,15 +65,14 @@ public class ComponentTracker implements ISimulationObserver {
 	}
 
 	@Override
-	public void eventPerformed(INetwork network, double time,
-			Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 
 		if (!fEstimator.isReached(fMappedSource)) {
 			return;
 		}
 
 		Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> result = fTransformer
-				.live(fGraph, network);
+				.live(fGraph, state.network());
 
 		IndexedNeighborGraph graph = (result == ILiveTransformer.NO_LIVE_PEER) ? fGraph
 				: result.c;
@@ -100,7 +100,7 @@ public class ComponentTracker implements ISimulationObserver {
 			}
 		}
 
-		fWriter.set("time", time);
+		fWriter.set("time", state.clock().time());
 		fWriter.set("id", fId);
 		fWriter.set("source", fSource);
 		fWriter.set("rc", rc);

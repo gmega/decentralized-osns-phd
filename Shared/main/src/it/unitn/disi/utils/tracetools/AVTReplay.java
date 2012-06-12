@@ -17,8 +17,8 @@ import peersim.config.AutoConfig;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 import it.unitn.disi.utils.tabular.ITableWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
@@ -69,7 +69,7 @@ public class AVTReplay implements IMultiTransformer {
 
 		BitSet seen = new BitSet();
 		long size = 0;
-		ProgressTracker tracker = Progress.newTracker("Running AVT simulation", traces.a); 
+		IProgressTracker tracker = Progress.newTracker("Running AVT simulation", traces.a); 
 		tracker.startTask();
 		for (int i = 0; i <= traces.a; i++) {
 			int in = 0;

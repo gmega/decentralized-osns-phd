@@ -6,6 +6,7 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
 /**
@@ -41,10 +42,13 @@ public class TrueSyncEstimator implements ISimulationObserver {
 	}
 
 	@Override
-	public void eventPerformed(INetwork p, double time, Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
+		INetwork p = state.network();
 
+		double time = state.clock().time();
+		
 		// We saw a login event for P1.
 		if (process.id() == fPId0 && process.isUp()) {
 			fPendingUps.add(time);

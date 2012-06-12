@@ -150,18 +150,18 @@ public class DiffusionExperiment implements ITransformer {
 
 			INetworkMetric ed = result.getMetric("ed");
 			INetworkMetric rd = result.getMetric("rd");
-			
+
 			if (fSummary) {
 				IncrementalStats edSumm = summarize(ed, graph.size());
 				IncrementalStats rdSumm = summarize(rd, graph.size());
-				
+
 				writer.set("id", experiment.root);
 				writer.set("source", source);
 				writer.set("target", "none");
 				writer.set("edsum", edSumm.getSum());
 				writer.set("rdsum", rdSumm.getSum());
 				writer.set("size", graph.size());
-				
+
 				writer.emmitRow();
 
 			} else {
@@ -172,7 +172,7 @@ public class DiffusionExperiment implements ITransformer {
 					writer.set("edsum", ed.getMetric(i));
 					writer.set("rdsum", rd.getMetric(i));
 					writer.set("size", graph.size());
-					
+
 					writer.emmitRow();
 				}
 			}
@@ -205,9 +205,8 @@ public class DiffusionExperiment implements ITransformer {
 					seedGen != null ? seedGen.nextLong() : null, clockType));
 		}
 
-		MetricsCollector collector = new MetricsCollector(graph.size());
 		CloudAccessCounter counter = new CloudAccessCounter(graph.size());
-		collector.add(counter);
+		MetricsCollector collector = new MetricsCollector(graph.size(), counter);
 
 		for (int i = 0; i < repetitions; i++) {
 			Object value = fExecutor.consume();
@@ -239,7 +238,8 @@ public class DiffusionExperiment implements ITransformer {
 
 		core.set("id", id);
 		core.set("source", source);
-		core.set("lsum", stats.getAverage());
+		core.set("rdsum", stats.getAverage());
+		core.set("edsum", 0);
 		core.set("size", stats.getN());
 		core.emmitRow();
 	}
@@ -267,7 +267,8 @@ public class DiffusionExperiment implements ITransformer {
 					fSelector, graph, rnd);
 		} else {
 			IProcess[] processes = fYaoChurn.createProcesses(experiment.lis,
-					experiment.dis, graph.size(), new Random(seed));
+					experiment.dis, graph.size(), seed != null ? new Random(
+							seed) : new Random());
 
 			if (fCloudAssisted) {
 				elements = new CloudSimulationBuilder().build(fBurnin, fPeriod,

@@ -1,6 +1,6 @@
 package it.unitn.disi.utils.logging;
 
-public abstract class ProgressTracker {
+public abstract class ProgressTracker implements IProgressTracker {
 	
 	private final String fTaskTitle;
 	
@@ -21,21 +21,37 @@ public abstract class ProgressTracker {
         fUntilUpdate = 0;
     }
         
-    public void startTask() {
+    /* (non-Javadoc)
+	 * @see it.unitn.disi.utils.logging.IProgressTracker#startTask()
+	 */
+    @Override
+	public void startTask() {
         this.displayWidget();
     }
         
-    public void tick() {
+    /* (non-Javadoc)
+	 * @see it.unitn.disi.utils.logging.IProgressTracker#tick()
+	 */
+    @Override
+	public void tick() {
         this.tick(1);
     }
     
-    public void tick(int ticks) {
+    /* (non-Javadoc)
+	 * @see it.unitn.disi.utils.logging.IProgressTracker#tick(int)
+	 */
+    @Override
+	public void tick(int ticks) {
         this.fTicks += ticks;
         this.fUntilUpdate -= ticks;
         this.updateProgress();
     }
     
-    public void done() {
+    /* (non-Javadoc)
+	 * @see it.unitn.disi.utils.logging.IProgressTracker#done()
+	 */
+    @Override
+	public void done() {
         this.disposeWidget();
     }
     
@@ -48,7 +64,11 @@ public abstract class ProgressTracker {
         }
     }
     
-    public String title() {
+    /* (non-Javadoc)
+	 * @see it.unitn.disi.utils.logging.IProgressTracker#title()
+	 */
+    @Override
+	public String title() {
     	return fTaskTitle;
     }
     

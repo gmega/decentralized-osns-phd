@@ -5,10 +5,12 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.simulator.measure.INetworkMetric;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.utils.AbstractIDMapper;
@@ -28,8 +30,6 @@ public class HFlood implements ICyclicProtocol {
 	private double fEndToEndDelay;
 
 	private double fRawReceiverDelay;
-
-	private EDSimulationEngine fParent;
 
 	private BitSet fHistory;
 
@@ -66,16 +66,18 @@ public class HFlood implements ICyclicProtocol {
 	}
 
 	@Override
-	public void nextCycle(double time, INetwork sim, IProcess process) {
+	public void nextCycle(SimulationState state, IProcess process) {
+
+		INetwork network = state.network();
 
 		// Are we done, down, or not reached yet?
-		if (fState == State.DONE || !sim.process(fId).isUp()
+		if (fState == State.DONE || !network.process(fId).isUp()
 				|| !fHistory.get(fId)) {
 			return;
 		}
 
 		// Tries to get a peer.
-		int neighborId = selectPeer(sim);
+		int neighborId = selectPeer(network);
 
 		// No live neighbors at the moment, so we have to wait.
 		if (neighborId < 0) {
@@ -87,8 +89,9 @@ public class HFlood implements ICyclicProtocol {
 		fState = State.ACTIVE;
 
 		// Sends the message and gets the feedback.
-		HFlood neighbor = (HFlood) sim.process(neighborId).getProtocol(fPid);
-		fHistory.or(neighbor.sendMessage(fHistory, time));
+		HFlood neighbor = (HFlood) network.process(neighborId)
+				.getProtocol(fPid);
+		fHistory.or(neighbor.sendMessage(fHistory, state.clock()));
 
 		checkDone();
 	}
@@ -147,17 +150,17 @@ public class HFlood implements ICyclicProtocol {
 		return fMappedHistory;
 	}
 
-	private BitSet sendMessage(BitSet history, double time) {
-		markReached(time);
+	private BitSet sendMessage(BitSet history, IClockData clock) {
+		markReached(clock);
 		fHistory.or(history);
 		checkDone();
 		return fHistory;
 	}
 
-	public void markReached(double time) {
+	public void markReached(IClockData clock) {
 		if (!isReached()) {
-			fEndToEndDelay = time;
-			fRawReceiverDelay = fProcess.uptime(fParent);
+			fEndToEndDelay = clock.time();
+			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(fId);
 			fState = State.ACTIVE;
 		}
@@ -183,16 +186,16 @@ public class HFlood implements ICyclicProtocol {
 	void partOfConnectedCore(boolean mark) {
 		fInitiallyReachable = mark;
 	}
-	
+
 	public boolean isPartOfConnectedCore() {
 		return fInitiallyReachable;
 	}
-
 
 	public SourceListener sourceEventObserver() {
 		return new SourceListener(this, fPid);
 	}
 }
+
 /**
  * This listener does three things:
  * <ol>
@@ -215,17 +218,16 @@ class SourceListener implements ISimulationObserver, INetworkMetric {
 	private EDSimulationEngine fEngine;
 
 	private int fReachable = -1;
-	
-	private double [] fSnapshot;
-	
+
+	private double[] fSnapshot;
+
 	public SourceListener(HFlood source, int pid) {
 		fSource = source;
 		fPid = pid;
 	}
 
 	@Override
-	public void eventPerformed(INetwork network, double time,
-			Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
 
@@ -233,14 +235,14 @@ class SourceListener implements ISimulationObserver, INetworkMetric {
 			// If process went down, it might have to be removed from
 			// the initial core.
 			if (!process.isUp()) {
-				removeFromCore(network, time, process);
+				removeFromCore(process);
 			}
 		}
 
 		// This is the first log-in event of the source.
 		else if (process.id() == fSource.id() && process.isUp()) {
-			fSource.markReached(time);
-			identifyCore(network);
+			fSource.markReached(state.clock());
+			identifyCore(state.network());
 			// We're no longer binding.
 			fEngine.unbound(this);
 		}
@@ -250,7 +252,7 @@ class SourceListener implements ISimulationObserver, INetworkMetric {
 	 * Removes from the initial search any node that went down before being
 	 * reached by the push protocol.
 	 */
-	private void removeFromCore(INetwork network, double time, IProcess process) {
+	private void removeFromCore(IProcess process) {
 		HFlood protocol = (HFlood) process.getProtocol(fPid);
 		if (protocol.isPartOfConnectedCore() && protocol.isReached()) {
 			protocol.partOfConnectedCore(false);
@@ -289,7 +291,7 @@ class SourceListener implements ISimulationObserver, INetworkMetric {
 	@Override
 	public void simulationStarted(EDSimulationEngine parent) {
 		fEngine = parent;
-		eventPerformed(parent, parent.currentTime(), parent.process(fSource.id()));
+		eventPerformed(parent, parent.process(fSource.id()));
 	}
 
 	@Override

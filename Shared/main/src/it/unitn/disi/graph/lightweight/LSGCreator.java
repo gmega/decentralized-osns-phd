@@ -1,8 +1,8 @@
 package it.unitn.disi.graph.lightweight;
 
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.util.ArrayList;
 
@@ -73,7 +73,7 @@ public abstract class LSGCreator {
 
 		fLogger.info("2: Allocated pointer array.");
 
-		ProgressTracker tracker = Progress.newTracker("allocating cells",
+		IProgressTracker tracker = Progress.newTracker("allocating cells",
 				sizes.length, fLogger);
 		tracker.startTask();
 		for (int i = 0; i < sizes.length; i++) {

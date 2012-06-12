@@ -5,8 +5,8 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.PrintStream;
 
@@ -31,7 +31,7 @@ public class EgonetClustering implements IMultiTransformer {
 		PrintStream out = new PrintStream(p.output(Outputs.CLUSTERINGS));
 		out.println("id degree triads possible_triads coefficient");
 		
-		ProgressTracker tracker = Progress.newTracker("computing clustering", graph.size());
+		IProgressTracker tracker = Progress.newTracker("computing clustering", graph.size());
 		tracker.startTask();
 		for (int i = 0; i < graph.size(); i++) {
 			StringBuffer buffer = new StringBuffer();

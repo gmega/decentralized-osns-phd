@@ -5,6 +5,7 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 
 import java.util.Arrays;
@@ -36,11 +37,12 @@ public class CloudSim implements ISimulationObserver {
 	}
 
 	@Override
-	public void eventPerformed(INetwork parent, double time,
-			Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 
+		INetwork parent = state.network();
 		IProcess process = (IProcess) schedulable;
-		
+		double time = state.clock().time();
+
 		// Not a login event, don't care.
 		if (!process.isUp()) {
 			return;

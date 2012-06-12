@@ -2,11 +2,13 @@ package it.unitn.disi.churn.diffusion.cloud;
 
 import it.unitn.disi.churn.diffusion.HFlood;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IProcessObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.random.IDistribution;
 
@@ -141,9 +143,11 @@ public class CloudAccessor implements IProcessObserver {
 		}
 
 		@Override
-		public void scheduled(double time, INetwork parent) {
+		public void scheduled(SimulationState state) {
+			IClockData clock = state.clock();
+			
 			// Resets the timer.
-			reset(time);
+			reset(clock.time());
 
 			// If the source hasn't been reached, doesn't do anything.
 			if (!fSource.isReached()) {
@@ -159,7 +163,7 @@ public class CloudAccessor implements IProcessObserver {
 			} else {
 				fOutcome = ACCESSED;
 				// Accessing the cloud means reaching the node out of nowhere.
-				fDelegate.markReached(fSim.postBurninTime());
+				fDelegate.markReached(clock);
 				// Wakes up the protocol runner, otherwise it will keep on
 				// sleeping and our node won't be scheduled for dissemination.
 				fRunner.wakeUp();

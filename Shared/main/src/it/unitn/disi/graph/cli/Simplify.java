@@ -2,8 +2,8 @@ package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.logging.CodecUtils;
+import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,7 +28,7 @@ public class Simplify extends GraphAnalyzer {
 	protected void transform(LightweightStaticGraph graph, OutputStream oup)
 			throws IOException {
 		byte[] buf = new byte[4];
-		ProgressTracker tracker = Progress.newTracker("simplifying", graph.size());
+		IProgressTracker tracker = Progress.newTracker("simplifying", graph.size());
 		tracker.startTask();
 		boolean [] seen = new boolean[graph.size()];
 		for (int i = 0; i < graph.size(); i++) {

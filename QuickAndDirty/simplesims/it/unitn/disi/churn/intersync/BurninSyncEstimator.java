@@ -6,12 +6,13 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
 public class BurninSyncEstimator implements ISimulationObserver {
 
 	private EDSimulationEngine fParent;
-	
+
 	private StateAccountant fWaitSync;
 
 	private boolean fWaitingLogin = true;
@@ -36,10 +37,11 @@ public class BurninSyncEstimator implements ISimulationObserver {
 	}
 
 	@Override
-	public void eventPerformed(INetwork parent, double time,
-			Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 
 		IProcess process = (IProcess) schedulable;
+		double time = state.clock().time();
+		INetwork parent = state.network(); 
 
 		if (time < fBurnin) {
 			return;

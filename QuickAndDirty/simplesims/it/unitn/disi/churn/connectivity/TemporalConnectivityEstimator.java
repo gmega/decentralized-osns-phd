@@ -6,6 +6,7 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.SimulationState;
 
 import java.util.Arrays;
 
@@ -72,7 +73,7 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 		Arrays.fill(fReachedFrom, Integer.MAX_VALUE);
 		Arrays.fill(fDone, false);
 	}
-	
+
 	public int source() {
 		return fSource;
 	}
@@ -83,13 +84,12 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 	}
 
 	@Override
-	public void eventPerformed(INetwork parent, double time,
-			Schedulable schedulable) {
+	public void eventPerformed(SimulationState state, Schedulable schedulable) {
 		RenewalProcess process = (RenewalProcess) schedulable;
 		if (!process.isUp()) {
 			return;
 		}
-		recomputeReachabilities(process, time);
+		recomputeReachabilities(process, state.clock().time());
 	}
 
 	private void recomputeReachabilities(RenewalProcess process, double time) {

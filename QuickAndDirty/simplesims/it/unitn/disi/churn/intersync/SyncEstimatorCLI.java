@@ -16,6 +16,7 @@ import it.unitn.disi.utils.collections.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -77,9 +78,11 @@ public class SyncEstimatorCLI {
 		}
 
 		Configuration.setConfig(new Properties());
+		
+		Random random = new Random();
 
-		IAverageGenerator agen = averageGenerator();
-		IDistributionGenerator dgen = YaoPresets.mode(fMode);
+		IAverageGenerator agen = averageGenerator(random);
+		IDistributionGenerator dgen = YaoPresets.mode(fMode, random);
 
 		System.out.println("P:p di li");
 
@@ -168,12 +171,12 @@ public class SyncEstimatorCLI {
 
 	// ------------------------------------------------------------------------
 
-	private IAverageGenerator averageGenerator() {
+	private IAverageGenerator averageGenerator(Random random) {
 		if (fParfile != null) {
 			return new AveragesFromFile(fParfile, true);
 		}
 
-		return YaoPresets.averageGenerator("yao");
+		return YaoPresets.averageGenerator("yao", random);
 	}
 
 	// ------------------------------------------------------------------------

@@ -12,6 +12,7 @@ import peersim.config.AutoConfig;
 import peersim.config.Configuration;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
+import peersim.core.CommonState;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -89,7 +90,8 @@ public class YaoInit implements Control, NodeInitializer {
 	@SuppressWarnings("unchecked")
 	private IDistributionGenerator mode(IResolver resolver, String prefix,
 			String modeId) {
-		IDistributionGenerator generator = YaoPresets.mode(modeId);
+		IDistributionGenerator generator = YaoPresets.mode(modeId,
+				CommonState.r);
 		if (generator != null) {
 			return generator;
 		}
@@ -102,8 +104,9 @@ public class YaoInit implements Control, NodeInitializer {
 	@SuppressWarnings("unchecked")
 	private IAverageGenerator generator(IResolver resolver, String prefix,
 			String modeId) {
-		
-		IAverageGenerator generator = YaoPresets.averageGenerator(modeId);
+
+		IAverageGenerator generator = YaoPresets.averageGenerator(modeId,
+				CommonState.r);
 		if (generator != null) {
 			return generator;
 		}
