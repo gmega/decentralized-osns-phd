@@ -5,9 +5,8 @@ import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.p2p.Utils;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
-import it.unitn.disi.churn.diffusion.cloud.CloudSimulationBuilder;
 import it.unitn.disi.churn.diffusion.config.ChurnSimulationBuilder;
-import it.unitn.disi.churn.diffusion.config.DiffusionSimulationBuilder;
+import it.unitn.disi.churn.diffusion.config.CloudSimulationBuilder;
 import it.unitn.disi.churn.diffusion.config.StaticSimulationBuilder;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
@@ -17,11 +16,11 @@ import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
-import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.MetricsCollector;
+import it.unitn.disi.simulator.measure.SumAccumulation;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
@@ -40,6 +39,7 @@ import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
 
 @AutoConfig
+@SuppressWarnings("unchecked")
 public class DiffusionExperiment implements ITransformer {
 
 	private GraphConfigurator fConfig;
@@ -107,7 +107,7 @@ public class DiffusionExperiment implements ITransformer {
 				"id", "source", "target", "edsum", "rdsum", "size");
 
 		TableWriter cCore = new TableWriter(new PrefixedWriter("CO:", oup),
-				"id", "source", "edsum", "rdsum", "size");
+				"id", "source", "edsum", "size");
 
 		TableWriter cloudStats = new TableWriter(
 				new PrefixedWriter("CS:", oup), "id", "source", "accessed",
@@ -135,7 +135,7 @@ public class DiffusionExperiment implements ITransformer {
 					cCore, clockType);
 
 			if (fCloudAssisted) {
-				INetworkMetric accesses = result.getMetric("outcomes");
+				INodeMetric<Integer> accesses = result.getMetric("outcomes");
 
 				cloudStats.set("id", experiment.root);
 				cloudStats.set("source", source);
@@ -148,8 +148,8 @@ public class DiffusionExperiment implements ITransformer {
 				cloudStats.emmitRow();
 			}
 
-			INetworkMetric ed = result.getMetric("ed");
-			INetworkMetric rd = result.getMetric("rd");
+			INodeMetric<Double> ed = result.getMetric("ed");
+			INodeMetric<Double> rd = result.getMetric("rd");
 
 			if (fSummary) {
 				IncrementalStats edSumm = summarize(ed, graph.size());
@@ -179,7 +179,7 @@ public class DiffusionExperiment implements ITransformer {
 		}
 	}
 
-	private IncrementalStats summarize(INetworkMetric ed, int size) {
+	private IncrementalStats summarize(INodeMetric<Double> ed, int size) {
 		IncrementalStats summary = new IncrementalStats();
 		for (int i = 0; i < size; i++) {
 			summary.add(ed.getMetric(i));
@@ -205,8 +205,11 @@ public class DiffusionExperiment implements ITransformer {
 					seedGen != null ? seedGen.nextLong() : null, clockType));
 		}
 
-		CloudAccessCounter counter = new CloudAccessCounter(graph.size());
-		MetricsCollector collector = new MetricsCollector(graph.size(), counter);
+		SumAccumulation edsum = new SumAccumulation("ed", graph.size());
+		SumAccumulation rdsum = new SumAccumulation("rd", graph.size());
+
+		MetricsCollector collector = new MetricsCollector(
+				new CloudAccessCounter(graph.size()), edsum, rdsum);
 
 		for (int i = 0; i < repetitions; i++) {
 			Object value = fExecutor.consume();
@@ -215,32 +218,39 @@ public class DiffusionExperiment implements ITransformer {
 			}
 
 			SimulationTask result = (SimulationTask) value;
-			List<INetworkMetric> metrics = result.metric(source);
+			List<? extends INodeMetric<?>> metrics = result.metric(source);
 			collector.add(metrics);
 
-			printCoreLatencies(experiment.root, source,
-					Utils.lookup(metrics, "ed"), result.engine(), core);
+			printCoreLatencies(experiment.root, source, graph.size(),
+					Utils.lookup(metrics, "coremembership", Boolean.class),
+					Utils.lookup(metrics, "ed", Double.class), core);
 		}
 
 		return collector;
 	}
 
-	private void printCoreLatencies(int id, int source, INetworkMetric metric,
-			INetwork network, TableWriter core) {
-		IncrementalStats stats = new IncrementalStats();
-		for (int i = 0; i < network.size(); i++) {
-			HFlood protocol = (HFlood) network.process(i).getProtocol(
-					DiffusionSimulationBuilder.HFLOOD_PID);
-			if (protocol.isPartOfConnectedCore()) {
-				stats.add(metric.getMetric(i));
+	private void printCoreLatencies(int id, int source, int size,
+			INodeMetric<Boolean> membership, INodeMetric<Double> ed,
+			TableWriter core) {
+
+		if (membership == null) {
+			return;
+		}
+
+		IncrementalStats edStats = new IncrementalStats();
+
+		int cardinality = 0;
+		for (int i = 0; i < size; i++) {
+			if (membership.getMetric(i)) {
+				edStats.add(ed.getMetric(i));
+				cardinality++;
 			}
 		}
 
 		core.set("id", id);
 		core.set("source", source);
-		core.set("rdsum", stats.getAverage());
-		core.set("edsum", 0);
-		core.set("size", stats.getN());
+		core.set("edsum", edStats.getAverage());
+		core.set("size", cardinality);
 		core.emmitRow();
 	}
 
@@ -252,13 +262,12 @@ public class DiffusionExperiment implements ITransformer {
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	private SimulationTask createTask(Experiment experiment, int source,
 			IndexedNeighborGraph graph, Long seed, int clockType)
 			throws Exception {
 
 		Random rnd = new Random();
-		Pair<EDSimulationEngine, List<INetworkMetric>> elements;
+		Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> elements;
 
 		// Static experiment.
 		if (experiment.lis == null) {
@@ -280,12 +289,15 @@ public class DiffusionExperiment implements ITransformer {
 			}
 		}
 
-		return new SimulationTask(null, elements.a,
-				new Pair[] { new Pair<Integer, List<INetworkMetric>>(source,
-						elements.b) });
+		return new SimulationTask(
+				null,
+				elements.a,
+				new Pair[] { new Pair<Integer, List<INodeMetric<? extends Object>>>(
+						source, elements.b) });
 	}
 
-	private static class CloudAccessCounter implements IMetricAccumulator {
+	private static class CloudAccessCounter implements
+			IMetricAccumulator<Double> {
 
 		private final int fN;
 
@@ -301,14 +313,14 @@ public class DiffusionExperiment implements ITransformer {
 		}
 
 		@Override
-		public double getMetric(int i) {
+		public Double getMetric(int i) {
 			return fCounter[i];
 		}
 
 		@Override
-		public void add(INetworkMetric metric) {
+		public void add(INodeMetric<Double> metric) {
 			for (int i = 0; i < fN; i++) {
-				fCounter[(int) metric.getMetric(i)]++;
+				fCounter[metric.getMetric(i).intValue()]++;
 			}
 		}
 

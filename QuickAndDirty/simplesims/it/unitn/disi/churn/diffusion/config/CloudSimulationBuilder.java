@@ -1,12 +1,13 @@
-package it.unitn.disi.churn.diffusion.cloud;
+package it.unitn.disi.churn.diffusion.config;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.HFlood;
-import it.unitn.disi.churn.diffusion.config.ChurnSimulationBuilder;
+import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
+import it.unitn.disi.churn.diffusion.cloud.FixedPeriodDistribution;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.simulator.random.UniformDistribution;
@@ -35,7 +36,7 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 
 	private Random fRandom;
 
-	public Pair<EDSimulationEngine, List<INetworkMetric>> build(double burnin,
+	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(double burnin,
 			double period, Experiment experiment, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random,
 			IResolver resolver, int clockType, IProcess[] processes)
@@ -63,8 +64,8 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 		}
 	}
 
-	protected void addMetrics(List<INetworkMetric> metric) {
-		metric.add(new INetworkMetric() {
+	protected void addMetrics(List<INodeMetric<?>> metric) {
+		metric.add(new INodeMetric<Integer>() {
 
 			@Override
 			public Object id() {
@@ -72,7 +73,7 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 			}
 
 			@Override
-			public double getMetric(int i) {
+			public Integer getMetric(int i) {
 				return fAccessors[i].outcome();
 			}
 		});
@@ -96,5 +97,10 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 		}
 
 		throw new IllegalStateException();
+	}
+
+	@Override
+	protected boolean shouldTrackCore() {
+		return false;
 	}
 }

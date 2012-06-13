@@ -5,7 +5,7 @@ import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -45,7 +45,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	@Attribute(value = "monitorclusters", defaultValue = "false")
 	private boolean fMonitorClusters;
-	
+
 	@Attribute(value = "skipmetrics", defaultValue = "false")
 	private boolean fSkipMetrics;
 
@@ -80,7 +80,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int source = MiscUtils.indexOf(ids,
 						Integer.parseInt(e.attributes.get("node")));
 
-				List<? extends INetworkMetric> metric = simHelper()
+				List<? extends INodeMetric<?>> metric = simHelper()
 						.bruteForceSimulate(e.toString(), graph, e.root,
 								source, e.lis, e.dis, ids, cloudNodes, false,
 								fCloudSims, fMonitorClusters);
@@ -153,16 +153,17 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	// -------------------------------------------------------------------------
 
 	private void printResults(int root, int source,
-			List<? extends INetworkMetric> results, TableWriter writer,
+			List<? extends INodeMetric<?>> results, TableWriter writer,
 			int[] ids) {
-		
+
 		if (fSkipMetrics) {
 			return;
 		}
 
-		INetworkMetric ed = Utils.lookup(results, "ed");
-		INetworkMetric rd = Utils.lookup(results, "rd");
-		INetworkMetric cloud = Utils.lookup(results, "cloud_delay");
+		INodeMetric<Double> ed = Utils.lookup(results, "ed", Double.class);
+		INodeMetric<Double> rd = Utils.lookup(results, "rd", Double.class);
+		INodeMetric<Double> cloud = Utils.lookup(results, "cloud_delay",
+				Double.class);
 
 		for (int i = 0; i < ids.length; i++) {
 			if (source == i) {

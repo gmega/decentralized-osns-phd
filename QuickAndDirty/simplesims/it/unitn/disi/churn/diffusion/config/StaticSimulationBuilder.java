@@ -9,7 +9,7 @@ import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.ISimulationObserver;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.CyclicProtocolRunner;
 import it.unitn.disi.simulator.protocol.CyclicSchedulable;
 import it.unitn.disi.simulator.protocol.FixedProcess;
@@ -21,27 +21,20 @@ import java.util.Random;
 
 public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 
-	public Pair<EDSimulationEngine, List<INetworkMetric>> build(double burnin,
-			double period, Experiment experiment, int source,
-			String peerSelector, IndexedNeighborGraph graph, Random random) throws Exception {
+	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
+			double burnin, double period, Experiment experiment, int source,
+			String peerSelector, IndexedNeighborGraph graph, Random random)
+			throws Exception {
 
-		IProcess processes [] = new IProcess[graph.size()];
+		IProcess processes[] = new IProcess[graph.size()];
 		for (int i = 0; i < processes.length; i++) {
 			processes[i] = new FixedProcess(i, State.up);
 		}
-		
+
 		fProtocols = protocols(graph, random, peerSelector,
 				new CachingTransformer(new LiveTransformer()), processes);
 
 		List<Pair<Integer, ? extends ISimulationObserver>> observers = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
-
-		HFlood sourceProtocol = fProtocols[source];
-
-		// Triggers the dissemination process from the first login of the
-		// sender.
-		observers.add(new Pair<Integer, ISimulationObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, sourceProtocol
-						.sourceEventObserver()));
 
 		CyclicProtocolRunner<HFlood> cpr = new CyclicProtocolRunner<HFlood>(
 				HFLOOD_PID);
@@ -49,13 +42,15 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		// Cyclic protocol observer.
 		observers.add(new Pair<Integer, ISimulationObserver>(1, cpr));
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, observers, 0.0);
+		EDSimulationEngine bcs = new EDSimulationEngine(processes, observers,
+				0.0);
 		bcs.schedule(new CyclicSchedulable(period, 1));
-		
-		List<INetworkMetric> metrics = new ArrayList<INetworkMetric>();
+
+		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		addEDMetric(metrics, fProtocols, source);
 
-		return new Pair<EDSimulationEngine, List<INetworkMetric>>(bcs, metrics);
+		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
+				bcs, metrics);
 	}
 
 }

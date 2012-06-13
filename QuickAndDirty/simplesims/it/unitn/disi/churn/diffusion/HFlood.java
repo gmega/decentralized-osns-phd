@@ -11,12 +11,13 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.SimulationState;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 
+import java.util.Arrays;
 import java.util.BitSet;
 
 public class HFlood implements ICyclicProtocol {
@@ -42,8 +43,6 @@ public class HFlood implements ICyclicProtocol {
 	private final IProcess fProcess;
 
 	private State fState = State.WAITING;
-
-	private boolean fInitiallyReachable = false;
 
 	public HFlood(IndexedNeighborGraph graph, IPeerSelector selector,
 			IProcess process, ILiveTransformer transformer, int id, int pid) {
@@ -181,141 +180,6 @@ public class HFlood implements ICyclicProtocol {
 	@Override
 	public State getState() {
 		return fState;
-	}
-
-	void partOfConnectedCore(boolean mark) {
-		fInitiallyReachable = mark;
-	}
-
-	public boolean isPartOfConnectedCore() {
-		return fInitiallyReachable;
-	}
-
-	public SourceListener sourceEventObserver() {
-		return new SourceListener(this, fPid);
-	}
-}
-
-/**
- * This listener does three things:
- * <ol>
- * <li>identifies the initial login of the source node;</li>
- * <li>identifies the initial set of nodes reachable from the source when it
- * initially logs-in;</li>
- * <li>maintains the initial core, removing nodes that go down before being
- * reached by the push protocol.</li>
- * </ol>
- * 
- * It should only be registered for the dissemination source. In case these
- * functions are not desired, simply do not register the listener.
- */
-class SourceListener implements ISimulationObserver, INetworkMetric {
-
-	private final HFlood fSource;
-
-	private final int fPid;
-
-	private EDSimulationEngine fEngine;
-
-	private int fReachable = -1;
-
-	private double[] fSnapshot;
-
-	public SourceListener(HFlood source, int pid) {
-		fSource = source;
-		fPid = pid;
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
-
-		IProcess process = (IProcess) schedulable;
-
-		if (sourceReached()) {
-			// If process went down, it might have to be removed from
-			// the initial core.
-			if (!process.isUp()) {
-				removeFromCore(process);
-			}
-		}
-
-		// This is the first log-in event of the source.
-		else if (process.id() == fSource.id() && process.isUp()) {
-			fSource.markReached(state.clock());
-			identifyCore(state.network());
-			// We're no longer binding.
-			fEngine.unbound(this);
-		}
-	}
-
-	/**
-	 * Removes from the initial search any node that went down before being
-	 * reached by the push protocol.
-	 */
-	private void removeFromCore(IProcess process) {
-		HFlood protocol = (HFlood) process.getProtocol(fPid);
-		if (protocol.isPartOfConnectedCore() && protocol.isReached()) {
-			protocol.partOfConnectedCore(false);
-			fReachable--;
-		}
-	}
-
-	private boolean sourceReached() {
-		return fReachable >= 0;
-	}
-
-	/**
-	 * Identifies the initial connected core of nodes, marking those that are
-	 * reachable from a depth-first search started from the source.
-	 */
-	private void identifyCore(final INetwork network) {
-		IndexedNeighborGraph graph = fSource.graph();
-		boolean[] reachable = new boolean[graph.size()];
-		GraphAlgorithms.dfs(graph, fSource.id(), reachable, new IEdgeFilter() {
-			@Override
-			public boolean isForbidden(int i, int j) {
-				return !network.process(j).isUp();
-			}
-		});
-
-		fReachable = 0;
-		for (int i = 0; i < reachable.length; i++) {
-			if (reachable[i]) {
-				((HFlood) network.process(i).getProtocol(fPid))
-						.partOfConnectedCore(true);
-				fReachable++;
-			}
-		}
-	}
-
-	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-		fEngine = parent;
-		eventPerformed(parent, parent.process(fSource.id()));
-	}
-
-	@Override
-	public boolean isDone() {
-		return false;
-	}
-
-	@Override
-	public boolean isBinding() {
-		return true;
-	}
-
-	@Override
-	public Object id() {
-		return "rd";
-	}
-
-	@Override
-	public double getMetric(int i) {
-		if (fSnapshot == null) {
-			throw new IllegalStateException("Source not yet reached!");
-		}
-		HFlood protocol = (HFlood) fEngine.process(i).getProtocol(fPid);
-		return protocol.rawReceiverDelay() - fSnapshot[i];
 	}
 
 }

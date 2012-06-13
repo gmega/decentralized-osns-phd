@@ -7,7 +7,7 @@ import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
@@ -58,7 +58,7 @@ public class P2PLGExperiment implements ITransformer {
 		IndexedNeighborGraph graph = lgg.subgraph(fN);
 
 		ExecutorService es = Executors.newScheduledThreadPool(fCores);
-		
+
 		GraphTask gt = pairwiseEstimate(es, graph);
 
 		gt.await();
@@ -80,7 +80,7 @@ public class P2PLGExperiment implements ITransformer {
 				i++;
 			}
 		}
-		
+
 		es.shutdown();
 
 		double[] simulation = simulate(graph, gt.lIs, gt.dIs);
@@ -140,14 +140,14 @@ public class P2PLGExperiment implements ITransformer {
 
 		for (int j = 0; j < fRepetitions; j++) {
 			@SuppressWarnings("unchecked")
-			Pair<Integer, List<? extends INetworkMetric>> result = ((Pair<Integer, List<? extends INetworkMetric>>[]) taskExecutor
+			Pair<Integer, List<INodeMetric<? extends Object>>> result = ((Pair<Integer, List<INodeMetric<? extends Object>>>[]) taskExecutor
 					.consume())[0];
-			INetworkMetric ed = Utils.lookup(result.b, "ed");
+			INodeMetric<Double> ed = Utils.lookup(result.b, "ed", Double.class);
 			for (int i = 0; i < ttc.length; i++) {
 				ttc[i] += ed.getMetric(i);
 			}
 		}
-		
+
 		taskExecutor.shutdown(true);
 
 		return ttc;

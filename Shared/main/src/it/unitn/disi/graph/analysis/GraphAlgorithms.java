@@ -291,24 +291,27 @@ public class GraphAlgorithms {
 	 *            an optional filter to exclude edges from the graph. If no
 	 *            filtering is desided, use {@link #NULL_FILTER}.
 	 */
-	public static void dfs(IndexedNeighborGraph graph, int source,
+	public static int dfs(IndexedNeighborGraph graph, int source,
 			boolean[] reachable, IEdgeFilter filter) {
 		Arrays.fill(reachable, false);
 		reachable[source] = true;
-		recDFS(graph, source, reachable, filter);
+		return recDFS(graph, source, reachable, filter) + 1;
 	}
 
 	// --------------------------------------------------------------------------
 
-	private static void recDFS(IndexedNeighborGraph graph, int source,
+	private static int recDFS(IndexedNeighborGraph graph, int source,
 			boolean[] reachable, IEdgeFilter filter) {
+		int reached = 0;
 		for (int i = 0; i < graph.degree(source); i++) {
 			int neighbor = graph.getNeighbor(source, i);
 			if (!reachable[neighbor] && !filter.isForbidden(source, neighbor)) {
 				reachable[neighbor] = true;
-				recDFS(graph, neighbor, reachable, filter);
+				reached = reached + recDFS(graph, neighbor, reachable, filter)
+						+ 1;
 			}
 		}
+		return reached;
 	}
 
 	// --------------------------------------------------------------------------
@@ -336,7 +339,7 @@ public class GraphAlgorithms {
 
 		return ncomps;
 	}
-	
+
 	// --------------------------------------------------------------------------
 
 	public static class TarjanState {
@@ -452,7 +455,7 @@ public class GraphAlgorithms {
 		state.visitCounter = 0;
 		state.components.clear();
 	}
-	
+
 	// --------------------------------------------------------------------------
 
 	private static void checkArray(int size, int[] array) {
@@ -466,7 +469,7 @@ public class GraphAlgorithms {
 							+ "in the the graph.");
 		}
 	}
-	
+
 	// --------------------------------------------------------------------------
 
 	/**

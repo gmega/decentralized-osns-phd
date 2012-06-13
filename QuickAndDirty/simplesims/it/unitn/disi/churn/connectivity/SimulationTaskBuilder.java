@@ -5,7 +5,7 @@ import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationObserver;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -27,7 +27,7 @@ public class SimulationTaskBuilder {
 
 	private TemporalConnectivityEstimator fLast;
 
-	private HashMap<Integer, List<INetworkMetric>> fMap = new HashMap<Integer, List<INetworkMetric>>();
+	private HashMap<Integer, List<INodeMetric<Double>>> fMap = new HashMap<Integer, List<INodeMetric<Double>>>();
 
 	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids, int root) {
 		fSims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
@@ -43,26 +43,26 @@ public class SimulationTaskBuilder {
 		fLast = tce;
 		addSim(fLast);
 
-		addMetric(source, new INetworkMetric() {
+		addMetric(source, new INodeMetric<Double>() {
 			@Override
 			public Object id() {
 				return "ed";
 			}
 
 			@Override
-			public double getMetric(int i) {
+			public Double getMetric(int i) {
 				return tce.reachTime(i);
 			}
 		});
 
-		addMetric(source, new INetworkMetric() {
+		addMetric(source, new INodeMetric<Double>() {
 			@Override
 			public Object id() {
 				return "rd";
 			}
 
 			@Override
-			public double getMetric(int i) {
+			public Double getMetric(int i) {
 				return tce.perceivedDelay(i);
 			}
 		});
@@ -73,14 +73,14 @@ public class SimulationTaskBuilder {
 	public void addCloudSimulation(int source) {
 		final CloudSim sim = new CloudSim(source);
 		addSim(sim);
-		addMetric(source, new INetworkMetric() {
+		addMetric(source, new INodeMetric<Double>() {
 			@Override
 			public Object id() {
 				return "cloud_delay";
 			}
 
 			@Override
-			public double getMetric(int i) {
+			public Double getMetric(int i) {
 				return sim.reachTime(i);
 			}
 		});
@@ -99,10 +99,10 @@ public class SimulationTaskBuilder {
 				IProcess.PROCESS_SCHEDULABLE_TYPE, observer));
 	}
 
-	private void addMetric(int source, INetworkMetric metric) {
-		List<INetworkMetric> list = fMap.get(source);
+	private void addMetric(int source, INodeMetric<Double> metric) {
+		List<INodeMetric<Double>> list = fMap.get(source);
 		if (list == null) {
-			list = new ArrayList<INetworkMetric>();
+			list = new ArrayList<INodeMetric<Double>>();
 			fMap.put(source, list);
 		}
 
@@ -112,26 +112,29 @@ public class SimulationTaskBuilder {
 	public SimulationTask simulationTask(double[] lIs, double[] dIs,
 			double burnIn, YaoChurnConfigurator conf) {
 		@SuppressWarnings("unchecked")
-		Pair<Integer, List<INetworkMetric>>[] metrics = new Pair[fMap.size()];
+		Pair<Integer, List<? extends INodeMetric<? extends Object>>>[] metrics = new Pair[fMap
+				.size()];
 		int k = 0;
 		for (int key : fMap.keySet()) {
-			metrics[k++] = new Pair<Integer, List<INetworkMetric>>(key,
-					fMap.get(key));
+			metrics[k++] = new Pair<Integer, List<? extends INodeMetric<? extends Object>>>(
+					key, fMap.get(key));
 		}
 
-		Arrays.sort(metrics,
-				new Comparator<Pair<Integer, List<INetworkMetric>>>() {
+		Arrays.sort(
+				metrics,
+				new Comparator<Pair<Integer, List<? extends INodeMetric<? extends Object>>>>() {
 
 					@Override
-					public int compare(Pair<Integer, List<INetworkMetric>> o1,
-							Pair<Integer, List<INetworkMetric>> o2) {
+					public int compare(
+							Pair<Integer, List<? extends INodeMetric<? extends Object>>> o1,
+							Pair<Integer, List<? extends INodeMetric<? extends Object>>> o2) {
 						return o1.a - o2.a;
 					}
 				});
 
 		EDSimulationEngine engine = new EDSimulationEngine(
 				conf.createProcesses(lIs, dIs, lIs.length), fSims, burnIn);
-		
+
 		return new SimulationTask(null, engine, metrics);
 	}
 }

@@ -1,14 +1,16 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 
 import java.util.List;
 
-
 public class Utils {
-	public static INetworkMetric lookup(List<? extends INetworkMetric> list,
-			String string) {
-		for (INetworkMetric metric : list) {
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> INodeMetric<T> lookup(
+			List<? extends INodeMetric<? extends Object>> list, String string,
+			Class<T> klass) {
+		for (INodeMetric metric : list) {
 			if (metric.id().equals(string)) {
 				return metric;
 			}

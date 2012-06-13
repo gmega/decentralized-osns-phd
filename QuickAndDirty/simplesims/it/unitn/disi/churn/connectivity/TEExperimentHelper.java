@@ -10,7 +10,7 @@ import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.SumAccumulation;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
@@ -183,7 +183,7 @@ public class TEExperimentHelper {
 	 *         vertices in the graph, as well as the {@link CloudSim} estimates.
 	 * @throws Exception
 	 */
-	public List<? extends INetworkMetric>[] bruteForceSimulate(String taskStr,
+	public List<? extends INodeMetric<?>>[] bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
 			double[] lIs, double[] dIs, int root, int[] ids, int[] cloudNodes,
 			boolean sampleActivations, boolean cloudSim,
@@ -230,11 +230,12 @@ public class TEExperimentHelper {
 			}
 
 			@SuppressWarnings("unchecked")
-			Pair<Integer, List<INetworkMetric>>[] results = (Pair<Integer, List<INetworkMetric>>[]) taskResult;
-			
-			for(Pair<Integer, List<INetworkMetric>> result : results) {
-				for (INetworkMetric networkMetric : result.b) {
-					addMatchingMetric(metric[result.a - sourceStart], networkMetric, graph.size());
+			Pair<Integer, List<INodeMetric<Double>>>[] results = (Pair<Integer, List<INodeMetric<Double>>>[]) taskResult;
+
+			for (Pair<Integer, List<INodeMetric<Double>>> result : results) {
+				for (INodeMetric<Double> networkMetric : result.b) {
+					addMatchingMetric(metric[result.a - sourceStart],
+							networkMetric, graph.size());
 				}
 			}
 		}
@@ -248,7 +249,7 @@ public class TEExperimentHelper {
 	}
 
 	private void addMatchingMetric(List<SumAccumulation> list,
-			INetworkMetric networkMetric, int length) {
+			INodeMetric<Double> networkMetric, int length) {
 		for (SumAccumulation aggregate : list) {
 			if (aggregate.id().equals(networkMetric.id())) {
 				aggregate.add(networkMetric);
@@ -265,7 +266,7 @@ public class TEExperimentHelper {
 	 * @see #bruteForceSimulate(String, IndexedNeighborGraph, int, int,
 	 *      double[][], int[], boolean)
 	 */
-	public List<? extends INetworkMetric> bruteForceSimulate(String taskStr,
+	public List<? extends INodeMetric<?>> bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int root, int source, double[] lIs,
 			double[] dIs, int[] ids, int[] cloudNodes,
 			boolean sampleActivations, boolean cloudSim,
@@ -333,10 +334,10 @@ public class TEExperimentHelper {
 		int remappedSource = indexOf(source, vertexes);
 		int remappedTarget = indexOf(target, vertexes);
 
-		INetworkMetric estimate = Utils.lookup(
+		INodeMetric<Double> estimate = Utils.lookup(
 				bruteForceSimulate(taskString, kPathGraph, remappedSource,
 						remappedSource, liSub, diSub, ids, null, false, false,
-						false), "ed");
+						false), "ed", Double.class);
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate.getMetric(remappedTarget));
@@ -369,5 +370,5 @@ public class TEExperimentHelper {
 		Arrays.sort(vertexes);
 		return vertexes;
 	}
-	
+
 }

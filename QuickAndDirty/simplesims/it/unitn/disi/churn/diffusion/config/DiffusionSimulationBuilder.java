@@ -7,7 +7,7 @@ import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.measure.INetworkMetric;
+import it.unitn.disi.simulator.measure.INodeMetric;
 
 import java.util.List;
 import java.util.Random;
@@ -45,9 +45,9 @@ public abstract class DiffusionSimulationBuilder {
 		}
 	}
 
-	protected void addEDMetric(List<INetworkMetric> metrics,
+	protected void addEDMetric(List<INodeMetric<?>> metrics,
 			final HFlood[] protocols, final int source) {
-		metrics.add(new INetworkMetric() {
+		metrics.add(new INodeMetric<Double>() {
 
 			@Override
 			public Object id() {
@@ -55,7 +55,7 @@ public abstract class DiffusionSimulationBuilder {
 			}
 
 			@Override
-			public double getMetric(int i) {
+			public Double getMetric(int i) {
 				return protocols[i].rawEndToEndDelay()
 						- protocols[source].rawEndToEndDelay();
 			}
