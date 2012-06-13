@@ -1,5 +1,6 @@
 package it.unitn.disi.utils;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -11,8 +12,12 @@ public class CallbackThreadPoolExecutor<T> extends ThreadPoolExecutor {
 	private final IExecutorCallback<T> fCallback;
 
 	public CallbackThreadPoolExecutor(int cores, IExecutorCallback<T> loadSim) {
-		super(cores, cores, 0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>());
+		this(cores, loadSim, new LinkedBlockingQueue<Runnable>());
+	}
+
+	public CallbackThreadPoolExecutor(int cores, IExecutorCallback<T> loadSim,
+			BlockingQueue<Runnable> queue) {
+		super(cores, cores, 0L, TimeUnit.MILLISECONDS, queue);
 		fCallback = loadSim;
 	}
 
@@ -35,7 +40,7 @@ public class CallbackThreadPoolExecutor<T> extends ThreadPoolExecutor {
 			}
 			this.shutdown();
 			return;
-		} 
+		}
 
 		fCallback.taskDone(results);
 	}

@@ -98,7 +98,7 @@ public class DiffusionExperiment implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		fExecutor = new TaskExecutor(fCores);
+		fExecutor = new TaskExecutor(fCores, 10);
 		IGraphProvider provider = fConfig.graphProvider();
 		IScheduleIterator it = SchedulerFactory.getInstance()
 				.createScheduler(fResolver, "").iterator();
@@ -187,23 +187,35 @@ public class DiffusionExperiment implements ITransformer {
 		return summary;
 	}
 
-	private MetricsCollector runExperiments(Experiment experiment, int source,
-			int[] ids, IndexedNeighborGraph graph, int repetitions,
-			TableWriter core, int clockType) throws Exception {
+	private MetricsCollector runExperiments(final Experiment experiment,
+			final int source, int[] ids, final IndexedNeighborGraph graph,
+			final int repetitions, TableWriter core, final int clockType)
+			throws Exception {
 
 		fExecutor.start(experiment.toString() + ", source: " + source
 				+ " size: " + graph.size(), repetitions);
 
-		Random seedGen = null;
-		if (fFixSeed) {
-			seedGen = new Random(Long.parseLong(experiment.attributes
-					.get("seed")));
-		}
+		final Random seedGen = fFixSeed ? new Random(
+				Long.parseLong(experiment.attributes.get("seed"))) : null;
 
-		for (int i = 0; i < repetitions; i++) {
-			fExecutor.submit(createTask(experiment, source, graph,
-					seedGen != null ? seedGen.nextLong() : null, clockType));
-		}
+		Thread submitter = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					for (int i = 0; i < repetitions; i++) {
+						fExecutor.submit(createTask(experiment, source, graph,
+								seedGen != null ? seedGen.nextLong() : null,
+								clockType));
+					}
+				} catch (Exception ex) {
+					System.err
+							.println("Submission thread finished with exception.");
+					ex.printStackTrace();
+				}
+			}
+		});
+		
+		submitter.start();
 
 		SumAccumulation edsum = new SumAccumulation("ed", graph.size());
 		SumAccumulation rdsum = new SumAccumulation("rd", graph.size());
