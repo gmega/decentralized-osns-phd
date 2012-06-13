@@ -297,11 +297,11 @@ public class DiffusionExperiment implements ITransformer {
 	}
 
 	private static class CloudAccessCounter implements
-			IMetricAccumulator<Double> {
+			IMetricAccumulator<Integer> {
 
 		private final int fN;
 
-		private final double[] fCounter = new double[3];
+		private final int[] fCounter = new int[3];
 
 		public CloudAccessCounter(int n) {
 			fN = n;
@@ -313,14 +313,14 @@ public class DiffusionExperiment implements ITransformer {
 		}
 
 		@Override
-		public Double getMetric(int i) {
+		public Integer getMetric(int i) {
 			return fCounter[i];
 		}
 
 		@Override
-		public void add(INodeMetric<Double> metric) {
+		public void add(INodeMetric<Integer> metric) {
 			for (int i = 0; i < fN; i++) {
-				fCounter[metric.getMetric(i).intValue()]++;
+				fCounter[metric.getMetric(i)]++;
 			}
 		}
 

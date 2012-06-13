@@ -42,6 +42,7 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 			IResolver resolver, int clockType, IProcess[] processes)
 			throws Exception {
 
+		fRandom = random;
 		fClockType = clockType;
 		fResolver = resolver;
 		fDelayType = DelayType.valueOf(resolver.getString("", "delay_type")
