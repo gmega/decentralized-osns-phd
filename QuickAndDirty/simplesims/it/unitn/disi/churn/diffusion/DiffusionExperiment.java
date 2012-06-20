@@ -135,7 +135,7 @@ public class DiffusionExperiment implements ITransformer {
 					cCore, clockType);
 
 			if (fCloudAssisted) {
-				INodeMetric<Integer> accesses = result.getMetric("outcomes");
+				INodeMetric<Integer> accesses = result.getMetric("outcome");
 
 				cloudStats.set("id", experiment.root);
 				cloudStats.set("source", source);

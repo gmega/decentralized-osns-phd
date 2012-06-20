@@ -4,7 +4,7 @@ import it.unitn.disi.network.churn.yao.AveragesFromFile;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
@@ -78,7 +78,7 @@ public class SyncEstimatorCLI {
 		}
 
 		Configuration.setConfig(new Properties());
-		
+
 		Random random = new Random();
 
 		IAverageGenerator agen = averageGenerator(random);
@@ -151,22 +151,27 @@ public class SyncEstimatorCLI {
 			double burnin, String string, int repeats,
 			List<IValueObserver> stats, boolean verbose) {
 
-		List<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		List<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+
+		EDSimulationEngine sim = new EDSimulationEngine(new RenewalProcess[] {
+				p1, p2 }, 0.0);
 
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
-			sims.add(new Pair<Integer, ISimulationObserver>(
+			sims.add(new Pair<Integer, IEventObserver>(
 					IProcess.PROCESS_SCHEDULABLE_TYPE, new TrueSyncEstimator(
-							repeats, false, stats.remove(0))));
+							sim, repeats, false, stats.remove(0))));
 		}
 
 		if (type == ExperimentType.regular || type == ExperimentType.all) {
-			sims.add(new Pair<Integer, ISimulationObserver>(
+			sims.add(new Pair<Integer, IEventObserver>(
 					IProcess.PROCESS_SCHEDULABLE_TYPE, new BurninSyncEstimator(
-							burnin, repeats, stats.remove(0))));
+							sim, burnin, repeats, stats.remove(0))));
 		}
 
-		return new EDSimulationEngine(new RenewalProcess[] { p1, p2 }, sims, 0.0);
+		sim.setEventObservers(sims);
+
+		return sim;
 	}
 
 	// ------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.utils.collections.Pair;
@@ -27,38 +27,40 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 			String peerSelector, IndexedNeighborGraph graph, Random random,
 			IProcess[] processes) throws Exception {
 
+		EDSimulationEngine bcs = new EDSimulationEngine(processes, burnin);
+
 		fProtocols = protocols(graph, random, peerSelector,
 				new CachingTransformer(new LiveTransformer()), processes);
 
-		List<Pair<Integer, ? extends ISimulationObserver>> observers = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		// Triggers the dissemination process from the first login of the
 		// sender.
-		DiffusionWick dc = new DiffusionWick(fProtocols[source], HFLOOD_PID);
-		observers.add(new Pair<Integer, ISimulationObserver>(
+		DiffusionWick dc = new DiffusionWick(bcs, fProtocols[source],
+				HFLOOD_PID);
+		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, dc));
 
 		// Maintains the initially connected core.
 		CoreTracker ct = null;
 		if (shouldTrackCore()) {
 			ct = new CoreTracker(fProtocols[source], HFLOOD_PID);
-			observers.add(new Pair<Integer, ISimulationObserver>(
+			observers.add(new Pair<Integer, IEventObserver>(
 					IProcess.PROCESS_SCHEDULABLE_TYPE, ct));
 		}
 
 		PausingCyclicProtocolRunner<HFlood> pcpr = new PausingCyclicProtocolRunner<HFlood>(
-				period, 1, HFLOOD_PID);
+				bcs, period, 1, HFLOOD_PID);
 
 		// Resumes the cyclic protocol whenever the network state changes.
-		observers.add(new Pair<Integer, ISimulationObserver>(
+		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, pcpr.networkObserver()));
 
 		// Cyclic protocol observer.
-		observers.add(new Pair<Integer, ISimulationObserver>(1, pcpr));
+		observers.add(new Pair<Integer, IEventObserver>(1, pcpr));
 		extraObservers(observers);
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, observers,
-				burnin);
+		bcs.setEventObservers(observers);
 		postBuildEngineConfig(bcs, pcpr, source);
 
 		List<INodeMetric<?>> metrics = new ArrayList<INodeMetric<?>>();
@@ -67,7 +69,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 		if (ct != null) {
 			metrics.add(ct);
 		}
-		
+
 		addMetrics(metrics);
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
@@ -87,7 +89,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 	}
 
 	protected void extraObservers(
-			List<Pair<Integer, ? extends ISimulationObserver>> observers) {
+			List<Pair<Integer, ? extends IEventObserver>> observers) {
 		// To be overridden by subclasses.
 	}
 

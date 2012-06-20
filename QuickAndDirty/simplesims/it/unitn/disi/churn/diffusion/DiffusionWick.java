@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
 /**
@@ -17,30 +17,33 @@ import it.unitn.disi.simulator.measure.INodeMetric;
  * receiver delay, which it exports by means of the {@link INodeMetric}
  * interface.
  */
-public class DiffusionWick implements ISimulationObserver, INodeMetric<Double> {
+@Binding
+public class DiffusionWick implements IEventObserver, INodeMetric<Double> {
 
 	private final int fPid;
 
 	private final HFlood fSource;
 
-	private EDSimulationEngine fEngine;
-
 	private double[] fSnapshot;
 
-	public DiffusionWick(HFlood source, int pid) {
+	private final ISimulationEngine fEngine;
+
+	public DiffusionWick(ISimulationEngine engine, HFlood source, int pid) {
 		fSource = source;
 		fPid = pid;
+		fEngine = engine;
 	}
 
 	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine engine,
+			Schedulable schedulable, double nextShift) {
 		IProcess process = (IProcess) schedulable;
 		// First login of the source.
 		if (process.id() == fSource.id() && process.isUp()) {
-			fSource.markReached(state.clock());
-			fSnapshot = uptimeSnapshot(state.network(), state.clock());
+			fSource.markReached(engine.clock());
+			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
 			// We're no longer binding.
-			fEngine.unbound(this);
+			engine.unbound(this);
 		}
 	}
 
@@ -53,18 +56,8 @@ public class DiffusionWick implements ISimulationObserver, INodeMetric<Double> {
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-		fEngine = parent;
-	}
-
-	@Override
 	public boolean isDone() {
 		return fSource.isReached();
-	}
-
-	@Override
-	public boolean isBinding() {
-		return true;
 	}
 
 	@Override
@@ -77,7 +70,8 @@ public class DiffusionWick implements ISimulationObserver, INodeMetric<Double> {
 		if (fSnapshot == null) {
 			throw new IllegalStateException("Source not yet reached!");
 		}
-		HFlood protocol = (HFlood) fEngine.process(i).getProtocol(fPid);
+		HFlood protocol = (HFlood) fEngine.network().process(i)
+				.getProtocol(fPid);
 		return protocol.rawReceiverDelay() - fSnapshot[i];
 	}
 

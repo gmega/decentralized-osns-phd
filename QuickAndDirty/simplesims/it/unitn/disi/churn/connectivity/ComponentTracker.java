@@ -9,9 +9,9 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -20,7 +20,7 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Comparator;
 
-public class ComponentTracker implements ISimulationObserver {
+public class ComponentTracker implements IEventObserver {
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -61,11 +61,8 @@ public class ComponentTracker implements ISimulationObserver {
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
+			double nextShift) {
 
 		if (!fEstimator.isReached(fMappedSource)) {
 			return;
@@ -130,11 +127,6 @@ public class ComponentTracker implements ISimulationObserver {
 
 	@Override
 	public boolean isDone() {
-		return false;
-	}
-
-	@Override
-	public boolean isBinding() {
 		return false;
 	}
 

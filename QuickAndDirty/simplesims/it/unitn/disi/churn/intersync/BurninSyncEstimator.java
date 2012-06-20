@@ -1,15 +1,17 @@
 package it.unitn.disi.churn.intersync;
 
 import it.unitn.disi.churn.StateAccountant;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
-public class BurninSyncEstimator implements ISimulationObserver {
+@Binding
+public class BurninSyncEstimator implements IEventObserver {
 
 	private EDSimulationEngine fParent;
 
@@ -25,23 +27,21 @@ public class BurninSyncEstimator implements ISimulationObserver {
 
 	private double fBurnin;
 
-	public BurninSyncEstimator(double burnin, int syncs, IValueObserver stats) {
+	public BurninSyncEstimator(EDSimulationEngine engine, double burnin,
+			int syncs, IValueObserver stats) {
 		fSyncs = syncs;
 		fBurnin = burnin;
+		fParent = engine;
 		fWaitSync = new StateAccountant(stats, IValueObserver.NULL_OBSERVER);
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine p) {
-		fParent = p;
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine state,
+			Schedulable schedulable, double nextShift) {
 
 		IProcess process = (IProcess) schedulable;
 		double time = state.clock().time();
-		INetwork parent = state.network(); 
+		INetwork parent = state.network();
 
 		if (time < fBurnin) {
 			return;
@@ -75,11 +75,6 @@ public class BurninSyncEstimator implements ISimulationObserver {
 	@Override
 	public boolean isDone() {
 		return fDone;
-	}
-
-	@Override
-	public boolean isBinding() {
-		return true;
 	}
 
 }

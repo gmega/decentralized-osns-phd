@@ -189,9 +189,6 @@ public class TEExperimentHelper {
 			boolean sampleActivations, boolean cloudSim,
 			boolean monitorComponents) throws Exception {
 
-		ActivationSampler sampler = sampleActivations ? new ActivationSampler(
-				graph) : null;
-
 		int sources = sourceEnd - sourceStart + 1;
 
 		fExecutor.start(taskStr, fRepetitions);
@@ -211,8 +208,9 @@ public class TEExperimentHelper {
 				}
 			}
 
-			fExecutor.submit(builder
-					.simulationTask(lIs, dIs, fBurnin, fYaoConf));
+			builder.createProcesses(lIs, dIs, fYaoConf);
+
+			fExecutor.submit(builder.simulationTask(fBurnin));
 		}
 
 		@SuppressWarnings("unchecked")
@@ -238,11 +236,6 @@ public class TEExperimentHelper {
 							networkMetric, graph.size());
 				}
 			}
-		}
-
-		// Print activations.
-		if (sampler != null) {
-			sampler.printActivations(ids);
 		}
 
 		return metric;

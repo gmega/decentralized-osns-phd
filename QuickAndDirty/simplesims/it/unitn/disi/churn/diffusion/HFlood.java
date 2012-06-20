@@ -2,22 +2,15 @@ package it.unitn.disi.churn.diffusion;
 
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
-import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
-import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.IDMapper;
 import it.unitn.disi.utils.collections.Triplet;
 
-import java.util.Arrays;
 import java.util.BitSet;
 
 public class HFlood implements ICyclicProtocol {
@@ -65,7 +58,7 @@ public class HFlood implements ICyclicProtocol {
 	}
 
 	@Override
-	public void nextCycle(SimulationState state, IProcess process) {
+	public void nextCycle(ISimulationEngine state, IProcess process) {
 
 		INetwork network = state.network();
 

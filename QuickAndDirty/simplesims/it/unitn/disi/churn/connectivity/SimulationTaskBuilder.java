@@ -4,7 +4,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
@@ -17,7 +17,7 @@ import java.util.List;
 
 public class SimulationTaskBuilder {
 
-	private final ArrayList<Pair<Integer, ? extends ISimulationObserver>> fSims;
+	private final ArrayList<Pair<Integer, ? extends IEventObserver>> fSims;
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -27,13 +27,20 @@ public class SimulationTaskBuilder {
 
 	private TemporalConnectivityEstimator fLast;
 
+	private IProcess[] fProcesses;
+
 	private HashMap<Integer, List<INodeMetric<Double>>> fMap = new HashMap<Integer, List<INodeMetric<Double>>>();
 
 	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids, int root) {
-		fSims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		fSims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		fGraph = graph;
 		fIds = ids;
 		fRoot = root;
+	}
+
+	public void createProcesses(double[] lIs, double[] dIs,
+			YaoChurnConfigurator conf) {
+		fProcesses = conf.createProcesses(lIs, dIs, dIs.length);
 	}
 
 	public SimulationTaskBuilder addConnectivitySimulation(int source,
@@ -71,7 +78,7 @@ public class SimulationTaskBuilder {
 	}
 
 	public void addCloudSimulation(int source) {
-		final CloudSim sim = new CloudSim(source);
+		final CloudSim sim = new CloudSim(source, fGraph.size());
 		addSim(sim);
 		addMetric(source, new INodeMetric<Double>() {
 			@Override
@@ -94,8 +101,8 @@ public class SimulationTaskBuilder {
 				fIds[fLast.source()], fLast.source()));
 	}
 
-	private void addSim(ISimulationObserver observer) {
-		fSims.add(new Pair<Integer, ISimulationObserver>(
+	private void addSim(IEventObserver observer) {
+		fSims.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, observer));
 	}
 
@@ -109,8 +116,7 @@ public class SimulationTaskBuilder {
 		list.add(metric);
 	}
 
-	public SimulationTask simulationTask(double[] lIs, double[] dIs,
-			double burnIn, YaoChurnConfigurator conf) {
+	public SimulationTask simulationTask(double burnIn) {
 		@SuppressWarnings("unchecked")
 		Pair<Integer, List<? extends INodeMetric<? extends Object>>>[] metrics = new Pair[fMap
 				.size()];
@@ -132,8 +138,8 @@ public class SimulationTaskBuilder {
 					}
 				});
 
-		EDSimulationEngine engine = new EDSimulationEngine(
-				conf.createProcesses(lIs, dIs, lIs.length), fSims, burnIn);
+		EDSimulationEngine engine = new EDSimulationEngine(fProcesses, burnIn);
+		engine.setEventObservers(fSims);
 
 		return new SimulationTask(null, engine, metrics);
 	}

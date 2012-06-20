@@ -1,12 +1,14 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 
 import java.util.Arrays;
 
@@ -16,9 +18,8 @@ import java.util.Arrays;
  * 
  * @author giuliano
  */
-public class TemporalConnectivityEstimator implements ISimulationObserver {
-
-	private EDSimulationEngine fParent;
+@Binding
+public class TemporalConnectivityEstimator implements IEventObserver {
 
 	private ActivationSampler fSampler;
 
@@ -79,26 +80,23 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-		fParent = parent;
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine engine,
+			Schedulable schedulable, double nextShift) {
 		RenewalProcess process = (RenewalProcess) schedulable;
 		if (!process.isUp()) {
 			return;
 		}
-		recomputeReachabilities(process, state.clock().time());
+		recomputeReachabilities(process, engine);
 	}
 
-	private void recomputeReachabilities(RenewalProcess process, double time) {
+	private void recomputeReachabilities(RenewalProcess process,
+			ISimulationEngine engine) {
 
 		// Source being reached for the first time?
 		if (!isReached(fSource)) {
 			if (process.id() == fSource && process.isUp()) {
-				snapshotUptimes();
-				reached(fSource, fSource, time);
+				snapshotUptimes(engine);
+				reached(fSource, fSource, engine);
 			}
 			// Source not reached yet, just return.
 			else {
@@ -109,14 +107,14 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 		for (int i = 0; i < fDone.length; i++) {
 			// We start DFSs from all nodes that have
 			// unvisited neighbors.
-			if (!fDone[i] && isReached(i) && isUp(i)) {
+			if (!fDone[i] && isReached(i) && isUp(i, engine.network())) {
 				fQueue.addLast(i);
-				BFSExplore(time);
+				BFSExplore(engine);
 			}
 		}
 	}
 
-	private void BFSExplore(double time) {
+	private void BFSExplore(ISimulationEngine engine) {
 		while (!fQueue.isEmpty()) {
 			int current = fQueue.peekFirst();
 			int degree = fGraph.degree(current);
@@ -125,8 +123,8 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 			for (int i = 0; i < degree; i++) {
 				int neighbor = fGraph.getNeighbor(current, i);
 				// Found unreached neighbor. If up, visits.
-				if (!isReached(neighbor) && isUp(neighbor)) {
-					reached(current, neighbor, time);
+				if (!isReached(neighbor) && isUp(neighbor, engine.network())) {
+					reached(current, neighbor, engine);
 					fQueue.addLast(neighbor);
 				}
 				done &= isReached(neighbor);
@@ -137,28 +135,31 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 		}
 	}
 
-	private void reached(int source, int node, double time) {
+	private void reached(int source, int node, ISimulationEngine engine) {
+		IClockData clock = engine.clock();
+
 		fReachedFrom[node] = source;
-		fReached[node] = time;
-		fUptimeReached[node] = fParent.process(node).uptime(fParent);
+		fReached[node] = engine.clock().time();
+		fUptimeReached[node] = engine.network().process(node).uptime(clock);
 		fReachedCount++;
 		if (fSampler != null) {
 			fSampler.reached(node, this);
 		}
 
 		if (isDone()) {
-			fParent.unbound(this);
+			engine.unbound(this);
 		}
 	}
 
-	private void snapshotUptimes() {
+	private void snapshotUptimes(ISimulationEngine engine) {
 		for (int i = 0; i < fUptimeSnapshot.length; i++) {
-			fUptimeSnapshot[i] = fParent.process(i).uptime(fParent);
+			fUptimeSnapshot[i] = engine.network().process(i)
+					.uptime(engine.clock());
 		}
 	}
 
-	private boolean isUp(int node) {
-		return fCloudNodes[node] || fParent.process(node).isUp();
+	private boolean isUp(int node, INetwork network) {
+		return fCloudNodes[node] || network.process(node).isUp();
 	}
 
 	boolean isReached(int node) {
@@ -186,14 +187,6 @@ public class TemporalConnectivityEstimator implements ISimulationObserver {
 		return fSampler;
 	}
 
-	INetwork sim() {
-		return fParent;
-	}
-
-	@Override
-	public boolean isBinding() {
-		return true;
-	}
 }
 
 class BFSQueue {

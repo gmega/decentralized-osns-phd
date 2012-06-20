@@ -48,6 +48,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	@Attribute(value = "skipmetrics", defaultValue = "false")
 	private boolean fSkipMetrics;
+	
+	@Attribute(value = "allsources", defaultValue = "false")
+	private boolean fAllSources;
 
 	private BitSet fCloudBitmap;
 

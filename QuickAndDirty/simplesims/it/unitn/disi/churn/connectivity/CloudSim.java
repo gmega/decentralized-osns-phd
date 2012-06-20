@@ -1,11 +1,12 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 
 import java.util.Arrays;
@@ -18,7 +19,8 @@ import java.util.Arrays;
  * 
  * @author giuliano
  */
-public class CloudSim implements ISimulationObserver {
+@Binding
+public class CloudSim implements IEventObserver {
 
 	private final int fSource;
 
@@ -26,18 +28,15 @@ public class CloudSim implements ISimulationObserver {
 
 	private int fReached;
 
-	public CloudSim(int source) {
+	public CloudSim(int source, int size) {
 		fSource = source;
-	}
-
-	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-		fTimes = new double[parent.size()];
+		fTimes = new double[size];
 		Arrays.fill(fTimes, Double.MAX_VALUE);
 	}
 
 	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
+			double nextShift) {
 
 		INetwork parent = state.network();
 		IProcess process = (IProcess) schedulable;
@@ -90,11 +89,6 @@ public class CloudSim implements ISimulationObserver {
 
 	public double reachTime(int i) {
 		return fTimes[i] - fTimes[fSource];
-	}
-
-	@Override
-	public boolean isBinding() {
-		return true;
 	}
 
 }

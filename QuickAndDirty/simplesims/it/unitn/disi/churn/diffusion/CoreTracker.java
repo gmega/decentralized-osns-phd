@@ -7,9 +7,9 @@ import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
 /**
@@ -17,11 +17,11 @@ import it.unitn.disi.simulator.measure.INodeMetric;
  * connected core of nodes reachable from the source when it first logs in.
  * 
  * To work properly, {@link CoreTracker} requires that {@link DiffusionWick} be
- * installed before it. 
+ * installed before it.
  * 
  * @author giuliano
  */
-public class CoreTracker implements ISimulationObserver, INodeMetric<Boolean> {
+public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	private boolean fInitial = true;
 
@@ -44,12 +44,8 @@ public class CoreTracker implements ISimulationObserver, INodeMetric<Boolean> {
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine parent) {
-
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
+			double nextShift) {
 		INetwork network = state.network();
 
 		// If source has already been reached, we are in maintenance mode.
@@ -114,11 +110,6 @@ public class CoreTracker implements ISimulationObserver, INodeMetric<Boolean> {
 
 	@Override
 	public boolean isDone() {
-		return false;
-	}
-
-	@Override
-	public boolean isBinding() {
 		return false;
 	}
 

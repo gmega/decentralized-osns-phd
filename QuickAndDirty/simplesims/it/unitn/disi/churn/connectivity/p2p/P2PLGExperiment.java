@@ -134,8 +134,8 @@ public class P2PLGExperiment implements ITransformer {
 			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
 					ids, 0);
 			builder.addConnectivitySimulation(0, new int[] {}, null);
-			taskExecutor.submit(builder.simulationTask(lis, dis, fBurnin,
-					fYaoConf));
+			builder.createProcesses(lis, dis, fYaoConf);
+			taskExecutor.submit(builder.simulationTask(fBurnin));
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {

@@ -1,12 +1,13 @@
 package it.unitn.disi.churn.intersync;
 
 import gnu.trove.list.array.TDoubleArrayList;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
 /**
@@ -14,10 +15,11 @@ import it.unitn.disi.simulator.measure.IValueObserver;
  * 
  * @author giuliano
  */
-public class TrueSyncEstimator implements ISimulationObserver {
+@Binding
+public class TrueSyncEstimator implements IEventObserver {
 
 	private EDSimulationEngine fParent;
-	
+
 	private volatile int fSamples;
 
 	private final IValueObserver fObserver;
@@ -26,31 +28,26 @@ public class TrueSyncEstimator implements ISimulationObserver {
 
 	private final boolean fCloud;
 
-	private volatile int fPId0;
-
-	public TrueSyncEstimator(int samples, boolean cloud, IValueObserver observer) {
+	public TrueSyncEstimator(EDSimulationEngine engine, int samples,
+			boolean cloud, IValueObserver observer) {
 		fSamples = samples;
 		fPendingUps = new TDoubleArrayList();
 		fObserver = observer;
 		fCloud = cloud;
+		fParent = engine;
 	}
 
 	@Override
-	public void simulationStarted(EDSimulationEngine p) {
-		fParent = p;
-		fPId0 = p.process(0).id();
-	}
-
-	@Override
-	public void eventPerformed(SimulationState state, Schedulable schedulable) {
+	public void eventPerformed(ISimulationEngine state,
+			Schedulable schedulable, double nextShift) {
 
 		IProcess process = (IProcess) schedulable;
 		INetwork p = state.network();
 
 		double time = state.clock().time();
-		
+
 		// We saw a login event for P1.
-		if (process.id() == fPId0 && process.isUp()) {
+		if (process.id() == p.process(0).id() && process.isUp()) {
 			fPendingUps.add(time);
 		}
 
@@ -59,7 +56,7 @@ public class TrueSyncEstimator implements ISimulationObserver {
 			register(time, fPendingUps);
 			fPendingUps.resetQuick();
 		}
-		
+
 		if (isDone()) {
 			fParent.unbound(this);
 		}
@@ -80,9 +77,5 @@ public class TrueSyncEstimator implements ISimulationObserver {
 		return fSamples <= 0;
 	}
 
-	@Override
-	public boolean isBinding() {
-		return true;
-	}
 
 }

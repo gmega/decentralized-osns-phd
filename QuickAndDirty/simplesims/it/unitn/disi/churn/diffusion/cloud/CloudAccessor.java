@@ -3,12 +3,11 @@ package it.unitn.disi.churn.diffusion.cloud;
 import it.unitn.disi.churn.diffusion.HFlood;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.IProcessObserver;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.SimulationState;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.random.IDistribution;
 
@@ -19,7 +18,7 @@ import it.unitn.disi.simulator.random.IDistribution;
  * 
  * @author giuliano
  */
-public class CloudAccessor implements IProcessObserver {
+public class CloudAccessor implements IEventObserver {
 
 	public static final int UNFIRED = 0;
 
@@ -65,16 +64,18 @@ public class CloudAccessor implements IProcessObserver {
 	}
 
 	@Override
-	public void stateShifted(IProcess process, State state, double time,
-			double next) {
+	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
+			double nextShift) {
+
+		State pState = ((IProcess) schedulable).state();
 
 		// If our node is going down or we have already fired
 		// this accessor, just returns.
-		if (state == State.down || fOutcome != UNFIRED) {
+		if (pState == State.down || fOutcome != UNFIRED) {
 			return;
 		}
 
-		double accessTime = updateTimer(time, next);
+		double accessTime = updateTimer(state.clock().rawTime(), nextShift);
 		if (accessTime > 0) {
 			// It will, so we schedule a cloud access for when it does.
 			fSim.schedule(new CloudAccess(accessTime));
@@ -107,13 +108,13 @@ public class CloudAccessor implements IProcessObserver {
 			if (fRemaining < time) {
 				// Yes, so we access the cloud immediately.
 				expired = 0.0;
-			} 
+			}
 			// Will it expire now?
 			else if (fRemaining < next) {
 				// Yes, schedule for the future.
 				expired = next - fRemaining;
 			}
-			
+
 			expired = fRemaining < time ? time : -1;
 			break;
 		}
@@ -123,11 +124,11 @@ public class CloudAccessor implements IProcessObserver {
 
 	private void reset(double time) {
 		switch (fClockMode) {
-		
+
 		case UPTIME:
 			fRemaining = fDistribution.sample();
 			break;
-		
+
 		case WALLCLOCK:
 			fRemaining = time + fDistribution.sample();
 			break;
@@ -143,9 +144,9 @@ public class CloudAccessor implements IProcessObserver {
 		}
 
 		@Override
-		public void scheduled(SimulationState state) {
+		public void scheduled(ISimulationEngine state) {
 			IClockData clock = state.clock();
-			
+
 			// Resets the timer.
 			reset(clock.time());
 
@@ -185,6 +186,11 @@ public class CloudAccessor implements IProcessObserver {
 			return true;
 		}
 
+	}
+
+	@Override
+	public boolean isDone() {
+		return false;
 	}
 
 }

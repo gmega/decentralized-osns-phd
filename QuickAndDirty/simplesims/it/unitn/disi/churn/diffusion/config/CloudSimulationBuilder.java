@@ -61,7 +61,7 @@ public class CloudSimulationBuilder extends ChurnSimulationBuilder {
 			fAccessors[i] = new CloudAccessor(distribution(process, i,
 					fDelayType), fProtocols[source], fProtocols[i], runner,
 					sim, fClockType);
-			process.addProcessObserver(fAccessors[i]);
+			process.addObserver(fAccessors[i]);
 		}
 	}
 

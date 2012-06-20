@@ -8,7 +8,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.CyclicProtocolRunner;
 import it.unitn.disi.simulator.protocol.CyclicSchedulable;
@@ -34,16 +34,16 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		fProtocols = protocols(graph, random, peerSelector,
 				new CachingTransformer(new LiveTransformer()), processes);
 
-		List<Pair<Integer, ? extends ISimulationObserver>> observers = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
+		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		CyclicProtocolRunner<HFlood> cpr = new CyclicProtocolRunner<HFlood>(
 				HFLOOD_PID);
 
 		// Cyclic protocol observer.
-		observers.add(new Pair<Integer, ISimulationObserver>(1, cpr));
+		observers.add(new Pair<Integer, IEventObserver>(1, cpr));
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, observers,
-				0.0);
+		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0.0);
+		bcs.setEventObservers(observers);
 		bcs.schedule(new CyclicSchedulable(period, 1));
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();

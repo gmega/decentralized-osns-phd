@@ -5,7 +5,7 @@ import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.ISimulationObserver;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.random.GeneralizedPareto;
@@ -56,6 +56,8 @@ public class SamplingExperiment implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
+		
+		
 
 		switch (fMode) {
 
@@ -64,18 +66,18 @@ public class SamplingExperiment implements ITransformer {
 			break;
 
 		case trueavg:
-			simSamples();
+			simSamples(simEngine(burnin));
 			break;
 
 		case burninavg:
 			if (burnin == 0.0) {
 				throw new IllegalArgumentException("Burn-in can't be zero.");
 			}
-			burninSamples();
+			burninSamples(simEngine(burnin));
 			break;
 
 		case genandsample:
-			genAndSample();
+			genAndSample(simEngine(burnin));
 			break;
 		}
 
@@ -92,11 +94,11 @@ public class SamplingExperiment implements ITransformer {
 		}
 	}
 
-	private void simSamples() {
+	private void simSamples(EDSimulationEngine engine) {
 		System.err.println("No burn-in.");
 		final IncrementalStats stats = new IncrementalStats();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
-				new IValueObserver() {
+		TrueSyncEstimator sexp = new TrueSyncEstimator(engine, repetitions,
+				cloud, new IValueObserver() {
 					@Override
 					public void observe(double value) {
 						stats.add(value);
@@ -107,7 +109,7 @@ public class SamplingExperiment implements ITransformer {
 		runSim(0.0, sexp);
 	}
 
-	private void burninSamples() {
+	private void burninSamples(EDSimulationEngine engine) {
 		final IncrementalStats stats = new IncrementalStats();
 		IValueObserver obs = new IValueObserver() {
 			@Override
@@ -118,18 +120,19 @@ public class SamplingExperiment implements ITransformer {
 		};
 
 		for (int i = 0; i < repetitions; i++) {
-			TrueSyncEstimator sexp = new TrueSyncEstimator(1, cloud, obs);
+			TrueSyncEstimator sexp = new TrueSyncEstimator(engine, 1, cloud,
+					obs);
 			runSim(burnin, sexp);
 		}
 	}
 
-	private void genAndSample() {
+	private void genAndSample(EDSimulationEngine engine) {
 		final TDoubleArrayList p1All = new TDoubleArrayList();
 		final TDoubleArrayList p2All = new TDoubleArrayList();
 
 		System.err.print("Generating...");
-		TrueSyncEstimator sexp = new TrueSyncEstimator(repetitions, cloud,
-				IValueObserver.NULL_OBSERVER) {
+		TrueSyncEstimator sexp = new TrueSyncEstimator(engine, repetitions,
+				cloud, IValueObserver.NULL_OBSERVER) {
 			@Override
 			protected void register(double p2Login, TDoubleArrayList p1Logins) {
 				super.register(p2Login, p1Logins);
@@ -164,8 +167,19 @@ public class SamplingExperiment implements ITransformer {
 
 	}
 
-	private void runSim(double burnin, ISimulationObserver sim) {
+	private void runSim(double burnin, IEventObserver sim) {
+		EDSimulationEngine churnSim = simEngine(burnin);
 
+		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		sims.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, sim));
+
+		churnSim.setEventObservers(sims);
+
+		churnSim.run();
+	}
+
+	private EDSimulationEngine simEngine(double burnin) {
 		double[] li = { 0.022671232013507403, 0.15811117888599902 };
 		double[] di = { 0.060429334420225356, 5.098033173656655 };
 
@@ -179,14 +193,9 @@ public class SamplingExperiment implements ITransformer {
 		RenewalProcess pJ = new RenewalProcess(1,
 				distGen.uptimeDistribution(li[1]),
 				distGen.downtimeDistribution(di[1]), State.down);
-
-		ArrayList<Pair<Integer, ? extends ISimulationObserver>> sims = new ArrayList<Pair<Integer, ? extends ISimulationObserver>>();
-		sims.add(new Pair<Integer, ISimulationObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, sim));
-
-		EDSimulationEngine churnSim = new EDSimulationEngine(new RenewalProcess[] { pI, pJ },
-				sims, burnin);
-
-		churnSim.run();
+		
+		EDSimulationEngine churnSim = new EDSimulationEngine(
+				new RenewalProcess[] { pI, pJ }, burnin);
+		return churnSim;
 	}
 }
