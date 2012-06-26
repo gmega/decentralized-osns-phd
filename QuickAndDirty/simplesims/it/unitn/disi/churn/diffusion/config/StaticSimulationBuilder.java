@@ -33,7 +33,7 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 
 		fProtocols = protocols(graph, random, peerSelector,
 				new CachingTransformer(new LiveTransformer()), processes);
-
+		
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		CyclicProtocolRunner<HFlood> cpr = new CyclicProtocolRunner<HFlood>(
@@ -45,7 +45,9 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0.0);
 		bcs.setEventObservers(observers);
 		bcs.schedule(new CyclicSchedulable(period, 1));
-
+		
+		fProtocols[0].markReached(bcs);
+		
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		addEDMetric(metrics, fProtocols, source);
 

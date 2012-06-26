@@ -4,15 +4,19 @@ import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
+import it.unitn.disi.graph.analysis.DunnTopK;
+import it.unitn.disi.graph.analysis.DunnTopK.Mode;
+import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.IExecutorCallback;
+import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -22,14 +26,21 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
+import peersim.extras.am.util.IncrementalStatsFreq;
 
 @AutoConfig
 public class P2PEgonetShortestPath implements ITransformer {
 
 	private final ShortestPathTask SHUTDOWN = new ShortestPathTask(-1, -1,
-			null, null, null);
+			null, null, null, null, -1);
 
 	private GraphConfigurator fConfig;
+
+	@Attribute("pairwise_estimates")
+	private String fPairwiseEstimates;
+
+	@Attribute("k")
+	private int fK;
 
 	public P2PEgonetShortestPath(@Attribute(Attribute.AUTO) IResolver resolver) {
 		fConfig = ObjectCreator.createInstance(GraphConfigurator.class, "",
@@ -39,8 +50,9 @@ public class P2PEgonetShortestPath implements ITransformer {
 	@Override
 	public void execute(InputStream is, final OutputStream oup)
 			throws Exception {
-		MatrixReader reader = new MatrixReader(is, "id", "source", "target",
-				"ttc");
+
+		MatrixReader reader = new MatrixReader(new FileInputStream(
+				fPairwiseEstimates), "id", "source", "target", "ttc");
 
 		IGraphProvider provider = fConfig.graphProvider();
 
@@ -49,8 +61,12 @@ public class P2PEgonetShortestPath implements ITransformer {
 		Thread printer = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				TableWriter writer = new TableWriter(new PrintStream(oup),
-						"id", "source", "target", "estimate");
+				TableWriter writer = new TableWriter(new PrefixedWriter("S:",
+						oup), "id", "source", "target", "estimate", "avglength");
+
+				TableWriter lwriter = new TableWriter(new PrefixedWriter("L:",
+						oup), "id", "length", "freq");
+
 				while (true) {
 					ShortestPathTask result = null;
 					try {
@@ -68,7 +84,16 @@ public class P2PEgonetShortestPath implements ITransformer {
 						writer.set("source", result.ids[result.source]);
 						writer.set("target", result.ids[i]);
 						writer.set("estimate", result.mindists()[i]);
+						writer.set("avglength", result.avgLength(i));
 						writer.emmitRow();
+					}
+
+					IncrementalStatsFreq freq = result.lengthDist();
+					for (int i = (int) freq.getMin(); i < (int) freq.getMax(); i++) {
+						lwriter.set("id", result.root);
+						lwriter.set("length", i);
+						lwriter.set("freq", freq.getFreq(i));
+						lwriter.emmitRow();
 					}
 				}
 			}
@@ -109,7 +134,8 @@ public class P2PEgonetShortestPath implements ITransformer {
 			}
 
 			for (int i = 0; i < egoNet.size(); i++) {
-				executor.submit(new ShortestPathTask(root, i, w, egoNet, ids));
+				executor.submit(new ShortestPathTask(root, i, w, egoNet, ids,
+						Mode.EdgeDisjoint, fK));
 			}
 		}
 
@@ -149,30 +175,61 @@ public class P2PEgonetShortestPath implements ITransformer {
 
 		public final double[][] fWeights;
 
+		private double[] fMinDists;
+		
+		private double[] fAvgLengths;
+
 		public final IndexedNeighborGraph fGraph;
 
-		private double[] fMinDists;
+		private IncrementalStatsFreq fStats;
+
+		private final Mode fMode;
+
+		private final int fK;
 
 		public ShortestPathTask(int root, int source, double[][] weights,
-				IndexedNeighborGraph graph, int[] ids) {
+				IndexedNeighborGraph graph, int[] ids, Mode mode, int k) {
 			fGraph = graph;
 			this.source = source;
 			fWeights = weights;
 			this.root = root;
 			this.ids = ids;
+			fMode = mode;
+			fK = k;
 		}
 
 		@Override
 		public ShortestPathTask call() throws Exception {
-			double[] mindists = new double[fGraph.size()];
-			int[] previous = new int[fGraph.size()];
-
-			GraphAlgorithms.dijkstra(fGraph, source, fWeights, mindists,
-					previous);
 
 			synchronized (this) {
-				fMinDists = mindists;
+				fStats = new IncrementalStatsFreq();
 			}
+
+			double[] minDists = new double[fGraph.size()];
+			double[] avgLength = new double[fGraph.size()];
+			
+			minDists[source] = 0;
+			
+			DunnTopK dtk = new DunnTopK(fGraph, fWeights, fMode);
+			for (int i = 0; i < fGraph.size(); i++) {
+				if (i == source) {
+					continue;
+				}
+				ArrayList<PathEntry> paths = dtk.topKShortest(source, i, fK);
+				for (PathEntry entry : paths) {
+					int length = entry.path.length - 1;
+					fStats.add(length);
+					avgLength[i] += length;
+				}
+				avgLength[i] /= paths.size();
+				minDists[i] = paths.get(0).cost;
+			}
+
+			synchronized (this) {
+				fMinDists = minDists;
+				fAvgLengths = avgLength;
+			}
+
 			return this;
 		}
 
@@ -180,5 +237,12 @@ public class P2PEgonetShortestPath implements ITransformer {
 			return fMinDists;
 		}
 
+		public synchronized IncrementalStatsFreq lengthDist() {
+			return fStats;
+		}
+		
+		public synchronized double avgLength(int i) {
+			return fAvgLengths[i];
+		}
 	}
 }
