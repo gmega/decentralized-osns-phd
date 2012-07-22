@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.diffusion.config;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.diffusion.HFlood;
+import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -36,7 +36,7 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
-		CyclicProtocolRunner<HFlood> cpr = new CyclicProtocolRunner<HFlood>(
+		CyclicProtocolRunner<HFloodSM> cpr = new CyclicProtocolRunner<HFloodSM>(
 				HFLOOD_PID);
 
 		// Cyclic protocol observer.
@@ -49,7 +49,7 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		fProtocols[0].markReached(bcs);
 		
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
-		addEDMetric(metrics, fProtocols, source);
+		metrics.add(SMMetrics.rdMetric(source, fProtocols));
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
 				bcs, metrics);

@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.connectivity;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;

@@ -7,7 +7,7 @@ import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import peersim.config.Attribute;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;

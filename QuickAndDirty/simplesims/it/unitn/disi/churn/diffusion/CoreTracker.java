@@ -25,7 +25,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	private boolean fInitial = true;
 
-	private final HFlood fSource;
+	private final HFloodSM fSource;
 
 	private final int fPid;
 
@@ -35,7 +35,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	private boolean[] fCoreBuffer;
 
-	public CoreTracker(HFlood source, int pid) {
+	public CoreTracker(HFloodSM source, int pid) {
 		fSource = source;
 		fPid = pid;
 
@@ -88,7 +88,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 		for (int i = 0; i < fConnectedCore.length; i++) {
 			// Node was reachable from the source, but is no longer.
 			if (fConnectedCore[i] && !fCoreBuffer[i]) {
-				HFlood protocol = (HFlood) network.process(i).getProtocol(fPid);
+				HFloodSM protocol = (HFloodSM) network.process(i).getProtocol(fPid);
 				// If node wasn't reached by the dissemination protocol, it
 				// gets sawed off of the core.
 				if (!protocol.isReached()) {

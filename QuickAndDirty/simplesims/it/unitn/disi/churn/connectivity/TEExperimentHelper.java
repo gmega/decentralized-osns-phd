@@ -9,10 +9,10 @@ import it.unitn.disi.graph.analysis.ITopKEstimator;
 import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.SumAccumulation;
-import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;

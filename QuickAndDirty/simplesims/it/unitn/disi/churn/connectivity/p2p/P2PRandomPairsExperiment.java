@@ -11,7 +11,7 @@ import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.simulator.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;

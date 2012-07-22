@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
+import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
@@ -18,20 +19,28 @@ import it.unitn.disi.simulator.measure.INodeMetric;
  * interface.
  */
 @Binding
-public class DiffusionWick implements IEventObserver, INodeMetric<Double> {
+public class DiffusionWick implements IEventObserver {
 
-	private final int fPid;
-
-	private final HFlood fSource;
+	private final int fSource;
 
 	private double[] fSnapshot;
 
-	private final ISimulationEngine fEngine;
+	private Poster fPoster;
 
-	public DiffusionWick(ISimulationEngine engine, HFlood source, int pid) {
+	public DiffusionWick(int source) {
 		fSource = source;
-		fPid = pid;
-		fEngine = engine;
+	}
+
+	public void setPoster(Poster poster) {
+		fPoster = poster;
+	}
+
+	public Poster poster() {
+		return fPoster;
+	}
+
+	public int source() {
+		return fSource;
 	}
 
 	@Override
@@ -39,12 +48,20 @@ public class DiffusionWick implements IEventObserver, INodeMetric<Double> {
 			Schedulable schedulable, double nextShift) {
 		IProcess process = (IProcess) schedulable;
 		// First login of the source.
-		if (process.id() == fSource.id() && process.isUp()) {
-			fSource.markReached(engine.clock());
+		if (process.id() == fSource && process.isUp()) {
+			if (fPoster == null) {
+				throw new IllegalStateException(
+						"Poster has not been initialized.");
+			}
+			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
 			// We're no longer binding.
 			engine.unbound(this);
 		}
+	}
+
+	public double up(int i) {
+		return fSnapshot[i];
 	}
 
 	private double[] uptimeSnapshot(INetwork network, IClockData clock) {
@@ -57,22 +74,54 @@ public class DiffusionWick implements IEventObserver, INodeMetric<Double> {
 
 	@Override
 	public boolean isDone() {
-		return fSource.isReached();
+		return fSnapshot != null;
 	}
 
-	@Override
-	public Object id() {
-		return "rd";
+	public interface Poster {
+
+		public void post(ISimulationEngine engine);
+
 	}
 
-	@Override
-	public Double getMetric(int i) {
-		if (fSnapshot == null) {
-			throw new IllegalStateException("Source not yet reached!");
+	public class PostSM implements Poster {
+
+		private HFloodSM fSourceProtocol;
+
+		public PostSM(HFloodSM source) {
+			fSourceProtocol = source;
 		}
-		HFlood protocol = (HFlood) fEngine.network().process(i)
-				.getProtocol(fPid);
-		return protocol.rawReceiverDelay() - fSnapshot[i];
+
+		@Override
+		public void post(ISimulationEngine engine) {
+			fSourceProtocol.markReached(engine.clock());
+		}
+
+	}
+
+	public class PostMM implements Poster {
+
+		private HFloodMM fSourceProtocol;
+
+		private ICloud fCloud;
+
+		private Message fMessage;
+
+		public PostMM(HFloodMM source, ICloud cloud) {
+			fSourceProtocol = source;
+			fCloud = cloud;
+		}
+
+		@Override
+		public void post(ISimulationEngine engine) {
+			Message update = new Message(engine.clock().time(), fSource);
+			fSourceProtocol.post(update, engine);
+			fCloud.writeUpdate(fSource, update);
+		}
+
+		public Message getMessage() {
+			return fMessage;
+		}
+
 	}
 
 }

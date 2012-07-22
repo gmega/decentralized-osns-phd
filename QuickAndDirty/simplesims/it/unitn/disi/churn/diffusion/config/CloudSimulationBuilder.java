@@ -1,107 +1,207 @@
 package it.unitn.disi.churn.diffusion.config;
 
-import it.unitn.disi.churn.config.ExperimentReader.Experiment;
-import it.unitn.disi.churn.diffusion.HFlood;
+import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
+import it.unitn.disi.churn.diffusion.DiffusionWick;
+import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
+import it.unitn.disi.churn.diffusion.HFloodMM;
+import it.unitn.disi.churn.diffusion.IPeerSelector;
+import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
-import it.unitn.disi.churn.diffusion.cloud.FixedPeriodDistribution;
+import it.unitn.disi.churn.diffusion.cloud.ICloud;
+import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
+import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
+import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
-import it.unitn.disi.simulator.random.IDistribution;
-import it.unitn.disi.simulator.random.UniformDistribution;
 import it.unitn.disi.utils.collections.Pair;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import peersim.config.IResolver;
+public class CloudSimulationBuilder {
 
-public class CloudSimulationBuilder extends ChurnSimulationBuilder {
+	private static final int HFLOOD_PID = 0;
 
-	static enum DelayType {
-		periodical, random;
-	}
+	public static final int ACCESSES = 0;
+
+	public static final int PRODUCTIVE = 0;
 
 	private static final double SECOND = 0.0002777777777777778D;
 
-	private CloudAccessor[] fAccessors;
+	private final double fBurnin;
 
-	private int fClockType;
+	private final double fDelay;
 
-	private DelayType fDelayType;
+	private final IndexedNeighborGraph fGraph;
 
-	private IResolver fResolver;
+	private final Random fRandom;
 
-	private Random fRandom;
+	private final char fSelectorType;
 
-	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(double burnin,
-			double period, Experiment experiment, int source,
-			String peerSelector, IndexedNeighborGraph graph, Random random,
-			IResolver resolver, int clockType, IProcess[] processes)
-			throws Exception {
+	private final double fNUPOnly;
 
+	/**
+	 * Creates a new {@link CloudSimulationBuilder}.
+	 * 
+	 * @param burnin
+	 *            burn-in period with which to run the simulations.
+	 * @param delay
+	 *            cloud access delay, after which nodes will access the cloud
+	 *            for updates.
+	 * @param selectorType
+	 *            the selector type for the dissemination protocol.
+	 * @param graph
+	 *            graph over which to disseminate.
+	 * @param nupOnly
+	 *            if this is set to a non-negative value, simulations will not
+	 *            generate updates. Instead, they will run for nupOnly hours
+	 *            (simulation time) without updates.
+	 * @param random
+	 *            random number generator.
+	 */
+	public CloudSimulationBuilder(double burnin, double delay,
+			char selectorType, IndexedNeighborGraph graph, Random random,
+			double nupOnly) {
+		fDelay = delay;
+		fGraph = graph;
 		fRandom = random;
-		fClockType = clockType;
-		fResolver = resolver;
-		fDelayType = DelayType.valueOf(resolver.getString("", "delay_type")
-				.toLowerCase());
-
-		return super.build(burnin, period, experiment, source, peerSelector,
-				graph, random, processes);
+		fBurnin = burnin;
+		fSelectorType = selectorType;
+		fNUPOnly = nupOnly;
 	}
 
-	@Override
-	protected void postBuildEngineConfig(EDSimulationEngine sim,
-			PausingCyclicProtocolRunner<HFlood> runner, int source) {
-		fAccessors = new CloudAccessor[fProtocols.length];
-		for (int i = 0; i < fProtocols.length; i++) {
-			IProcess process = sim.process(i);
-			fAccessors[i] = new CloudAccessor(distribution(process, i,
-					fDelayType), fProtocols[source], fProtocols[i], runner,
-					sim, fClockType);
-			process.addObserver(fAccessors[i]);
+	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
+			final int source, IProcess[] processes) throws Exception {
+
+		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
+		PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
+				engine, SECOND, IProcess.PROCESS_SCHEDULABLE_TYPE, HFLOOD_PID);
+
+		final HFloodMM[] prots = create(processes, runner);
+		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size());
+		create(engine, processes, prots, cloud);
+
+		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		observers.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
+
+		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
+
+		addWickOrAnchor(source, prots, engine, cloud, observers, metrics);
+
+		metrics.add(cloud.totalAccesses());
+		metrics.add(cloud.productiveAccesses());
+
+		engine.setEventObservers(observers);
+
+		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
+				engine, metrics);
+
+	}
+
+	private void addWickOrAnchor(final int source, final HFloodMM[] prots,
+			EDSimulationEngine engine, SimpleCloudImpl cloud,
+			List<Pair<Integer, ? extends IEventObserver>> observers,
+			List<INodeMetric<? extends Object>> metrics) {
+
+		if (fNUPOnly > 0) {
+			Anchor anchor = new Anchor();
+			observers.add(new Pair<Integer, IEventObserver>(anchor.type(),
+					anchor));
+			return;
+		}
+
+		DiffusionWick wick = new DiffusionWick(source);
+		final PostMM poster = wick.new PostMM(prots[source], cloud);
+		wick.setPoster(poster);
+
+		observers.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, wick));
+
+		metrics.add(MMMetrics.rdMetric(prots, wick));
+		metrics.add(MMMetrics.edMetric(prots, wick));
+	}
+
+	private HFloodMM[] create(IProcess[] processes,
+			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner) {
+		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
+		for (int i = 0; i < protocols.length; i++) {
+			protocols[i] = new HFloodMM(HFLOOD_PID, fGraph, peerSelector(),
+					processes[i],
+					new CachingTransformer(new LiveTransformer()), runner);
+		}
+		return protocols;
+	}
+
+	private CloudAccessor[] create(EDSimulationEngine engine,
+			IProcess[] process, HFloodMM[] dissemination, ICloud cloud) {
+		CloudAccessor[] accessors = new CloudAccessor[process.length];
+		for (int i = 0; i < accessors.length; i++) {
+			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
+					fDelay, i);
+			process[i].addObserver(accessors[i]);
+		}
+		return accessors;
+	}
+
+	protected IPeerSelector peerSelector() {
+		switch (fSelectorType) {
+		case 'a':
+			return new BiasedCentralitySelector(fRandom, true);
+		case 'r':
+			return new RandomSelector(fRandom);
+		case 'c':
+			return new BiasedCentralitySelector(fRandom, false);
+		default:
+			throw new UnsupportedOperationException();
 		}
 	}
 
-	protected void addMetrics(List<INodeMetric<?>> metric) {
-		metric.add(new INodeMetric<Integer>() {
+	@Binding
+	private class Anchor extends Schedulable implements IEventObserver {
 
-			@Override
-			public Object id() {
-				return "outcome";
-			}
+		private boolean fDone = false;
 
-			@Override
-			public Integer getMetric(int i) {
-				return fAccessors[i].outcome();
-			}
-		});
-	}
-
-	public CloudAccessor[] accessors() {
-		return fAccessors;
-	}
-
-	public IDistribution distribution(IProcess process, int index,
-			DelayType type) {
-
-		switch (type) {
-		case periodical:
-			double period = fResolver.getDouble("", "delay");
-			return new FixedPeriodDistribution(fRandom.nextDouble() * period,
-					period);
-		case random:
-			return new UniformDistribution(fRandom, 0.0, fProtocols.length
-					* SECOND);
+		@Override
+		public void eventPerformed(ISimulationEngine engine,
+				Schedulable schedulable, double nextShift) {
+			engine.unbound(this);
+			fDone = true;
 		}
 
-		throw new IllegalStateException();
-	}
+		@Override
+		public boolean isDone() {
+			return fDone;
+		}
 
-	@Override
-	protected boolean shouldTrackCore() {
-		return false;
+		@Override
+		public boolean isExpired() {
+			return fDone;
+		}
+
+		@Override
+		public void scheduled(ISimulationEngine state) {
+			// Nothing to do.
+		}
+
+		@Override
+		public double time() {
+			return fNUPOnly;
+		}
+
+		@Override
+		public int type() {
+			return 5;
+		}
+
 	}
 }

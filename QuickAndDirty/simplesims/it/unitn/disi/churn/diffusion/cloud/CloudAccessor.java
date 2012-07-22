@@ -1,6 +1,8 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
-import it.unitn.disi.churn.diffusion.HFlood;
+import it.unitn.disi.churn.diffusion.IDisseminationService;
+import it.unitn.disi.churn.diffusion.IMessageObserver;
+import it.unitn.disi.churn.diffusion.Message;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IEventObserver;
@@ -8,167 +10,144 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
-import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
-import it.unitn.disi.simulator.random.IDistribution;
 
 /**
- * {@link CloudAccessor} will access the "cloud" and activate the dissemination
- * process over the {@link HFlood} instance to which it is linked. This simple
- * implementation supports a "one-shot" access.
+ * {@link CloudAccessor} will access the "cloud" at the expiration of a timer,
+ * and produce a new post, whenever there are updates.
  * 
  * @author giuliano
  */
-public class CloudAccessor implements IEventObserver {
+public class CloudAccessor implements IEventObserver, IMessageObserver {
 
-	public static final int UNFIRED = 0;
+	private final IDisseminationService fDisseminationService;
 
-	public static final int SUPPRESSED = 1;
-
-	public static final int ACCESSED = 2;
-
-	public static final int UPTIME = 0;
-
-	public static final int WALLCLOCK = 1;
-
-	private final PausingCyclicProtocolRunner<HFlood> fRunner;
-
-	private final IDistribution fDistribution;
-
-	private final HFlood fSource;
-
-	private final HFlood fDelegate;
+	private final ICloud fCloud;
 
 	private final EDSimulationEngine fSim;
 
-	private final int fClockMode;
+	private final double fTimerPeriod;
 
-	private double fRemaining;
+	private final int fId;
 
-	private int fOutcome = UNFIRED;
+	private CloudAccess fAccessor;
 
-	public CloudAccessor(IDistribution distribution, HFlood source,
-			HFlood delegate, PausingCyclicProtocolRunner<HFlood> runner,
-			EDSimulationEngine sim, int clockMode) {
-		fDistribution = distribution;
-		fSource = source;
-		fDelegate = delegate;
-		fRunner = runner;
+	private double fNextAccess;
+
+	private double fNextShift;
+
+	public CloudAccessor(EDSimulationEngine sim,
+			IDisseminationService disseminationService, ICloud cloud,
+			double period, int id) {
+		fDisseminationService = disseminationService;
 		fSim = sim;
-		fClockMode = clockMode;
-
-		reset(0.0);
-	}
-
-	public int outcome() {
-		return fOutcome;
+		fCloud = cloud;
+		fId = id;
+		fTimerPeriod = period;
+		fNextAccess = fTimerPeriod;
 	}
 
 	@Override
-	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
-			double nextShift) {
+	public void eventPerformed(ISimulationEngine state,
+			Schedulable schedulable, double nextShift) {
 
 		State pState = ((IProcess) schedulable).state();
 
-		// If our node is going down or we have already fired
-		// this accessor, just returns.
-		if (pState == State.down || fOutcome != UNFIRED) {
+		// If our node is going down, we have nothing to do.
+		if (pState == State.down) {
+			fNextShift = -1;
 			return;
 		}
 
-		double accessTime = updateTimer(state.clock().rawTime(), nextShift);
-		if (accessTime > 0) {
-			// It will, so we schedule a cloud access for when it does.
-			fSim.schedule(new CloudAccess(accessTime));
-		}
-
+		fNextShift = nextShift;
+		scheduleCloudAccess(nextShift);
 	}
 
-	private double updateTimer(double time, double next) {
-
-		double expired = -1;
-
-		switch (fClockMode) {
-
-		// Timer is relative to uptime.
-		case UPTIME:
-			// Session length.
-			double length = next - time;
-			// Will timer expire during this session?
-			if (fRemaining <= length) {
-				// Yes, so we need to return exactly when.
-				expired = time + fRemaining;
-			} else {
-				// Nope, just decrement the remaining time.
-				fRemaining -= length;
-			}
-			break;
-
-		case WALLCLOCK:
-			// Has the timer expired while we were logged off?
-			if (fRemaining < time) {
-				// Yes, so we access the cloud immediately.
-				expired = 0.0;
-			}
-			// Will it expire now?
-			else if (fRemaining < next) {
-				// Yes, schedule for the future.
-				expired = next - fRemaining;
-			}
-
-			expired = fRemaining < time ? time : -1;
-			break;
+	private void scheduleCloudAccess(double nextShift) {
+		double accessTime = nextSchedule(fSim.clock().rawTime(), nextShift);
+		if (scheduled() && accessTime < 0) {
+			fAccessor.cancel();
 		}
 
-		return expired;
+		if (!scheduled() && accessTime > 0) {
+			fAccessor = new CloudAccess(accessTime);
+			fSim.schedule(fAccessor);
+		}
 	}
 
-	private void reset(double time) {
-		switch (fClockMode) {
-
-		case UPTIME:
-			fRemaining = fDistribution.sample();
-			break;
-
-		case WALLCLOCK:
-			fRemaining = time + fDistribution.sample();
-			break;
+	@Override
+	public void messageReceived(Message message, IClockData clock) {
+		// Sanity check.
+		if (fNextShift < 0) {
+			throw new IllegalStateException(
+					"Can't receive message while offline");
 		}
+
+		fNextAccess = Math.max(fNextAccess, message.timestamp() + fTimerPeriod);
+		scheduleCloudAccess(fNextShift);
+	}
+
+	private double nextSchedule(double time, double next) {
+		// Has the timer expired while we were logged off?
+		if (fNextAccess < time) {
+			// Yes, so we access the cloud immediately.
+			return 0.0;
+		}
+		// Will it expire now?
+		else if (fNextAccess < next) {
+			// Yes, schedule for the future.
+			return next - fNextAccess;
+		}
+
+		// Nothing to do for now.
+		return -1;
+	}
+
+	@Override
+	public boolean isDone() {
+		return false;
+	}
+
+	private boolean scheduled() {
+		return fAccessor == null || fAccessor.isExpired();
 	}
 
 	private class CloudAccess extends Schedulable {
 
 		private final double fTime;
 
+		private boolean fDone;
+
 		public CloudAccess(double time) {
 			fTime = time;
 		}
 
 		@Override
-		public void scheduled(ISimulationEngine state) {
-			IClockData clock = state.clock();
+		public void scheduled(ISimulationEngine engine) {
 
-			// Resets the timer.
-			reset(clock.time());
-
-			// If the source hasn't been reached, doesn't do anything.
-			if (!fSource.isReached()) {
+			if (fDone) {
 				return;
 			}
 
-			if (fOutcome != UNFIRED) {
-				throw new IllegalStateException();
+			IClockData clock = engine.clock();
+
+			// Fetch updates.
+			Message[] updates = fCloud.fetchUpdates(fId, -1, fNextAccess
+					- fTimerPeriod);
+
+			if (updates != ICloud.NO_UPDATE) {
+				fDisseminationService.post(new Message(clock.time(), fId),
+						engine);
+			} else {
+				for (Message update : updates) {
+					fDisseminationService.post(update, engine);
+				}
 			}
 
-			if (fDelegate.isReached()) {
-				fOutcome = SUPPRESSED;
-			} else {
-				fOutcome = ACCESSED;
-				// Accessing the cloud means reaching the node out of nowhere.
-				fDelegate.markReached(clock);
-				// Wakes up the protocol runner, otherwise it will keep on
-				// sleeping and our node won't be scheduled for dissemination.
-				fRunner.wakeUp();
-			}
+			fDone = true;
+		}
+
+		public void cancel() {
+			fDone = true;
 		}
 
 		@Override
@@ -183,14 +162,9 @@ public class CloudAccessor implements IEventObserver {
 
 		@Override
 		public boolean isExpired() {
-			return true;
+			return fDone;
 		}
 
-	}
-
-	@Override
-	public boolean isDone() {
-		return false;
 	}
 
 }

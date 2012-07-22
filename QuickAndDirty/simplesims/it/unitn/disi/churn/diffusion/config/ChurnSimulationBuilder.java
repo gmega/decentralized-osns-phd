@@ -3,7 +3,7 @@ package it.unitn.disi.churn.diffusion.config;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.CoreTracker;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
-import it.unitn.disi.churn.diffusion.HFlood;
+import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -36,8 +36,8 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 
 		// Triggers the dissemination process from the first login of the
 		// sender.
-		DiffusionWick dc = new DiffusionWick(bcs, fProtocols[source],
-				HFLOOD_PID);
+		DiffusionWick dc = new DiffusionWick(source);
+		dc.setPoster(dc.new PostSM(fProtocols[source]));
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, dc));
 
@@ -49,7 +49,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 					IProcess.PROCESS_SCHEDULABLE_TYPE, ct));
 		}
 
-		PausingCyclicProtocolRunner<HFlood> pcpr = new PausingCyclicProtocolRunner<HFlood>(
+		PausingCyclicProtocolRunner<HFloodSM> pcpr = new PausingCyclicProtocolRunner<HFloodSM>(
 				bcs, period, 1, HFLOOD_PID);
 
 		// Resumes the cyclic protocol whenever the network state changes.
@@ -64,8 +64,8 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 		postBuildEngineConfig(bcs, pcpr, source);
 
 		List<INodeMetric<?>> metrics = new ArrayList<INodeMetric<?>>();
-		addEDMetric(metrics, fProtocols, source);
-		metrics.add(dc);
+		metrics.add(SMMetrics.edMetric(fProtocols, dc));
+		metrics.add(SMMetrics.rdMetric(source, fProtocols));
 		if (ct != null) {
 			metrics.add(ct);
 		}
@@ -76,7 +76,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 				bcs, metrics);
 	}
 
-	public HFlood[] protocols() {
+	public HFloodSM[] protocols() {
 		return fProtocols;
 	}
 
@@ -94,7 +94,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 	}
 
 	protected void postBuildEngineConfig(EDSimulationEngine sim,
-			PausingCyclicProtocolRunner<HFlood> scheduler, int ousrce) {
+			PausingCyclicProtocolRunner<HFloodSM> scheduler, int ousrce) {
 		// To be overridden by subclasses.
 	}
 
