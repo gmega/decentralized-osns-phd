@@ -1,0 +1,30 @@
+<project name="Simple Simulator" default="compile-simplesim" basedir=".">
+
+	<property name="build" location="bin" />
+	<property name="lib.path" location="../Utilities/lib" />
+	<property name="output.lib.path" location="../Utilities/lib-gen" />
+
+	<path id="compile.path">
+		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
+		<pathelement location="${lib.path}/jep-2.4.1.jar" />
+		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+		<pathelement location="${output.lib.path}/analyzer-j.jar" />
+	</path>
+
+	<target name="compile-simplesim">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}" />
+		<!-- Compile the simple simulator into build. -->
+		<javac srcdir="./src" destdir="${build}" classpathref="compile.path" />
+	</target>
+
+	<target name="build-simplesim-jar" depends="compile-simplesim">
+		<jar destfile="${output.lib.path}/edsim.jar">
+			<fileset dir="${build}" />
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
