@@ -30,6 +30,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	private State fState;
 
+	private int fPid;
+
 	private HFloodSM[] fProtocols = new HFloodSM[2];
 
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
@@ -39,13 +41,14 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner) {
 
-		fProtocols[UPDATE] = new HFloodSM(graph, selector, process,
-				transformer, new PIDReference<HFloodSM>(pid));
+		fProtocols[UPDATE] = new HFloodSMInternal(graph, selector, process,
+				transformer, this);
 
-		fProtocols[NO_UPDATE] = new HFloodSM(graph, selector, process,
-				transformer, new PIDReference<HFloodSM>(pid));
+		fProtocols[NO_UPDATE] = new HFloodSMInternal(graph, selector, process,
+				transformer, this);
 
 		fRunner = runner;
+		fPid = pid;
 	}
 
 	public void post(Message message, ISimulationEngine engine) {
@@ -77,36 +80,31 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
-		// This strategy works here because our protocols don't exchange
-		// messages among themselves.
-		int done = 0;
-		int waiting = 0;
 
-		for (HFloodSM protocol : fProtocols) {
-			switch (protocol.getState()) {
-
-			case IDLE:
-			case WAITING:
-				waiting++;
-				break;
-
-			case DONE:
-				waiting++;
-				done++;
-				break;
-
-			case ACTIVE:
-				break;
-
+		// Cycles the protocols.
+		for (int i = 0; i < fProtocols.length; i++) {
+			if (i == UPDATE && fProtocols[i].getState() == State.ACTIVE) {
+				i = UPDATE;
+			}
+			if (fProtocols[i].getState() == State.ACTIVE) {
+				fProtocols[i].nextCycle(engine, process);
 			}
 		}
 
-		if (done == fProtocols.length) {
+		// If dissemination is done, we're done.
+		if (fProtocols[UPDATE].getState() == State.DONE) {
 			fState = State.DONE;
-		} else if (waiting == fProtocols.length) {
-			fState = State.WAITING;
-		} else {
+		}
+
+		// Otherwise we're either active...
+		else if (fProtocols[UPDATE].getState() == State.ACTIVE
+				|| fProtocols[NO_UPDATE].getState() == State.ACTIVE) {
 			fState = State.ACTIVE;
+		}
+
+		// ... or waiting.
+		else {
+			fState = State.WAITING;
 		}
 	}
 
@@ -117,16 +115,12 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	@Override
 	public HFloodSM get(HFloodSM caller, INetwork network, int id) {
-		return get(caller.message());
+		HFloodMM neighbor = (HFloodMM) network.process(id).getProtocol(fPid);
+		return neighbor.get(caller.message());
 	}
 
 	public HFloodSM get(Message message) {
-		for (HFloodSM protocol : fProtocols) {
-			if (protocol.message() == message) {
-				return protocol;
-			}
-		}
-		throw new NoSuchElementException();
+		return message.isNUP() ? fProtocols[NO_UPDATE] : fProtocols[UPDATE];
 	}
 
 	private void messageReceived(Message message, IClockData clock) {
@@ -172,7 +166,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		@Override
 		public void setMessage(Message message, BitSet history) {
-			if (message.timestamp() > message().timestamp()) {
+			if (message() == null
+					|| message.timestamp() > message().timestamp()) {
 				super.setMessage(message, history);
 			}
 		}

@@ -116,6 +116,7 @@ public class DiffusionWick implements IEventObserver {
 			Message update = new Message(engine.clock().time(), fSource);
 			fSourceProtocol.post(update, engine);
 			fCloud.writeUpdate(fSource, update);
+			fMessage = update;
 		}
 
 		public Message getMessage() {

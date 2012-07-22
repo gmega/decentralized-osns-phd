@@ -23,9 +23,10 @@ public class SimpleCloudImpl implements ICloud {
 
 	private int[] fTotal;
 
-	public SimpleCloudImpl(int size) {
+	public SimpleCloudImpl(int size, int publisher) {
 		fProductive = new int[size];
 		fTotal = new int[size];
+		fPublisher = publisher;
 	}
 
 	@Override
@@ -41,7 +42,9 @@ public class SimpleCloudImpl implements ICloud {
 	@Override
 	public Message[] fetchUpdates(int accessor, int page, double timestamp) {
 		fTotal[accessor]++;
-		if (fUpdate == null || fUpdate.timestamp() > timestamp) {
+		
+		// No update or update too old.
+		if (fUpdate == null || fUpdate.timestamp() < timestamp) {
 			return NO_UPDATE;
 		}
 

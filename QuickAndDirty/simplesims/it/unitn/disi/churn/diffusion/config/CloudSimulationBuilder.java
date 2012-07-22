@@ -21,6 +21,8 @@ import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
+import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.random.UniformDistribution;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
@@ -83,14 +85,16 @@ public class CloudSimulationBuilder {
 			final int source, IProcess[] processes) throws Exception {
 
 		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
+		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+
 		PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
-				engine, SECOND, IProcess.PROCESS_SCHEDULABLE_TYPE, HFLOOD_PID);
+				engine, SECOND, 1, HFLOOD_PID);
+		observers.add(new Pair<Integer, IEventObserver>(1, runner));
 
 		final HFloodMM[] prots = create(processes, runner);
-		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size());
-		create(engine, processes, prots, cloud);
+		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size(), source);
+		create(engine, processes, prots, cloud, source);
 
-		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
@@ -138,17 +142,24 @@ public class CloudSimulationBuilder {
 			protocols[i] = new HFloodMM(HFLOOD_PID, fGraph, peerSelector(),
 					processes[i],
 					new CachingTransformer(new LiveTransformer()), runner);
+			processes[i].addProtocol(protocols[i]);
 		}
 		return protocols;
 	}
 
 	private CloudAccessor[] create(EDSimulationEngine engine,
-			IProcess[] process, HFloodMM[] dissemination, ICloud cloud) {
+			IProcess[] process, HFloodMM[] dissemination, ICloud cloud,
+			int source) {
 		CloudAccessor[] accessors = new CloudAccessor[process.length];
+		IDistribution uniform = new UniformDistribution(fRandom, 0.0, fDelay);
 		for (int i = 0; i < accessors.length; i++) {
+			if (i == source) {
+				continue;
+			}
 			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
-					fDelay, i);
+					fDelay, fBurnin + uniform.sample(), i);
 			process[i].addObserver(accessors[i]);
+			dissemination[i].addMessageObserver(accessors[i]);
 		}
 		return accessors;
 	}

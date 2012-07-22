@@ -4,8 +4,6 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.p2p.Utils;
-import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
-import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.config.ChurnSimulationBuilder;
 import it.unitn.disi.churn.diffusion.config.CloudSimulationBuilder;
@@ -230,11 +228,19 @@ public class DiffusionExperiment implements ITransformer {
 
 		submitter.start();
 
-		SumAccumulation edsum = new SumAccumulation("ed", graph.size());
-		SumAccumulation rdsum = new SumAccumulation("rd", graph.size());
+		MetricsCollector collector = new MetricsCollector();
 
-		MetricsCollector collector = new MetricsCollector(
-				new CloudAccessCounter(graph.size()), edsum, rdsum);
+		if (fNUPAnchor < 0) {
+			collector.addAccumulator(new SumAccumulation("ed", graph.size()));
+			collector.addAccumulator(new SumAccumulation("rd", graph.size()));
+		}
+
+		if (fCloudAssisted) {
+			collector.add(new SumAccumulation(SimpleCloudImpl.TOTAL, graph
+					.size()));
+			collector.add(new SumAccumulation(SimpleCloudImpl.PRODUCTIVE, graph
+					.size()));
+		}
 
 		for (int i = 0; i < repetitions; i++) {
 			Object value = fExecutor.consume();
@@ -318,35 +324,5 @@ public class DiffusionExperiment implements ITransformer {
 				elements.a,
 				new Pair[] { new Pair<Integer, List<INodeMetric<? extends Object>>>(
 						source, elements.b) });
-	}
-
-	private static class CloudAccessCounter implements
-			IMetricAccumulator<Integer> {
-
-		private final int fN;
-
-		private final int[] fCounter = new int[3];
-
-		public CloudAccessCounter(int n) {
-			fN = n;
-		}
-
-		@Override
-		public Object id() {
-			return "outcome";
-		}
-
-		@Override
-		public Integer getMetric(int i) {
-			return fCounter[i];
-		}
-
-		@Override
-		public void add(INodeMetric<Integer> metric) {
-			for (int i = 0; i < fN; i++) {
-				fCounter[metric.getMetric(i)]++;
-			}
-		}
-
 	}
 }

@@ -10,13 +10,13 @@ public class Message {
 		fTimestamp = timestamp;
 		fSource = source;
 	}
-	
+
 	public boolean isNUP() {
 		return fSource == -1;
 	}
-	
+
 	public double timestamp() {
 		return fTimestamp;
 	}
-	
+
 }

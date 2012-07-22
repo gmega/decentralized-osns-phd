@@ -27,8 +27,8 @@ public interface ICloud {
 	 * @param page
 	 *            the page id for which to fetch updates.
 	 * @param timestamp
-	 *            a timestamp marking how old should the updates be.
-	 * 
+	 *            a timestamp marking how old, at most, returned updates should
+	 *            be.
 	 * @return all updates with timestamp larger or equal to the query
 	 *         timestamp.
 	 */
