@@ -95,8 +95,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 		if (scheduled()) {
 			// 1a. if the access state changed (i.e. a message came in
 			// from someone telling us they know a very recent update)
-			// so much that the next access is beyond the current session,
-			// we just postpone our access.
+			// to a point in which the next access has moved beyond the 
+			// current session, we just postpone it.
 			if (!access) {
 				fAccessor.cancel();
 			}

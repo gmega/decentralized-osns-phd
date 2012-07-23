@@ -10,9 +10,9 @@ import it.unitn.disi.utils.collections.Pair;
  * @author giuliano
  */
 public class SimpleCloudImpl implements ICloud {
-	
+
 	public static final String TOTAL = "cloud_total";
-	
+
 	public static final String PRODUCTIVE = "cloud_productive";
 
 	private Message fUpdate;
@@ -42,7 +42,7 @@ public class SimpleCloudImpl implements ICloud {
 	@Override
 	public Message[] fetchUpdates(int accessor, int page, double timestamp) {
 		fTotal[accessor]++;
-		
+
 		// No update or update too old.
 		if (fUpdate == null || fUpdate.timestamp() < timestamp) {
 			return NO_UPDATE;
@@ -56,8 +56,8 @@ public class SimpleCloudImpl implements ICloud {
 		return new Pair<Integer, Integer>(fTotal[id], fProductive[id]);
 	}
 
-	public INodeMetric<Integer> totalAccesses() {
-		return new INodeMetric<Integer>() {
+	public INodeMetric<Double> totalAccesses() {
+		return new INodeMetric<Double>() {
 
 			@Override
 			public Object id() {
@@ -65,15 +65,15 @@ public class SimpleCloudImpl implements ICloud {
 			}
 
 			@Override
-			public Integer getMetric(int i) {
-				return fTotal[i];
+			public Double getMetric(int i) {
+				return (double) fTotal[i];
 			}
-			
+
 		};
 	}
-	
-	public INodeMetric<Integer> productiveAccesses() {
-		return new INodeMetric<Integer>() {
+
+	public INodeMetric<Double> productiveAccesses() {
+		return new INodeMetric<Double>() {
 
 			@Override
 			public Object id() {
@@ -81,10 +81,10 @@ public class SimpleCloudImpl implements ICloud {
 			}
 
 			@Override
-			public Integer getMetric(int i) {
-				return fProductive[i];
+			public Double getMetric(int i) {
+				return (double) fProductive[i];
 			}
-			
+
 		};
 	}
 }

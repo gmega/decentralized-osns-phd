@@ -90,20 +90,18 @@ public class CloudSimulationBuilder {
 		PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
 				engine, SECOND, 1, HFLOOD_PID);
 		observers.add(new Pair<Integer, IEventObserver>(1, runner));
+		observers.add(new Pair<Integer, IEventObserver>(
+				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
 		final HFloodMM[] prots = create(processes, runner);
 		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size(), source);
 		create(engine, processes, prots, cloud, source);
-
-		observers.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
-
+	
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
-
-		addWickOrAnchor(source, prots, engine, cloud, observers, metrics);
-
 		metrics.add(cloud.totalAccesses());
 		metrics.add(cloud.productiveAccesses());
+
+		addWickOrAnchor(source, prots, engine, cloud, observers, metrics);
 
 		engine.setEventObservers(observers);
 

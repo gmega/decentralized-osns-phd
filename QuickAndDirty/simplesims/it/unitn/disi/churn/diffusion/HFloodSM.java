@@ -62,6 +62,8 @@ public class HFloodSM implements ICyclicProtocol {
 		fTransformer = transformer;
 		fProcess = process;
 		fReference = reference;
+		
+		setMessage(null, null);
 	}
 
 	/**

@@ -19,4 +19,25 @@ public class Message {
 		return fTimestamp;
 	}
 
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		
+		if (isNUP()) {
+			buf.append("NUP");
+		} else {
+			buf.append("Update");
+		}
+		
+		buf.append(" message ");
+		if (!isNUP()) {
+			buf.append("from ");
+			buf.append(fSource);
+			buf.append(" ");
+		}
+		
+		buf.append("@ ");
+		buf.append(fTimestamp);
+		return buf.toString();
+	}
+
 }

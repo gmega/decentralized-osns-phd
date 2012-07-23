@@ -113,8 +113,8 @@ public class DiffusionExperiment implements ITransformer {
 				"id", "source", "edsum", "size");
 
 		TableWriter cloudStats = new TableWriter(
-				new PrefixedWriter("CS:", oup), "id", "source", "accessed",
-				"suppressed", "unfired");
+				new PrefixedWriter("CS:", oup), "id", "source", "accup",
+				"accnup");
 
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
@@ -178,16 +178,16 @@ public class DiffusionExperiment implements ITransformer {
 	private void printCloudMetrics(Experiment exp, int source, int size,
 			MetricsCollector result, TableWriter cloudStats) {
 
-		INodeMetric<Integer> total = result.getMetric(SimpleCloudImpl.TOTAL);
-		INodeMetric<Integer> productive = result
+		INodeMetric<Double> total = result.getMetric(SimpleCloudImpl.TOTAL);
+		INodeMetric<Double> productive = result
 				.getMetric(SimpleCloudImpl.PRODUCTIVE);
 
 		for (int i = 0; i < size; i++) {
 			cloudStats.set("id", exp.root);
 			cloudStats.set("source", exp);
 			cloudStats.set("accnup",
-					total.getMetric(i) - productive.getMetric(i));
-			cloudStats.set("accup", productive.getMetric(i));
+					(int) (total.getMetric(i) - productive.getMetric(i)));
+			cloudStats.set("accup", productive.getMetric(i).intValue());
 			cloudStats.emmitRow();
 		}
 	}
@@ -236,10 +236,10 @@ public class DiffusionExperiment implements ITransformer {
 		}
 
 		if (fCloudAssisted) {
-			collector.add(new SumAccumulation(SimpleCloudImpl.TOTAL, graph
-					.size()));
-			collector.add(new SumAccumulation(SimpleCloudImpl.PRODUCTIVE, graph
-					.size()));
+			collector.addAccumulator(new SumAccumulation(SimpleCloudImpl.TOTAL,
+					graph.size()));
+			collector.addAccumulator(new SumAccumulation(
+					SimpleCloudImpl.PRODUCTIVE, graph.size()));
 		}
 
 		for (int i = 0; i < repetitions; i++) {

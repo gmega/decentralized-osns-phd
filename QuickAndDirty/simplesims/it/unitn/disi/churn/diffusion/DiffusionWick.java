@@ -53,6 +53,7 @@ public class DiffusionWick implements IEventObserver {
 				throw new IllegalStateException(
 						"Poster has not been initialized.");
 			}
+			System.err.println("Wick fired.");
 			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
 			// We're no longer binding.
