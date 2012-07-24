@@ -78,7 +78,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 		fNextShift = nextShift;
 		scheduleCloudAccess(nextShift, state.clock());
 	}
-	
+
 	private void updateKnowledge(double lastSeen, IClockData clock) {
 		fNextAccess = Math.max(fNextAccess, lastSeen + fTimerPeriod);
 		scheduleCloudAccess(fNextShift, clock);
@@ -95,7 +95,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 		if (scheduled()) {
 			// 1a. if the access state changed (i.e. a message came in
 			// from someone telling us they know a very recent update)
-			// to a point in which the next access has moved beyond the 
+			// to a point in which the next access has moved beyond the
 			// current session, we just postpone it.
 			if (!access) {
 				fAccessor.cancel();
@@ -169,11 +169,14 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 				fDisseminationService.post(new Message(clock.rawTime(), -1),
 						engine);
 			} else {
+				// XXX note that we disseminate old timestamp information when
+				// there's an update. Updates are therefore not so useful for
+				// conveying freshness in this implementation.
 				for (Message update : updates) {
 					fDisseminationService.post(update, engine);
 				}
 			}
-			
+
 			// Our knowledge got more recent.
 			updateKnowledge(clock.rawTime(), clock);
 		}

@@ -32,8 +32,7 @@ public abstract class MMMetrics implements INodeMetric<Double> {
 
 			@Override
 			public Double getMetric(int i) {
-				return get(i).rawReceiverDelay()
-						- get(fWick.source()).rawReceiverDelay();
+				return get(i).rawReceiverDelay() - fWick.up(i);
 			}
 		};
 	}
@@ -49,7 +48,8 @@ public abstract class MMMetrics implements INodeMetric<Double> {
 
 			@Override
 			public Double getMetric(int i) {
-				return get(i).rawReceiverDelay() - fWick.up(i);
+				return get(i).rawEndToEndDelay()
+						- get(fWick.source()).rawEndToEndDelay();
 			}
 		};
 	}

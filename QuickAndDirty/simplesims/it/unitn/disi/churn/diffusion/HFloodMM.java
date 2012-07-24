@@ -13,8 +13,8 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 
 /**
- * {@link HFloodMM} manages multiple messages by dynamically managing multiple
- * instances of the {@link HFloodSM} protocol.
+ * {@link HFloodMM} manages multiple messages by creating multiple instances of
+ * {@link HFloodSM}.
  * 
  * @author giuliano
  */
@@ -31,6 +31,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	private int fPid;
 
+	private boolean fSource;
+
 	private HFloodSM[] fProtocols = new HFloodSM[2];
 
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
@@ -38,7 +40,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	public HFloodMM(int pid, IndexedNeighborGraph graph,
 			IPeerSelector selector, IProcess process,
 			ILiveTransformer transformer,
-			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner) {
+			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
+			boolean source) {
 
 		fProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this);
@@ -48,30 +51,37 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		fRunner = runner;
 		fPid = pid;
+		fSource = source;
 	}
 
 	public void post(Message message, ISimulationEngine engine) {
 		if (message.isNUP()) {
 			fProtocols[NO_UPDATE].setMessage(message, null);
 			fProtocols[NO_UPDATE].markReached(engine.clock());
-		} 
-		
+		}
+
 		else {
-			// Eagerly sets the message to all network participants (it's 
-			// easier this way).
-			INetwork network = engine.network();
-			for (int i = 0; i < network.size(); i++) {
-				HFloodMM hfmm = (HFloodMM) network.process(i).getProtocol(fPid);
-				if (hfmm.fProtocols[UPDATE].getState() != State.IDLE) {
+			if (fSource) {
+				// Eagerly sets the message to all network participants (it's
+				// easier this way).
+				INetwork network = engine.network();
+				for (int i = 0; i < network.size(); i++) {
+					HFloodMM hfmm = (HFloodMM) network.process(i).getProtocol(
+							fPid);
+					if (hfmm.fProtocols[UPDATE].getState() != State.IDLE) {
+						throw new IllegalStateException();
+					}
+					hfmm.fProtocols[UPDATE].setMessage(message, null);
+				}
+			} else {
+				if (fProtocols[UPDATE].getState() != State.IDLE) {
 					throw new IllegalStateException();
 				}
-				hfmm.fProtocols[UPDATE].setMessage(message, null);
 			}
-			
 			// Marks the current as reached.
 			fProtocols[UPDATE].markReached(engine.clock());
 		}
-		
+
 		fRunner.wakeUp();
 	}
 
@@ -96,7 +106,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		// If dissemination is done, we're done.
 		if (fProtocols[UPDATE].getState() == State.DONE) {
 			if (fState != State.DONE) {
-				System.err.println("Node " + fProtocols[UPDATE].id() + " is done.");
+				System.err.println("Node " + fProtocols[UPDATE].id()
+						+ " is done.");
 			}
 			fState = State.DONE;
 		}
@@ -135,14 +146,13 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	}
 
 	class HFloodNUP extends HFloodUP {
-		
-		public HFloodNUP(IndexedNeighborGraph graph,
-				IPeerSelector selector, IProcess process,
-				ILiveTransformer transformer,
+
+		public HFloodNUP(IndexedNeighborGraph graph, IPeerSelector selector,
+				IProcess process, ILiveTransformer transformer,
 				IProtocolReference<HFloodSM> reference) {
 			super(graph, selector, process, transformer, reference);
 		}
-		
+
 		@Override
 		protected BitSet sendMessage(HFloodSM sender, BitSet history,
 				IClockData clock) {
@@ -157,7 +167,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			this.markReached(clock);
 			return history;
 		}
-		
+
 		@Override
 		public void setMessage(Message message, BitSet history) {
 			if (message() == null
@@ -167,12 +177,11 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		}
 
 	}
-	
+
 	class HFloodUP extends HFloodSM {
 
-		public HFloodUP(IndexedNeighborGraph graph,
-				IPeerSelector selector, IProcess process,
-				ILiveTransformer transformer,
+		public HFloodUP(IndexedNeighborGraph graph, IPeerSelector selector,
+				IProcess process, ILiveTransformer transformer,
 				IProtocolReference<HFloodSM> reference) {
 			super(graph, selector, process, transformer, reference);
 		}
@@ -183,7 +192,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			super.markReached(clock);
 			if (notify) {
 				messageReceived(message(), clock);
-			} 
+			}
 		}
 	}
 }

@@ -9,9 +9,9 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.config.resolvers.CompositeResolver;
 
+import it.unitn.disi.simulator.churnmodel.yao.ISeedStream;
+import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.random.IDistribution;
-import it.unitn.disi.simulator.yao.ISeedStream;
-import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.utils.HashMapResolver;
 import it.unitn.disi.utils.MiscUtils;
 

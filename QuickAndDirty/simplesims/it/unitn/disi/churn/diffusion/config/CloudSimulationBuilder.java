@@ -93,10 +93,10 @@ public class CloudSimulationBuilder {
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
-		final HFloodMM[] prots = create(processes, runner);
+		final HFloodMM[] prots = create(processes, runner, source);
 		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size(), source);
 		create(engine, processes, prots, cloud, source);
-	
+
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(cloud.totalAccesses());
 		metrics.add(cloud.productiveAccesses());
@@ -134,12 +134,14 @@ public class CloudSimulationBuilder {
 	}
 
 	private HFloodMM[] create(IProcess[] processes,
-			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner) {
+			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
+			int source) {
 		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
 		for (int i = 0; i < protocols.length; i++) {
 			protocols[i] = new HFloodMM(HFLOOD_PID, fGraph, peerSelector(),
 					processes[i],
-					new CachingTransformer(new LiveTransformer()), runner);
+					new CachingTransformer(new LiveTransformer()), runner,
+					i == source);
 			processes[i].addProtocol(protocols[i]);
 		}
 		return protocols;

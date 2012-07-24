@@ -1,7 +1,7 @@
 package it.unitn.disi.network.churn.yao;
 
+import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.random.IDistribution;
-import it.unitn.disi.simulator.yao.YaoPresets.IAverageGenerator;
 
 public class AverageGeneratorImpl implements IAverageGenerator {
 

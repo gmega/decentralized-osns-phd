@@ -44,9 +44,12 @@ public class SimpleCloudImpl implements ICloud {
 		fTotal[accessor]++;
 
 		// No update or update too old.
-		if (fUpdate == null || fUpdate.timestamp() < timestamp) {
+		if (fUpdate == null || fUpdate.timestamp() <= timestamp) {
 			return NO_UPDATE;
 		}
+
+		System.err.println("Query from " + accessor + ":" + timestamp + " < "
+				+ fUpdate.timestamp());
 
 		fProductive[accessor]++;
 		return new Message[] { fUpdate };
