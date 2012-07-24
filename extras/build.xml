@@ -1,0 +1,31 @@
+<project name="PeerSim Extras" default="build-extras-jar" basedir=".">
+
+	<property name="src" location="src" />
+	<property name="build" location="bin" />
+	<property name="lib.path" location="../Utilities/lib" />
+	<property name="output.lib.path" location="../Utilities/lib-gen" />
+
+	<path id="compile.path">
+		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
+		<pathelement location="${lib.path}/jep-2.4.1.jar" />
+		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+	</path>
+
+	<target name="compile-extras">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}" />
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.path" />
+	</target>
+
+	<target name="build-extras-jar" depends="compile-extras">
+		<jar destfile="${output.lib.path}/peersim-extras.jar">
+			<fileset dir="${build}" />
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+				<attribute name="Class-Path" value="ext-1.1.1.jar peersim.jar jep-2.4.1.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
