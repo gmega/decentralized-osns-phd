@@ -15,8 +15,11 @@ import org.junit.Test;
 public class AVTReplayTest {
 	@Test
 	public void testReplay() throws Exception {
-		String AVT = "p1 1 0 3\n" + "p2 2 0 1 3 4\n " + "p3 2 1 3 5 5\n"
-				+ "p4 2 1 1 4 5\n" + "p5 1 0 4\n";
+		String AVT = "p1 1 0 3\n" + 
+					"p2 2 0 1 3 4\n " + 
+					"p3 2 1 3 5 5\n" + 
+					"p4 2 1 1 4 5\n" + 
+					"p5 1 0 4\n";
 
 		String ID_LIST = "p1\np2\np3\np4\np5\n";
 		
@@ -33,7 +36,7 @@ public class AVTReplayTest {
 		StreamProvider provider = new StreamProvider(new InputStream[] { avt,
 				idList }, new OutputStream[] { out }, AVTReplay.class, false);
 		
-		AVTReplay replayer = new AVTReplay(1);
+		AVTReplay replayer = new AVTReplay();
 
 		replayer.execute(provider);
 		

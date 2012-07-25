@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
+import java.util.Arrays;
+
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
 import it.unitn.disi.churn.diffusion.Message;
@@ -17,6 +19,10 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
  * @author giuliano
  */
 public class CloudAccessor implements IEventObserver, IMessageObserver {
+
+	private static final boolean DEBUG = false;
+
+	private static final double ROUNDOFF_SUM = 0.0000000000001D;
 
 	private final IDisseminationService fDisseminationService;
 
@@ -81,6 +87,11 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private void updateKnowledge(double lastSeen, IClockData clock) {
 		fNextAccess = Math.max(fNextAccess, lastSeen + fTimerPeriod);
+		if (DEBUG) {
+			System.err.println("(" + clock.rawTime() + "): node " + fId
+					+ " update last seen to " + lastSeen + ". Next access at "
+					+ fNextAccess + ".");
+		}
 		scheduleCloudAccess(fNextShift, clock);
 	}
 
@@ -130,6 +141,12 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 					"Can't receive message while offline");
 		}
 
+		if (DEBUG) {
+			System.err.println("(" + clock.rawTime() + "): node " + fId
+					+ " received [" + message.toString()
+					+ "] from P2P network.");
+		}
+
 		updateKnowledge(message.timestamp(), clock);
 	}
 
@@ -161,9 +178,24 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			fDone = true;
 			IClockData clock = engine.clock();
 
+			// Need the roundoff sum to avoid a roundoff error causing us to
+			// query behind the timestamp for an update we already know.
+			double queryTimestamp = fNextAccess - fTimerPeriod + ROUNDOFF_SUM;
+
 			// Fetch updates.
-			Message[] updates = fCloud.fetchUpdates(fId, -1, fNextAccess
-					- fTimerPeriod);
+			Message[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp);
+
+			if (DEBUG) {
+				System.err.println("("
+						+ clock.rawTime()
+						+ "): node "
+						+ fId
+						+ " accessed the cloud with query timestamp ["
+						+ queryTimestamp
+						+ "] got "
+						+ ((updates == ICloud.NO_UPDATE) ? "NUP" : Arrays
+								.toString(updates)));
+			}
 
 			if (updates == ICloud.NO_UPDATE) {
 				fDisseminationService.post(new Message(clock.rawTime(), -1),

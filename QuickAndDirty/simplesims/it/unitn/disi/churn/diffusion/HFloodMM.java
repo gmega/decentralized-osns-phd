@@ -105,10 +105,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		// If dissemination is done, we're done.
 		if (fProtocols[UPDATE].getState() == State.DONE) {
-			if (fState != State.DONE) {
-				System.err.println("Node " + fProtocols[UPDATE].id()
-						+ " is done.");
-			}
 			fState = State.DONE;
 		}
 

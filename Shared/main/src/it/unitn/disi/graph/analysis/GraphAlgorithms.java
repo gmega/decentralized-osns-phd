@@ -324,20 +324,40 @@ public class GraphAlgorithms {
 	 *            state and outputs of the algorithm.
 	 * @param graph
 	 *            the graph over which to run the algorithm.
+	 * @param filter
+	 *            an {@link IEdgeFilter} describing which edges should be
+	 *            disregarded by the algorithm.
+	 * 
 	 * @return the number of components in the graph.
 	 */
-	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
+	public static int tarjan(TarjanState state, IndexedNeighborGraph graph,
+			IEdgeFilter filter) {
 		// Initializes.
 		initState(graph, state);
 
 		int ncomps = 0;
 		for (int i = 0; i < graph.size(); i++) {
 			if (state.visit[i] == -1) {
-				ncomps += tarjan(i, state, graph);
+				ncomps += tarjan(i, state, graph, filter);
 			}
 		}
 
 		return ncomps;
+	}
+
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Runs Tarjan's algorithm on a graph.<br>
+	 * <br>
+	 * Convenience method which uses {@link #NULL_FILTER} as the edge filter to
+	 * {@link #tarjan(TarjanState, IndexedNeighborGraph, IEdgeFilter)}.
+	 * 
+	 * @see #tarjan(TarjanState, IndexedNeighborGraph, IEdgeFilter)
+	 * 
+	 */
+	public static int tarjan(TarjanState state, IndexedNeighborGraph graph) {
+		return tarjan(state, graph, NULL_FILTER);
 	}
 
 	// --------------------------------------------------------------------------
@@ -372,7 +392,7 @@ public class GraphAlgorithms {
 	// --------------------------------------------------------------------------
 
 	private static int tarjan(int starting, TarjanState s,
-			IndexedNeighborGraph graph) {
+			IndexedNeighborGraph graph, IEdgeFilter filter) {
 
 		int upstream = 0;
 		s.counter.push(0);
@@ -390,6 +410,10 @@ public class GraphAlgorithms {
 
 			for (int c = s.counter.peek(); c < graph.degree(node); c++) {
 				int neighbor = graph.getNeighbor(node, c);
+				if (filter.isForbidden(node, neighbor)) {
+					continue;
+				}
+
 				if (s.visit[neighbor] == -1) {
 					// Replace last element.
 					s.counter.pop();

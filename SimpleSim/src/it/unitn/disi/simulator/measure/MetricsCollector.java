@@ -10,8 +10,12 @@ public class MetricsCollector {
 
 	public MetricsCollector(IMetricAccumulator... accumulators) {
 		for (IMetricAccumulator accumulator : accumulators) {
-			fMetrics.put(accumulator.id(), accumulator);
+			addAccumulator(accumulator);
 		}
+	}
+
+	public void addAccumulator(IMetricAccumulator accumulator) {
+		fMetrics.put(accumulator.id(), accumulator);
 	}
 
 	public void add(List<? extends INodeMetric<? extends Object>> metrics) {

@@ -33,7 +33,7 @@ public class RenewalProcess extends IProcess {
 		fDown = down;
 		fState = initial;
 	}
-	
+
 	// -------------------------------------------------------------------------
 	// Schedulable interface.
 	// -------------------------------------------------------------------------

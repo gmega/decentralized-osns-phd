@@ -1,5 +1,6 @@
 package it.unitn.disi.simulator.protocol;
 
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
@@ -20,6 +21,7 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
  * 
  * @param <K>
  */
+@Binding
 public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		CyclicProtocolRunner<K> {
 

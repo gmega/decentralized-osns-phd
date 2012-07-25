@@ -21,8 +21,6 @@ import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
-import it.unitn.disi.simulator.random.IDistribution;
-import it.unitn.disi.simulator.random.UniformDistribution;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
@@ -48,6 +46,8 @@ public class CloudSimulationBuilder {
 	private final Random fRandom;
 
 	private final char fSelectorType;
+	
+	private final double fNUPBurnin;
 
 	private final double fNUPOnly;
 
@@ -56,9 +56,9 @@ public class CloudSimulationBuilder {
 	 * 
 	 * @param burnin
 	 *            burn-in period with which to run the simulations.
-	 * @param delay
-	 *            cloud access delay, after which nodes will access the cloud
-	 *            for updates.
+	 * @param period
+	 *            cloud access period: nodes will access the cloud whenever they
+	 *            go without news for more than "period" time instants.
 	 * @param selectorType
 	 *            the selector type for the dissemination protocol.
 	 * @param graph
@@ -70,14 +70,15 @@ public class CloudSimulationBuilder {
 	 * @param random
 	 *            random number generator.
 	 */
-	public CloudSimulationBuilder(double burnin, double delay,
-			char selectorType, IndexedNeighborGraph graph, Random random,
-			double nupOnly) {
-		fDelay = delay;
+	public CloudSimulationBuilder(double burnin, double period,
+			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
+			Random random, double nupOnly) {
+		fDelay = period;
 		fGraph = graph;
 		fRandom = random;
 		fBurnin = burnin;
 		fSelectorType = selectorType;
+		fNUPBurnin = nupBurnin;
 		fNUPOnly = nupOnly;
 	}
 
@@ -122,7 +123,7 @@ public class CloudSimulationBuilder {
 			return;
 		}
 
-		DiffusionWick wick = new DiffusionWick(source);
+		DiffusionWick wick = new DiffusionWick(source, fNUPBurnin);
 		final PostMM poster = wick.new PostMM(prots[source], cloud);
 		wick.setPoster(poster);
 
@@ -151,13 +152,12 @@ public class CloudSimulationBuilder {
 			IProcess[] process, HFloodMM[] dissemination, ICloud cloud,
 			int source) {
 		CloudAccessor[] accessors = new CloudAccessor[process.length];
-		IDistribution uniform = new UniformDistribution(fRandom, 0.0, fDelay);
 		for (int i = 0; i < accessors.length; i++) {
 			if (i == source) {
 				continue;
 			}
 			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
-					fDelay, fBurnin + uniform.sample(), i);
+					fDelay, fBurnin, i);
 			process[i].addObserver(accessors[i]);
 			dissemination[i].addMessageObserver(accessors[i]);
 		}

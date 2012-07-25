@@ -141,6 +141,6 @@ public class SimulationTaskBuilder {
 		EDSimulationEngine engine = new EDSimulationEngine(fProcesses, burnIn);
 		engine.setEventObservers(fSims);
 
-		return new SimulationTask(null, engine, metrics);
+		return new SimulationTask(null, engine, null, metrics);
 	}
 }

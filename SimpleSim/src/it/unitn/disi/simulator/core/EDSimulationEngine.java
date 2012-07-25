@@ -101,7 +101,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public void run() {
 		checkNotRunning();
 		fRunning = true;
-		
+
 		// Main simulation loop.
 		while (!fQueue.isEmpty() && !fDone) {
 			Schedulable p = fQueue.remove();

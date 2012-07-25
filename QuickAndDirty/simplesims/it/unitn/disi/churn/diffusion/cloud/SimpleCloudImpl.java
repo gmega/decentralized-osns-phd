@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
+import java.util.Arrays;
+
 import it.unitn.disi.churn.diffusion.Message;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.collections.Pair;
@@ -48,15 +50,18 @@ public class SimpleCloudImpl implements ICloud {
 			return NO_UPDATE;
 		}
 
-		System.err.println("Query from " + accessor + ":" + timestamp + " < "
-				+ fUpdate.timestamp());
-
 		fProductive[accessor]++;
 		return new Message[] { fUpdate };
 	}
 
 	public Pair<Integer, Integer> accesses(int id) {
 		return new Pair<Integer, Integer>(fTotal[id], fProductive[id]);
+	}
+
+	@Override
+	public void resetAccessCounters() {
+		Arrays.fill(fProductive, 0);
+		Arrays.fill(fTotal, 0);
 	}
 
 	public INodeMetric<Double> totalAccesses() {

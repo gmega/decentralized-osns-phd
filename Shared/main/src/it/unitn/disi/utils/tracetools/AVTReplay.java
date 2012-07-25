@@ -12,11 +12,12 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.util.IncrementalStats;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.exception.ParseException;
 import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.tabular.ITableWriter;
@@ -47,58 +48,71 @@ public class AVTReplay implements IMultiTransformer {
 
 	private final PriorityQueue<Node> fQueue = new PriorityQueue<Node>();
 
-	private final int fTimeGranularity;
-
-	public AVTReplay(
-			@Attribute(value = "time_granularity", defaultValue = "1") int timeGranularity) {
-		fTimeGranularity = timeGranularity;
-	}
-
 	@Override
 	public void execute(StreamProvider provider) throws Exception {
 
 		ITableWriter stats = new TableWriter(new PrintStream(
 				provider.output(Outputs.network_stats)), new String[] { "time",
-				"size", "in", "out", "seen" });
+				"size", "seen", "departures" });
 
 		Pair<Integer, ArrayList<Node>> traces = avtDecode(
 				provider.input(Inputs.avt_traces),
 				loadIDList(provider.input(Inputs.id_list)));
 
+		// All nodes start as down.
 		fQueue.addAll(traces.b);
 
 		BitSet seen = new BitSet();
 		long size = 0;
-		IProgressTracker tracker = Progress.newTracker("Running AVT simulation", traces.a); 
+		IProgressTracker tracker = Progress.newTracker(
+				"Running AVT simulation", traces.a);
 		tracker.startTask();
-		for (int i = 0; i <= traces.a; i++) {
-			int in = 0;
-			int out = 0;
-			while (!fQueue.isEmpty()
-					&& fQueue.peek().nextEvent() <= (i * fTimeGranularity)) {
-				Node node = fQueue.remove();
-				node.replayEvent();
-				seen.set(node.id);
-				if (node.isUp()) {
-					in++;
-				} else {
-					out++;
-				}
-				if (node.hasMoreEvents()) {
-					fQueue.add(node);
-				}
+
+		int time = -1;
+		int lastTime = -1;
+		int departures = 0;
+
+		while (!fQueue.isEmpty()) {
+			Node node = fQueue.remove();
+			time = node.nextEvent();
+
+			if (time < lastTime) {
+				throw new InternalError();
 			}
 
-			size = size + in - out;
-			stats.set("time", i);
-			stats.set("size", size);
-			stats.set("in", in);
-			stats.set("out", out);
-			stats.set("seen", seen.cardinality());
-			stats.emmitRow();
+			if (lastTime != time) {
+				print(stats, seen, size, time, departures);
+				lastTime = time;
+			}
+
+			node.replayEvent();
+			seen.set(node.id);
+			if (node.hasMoreEvents()) {
+				fQueue.add(node);
+			} else if (!node.isUp()){
+				departures++;
+			}
+
+			if (node.isUp()) {
+				size++;
+			} else {
+				size--;
+			}
+
 			tracker.tick();
 		}
+
 		tracker.done();
+		print(stats, seen, size, time, departures);
+	}
+
+	private void print(ITableWriter stats, BitSet seen, long size, int time,
+			int departures) {
+		stats.set("size", size);
+		stats.set("time", time);
+		stats.set("seen", seen.cardinality());
+		stats.set("departures", departures);
+		stats.emmitRow();
 	}
 
 	private Set<String> loadIDList(InputStream stream) throws IOException {
@@ -120,15 +134,22 @@ public class AVTReplay implements IMultiTransformer {
 
 		ArrayList<Node> nodes = new ArrayList<Node>();
 
-		int maxTime = 0;
 		int numericId = 0;
+		int traceSize = 0;
 
 		String line;
+		IncrementalStats stimes = new IncrementalStats();
+
 		while ((line = reader.readLine()) != null) {
+			if (line.startsWith("#")) {
+				continue;
+			}
+
 			StringTokenizer strtok = new StringTokenizer(line);
 			String kadId = (String) strtok.nextElement();
+
 			// Filters out unwanted peers.
-			if (!idList.contains(kadId)) {
+			if (idList.size() != 0 && !idList.contains(kadId)) {
 				continue;
 			}
 
@@ -142,20 +163,35 @@ public class AVTReplay implements IMultiTransformer {
 			int[] times = new int[nEvents * 2];
 			for (int i = 0; i < nEvents; i++) {
 				times[2 * i] = Integer.parseInt(strtok.nextToken());
+				checkIncreasing(kadId, times, 2 * i);
+
 				times[2 * i + 1] = Integer.parseInt(strtok.nextToken());
-				if (times[2 * i + 1] > maxTime) {
-					maxTime = times[2 * i + 1];
-				}
-				// End times are shifted by one, since the simulator
-				// excludes the last time instant.
-				times[2 * i + 1]++;
+				checkIncreasing(kadId, times, 2 * i + 1);
+
+				stimes.add(times[2 * i + 1] - times[2 * i]);
 			}
+
+			traceSize += nEvents;
 
 			nodes.add(new Node(times, numericId++));
 		}
 
-		return new Pair<Integer, ArrayList<Node>>(maxTime / fTimeGranularity,
-				nodes);
+		System.err.println("Avg: " + stimes.getAverage() + " stddev: "
+				+ stimes.getStD());
+
+		return new Pair<Integer, ArrayList<Node>>(traceSize * 2, nodes);
+	}
+
+	private void checkIncreasing(String node, int[] times, int i) {
+		if (i == 0) {
+			return;
+		}
+
+		if (times[i] < times[i - 1]) {
+			throw new ParseException("Interval sequence for node " + node
+					+ " is not non-decreasing (" + times[i] + " > "
+					+ times[i - 1] + ")");
+		}
 	}
 }
 

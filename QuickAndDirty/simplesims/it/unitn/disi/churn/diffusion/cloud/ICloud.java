@@ -47,4 +47,8 @@ public interface ICloud {
 	 */
 	public Pair<Integer, Integer> accesses(int id);
 
+	/**
+	 * Resets the access counters for the cloud.
+	 */
+	public void resetAccessCounters();
 }

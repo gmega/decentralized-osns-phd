@@ -23,12 +23,19 @@ public class DiffusionWick implements IEventObserver {
 
 	private final int fSource;
 
+	private final double fDelay;
+
 	private double[] fSnapshot;
 
 	private Poster fPoster;
 
 	public DiffusionWick(int source) {
+		this(source, 0.0);
+	}
+
+	public DiffusionWick(int source, double delay) {
 		fSource = source;
+		fDelay = delay;
 	}
 
 	public void setPoster(Poster poster) {
@@ -46,6 +53,9 @@ public class DiffusionWick implements IEventObserver {
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
+		if (engine.clock().time() < fDelay) {
+			return;
+		}
 		IProcess process = (IProcess) schedulable;
 		// First login of the source.
 		if (process.id() == fSource && process.isUp()) {
@@ -114,6 +124,7 @@ public class DiffusionWick implements IEventObserver {
 
 		@Override
 		public void post(ISimulationEngine engine) {
+			fCloud.resetAccessCounters();
 			Message update = new Message(engine.clock().rawTime(), fSource);
 			fSourceProtocol.post(update, engine);
 			fCloud.writeUpdate(fSource, update);

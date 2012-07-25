@@ -21,6 +21,7 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.MetricsCollector;
 import it.unitn.disi.simulator.measure.SumAccumulation;
+import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.PrefixedWriter;
@@ -28,6 +29,7 @@ import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -73,6 +75,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute(value = "nup_anchor", defaultValue = "-1")
 	private double fNUPAnchor;
 
+	@Attribute(value = "nup_burnin", defaultValue = "-1")
+	private double fNUPBurnin;
+
 	private YaoChurnConfigurator fYaoChurn;
 
 	private IResolver fResolver;
@@ -80,6 +85,8 @@ public class DiffusionExperiment implements ITransformer {
 	private ExperimentReader fReader;
 
 	private TaskExecutor fExecutor;
+
+	private volatile int fSeedUniquefier;
 
 	public DiffusionExperiment(@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute(value = "churn", defaultValue = "false") boolean churn) {
@@ -244,6 +251,7 @@ public class DiffusionExperiment implements ITransformer {
 		for (int i = 0; i < repetitions; i++) {
 			Object value = fExecutor.consume();
 			if (isThrowable(value)) {
+				printProps(value);
 				continue;
 			}
 
@@ -257,6 +265,15 @@ public class DiffusionExperiment implements ITransformer {
 		}
 
 		return collector;
+	}
+
+	private void printProps(Object value) {
+		if (!(value instanceof SimulationTaskException)) {
+			return;
+		}
+
+		SimulationTaskException exception = (SimulationTaskException) value;
+		exception.dumpProperties(System.err);
 	}
 
 	private void printCoreLatencies(int id, int source, int size,
@@ -295,33 +312,52 @@ public class DiffusionExperiment implements ITransformer {
 	private SimulationTask createTask(Experiment experiment, int source,
 			IndexedNeighborGraph graph, Long seed) throws Exception {
 
-		Random rnd = new Random();
 		Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> elements;
+		HashMap<String, Object> props = new HashMap<String, Object>();
+
+		// Seed handling.
+		long diffSeed = nextSeed();
+		if (seed == null) {
+			seed = nextSeed();
+		}
+
+		props.put("seed.diffusion", diffSeed);
+		props.put("seed.churn", seed);
+		props.put("source", source);
+		props.put("root", experiment.root);
+
+		Random diffusion = new Random(diffSeed);
+		Random churn = new Random(seed);
 
 		// Static experiment.
 		if (experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
 			elements = builder.build(fBurnin, fPeriod, experiment, source,
-					fSelector, graph, rnd);
+					fSelector, graph, diffusion);
 		} else {
 			IProcess[] processes = fYaoChurn.createProcesses(experiment.lis,
-					experiment.dis, graph.size(), seed != null ? new Random(
-							seed) : new Random());
+					experiment.dis, graph.size(), churn);
 
 			if (fCloudAssisted) {
 				elements = new CloudSimulationBuilder(fBurnin, fDelay,
-						fSelector.charAt(0), graph, rnd, fNUPAnchor).build(
-						source, processes);
+						fNUPBurnin, fSelector.charAt(0), graph, diffusion,
+						fNUPAnchor).build(source, processes);
 			} else {
 				elements = new ChurnSimulationBuilder().build(fBurnin, fPeriod,
-						experiment, source, fSelector, graph, rnd, processes);
+						experiment, source, fSelector, graph, diffusion,
+						processes);
 			}
 		}
 
 		return new SimulationTask(
 				null,
 				elements.a,
+				props,
 				new Pair[] { new Pair<Integer, List<INodeMetric<? extends Object>>>(
 						source, elements.b) });
+	}
+
+	private long nextSeed() {
+		return System.nanoTime() + fSeedUniquefier++;
 	}
 }

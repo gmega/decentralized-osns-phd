@@ -1,7 +1,6 @@
 package it.unitn.disi.utils;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -85,12 +84,20 @@ public class SparseMultiCounter<K> implements Iterable<K>, Cloneable,
 			return;
 		}
 
-		// Decrement will zero out the counter.
-		if (count <= decrement) {
+		count -= decrement;
+		if (count <= 0) {
 			fHistory.remove(id);
 		} else {
-			fHistory.put(id, count - decrement);
+			fHistory.put(id, count);
 		}
+	}
+	
+	public int size() {
+		return fHistory.size();
+	}
+	
+	public void clear() {
+		fHistory.clear();
 	}
 
 	public int compare(K o1, K o2) {

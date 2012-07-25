@@ -28,7 +28,7 @@ public class ZoneCrawl2Avt implements ITransformer {
 
 	private static final String UP = "1";
 
-	@Attribute("timescale")
+	@Attribute(value = "timescale", defaultValue = "300")
 	private int fTimescale;
 
 	@Attribute("hole_filtering")
@@ -91,17 +91,30 @@ public class ZoneCrawl2Avt implements ITransformer {
 				if (fHoleCount >= 0) {
 					return;
 				}
+				
+				// Node actually went down 'fHoleFilter' measurements ago.
 				actualTime = time - fHoleFilter;
 			}
-
-			fIntervals.add(actualTime * fTimescale);
+			
+			checkedAdd(actualTime);
 			fState = up;
+		}
+
+		private void checkedAdd(long actualTime) {
+			long scaledTime = fTimescale * actualTime;
+			if (fIntervals.size() > 0) {
+				if (scaledTime < fIntervals.get(fIntervals.size() - 1)) {
+					throw new IllegalStateException();
+				}
+			}
+			
+			fIntervals.add(scaledTime);
 		}
 
 		void done(long time) {
 			// Takes the node down at the end of the trace.
 			if (fState) {
-				fIntervals.add(time * fTimescale);
+				checkedAdd(time);
 				fState = false;
 			}
 		}

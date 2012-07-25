@@ -3,6 +3,8 @@ package it.unitn.disi.simulator.churnmodel.avt;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 import it.unitn.disi.simulator.churnmodel.IProcessFactory;
@@ -11,6 +13,7 @@ import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.collections.Pair;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
@@ -27,7 +30,7 @@ public class AVTChurnConfigurator implements IProcessFactory {
 
 	private boolean fLoop;
 
-	private Map<String, long[]> fTraces;
+	private Pair<Map<String, long[]>, Long> fTraces;
 
 	public AVTChurnConfigurator(
 			@Attribute("assignment_mode") String assignmentMode,
@@ -48,19 +51,22 @@ public class AVTChurnConfigurator implements IProcessFactory {
 		ITraceIDMapper mapper = getAssignment(n);
 		IProcess[] processes = new IProcess[n];
 		for (int i = 0; i < n; i++) {
-			long[] trace = traces().get(mapper.idOf(n));
-			DistributionPair pair = new DistributionPair(new ArrayIterator(
-					trace));
+			long[] trace = traces().a.get(mapper.idOf(n));
+			ArrayIterator it = new ArrayIterator(trace);
+			if (fLoop) {
+				it.setSync(traces().b);
+			}
+			DistributionPair pair = new DistributionPair(it);
 			processes[i] = new RenewalProcess(i, pair.up, pair.down, State.down);
 		}
 		return processes;
 	}
 
-	private Map<String, long[]> traces() {
+	private Pair<Map<String, long[]>, Long> traces() {
 		try {
 			if (fTraces == null) {
 				fTraces = AVTDecoder.decode(new FileInputStream(new File(
-						fTracefile)));
+						fTracefile)), fCut);
 			}
 		} catch (IOException ex) {
 			throw MiscUtils.nestRuntimeException(ex);
@@ -69,10 +75,16 @@ public class AVTChurnConfigurator implements IProcessFactory {
 	}
 
 	private ITraceIDMapper getAssignment(final int n) {
+		Map<String, long[]> traces = traces().a;
+		final ArrayList<String> traceIds = new ArrayList<String>();
+		
+		// Shuffles to get rid of hash bias.
+		traceIds.addAll(traces.keySet());
+		Collections.shuffle(traceIds);
 		return new ITraceIDMapper() {
 			@Override
 			public String idOf(int pid) {
-				return null;
+				return traceIds.get(pid % (traceIds.size()));
 			}
 		};
 	}

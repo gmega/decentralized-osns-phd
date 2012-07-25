@@ -8,7 +8,7 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class UniformDistribution implements IDistribution {
 
-	private final Random fRandom;
+	private final UnitUniformDistribution fRandom;
 
 	private final double fBase;
 
@@ -20,6 +20,11 @@ public class UniformDistribution implements IDistribution {
 
 	public UniformDistribution(@Attribute("Random") Random random,
 			@Attribute("min") double min, @Attribute("max") double max) {
+		this(new JDKUnitUniformDistribution(random), min, max);
+	}
+	
+	public UniformDistribution(UnitUniformDistribution random, double min,
+			double max) {
 
 		if (min >= max) {
 			throw new IllegalArgumentException(
@@ -32,7 +37,7 @@ public class UniformDistribution implements IDistribution {
 
 	@Override
 	public double sample() {
-		return fBase + fRandom.nextDouble() * fRange;
+		return fBase + fRandom.sample() * fRange;
 	}
 
 	@Override
