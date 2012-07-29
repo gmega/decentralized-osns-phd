@@ -32,15 +32,19 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 			ICyclicProtocol protocol = (ICyclicProtocol) process
 					.getProtocol(fPid);
 			State protocolState = protocol.getState();
+			
 			if (protocolState != State.DONE) {
 				protocol.nextCycle(engine, process);
-			} else {
+			} 
+			
+			if (hasReachedEndState(engine, protocol)) {			
 				done++;
 			}
 		}
 
 		if (done == network.size()) {
 			fDone = true;
+			System.err.println("END TIME: " + engine.clock().rawTime());
 			engine.unbound(this);
 		}
 	}
@@ -48,6 +52,10 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 	@Override
 	public boolean isDone() {
 		return fDone;
+	}
+	
+	protected boolean hasReachedEndState(ISimulationEngine engine, ICyclicProtocol protocol) {
+		return protocol.getState() == State.DONE;
 	}
 
 }

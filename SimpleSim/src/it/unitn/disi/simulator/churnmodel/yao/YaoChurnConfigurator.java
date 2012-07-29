@@ -75,7 +75,7 @@ public class YaoChurnConfigurator {
 	public IProcess[] createProcesses(double[] li, double[] di, int n,
 			Random random) {
 
-		RenewalProcess[] rp = new RenewalProcess[n];
+		IProcess[] rp = new IProcess[n];
 		IDistributionGenerator generator = distributionGenerator(random);
 
 		for (int i = 0; i < rp.length; i++) {

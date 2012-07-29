@@ -56,6 +56,7 @@ public class DiffusionWick implements IEventObserver {
 		if (engine.clock().time() < fDelay) {
 			return;
 		}
+		
 		IProcess process = (IProcess) schedulable;
 		// First login of the source.
 		if (process.id() == fSource && process.isUp()) {
@@ -111,13 +112,13 @@ public class DiffusionWick implements IEventObserver {
 
 	public class PostMM implements Poster {
 
-		private HFloodMM fSourceProtocol;
+		private IDisseminationService fSourceProtocol;
 
 		private ICloud fCloud;
 
 		private Message fMessage;
 
-		public PostMM(HFloodMM source, ICloud cloud) {
+		public PostMM(IDisseminationService source, ICloud cloud) {
 			fSourceProtocol = source;
 			fCloud = cloud;
 		}
@@ -128,6 +129,7 @@ public class DiffusionWick implements IEventObserver {
 			Message update = new Message(engine.clock().rawTime(), fSource);
 			fSourceProtocol.post(update, engine);
 			fCloud.writeUpdate(fSource, update);
+			System.err.println("START TIME: " + engine.clock().rawTime());
 			fMessage = update;
 		}
 

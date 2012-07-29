@@ -1,8 +1,6 @@
 package it.unitn.disi.simulator.protocol;
 
-import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 

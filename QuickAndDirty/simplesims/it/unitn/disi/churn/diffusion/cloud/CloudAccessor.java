@@ -39,6 +39,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	private double fNextAccess;
 
 	private double fNextShift;
+	
+	private double fLastAccess;
 
 	/**
 	 * Constructs a new {@link CloudAccessor}.
@@ -208,9 +210,16 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 					fDisseminationService.post(update, engine);
 				}
 			}
+			
+			/* XXX add back this check and fix the cases in which it fails.
+ 			if (clock.rawTime() - fLastAccess < fTimerPeriod) {
+				throw new IllegalStateException();
+			} */
+			
+			fLastAccess = clock.rawTime();
 
 			// Our knowledge got more recent.
-			updateKnowledge(clock.rawTime(), clock);
+			updateKnowledge(fLastAccess, clock);
 		}
 
 		public void cancel() {

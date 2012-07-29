@@ -134,6 +134,10 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	public HFloodSM get(Message message) {
 		return message.isNUP() ? fProtocols[NO_UPDATE] : fProtocols[UPDATE];
 	}
+	
+	public boolean isReached() {
+		return fProtocols[UPDATE].isReached();
+	}
 
 	private void messageReceived(Message message, IClockData clock) {
 		for (IMessageObserver observer : fObservers) {

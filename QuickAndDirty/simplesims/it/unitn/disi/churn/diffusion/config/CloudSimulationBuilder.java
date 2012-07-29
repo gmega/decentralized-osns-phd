@@ -14,15 +14,18 @@ import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.utils.collections.Pair;
 
+import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -46,7 +49,7 @@ public class CloudSimulationBuilder {
 	private final Random fRandom;
 
 	private final char fSelectorType;
-	
+
 	private final double fNUPBurnin;
 
 	private final double fNUPOnly;
@@ -88,8 +91,8 @@ public class CloudSimulationBuilder {
 		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
-		PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
-				engine, SECOND, 1, HFLOOD_PID);
+		PausingCyclicProtocolRunner<HFloodMM> runner = new Runner(engine,
+				SECOND, 1, HFLOOD_PID);
 		observers.add(new Pair<Integer, IEventObserver>(1, runner));
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
@@ -102,7 +105,8 @@ public class CloudSimulationBuilder {
 		metrics.add(cloud.totalAccesses());
 		metrics.add(cloud.productiveAccesses());
 
-		addWickOrAnchor(source, prots, engine, cloud, observers, metrics);
+		addWickOrAnchor(source, prots, processes, engine, cloud, observers,
+				metrics);
 
 		engine.setEventObservers(observers);
 
@@ -112,7 +116,8 @@ public class CloudSimulationBuilder {
 	}
 
 	private void addWickOrAnchor(final int source, final HFloodMM[] prots,
-			EDSimulationEngine engine, SimpleCloudImpl cloud,
+			IProcess[] processes, EDSimulationEngine engine,
+			SimpleCloudImpl cloud,
 			List<Pair<Integer, ? extends IEventObserver>> observers,
 			List<INodeMetric<? extends Object>> metrics) {
 
@@ -126,6 +131,12 @@ public class CloudSimulationBuilder {
 		DiffusionWick wick = new DiffusionWick(source, fNUPBurnin);
 		final PostMM poster = wick.new PostMM(prots[source], cloud);
 		wick.setPoster(poster);
+
+		// If the source is a fixed node, we need to add a synthetic login to
+		// fire the wick.
+		if (processes[source] instanceof FixedProcess) {
+			engine.schedule(new OneShotProcess(processes[source]));
+		}
 
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, wick));
@@ -212,6 +223,69 @@ public class CloudSimulationBuilder {
 		@Override
 		public int type() {
 			return 5;
+		}
+
+	}
+
+	@Binding
+	private class Runner extends PausingCyclicProtocolRunner<HFloodMM> {
+		public Runner(ISimulationEngine engine, double period, int type, int pid) {
+			super(engine, period, type, pid);
+		}
+
+		@Override
+		protected boolean hasReachedEndState(ISimulationEngine engine,
+				ICyclicProtocol protocol) {
+			return ((HFloodMM) protocol).isReached();
+		}
+	}
+
+	private class OneShotProcess extends IProcess {
+
+		private final IProcess fDelegate;
+
+		private boolean fExpired;
+
+		public OneShotProcess(IProcess delegate) {
+			fDelegate = delegate;
+		}
+
+		@Override
+		public double uptime(IClockData clock) {
+			return fDelegate.uptime(clock);
+		}
+
+		@Override
+		public boolean isUp() {
+			return fDelegate.isUp();
+		}
+
+		@Override
+		public State state() {
+			return fDelegate.state();
+		}
+
+		@Override
+		public int id() {
+			return fDelegate.id();
+		}
+
+		@Override
+		public boolean isExpired() {
+			return fExpired;
+		}
+
+		@Override
+		public void scheduled(ISimulationEngine state) {
+			if (fExpired) {
+				throw new IllegalSelectorException();
+			}
+			fExpired = true;
+		}
+
+		@Override
+		public double time() {
+			return fBurnin + fNUPBurnin + 0.0000000001D;
 		}
 
 	}

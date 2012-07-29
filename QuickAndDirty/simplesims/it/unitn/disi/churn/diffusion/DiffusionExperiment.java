@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
+import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
@@ -18,17 +19,23 @@ import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.MetricsCollector;
 import it.unitn.disi.simulator.measure.SumAccumulation;
+import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -78,6 +85,9 @@ public class DiffusionExperiment implements ITransformer {
 	@Attribute(value = "nup_burnin", defaultValue = "-1")
 	private double fNUPBurnin;
 
+	@Attribute(value = "fixed_node_map", defaultValue = "none")
+	private String fFixedMap;
+
 	private YaoChurnConfigurator fYaoChurn;
 
 	private IResolver fResolver;
@@ -113,44 +123,74 @@ public class DiffusionExperiment implements ITransformer {
 				.createScheduler(fResolver, "").iterator();
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
-				"id", "source", "target", "edsum", "rdsum", "size");
+				"id", "source", "target", "edsum", "rdsum", "size", "fixed",
+				"exps");
 
 		TableWriter cCore = new TableWriter(new PrefixedWriter("CO:", oup),
 				"id", "source", "edsum", "size");
 
 		TableWriter cloudStats = new TableWriter(
-				new PrefixedWriter("CS:", oup), "id", "source", "accup",
-				"accnup");
+				new PrefixedWriter("CS:", oup), "id", "source", "target",
+				"accup", "accnup", "exps");
 
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
 
+		BitSet fixedMap = fixedNodeMap();
+		System.err.print("There are " + fixedMap.cardinality() + " fixed nodes.");
+
 		Integer row;
 		while ((row = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(row, provider);
-
 			IndexedNeighborGraph graph = provider.subgraph(experiment.root);
 			int source = Integer.parseInt(experiment.attributes.get("node"));
 
 			int[] ids = provider.verticesOf(experiment.root);
+			int [] fixed = cloudNodes(experiment, ids, fixedMap);
 			MetricsCollector result = runExperiments(experiment,
-					MiscUtils.indexOf(ids, source), ids, graph, fRepeats, cCore);
+					MiscUtils.indexOf(ids, source), ids, graph, fRepeats,
+					cCore, fixed);
 
 			if (fCloudAssisted) {
-				printCloudMetrics(experiment, source, graph.size(), result,
-						cloudStats);
+				printCloudMetrics(cloudStats, experiment, source, ids, result);
 			}
 
 			if (fNUPAnchor < 0) {
 				printLatencyMetrics(writer, experiment, graph, source, ids,
-						result);
+						result, fixed);
 			}
 		}
 	}
 
+	private int[] cloudNodes(Experiment exp, int[] ids, BitSet fixed)
+			throws Exception {
+
+		// Reads cloud nodes.
+		TIntArrayList cloud = new TIntArrayList();
+		for (int i = 0; i < ids.length; i++) {
+			int row = exp.entry.rowStart + i;
+			if (fixed.get(row)) {
+				cloud.add(i);
+			}
+		}
+
+		return cloud.toArray();
+
+	}
+
+	@SuppressWarnings("resource")
+	private BitSet fixedNodeMap() throws Exception {
+		if (fFixedMap.equals("none")) {
+			return new BitSet();
+		}
+
+		return (BitSet) new ObjectInputStream(new FileInputStream(new File(
+				fFixedMap))).readObject();
+	}
+
 	private void printLatencyMetrics(TableWriter writer, Experiment experiment,
 			IndexedNeighborGraph graph, int source, int[] ids,
-			MetricsCollector result) {
+			MetricsCollector result, int[] fixed) {
 		INodeMetric<Double> ed = result.getMetric("ed");
 		INodeMetric<Double> rd = result.getMetric("rd");
 
@@ -164,7 +204,7 @@ public class DiffusionExperiment implements ITransformer {
 			writer.set("edsum", edSumm.getSum());
 			writer.set("rdsum", rdSumm.getSum());
 			writer.set("size", graph.size());
-
+			writer.set("exps", fRepeats);
 			writer.emmitRow();
 
 		} else {
@@ -172,28 +212,31 @@ public class DiffusionExperiment implements ITransformer {
 				writer.set("id", experiment.root);
 				writer.set("source", source);
 				writer.set("target", ids[i]);
+				writer.set("fixed", MiscUtils.contains(fixed, i));
 				writer.set("edsum", ed.getMetric(i));
 				writer.set("rdsum", rd.getMetric(i));
 				writer.set("size", graph.size());
-
+				writer.set("exps", fRepeats);
 				writer.emmitRow();
 			}
 		}
 	}
 
-	private void printCloudMetrics(Experiment exp, int source, int size,
-			MetricsCollector result, TableWriter cloudStats) {
+	private void printCloudMetrics(TableWriter cloudStats, Experiment exp,
+			int source, int[] ids, MetricsCollector result) {
 
 		INodeMetric<Double> total = result.getMetric(SimpleCloudImpl.TOTAL);
 		INodeMetric<Double> productive = result
 				.getMetric(SimpleCloudImpl.PRODUCTIVE);
 
-		for (int i = 0; i < size; i++) {
+		for (int i = 0; i < ids.length; i++) {
 			cloudStats.set("id", exp.root);
-			cloudStats.set("source", exp);
+			cloudStats.set("source", source);
+			cloudStats.set("target", ids[i]);
 			cloudStats.set("accnup",
 					(int) (total.getMetric(i) - productive.getMetric(i)));
 			cloudStats.set("accup", productive.getMetric(i).intValue());
+			cloudStats.set("exps", fRepeats);
 			cloudStats.emmitRow();
 		}
 	}
@@ -208,7 +251,8 @@ public class DiffusionExperiment implements ITransformer {
 
 	private MetricsCollector runExperiments(final Experiment experiment,
 			final int source, int[] ids, final IndexedNeighborGraph graph,
-			final int repetitions, TableWriter core) throws Exception {
+			final int repetitions, TableWriter core, final int[] fixed)
+			throws Exception {
 
 		fExecutor.start(experiment.toString() + ", source: " + source
 				+ " size: " + graph.size(), repetitions);
@@ -222,7 +266,8 @@ public class DiffusionExperiment implements ITransformer {
 				try {
 					for (int i = 0; i < repetitions; i++) {
 						fExecutor.submit(createTask(experiment, source, graph,
-								seedGen != null ? seedGen.nextLong() : null));
+								seedGen != null ? seedGen.nextLong() : null,
+								fixed));
 					}
 				} catch (Exception ex) {
 					System.err
@@ -310,7 +355,8 @@ public class DiffusionExperiment implements ITransformer {
 	}
 
 	private SimulationTask createTask(Experiment experiment, int source,
-			IndexedNeighborGraph graph, Long seed) throws Exception {
+			IndexedNeighborGraph graph, Long seed, int[] fixed)
+			throws Exception {
 
 		Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> elements;
 		HashMap<String, Object> props = new HashMap<String, Object>();
@@ -335,8 +381,14 @@ public class DiffusionExperiment implements ITransformer {
 			elements = builder.build(fBurnin, fPeriod, experiment, source,
 					fSelector, graph, diffusion);
 		} else {
+			// Create regular processes.
 			IProcess[] processes = fYaoChurn.createProcesses(experiment.lis,
 					experiment.dis, graph.size(), churn);
+
+			// Then replace fixed ones.
+			for (int i = 0; i < fixed.length; i++) {
+				processes[fixed[i]] = new FixedProcess(fixed[i], State.up);
+			}
 
 			if (fCloudAssisted) {
 				elements = new CloudSimulationBuilder(fBurnin, fDelay,
