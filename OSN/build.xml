@@ -4,6 +4,8 @@
 	<property name="build" location="bin" />
 	<property name="lib.path" location="../Utilities/lib" />
 	<property name="output.lib.path" location="../Utilities/lib-gen" />
+	
+	<taskdef resource="svntask.properties"/>
 
 	<path id="compile.path">
 		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
@@ -11,7 +13,8 @@
 		<pathelement location="${lib.path}/ext-1.1.1.jar" />
 		<pathelement location="${output.lib.path}/analyzer-j.jar" />
 	</path>
-
+	
+	
 	<target name="compile-osns">
 		<!-- Create the build directory structure used by compile -->
 		<mkdir dir="${build}" />
@@ -20,10 +23,16 @@
 	</target>
 
 	<target name="build-osns-jar" depends="compile-osns">
+		<svn>
+			<propget path="${src}" name="svn:Rev" property="prop.revision"
+			/>
+		</svn>
+		
 		<jar destfile="${output.lib.path}/osns-protocols.jar">
 			<fileset dir="${build}" />
 			<manifest>
 				<attribute name="Built-By" value="Giuliano Mega" />
+				<attribute name="Revision" value="${prop.revision}"/>
 				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar ext-1.1.1.jar analyzer-j.jar peersim.jar peersim-extras.jar jep-2.4.1.jar" />
 			</manifest>
 		</jar>
