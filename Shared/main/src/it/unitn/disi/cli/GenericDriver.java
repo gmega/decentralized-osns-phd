@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,6 +117,8 @@ public class GenericDriver {
 
 			Object processor = create(pClass, new HashMapResolver(props));
 
+			printVersionInformation(processor);
+
 			if (fWallClock > 0) {
 				startTimer(fWallClock);
 			}
@@ -146,13 +153,29 @@ public class GenericDriver {
 			}
 		};
 
-		Date expiry = new Date(System.currentTimeMillis() + (long) (fWallClock
-				* 3600 * 1000));
+		Date expiry = new Date(System.currentTimeMillis()
+				+ (long) (fWallClock * 3600 * 1000));
 		System.err.println("Wallclock timer: process will be killed at "
 				+ expiry.toString());
 
 		Timer timer = new Timer("Wallclock Watchdog");
 		timer.schedule(shutdown, expiry);
+	}
+
+	private void printVersionInformation(Object processor) throws IOException {
+		Class<?> cls = processor.getClass();
+		URL res = cls.getResource(cls.getSimpleName() + ".class");
+		URLConnection conn = res.openConnection();
+		if (!(conn instanceof JarURLConnection)) {
+			System.err
+					.println("Unbundled class file: no versioning information available.");
+			return;
+		}
+
+		Manifest mf = ((JarURLConnection) conn).getManifest();
+		Attributes attributes = mf.getMainAttributes();
+		System.err.println("-- SVN Revision: " + attributes.getValue("Revision"));
+		System.err.println("-- Build Date: " + attributes.getValue("Date"));
 	}
 
 	private void configLogging() {

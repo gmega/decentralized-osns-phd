@@ -4,12 +4,13 @@ import org.apache.log4j.Logger;
 
 import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
-import it.unitn.disi.utils.tabular.TableWriter;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.measure.MetricsCollector;
 import peersim.config.Attribute;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
-public class Worker implements Runnable {
+public abstract class Worker implements Runnable {
 
 	private static final Logger fLogger = Logger.getLogger(Worker.class);
 
@@ -30,22 +31,15 @@ public class Worker implements Runnable {
 	 */
 	@Attribute("burnin")
 	private double fBurnin;
-	
-	private TableWriter fOutput;
-	
-	private String[] fMetrics;
 
 	/**
 	 * The iterator which will feed us experiments.
 	 */
 	private DistributedSchedulerClient fClient;
 
-	public Worker(@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute("metrics") String[] metrics,
-			@Attribute("output") TableWriter output) {
+	public Worker(@Attribute(Attribute.AUTO) IResolver resolver) {
 		fClient = ObjectCreator.createInstance(
 				DistributedSchedulerClient.class, "scheduler", resolver);
-		fMetrics = metrics;
 	}
 
 	@Override
@@ -61,8 +55,22 @@ public class Worker implements Runnable {
 		IScheduleIterator schedule = fClient.iterator();
 		Integer row;
 		while ((row = (Integer) schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
-			System.out.println(row);
+			MetricsCollector collector = runTasks(row);
+			
 		}
 	}
 
+	private MetricsCollector runTasks(Integer row) {
+		return null;
+	}
+
+	static class SimulationState {
+		public final int completedTasks;
+		public final MetricsCollector result;
+
+		public SimulationState(int completedTasks, MetricsCollector result) {
+			this.completedTasks = completedTasks;
+			this.result = result;
+		}
+	}
 }
