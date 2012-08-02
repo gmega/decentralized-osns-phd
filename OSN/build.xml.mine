@@ -1,0 +1,43 @@
+<project name="Decentralized On-line Social Network" default="compile-osns" basedir=".">
+
+	<property name="src" location="main/src" />
+	<property name="build" location="bin" />
+	<property name="lib.path" location="../Utilities/lib" />
+	<property name="output.lib.path" location="../Utilities/lib-gen" />
+
+	<path id="compile.path">
+		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
+		<pathelement location="${lib.path}/jep-2.4.1.jar" />
+		<pathelement location="${lib.path}/ext-1.1.1.jar" />
+		<pathelement location="${output.lib.path}/analyzer-j.jar" />
+	</path>
+
+
+	<target name="compile-osns">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}" />
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.path" includeantruntime="true" />
+	</target>
+
+	<target name="build-osns-jar" depends="compile-osns">
+		<exec executable="svnversion" outputproperty="svn.revision">
+			<arg value="." />
+		</exec>
+		
+		<tstamp>
+			<format property="build.time" pattern="dd/MM/yyyy hh:mm aa" unit="hour" />
+		</tstamp>
+
+		<jar destfile="${output.lib.path}/osns-protocols.jar">
+			<fileset dir="${build}" />
+			<manifest>
+				<attribute name="Built-By" value="Giuliano Mega" />
+				<attribute name="Revision" value="${svn.revision}" />
+				<attribute name="Date" value="${build.time}" />
+				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar ext-1.1.1.jar analyzer-j.jar peersim.jar peersim-extras.jar jep-2.4.1.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
