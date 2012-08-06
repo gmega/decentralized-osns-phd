@@ -1,5 +1,7 @@
 package it.unitn.disi.distsim.scheduler;
 
+import it.unitn.disi.distsim.control.ManagedService;
+import it.unitn.disi.distsim.control.SimulationControl;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.Schedulers;
 import it.unitn.disi.distsim.scheduler.generators.Schedulers.SchedulerType;
@@ -22,14 +24,17 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 @XStreamAlias("scheduler")
-public class Master extends NotificationBroadcasterSupport implements
-		MasterMBean {
+public class SchedulerJMX extends NotificationBroadcasterSupport implements
+		SchedulerMBean, ManagedService {
+
+	@XStreamOmitField
+	private SimulationControl fControl;
 
 	@XStreamOmitField
 	private int fSequence;
 
-	@XStreamAlias("queueid")
-	private volatile String fQueueId;
+	@XStreamAlias("sim-id")
+	private volatile String fSimId;
 
 	@XStreamAlias("read-log")
 	private String fReadLog;
@@ -42,16 +47,13 @@ public class Master extends NotificationBroadcasterSupport implements
 
 	@XStreamAlias("scheduler-config")
 	private HashMap<String, String> fProperties = new HashMap<String, String>();
-	
-	@XStreamAlias("registry-port")
-	private volatile int fRegistryPort;
 
 	@XStreamOmitField
-	private MasterImpl fMaster = null;
-	
-	public Master(String queueId, int registryPort) {
-		fQueueId = queueId;
-		fRegistryPort = registryPort;
+	private SchedulerImpl fMaster = null;
+
+	public SchedulerJMX(String simId, SimulationControl parent) {
+		fSimId = simId;
+		fControl = parent;
 	}
 
 	@Override
@@ -59,17 +61,19 @@ public class Master extends NotificationBroadcasterSupport implements
 		checkNotRunning();
 
 		try {
-			MasterImpl impl = new MasterImpl(createSchedule(), replayLog(),
-					Logger.getLogger(logName("assignment")),
+			SchedulerImpl impl = new SchedulerImpl(createSchedule(), replayLog(),
+					writeLog(), Logger.getLogger(logName("assignment")),
 					Logger.getLogger(logName("messages")));
-			impl.start(fQueueId, false, fRegistryPort, writeLog());
+
 			fMaster = impl;
+			fControl.objectManager().publish(impl,
+					fControl.name(fSimId, "queue"));
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
 
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
-				System.currentTimeMillis(), "Scheduler [" + fQueueId
+				System.currentTimeMillis(), "Scheduler [" + fSimId
 						+ "] started.", "isRunning", "boolean", false, true));
 	}
 
@@ -109,7 +113,7 @@ public class Master extends NotificationBroadcasterSupport implements
 	public synchronized void stop() {
 		fMaster = null;
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
-				System.currentTimeMillis(), "Scheduler [" + fQueueId
+				System.currentTimeMillis(), "Scheduler [" + fSimId
 						+ "] stopped.", "isRunning", "boolean", false, true));
 	}
 
@@ -120,7 +124,7 @@ public class Master extends NotificationBroadcasterSupport implements
 
 	@Override
 	public String getQueueName() {
-		return fQueueId;
+		return fSimId;
 	}
 
 	@Override
@@ -158,12 +162,17 @@ public class Master extends NotificationBroadcasterSupport implements
 	}
 
 	private String logName(String string) {
-		return Master.class.getName() + "." + fQueueId + "." + string;
+		return SchedulerJMX.class.getName() + "." + fSimId + "." + string;
 	}
 
 	@Override
 	public String getReplayLog() {
 		return fReadLog;
+	}
+
+	@Override
+	public void setControl(SimulationControl parent) {
+		fControl = parent;
 	}
 
 }

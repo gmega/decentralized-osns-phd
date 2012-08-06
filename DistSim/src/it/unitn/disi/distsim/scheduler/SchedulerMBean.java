@@ -3,11 +3,11 @@ package it.unitn.disi.distsim.scheduler;
 import it.unitn.disi.distsim.control.ServiceMBean;
 
 /**
- * JMX configuration management interface for {@link IMaster}.
+ * JMX configuration management interface for {@link IScheduler}.
  * 
  * @author giuliano
  */
-public interface MasterMBean extends ServiceMBean {
+public interface SchedulerMBean extends ServiceMBean {
 
 	public void setSchedulerType(String type);
 

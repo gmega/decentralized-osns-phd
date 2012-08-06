@@ -8,6 +8,6 @@
 	<classpathentry kind="lib" path="/Utilities/lib/args4j-2.0.9.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/jmxlogger-log4j-0.3.0.jar"/>
 	<classpathentry kind="lib" path="/Utilities/lib/mvel2-2.0.14.jar"/>
-	<classpathentry kind="lib" path="/Utilities/lib/xstream-1.4.2.jar" sourcepath="/home/giuliano/Software/xstream-1.4.2/xstream/src/java"/>
+	<classpathentry kind="lib" path="lib/xstream-1.4.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

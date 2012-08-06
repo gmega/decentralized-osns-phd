@@ -8,11 +8,8 @@ import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
-public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
+public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 
 	private static enum ExperimentState {
 		assigned, done;
@@ -47,14 +44,15 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 
 	private volatile int fRemaining;
 
-	public MasterImpl(ISchedule schedule, TableReader recover)
-			throws IOException {
-		this(schedule, recover, Logger.getLogger(MasterImpl.class.getName()
-				+ ".assignment"), Logger.getLogger(MasterImpl.class));
+	public SchedulerImpl(ISchedule schedule, TableWriter writeLog,
+			TableReader recover) throws IOException {
+		this(schedule, recover, writeLog, Logger.getLogger(SchedulerImpl.class
+				.getName() + ".assignment"), Logger.getLogger(SchedulerImpl.class));
 	}
 
-	public MasterImpl(ISchedule schedule, TableReader recover,
-			Logger assignment, Logger other) throws IOException {
+	public SchedulerImpl(ISchedule schedule, TableReader recover,
+			TableWriter writeLog, Logger assignment, Logger other)
+			throws IOException {
 		fExperiments = new ExperimentEntry[schedule.size()];
 		fRemaining = schedule.size();
 		IScheduleIterator iterator = schedule.iterator();
@@ -72,31 +70,15 @@ public class MasterImpl implements IMaster, IMasterAdmin, Runnable {
 
 		fController = new Thread(new WorkerControl(POLLING_INTERVAL));
 		fAssignment = assignment;
+		fWriter = writeLog;
 		fOther = other;
 	}
 
-	public void start(String queueId, boolean createRegistry, int port,
-			TableWriter log) {
-		fWriter = log;
-		fOther.info("Starting registry and publishing object reference.");
-		try {
-			if (createRegistry) {
-				LocateRegistry.createRegistry(port);
-			}
-			UnicastRemoteObject.exportObject(this, 0);
-			Registry registry = LocateRegistry.getRegistry(port);
-			registry.rebind(queueId, this);
-		} catch (RemoteException ex) {
-			fOther.error("Error while publishing object.", ex);
-			System.exit(-1);
-		}
-		Runtime.getRuntime().addShutdownHook(new Thread(this));
+	public void start() {
 		fController.start();
-		fOther.info("All good.");
 	}
 
-	@Override
-	public void run() {
+	public void shutdown() {
 		fController.interrupt();
 		try {
 			fController.join();

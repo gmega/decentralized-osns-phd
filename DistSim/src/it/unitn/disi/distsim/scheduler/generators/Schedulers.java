@@ -1,6 +1,6 @@
 package it.unitn.disi.distsim.scheduler.generators;
 
-import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
+import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
@@ -8,7 +8,7 @@ public class Schedulers {
 
 	public static enum SchedulerType {
 		IDLIST(IDListScheduler.class), INTERVAL(IntervalScheduler.class), DISTRIBUTED(
-				DistributedSchedulerClient.class);
+				SchedulerClient.class);
 
 		public final Class<? extends ISchedule> klass;
 

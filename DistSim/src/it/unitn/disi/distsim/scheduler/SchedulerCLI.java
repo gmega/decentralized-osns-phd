@@ -1,5 +1,6 @@
 package it.unitn.disi.distsim.scheduler;
 
+import it.unitn.disi.distsim.control.RMIObjectManager;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.Schedulers;
 import it.unitn.disi.utils.HashMapResolver;
@@ -33,7 +34,7 @@ import org.kohsuke.args4j.Option;
 
 import peersim.config.IResolver;
 
-public class MasterCLI {
+public class SchedulerCLI {
 
 	@Option(name = "-s", aliases = { "--status" }, usage = "Master status.", required = false)
 	private boolean fStatus;
@@ -91,11 +92,16 @@ public class MasterCLI {
 
 	private void launch(CmdLineParser parser, IResolver resolver)
 			throws IOException, FileNotFoundException {
+		
+		// If this is to fail, better it fails before we start manipulating
+		// files.
+		RMIObjectManager mgr = new RMIObjectManager(fPort, fReuse);
+		mgr.start();
+		
 		TableReader reader = fInputLog == null ? null : new TableReader(
 				new FileInputStream(fInputLog));
 		ISchedule scheduler = createScheduler(resolver);
-		MasterImpl master = new MasterImpl(scheduler, reader);
-
+		
 		if (reader != null) {
 			reader.close();
 		}
@@ -112,10 +118,12 @@ public class MasterCLI {
 				append = true;
 			}
 		}
-
-		master.start(fQueueId, !fReuse, fPort, new TableWriter(new PrintWriter(
+		
+		SchedulerImpl master = new SchedulerImpl(scheduler, new TableWriter(new PrintWriter(
 				new FileWriter(fOutputLog, append)), !append, "experiment",
-				"status"));
+				"status"), reader);
+		mgr.publish(master, fQueueId);
+		master.start();
 	}
 
 	private ISchedule createScheduler(IResolver resolver) {
@@ -125,7 +133,7 @@ public class MasterCLI {
 	private void printStatus(CmdLineParser parser) throws RemoteException,
 			NotBoundException {
 		Registry registry = LocateRegistry.getRegistry(fPort);
-		IMasterAdmin admin = (IMasterAdmin) registry.lookup(fQueueId);
+		ISchedulerAdmin admin = (ISchedulerAdmin) registry.lookup(fQueueId);
 
 		Pair<String, Integer>[] workers = admin.registeredWorkers();
 		Arrays.sort(workers, new Comparator<Pair<String, Integer>>() {
@@ -171,12 +179,12 @@ public class MasterCLI {
 	private void configureLogging() {
 		BasicConfigurator.configure();
 		if (fQuiet) {
-			Logger.getLogger(MasterImpl.class.getName() + ".assignment")
+			Logger.getLogger(SchedulerImpl.class.getName() + ".assignment")
 					.setLevel(Level.ERROR);
 		}
 	}
 
 	public static void main(String[] args) throws IOException {
-		new MasterCLI()._main(args);
+		new SchedulerCLI()._main(args);
 	}
 }

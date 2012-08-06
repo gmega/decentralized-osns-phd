@@ -1,55 +1,41 @@
 package it.unitn.disi.distsim.scheduler;
 
+import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
 
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
 
-@AutoConfig
-public class DistributedSchedulerClient implements ISchedule, IWorker {
+public class SchedulerClient implements ISchedule, IWorker {
 
 	private static final Logger fLogger = Logger
-			.getLogger(DistributedSchedulerClient.class);
+			.getLogger(SchedulerClient.class);
 
-	private final String fHost;
-	
-	private final String fQueueId;
-
-	private final int fPort;
+	private final ControlClient fClient;
 	
 	private int fWorkerId;
 	
 	private Integer fInitialSize;
 
-	public DistributedSchedulerClient(
-			@Attribute("host") String host,
-			@Attribute("queue") String queueId,
-			@Attribute(value = "port", defaultValue = "50325") int port) {
-		fHost = host;
-		fPort = port;
-		fQueueId = queueId;
+	public SchedulerClient(ControlClient client) {
+		fClient = client;
 	}
 
 	@Override
 	public IScheduleIterator iterator() {
 		IWorker us = publish(); 
-		IMaster master = connect();
+		IScheduler master = connect();
 		register(master, us);
 		return new DistributedIterator(master);
 	}
 
-	private void register(IMaster master, IWorker worker) {
+	private void register(IScheduler master, IWorker worker) {
 		try {
 			fLogger.info("Registering worker reference with master.");
 			fInitialSize = master.remaining();
@@ -70,20 +56,14 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 		}
 	}
 
-	private IMaster connect() {
-		fLogger.info("Contacting master at " + fHost + ":" + fPort + ".");
+	private IScheduler connect() {
 		try {
-			Registry registry = LocateRegistry.getRegistry(fHost, fPort);
-			return (IMaster) registry.lookup(fQueueId);
+			return fClient.lookup("scheduler", IScheduler.class);
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to resolve registry at supplied address/port. "
 					+ "Is the master instance running? Is the queue id right?");
 			throw MiscUtils.nestRuntimeException(ex);
-		} catch (NotBoundException ex) {
-			fLogger.error("Master not bound under expected registry location "
-					+ IMaster.MASTER_ADDRESS + ".");
-			throw MiscUtils.nestRuntimeException(ex);
-		}
+		} 
 	}
 
 	@Override
@@ -98,13 +78,13 @@ public class DistributedSchedulerClient implements ISchedule, IWorker {
 
 	class DistributedIterator implements IScheduleIterator {
 
-		private final IMaster fMaster;
+		private final IScheduler fMaster;
 
 		private int fRemaining;
 
 		private int fPrevious = Integer.MIN_VALUE;
 
-		protected DistributedIterator(IMaster master) {
+		protected DistributedIterator(IScheduler master) {
 			fMaster = master;
 		}
 

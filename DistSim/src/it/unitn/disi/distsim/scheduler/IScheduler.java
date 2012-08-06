@@ -5,9 +5,9 @@ import it.unitn.disi.utils.collections.Pair;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface IMaster extends Remote {
+public interface IScheduler extends Remote {
 	
-	public static final String MASTER_ADDRESS = IMaster.class.getName();
+	public static final String MASTER_ADDRESS = IScheduler.class.getName();
 
 	/**
 	 * Registers a new worker.

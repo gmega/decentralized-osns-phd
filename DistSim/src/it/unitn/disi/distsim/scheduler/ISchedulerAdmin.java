@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 
 import it.unitn.disi.utils.collections.Pair;
 
-public interface IMasterAdmin extends Remote {
+public interface ISchedulerAdmin extends Remote {
 
 	/**
 	 * @return returns a loose snapshot of the currently active workers. Note

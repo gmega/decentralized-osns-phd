@@ -7,7 +7,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import it.unitn.disi.distsim.scheduler.Master;
+import it.unitn.disi.distsim.dataserver.CheckpointManagerJMX;
+import it.unitn.disi.distsim.scheduler.SchedulerJMX;
 import it.unitn.disi.utils.MiscUtils;
 
 import javax.management.MBeanServer;
@@ -44,22 +45,37 @@ public class SimulationControl implements SimulationControlMBean {
 
 	@XStreamOmitField
 	private final File fConfig;
+	
+	@XStreamOmitField
+	private final RMIObjectManager fObjectManager;
 
 	@XStreamAlias("registry-port")
 	private final int fRegistryPort;
+	
+	@XStreamAlias("config-folder")
+	private File fConfigFolder;
 
 	@XStreamImplicit(itemFieldName = "simulation")
 	private List<String> fSimulationList = new ArrayList<String>();
 
 	public SimulationControl(File master, int registryPort) {
 		fMasterFolder = master;
+		fConfigFolder = new File(master, "config");
 		fRegistryPort = registryPort;
+		fObjectManager = new RMIObjectManager(fRegistryPort, false);
 		fConfig = new File(fMasterFolder, "config.xml");
 	}
 
 	public synchronized void initialize(MBeanServer server) throws Exception {
 		fServer = server;
 		fStream = xstreamSetup();
+		
+		fObjectManager.start();
+		
+		if (!fConfigFolder.exists()) {
+			fConfigFolder.mkdir();
+		}
+		
 		Iterator<String> it = fSimulationList.iterator();
 		while (it.hasNext()) {
 			String id = it.next();
@@ -80,8 +96,7 @@ public class SimulationControl implements SimulationControlMBean {
 
 			@SuppressWarnings("unchecked")
 			List<Service> services = (List<Service>) fStream.fromXML(config);
-
-			registerServices(services);
+			activateAndRegister(services);
 		}
 
 		save();
@@ -95,13 +110,14 @@ public class SimulationControl implements SimulationControlMBean {
 		xstream.omitField(NotificationBroadcasterSupport.class, "listenerList");
 		
 		xstream.processAnnotations(Service.class);
-		xstream.processAnnotations(Master.class);
+		xstream.processAnnotations(SchedulerJMX.class);
 		
 		return xstream;
 	}
 
-	private void registerServices(List<Service> services) throws Exception {
+	private void activateAndRegister(List<Service> services) throws Exception {
 		for (Service service : services) {
+			service.bean.setControl(this);
 			fServer.registerMBean(service.bean, new ObjectName(
 					service.serviceName));
 		}
@@ -135,6 +151,17 @@ public class SimulationControl implements SimulationControlMBean {
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
+	}
+	
+	public static String name(String...nameparts) {
+		StringBuffer buffer = new StringBuffer();
+		for (String namepart : nameparts) {
+			buffer.append(namepart);
+			buffer.append("/");
+		}
+		
+		buffer.deleteCharAt(buffer.length() - 1);
+		return buffer.toString();
 	}
 
 	private boolean exists(String id) {
@@ -174,8 +201,8 @@ public class SimulationControl implements SimulationControlMBean {
 	private List<Service> createServices(String id) {
 		ArrayList<Service> services = new ArrayList<Service>();
 		try {
-			services.add(createService(id, "scheduler", new Master(id,
-					fRegistryPort)));
+			services.add(createService(id, "scheduler", new SchedulerJMX(id, this)));
+			services.add(createService(id, "scheduler", new CheckpointManagerJMX(id)));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -184,10 +211,14 @@ public class SimulationControl implements SimulationControlMBean {
 	}
 
 	private Service createService(String simId, String serviceid,
-			ServiceMBean master) {
+			ManagedService master) {
 		String oName = "simulations:type=" + simId + ",group=service,name="
 				+ serviceid;
 		return new Service(oName, master);
+	}
+	
+	public RMIObjectManager objectManager() {
+		return fObjectManager;
 	}
 
 	@Override
@@ -202,11 +233,16 @@ public class SimulationControl implements SimulationControlMBean {
 		public final String serviceName;
 
 		@XStreamAlias("config")
-		public final ServiceMBean bean;
+		public final ManagedService bean;
 
-		public Service(String name, ServiceMBean bean) {
+		public Service(String name, ManagedService bean) {
 			this.bean = bean;
 			this.serviceName = name;
 		}
+	}
+
+	@Override
+	public File getConfigFolder() {
+		return fConfigFolder;
 	}
 }
