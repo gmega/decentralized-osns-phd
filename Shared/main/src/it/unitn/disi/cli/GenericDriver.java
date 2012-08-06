@@ -1,6 +1,7 @@
 package it.unitn.disi.cli;
 
 import it.unitn.disi.utils.HashMapResolver;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.exception.ParseException;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
@@ -129,6 +130,8 @@ public class GenericDriver {
 				StreamProvider provider = new StreamProvider(fIStreams,
 						fOStreams, processor.getClass(), fGZipped);
 				((IMultiTransformer) processor).execute(provider);
+			} else if (processor instanceof Runnable) {
+				((Runnable) processor).run();
 			} else {
 				System.err.println("Class " + processor.getClass().getName()
 						+ " is not a valid processor.");
@@ -174,7 +177,8 @@ public class GenericDriver {
 
 		Manifest mf = ((JarURLConnection) conn).getManifest();
 		Attributes attributes = mf.getMainAttributes();
-		System.err.println("-- SVN Revision: " + attributes.getValue("Revision"));
+		System.err.println("-- SVN Revision: "
+				+ attributes.getValue("Revision"));
 		System.err.println("-- Build Date: " + attributes.getValue("Date"));
 	}
 
@@ -199,13 +203,18 @@ public class GenericDriver {
 
 		// And props from file, if there's a file.
 		if (input != null) {
-			BufferedReader reader = new BufferedReader(new FileReader(input));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				if (line.startsWith("#")) {
-					continue;
+			BufferedReader reader = null;
+			try {
+				reader = new BufferedReader(new FileReader(input));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					if (line.startsWith("#")) {
+						continue;
+					}
+					parseAdd(line, props);
 				}
-				parseAdd(line, props);
+			} finally {
+				MiscUtils.safeClose(reader, false);
 			}
 		}
 

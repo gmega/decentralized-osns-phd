@@ -1,11 +1,9 @@
 package it.unitn.disi.utils;
 
 import it.unitn.disi.utils.collections.IExchanger;
-import it.unitn.disi.utils.streams.EOFException;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 

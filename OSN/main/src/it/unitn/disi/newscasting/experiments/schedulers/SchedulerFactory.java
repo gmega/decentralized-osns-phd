@@ -1,6 +1,6 @@
 package it.unitn.disi.newscasting.experiments.schedulers;
 
-import it.unitn.disi.distsim.scheduler.DistributedSchedulerClient;
+import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IDListScheduler;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.IntervalScheduler;
@@ -72,7 +72,7 @@ public class SchedulerFactory {
 
 		case DISTRIBUTED:
 			base = ObjectCreator.createInstance(
-					DistributedSchedulerClient.class, prefix, resolver);
+					SchedulerClient.class, prefix, resolver);
 			break;
 
 		default:
