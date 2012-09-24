@@ -86,7 +86,7 @@ public class TestTCExperiment {
 			processes[i] = createProcess(i, State.up, intervals);
 		}
 
-		TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
+		ComplexTCE tce = new ComplexTCE(
 				graph, 0);
 
 		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();

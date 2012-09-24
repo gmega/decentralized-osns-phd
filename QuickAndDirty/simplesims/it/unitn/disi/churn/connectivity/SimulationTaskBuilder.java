@@ -25,7 +25,7 @@ public class SimulationTaskBuilder {
 
 	private final int fRoot;
 
-	private TemporalConnectivityEstimator fLast;
+	private ComplexTCE fLast;
 
 	private IProcess[] fProcesses;
 
@@ -45,8 +45,8 @@ public class SimulationTaskBuilder {
 
 	public SimulationTaskBuilder addConnectivitySimulation(int source,
 			int[] fixedNodes, ActivationSampler sampler) {
-		final TemporalConnectivityEstimator tce = new TemporalConnectivityEstimator(
-				fGraph, source, fixedNodes, sampler);
+		final ComplexTCE tce = new ComplexTCE(fGraph, source, fixedNodes,
+				sampler);
 		fLast = tce;
 		addSim(fLast);
 
@@ -71,6 +71,26 @@ public class SimulationTaskBuilder {
 			@Override
 			public Double getMetric(int i) {
 				return tce.perceivedDelay(i);
+			}
+		});
+
+		return this;
+	}
+
+	public SimulationTaskBuilder addMultiConnectivitySimulation(int source,
+			final int repeats) {
+		final MultiTCE multi = new MultiTCE(fGraph, source, repeats);
+		addSim(multi);
+
+		addMetric(source, new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return "ed";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return multi.reachTime(i);
 			}
 		});
 

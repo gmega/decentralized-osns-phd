@@ -23,8 +23,7 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			double burnin, double period, Experiment experiment, int source,
-			String peerSelector, IndexedNeighborGraph graph, Random random)
-			throws Exception {
+			String peerSelector, IndexedNeighborGraph graph, Random random) {
 
 		IProcess processes[] = new IProcess[graph.size()];
 		for (int i = 0; i < processes.length; i++) {
@@ -33,7 +32,7 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 
 		fProtocols = protocols(graph, random, peerSelector,
 				new CachingTransformer(new LiveTransformer()), processes);
-		
+
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		CyclicProtocolRunner<HFloodSM> cpr = new CyclicProtocolRunner<HFloodSM>(
@@ -45,9 +44,9 @@ public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0.0);
 		bcs.setEventObservers(observers);
 		bcs.schedule(new CyclicSchedulable(period, 1));
-		
+
 		fProtocols[0].markReached(bcs);
-		
+
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(SMMetrics.rdMetric(source, fProtocols));
 

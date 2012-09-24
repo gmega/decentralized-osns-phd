@@ -30,7 +30,7 @@ public class ComponentTracker implements IEventObserver {
 
 	private final TableWriter fWriter;
 
-	private final TemporalConnectivityEstimator fEstimator;
+	private final ComplexTCE fEstimator;
 
 	private final int fId;
 
@@ -45,7 +45,7 @@ public class ComponentTracker implements IEventObserver {
 		}
 	};
 
-	public ComponentTracker(TemporalConnectivityEstimator estimator,
+	public ComponentTracker(ComplexTCE estimator,
 			IndexedNeighborGraph graph, OutputStream oup, int id, int source,
 			int mappedSource) {
 		fGraph = graph;

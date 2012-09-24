@@ -25,7 +25,7 @@ public class ChurnSimulationBuilder extends DiffusionSimulationBuilder {
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			double burnin, double period, Experiment experiment, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random,
-			IProcess[] processes) throws Exception {
+			IProcess[] processes) {
 
 		EDSimulationEngine bcs = new EDSimulationEngine(processes, burnin);
 

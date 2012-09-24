@@ -86,7 +86,7 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, IProcess[] processes) throws Exception {
+			final int source, IProcess[] processes) {
 
 		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();

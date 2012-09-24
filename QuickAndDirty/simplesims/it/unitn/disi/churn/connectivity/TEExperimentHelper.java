@@ -10,6 +10,7 @@ import it.unitn.disi.graph.analysis.LawlerTopK;
 import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.SumAccumulation;
@@ -227,12 +228,15 @@ public class TEExperimentHelper {
 				continue;
 			}
 
-			@SuppressWarnings("unchecked")
-			Pair<Integer, List<INodeMetric<Double>>>[] results = (Pair<Integer, List<INodeMetric<Double>>>[]) taskResult;
+			SimulationTask task = (SimulationTask) taskResult;
+			int[] tSources = task.sources();
 
-			for (Pair<Integer, List<INodeMetric<Double>>> result : results) {
-				for (INodeMetric<Double> networkMetric : result.b) {
-					addMatchingMetric(metric[result.a - sourceStart],
+			for (int source : tSources) {
+				@SuppressWarnings("unchecked")
+				List<INodeMetric<Double>> result = (List<INodeMetric<Double>>) task
+						.metric(source);
+				for (INodeMetric<Double> networkMetric : result) {
+					addMatchingMetric(metric[source - sourceStart],
 							networkMetric, graph.size());
 				}
 			}
@@ -241,14 +245,36 @@ public class TEExperimentHelper {
 		return metric;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<INodeMetric<Double>> bruteForceSimulateMulti(IndexedNeighborGraph graph, int root,
+			int source, double[] li, double[] di, int[] ids) throws Exception {
+		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids, root);
+		stb.addMultiConnectivitySimulation(source, fRepetitions);
+		stb.createProcesses(li, di, fYaoConf);
+		SimulationTask task = stb.simulationTask(fBurnin);
+		
+		task.call();
+		
+		return (List<INodeMetric<Double>>) task.metric(source);
+	}
+
 	private void addMatchingMetric(List<SumAccumulation> list,
 			INodeMetric<Double> networkMetric, int length) {
-		for (SumAccumulation aggregate : list) {
-			if (aggregate.id().equals(networkMetric.id())) {
-				aggregate.add(networkMetric);
+
+		SumAccumulation aggregate = null;
+
+		for (SumAccumulation candidate : list) {
+			if (candidate.id().equals(networkMetric.id())) {
+				aggregate = candidate;
 			}
 		}
-		list.add(new SumAccumulation(networkMetric, length));
+
+		if (aggregate == null) {
+			aggregate = new SumAccumulation(networkMetric.id(), length);
+			list.add(aggregate);
+		}
+
+		aggregate.add(networkMetric);
 	}
 
 	/**
