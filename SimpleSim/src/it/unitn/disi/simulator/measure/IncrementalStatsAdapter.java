@@ -12,16 +12,16 @@ public class IncrementalStatsAdapter implements IValueObserver {
 	}
 
 	@Override
-	public void observe(double value) {
+	public synchronized void observe(double value) {
 		fStats.add(value);
 	}
 
-	public IncrementalStats getStats() {
+	public synchronized IncrementalStats getStats() {
 		return fStats;
 	}
 
 	@Override
-	public String toString() {
+	public synchronized String toString() {
 		return fStats.toString();
 	}
 	

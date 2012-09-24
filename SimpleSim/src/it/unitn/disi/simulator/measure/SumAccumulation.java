@@ -2,6 +2,8 @@ package it.unitn.disi.simulator.measure;
 
 public class SumAccumulation implements IMetricAccumulator<Double> {
 
+	private static final long serialVersionUID = 1L;
+
 	private double[] fMetric;
 
 	private Object fId;

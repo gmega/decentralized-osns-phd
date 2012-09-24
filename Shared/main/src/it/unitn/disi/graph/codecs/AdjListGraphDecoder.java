@@ -11,7 +11,7 @@ import java.util.StringTokenizer;
 public class AdjListGraphDecoder implements ResettableGraphDecoder {
 
 	private InputStream fIs;
-	
+
 	private LineNumberReader fReader;
 
 	private StringTokenizer fTokenizer;
@@ -45,10 +45,12 @@ public class AdjListGraphDecoder implements ResettableGraphDecoder {
 				continue;
 			}
 			fTokenizer = new StringTokenizer(line);
-			fSource = Integer.parseInt(fTokenizer.nextToken());
-		} while (!fTokenizer.hasMoreTokens());
+			if (fTokenizer.hasMoreElements()) {
+				fSource = Integer.parseInt(fTokenizer.nextToken());
+			}
+		} while (!fTokenizer.hasMoreElements());
 	}
-	
+
 	public void realign() throws IOException {
 		// We cannot recover from arbitrary realignments.
 		advanceLine();
@@ -74,7 +76,7 @@ public class AdjListGraphDecoder implements ResettableGraphDecoder {
 		fIs.reset();
 		init();
 	}
-	
+
 	private void init() throws IOException {
 		fReader = new LineNumberReader(new BufferedReader(
 				new InputStreamReader(fIs)));

@@ -1,11 +1,14 @@
 package it.unitn.disi.simulator.measure;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 
 @SuppressWarnings("rawtypes")
-public class MetricsCollector {
+public class MetricsCollector implements Serializable{
 
+	private static final long serialVersionUID = 1L;
+	
 	private final HashMap<Object, IMetricAccumulator> fMetrics = new HashMap<Object, IMetricAccumulator>();
 
 	public MetricsCollector(IMetricAccumulator... accumulators) {

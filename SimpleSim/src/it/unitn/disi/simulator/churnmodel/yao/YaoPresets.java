@@ -26,7 +26,8 @@ public class YaoPresets {
 	// Preset average generators.
 	// ------------------------------------------------------------------------
 
-	private static final IDistribution fUniform = new UniformDistribution(new Random());
+	private static final IDistribution fUniform = new UniformDistribution(
+			new Random());
 
 	private static final NamedF1<IDistribution, IAverageGenerator> YAO_GENERATOR = new NamedF1<IDistribution, IAverageGenerator>(
 			"yao", null) {
@@ -84,8 +85,33 @@ public class YaoPresets {
 		}
 	};
 
+	// -- Totally exponential
+	private static final NamedF1<IDistribution, IDistributionGenerator> TE_SYSTEM = new NamedF1<IDistribution, IDistributionGenerator>(
+			"TE", null) {
+		{
+			ret(new IDistributionGenerator() {
+
+				@Override
+				public IDistribution uptimeDistribution(double li) {
+					return new Exponential(1.0 / li, fUniform);
+				}
+
+				@Override
+				public IDistribution downtimeDistribution(double di) {
+					return new Exponential(2.0 / di, fUniform);
+				}
+
+				@Override
+				public String id() {
+					return "TE";
+				}
+
+			});
+		}
+	};
+
 	private static final NamedF1<IDistribution, IDistributionGenerator>[] modes = new NamedF1[] {
-			HEAVY_TAILED, VERY_HEAVY_TAILED, EXPONENTIAL_SYSTEM };
+			HEAVY_TAILED, VERY_HEAVY_TAILED, EXPONENTIAL_SYSTEM, TE_SYSTEM };
 
 	public static IAverageGenerator averageGenerator(String id, Random r) {
 		for (NamedF1<IDistribution, IAverageGenerator> generator : generators) {
@@ -105,7 +131,7 @@ public class YaoPresets {
 		}
 		return null;
 	}
-	
+
 	// ------------------------------------------------------------------------
 	// Configuration machinery.
 	// ------------------------------------------------------------------------
@@ -124,20 +150,20 @@ public class YaoPresets {
 		}
 
 	}
-	
+
 	public static interface IAverageGenerator {
 		double nextLI();
-	
+
 		double nextDI();
-	
+
 		String id();
 	}
-	
+
 	public static interface IDistributionGenerator extends Cloneable {
 		IDistribution uptimeDistribution(double li);
-	
+
 		IDistribution downtimeDistribution(double di);
-	
+
 		String id();
 	}
 }

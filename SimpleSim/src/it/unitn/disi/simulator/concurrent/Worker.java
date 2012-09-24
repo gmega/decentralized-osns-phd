@@ -46,7 +46,7 @@ public abstract class Worker implements Runnable, Application {
 	 * What burnin value to use.
 	 */
 	@Attribute("burnin")
-	private double fBurnin;
+	protected double fBurnin;
 
 	private final Lock fMutex;
 
@@ -85,6 +85,7 @@ public abstract class Worker implements Runnable, Application {
 	@Override
 	public void run() {
 		try {
+			initialize();
 			fCheckpoint.start();
 			this.run0();
 		} catch (Exception ex) {
@@ -105,7 +106,7 @@ public abstract class Worker implements Runnable, Application {
 	}
 
 	private Object runTasks(final int id, final Object data) {
-		newTask(id);
+		newTask(id, data);
 
 		fExecutor.start(label(id, data), fRepeat);
 
@@ -172,13 +173,13 @@ public abstract class Worker implements Runnable, Application {
 		return lab.toString();
 	}
 
-	private void newTask(int id) {
+	private void newTask(int id, Object data) {
 		fMutex.lock();
 
 		fState = new SimulationState();
 		fState.taskId = id;
 		fState.iteration = 0;
-		fState.aggregate = resultAggregate(id);
+		fState.aggregate = resultAggregate(id, data);
 
 		fMutex.unlock();
 	}
@@ -209,13 +210,18 @@ public abstract class Worker implements Runnable, Application {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * Called before anything gets done.
+	 */
+	protected abstract void initialize() throws Exception;
+
+	/**
 	 * Loads the data corresponding to a given experiment.
 	 * 
 	 * @param row
 	 *            experiment id.
 	 * @return the data, or handle to data required by the experiment.
 	 */
-	protected abstract Object load(Integer row);
+	protected abstract Object load(Integer row) throws Exception;
 
 	/**
 	 * Creates a {@link SimulationTask} for a given experiment.
@@ -237,7 +243,7 @@ public abstract class Worker implements Runnable, Application {
 	 * @param id
 	 * @return
 	 */
-	protected abstract Serializable resultAggregate(int id);
+	protected abstract Serializable resultAggregate(int id, Object data);
 
 	protected abstract void aggregate(Object aggregate, int i,
 			SimulationTask task);

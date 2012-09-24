@@ -1,6 +1,8 @@
 package it.unitn.disi.simulator.measure;
 
-public interface IMetricAccumulator<T> extends INodeMetric<T> {
+import java.io.Serializable;
+
+public interface IMetricAccumulator<T> extends INodeMetric<T>, Serializable {
 
 	public abstract void add(INodeMetric<T> metric);
 

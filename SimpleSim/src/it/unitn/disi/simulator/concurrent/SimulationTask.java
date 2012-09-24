@@ -40,9 +40,13 @@ public class SimulationTask implements Callable<SimulationTask> {
 		fId = id;
 		fParameters = parameters;
 
-		fSources = new int[fMetrics.length];
-		for (int i = 0; i < metrics.length; i++) {
-			fSources[i] = fMetrics[i].a;
+		if (metrics != null) {
+			fSources = new int[fMetrics.length];
+			for (int i = 0; i < metrics.length; i++) {
+				fSources[i] = fMetrics[i].a;
+			}
+		} else {
+			fSources = null;
 		}
 	}
 
