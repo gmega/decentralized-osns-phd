@@ -2,6 +2,7 @@
 
 	<property name="src" location="src" />
 	<property name="build" location="bin" />
+	<property name="config" location="config" />
 	<property name="lib.path" location="../Utilities/lib" />
 	<property name="output.lib.path" location="../Utilities/lib-gen" />
 
@@ -22,6 +23,7 @@
 	<target name="build-distsim-jar" depends="compile-distsim">
 		<jar destfile="${output.lib.path}/distributed-sim.jar">
 			<fileset dir="${build}" />
+			<fileset dir="${config}" />
 			<manifest>
 				<attribute name="Built-By" value="Giuliano Mega" />
 				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar ext-1.1.1.jar analyzer-j.jar peersim.jar peersim-extras.jar jep-2.4.1.jar" />

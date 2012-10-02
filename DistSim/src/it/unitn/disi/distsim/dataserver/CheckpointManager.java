@@ -8,14 +8,13 @@ import org.apache.log4j.Logger;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
-import it.unitn.disi.distsim.control.ManagedService;
 import it.unitn.disi.distsim.control.SimulationControl;
 
 @XStreamAlias("checkpoint-manager")
-public class CheckpointManagerJMX implements ManagedService {
+public class CheckpointManager implements CheckpointManagerMBean {
 
 	private static final Logger fLogger = Logger
-			.getLogger(CheckpointManagerJMX.class);
+			.getLogger(CheckpointManager.class);
 
 	@XStreamAlias("sim-id")
 	private String fSimId;
@@ -26,7 +25,7 @@ public class CheckpointManagerJMX implements ManagedService {
 	@XStreamOmitField
 	private DataManagerImpl fManager;
 	
-	public CheckpointManagerJMX(String id) {
+	public CheckpointManager(String id) {
 		this.fSimId = id;
 	}
 

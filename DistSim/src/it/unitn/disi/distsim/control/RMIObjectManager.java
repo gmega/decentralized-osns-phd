@@ -104,7 +104,12 @@ public class RMIObjectManager implements ServiceMBean {
 	@Override
 	public synchronized void stop() {
 		checkRunning();
-		Runtime.getRuntime().removeShutdownHook(fShutdown);
+		
+		try {
+			Runtime.getRuntime().removeShutdownHook(fShutdown);
+		} catch (IllegalStateException ex) {
+			// Means shutdown is in progress.
+		}
 
 		Iterator<String> it = fKeys.keySet().iterator();
 		while (it.hasNext()) {

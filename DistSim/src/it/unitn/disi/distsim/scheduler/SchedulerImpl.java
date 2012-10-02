@@ -75,6 +75,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	}
 
 	public void start() {
+		fOther.info("Worker control thread started.");
 		fController.start();
 	}
 

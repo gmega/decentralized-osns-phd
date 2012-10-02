@@ -3,7 +3,6 @@ package it.unitn.disi.distsim.control;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
-import java.rmi.registry.LocateRegistry;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -15,6 +14,9 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import peersim.config.AutoConfig;
+
+@AutoConfig
 public class SimControlCLI {
 	
 	@Option(name = "-f", aliases = { "--folder" }, usage = "Master folder for this controller.", required = true)
@@ -36,18 +38,20 @@ public class SimControlCLI {
 		}
 
 		Logger logger = log4jInit();
-		
 		printPortInfo(logger);
-
 		serverInit(logger);
-		
 		logger.info("Server is up.");
+		
+		// Holds this thread forever.
+		while(true) {
+			synchronized(this) {
+				this.wait();
+			}
+		}
 	}
 
 	private void serverInit(Logger logger) throws Exception {
-		logger.info("Starting RMI service registry.");
-		LocateRegistry.createRegistry(fPort);
-
+		
 		logger.info("Registering JMX services.");
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		ObjectName name = new ObjectName("simulations:type=SimulationControl");

@@ -24,7 +24,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 @XStreamAlias("scheduler")
-public class SchedulerJMX extends NotificationBroadcasterSupport implements
+public class Scheduler extends NotificationBroadcasterSupport implements
 		SchedulerMBean, ManagedService {
 
 	@XStreamOmitField
@@ -51,9 +51,13 @@ public class SchedulerJMX extends NotificationBroadcasterSupport implements
 	@XStreamOmitField
 	private SchedulerImpl fMaster = null;
 
-	public SchedulerJMX(String simId, SimulationControl parent) {
+	public Scheduler(String simId, SimulationControl parent) {
 		fSimId = simId;
 		fControl = parent;
+	}
+	
+	private Scheduler() {
+		super();
 	}
 
 	@Override
@@ -71,6 +75,8 @@ public class SchedulerJMX extends NotificationBroadcasterSupport implements
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
+		
+		fMaster.start();
 
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fSimId
@@ -162,7 +168,7 @@ public class SchedulerJMX extends NotificationBroadcasterSupport implements
 	}
 
 	private String logName(String string) {
-		return SchedulerJMX.class.getName() + "." + fSimId + "." + string;
+		return Scheduler.class.getName() + "." + fSimId + "." + string;
 	}
 
 	@Override

@@ -11,7 +11,6 @@ import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
 
-
 public class SchedulerClient implements ISchedule, IWorker {
 
 	private static final Logger fLogger = Logger

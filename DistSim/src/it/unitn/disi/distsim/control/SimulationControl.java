@@ -1,14 +1,16 @@
 package it.unitn.disi.distsim.control;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import it.unitn.disi.distsim.dataserver.CheckpointManagerJMX;
-import it.unitn.disi.distsim.scheduler.SchedulerJMX;
+import it.unitn.disi.distsim.dataserver.CheckpointManager;
+import it.unitn.disi.distsim.scheduler.Scheduler;
+import it.unitn.disi.distsim.xstream.NotificationBroadcastConverter;
 import it.unitn.disi.utils.MiscUtils;
 
 import javax.management.MBeanServer;
@@ -34,29 +36,21 @@ public class SimulationControl implements SimulationControlMBean {
 	private static final Logger fLogger = Logger
 			.getLogger(SimulationControl.class);
 
-	@XStreamOmitField
 	private XStream fStream;
 
-	@XStreamOmitField
 	private MBeanServer fServer;
 
-	@XStreamOmitField
 	private final File fMasterFolder;
 
-	@XStreamOmitField
 	private final File fConfig;
-	
-	@XStreamOmitField
+
 	private final RMIObjectManager fObjectManager;
 
-	@XStreamAlias("registry-port")
 	private final int fRegistryPort;
-	
-	@XStreamAlias("config-folder")
+
 	private File fConfigFolder;
 
-	@XStreamImplicit(itemFieldName = "simulation")
-	private List<String> fSimulationList = new ArrayList<String>();
+	private List<String> fSimulationList;
 
 	public SimulationControl(File master, int registryPort) {
 		fMasterFolder = master;
@@ -69,13 +63,15 @@ public class SimulationControl implements SimulationControlMBean {
 	public synchronized void initialize(MBeanServer server) throws Exception {
 		fServer = server;
 		fStream = xstreamSetup();
-		
+
 		fObjectManager.start();
-		
+
 		if (!fConfigFolder.exists()) {
 			fConfigFolder.mkdir();
 		}
-		
+
+		load();
+
 		Iterator<String> it = fSimulationList.iterator();
 		while (it.hasNext()) {
 			String id = it.next();
@@ -104,14 +100,18 @@ public class SimulationControl implements SimulationControlMBean {
 
 	private XStream xstreamSetup() {
 		XStream xstream = new XStream(new DomDriver());
-		
+
 		xstream.omitField(NotificationBroadcasterSupport.class, "notifInfo");
 		xstream.omitField(NotificationBroadcasterSupport.class, "executor");
 		xstream.omitField(NotificationBroadcasterSupport.class, "listenerList");
-		
+
+		xstream.registerConverter(new NotificationBroadcastConverter(xstream
+				.getMapper(), xstream.getReflectionProvider()));
+
 		xstream.processAnnotations(Service.class);
-		xstream.processAnnotations(SchedulerJMX.class);
-		
+		xstream.processAnnotations(Scheduler.class);
+		xstream.processAnnotations(CheckpointManager.class);
+
 		return xstream;
 	}
 
@@ -143,40 +143,55 @@ public class SimulationControl implements SimulationControlMBean {
 			createFolder(id);
 
 			List<Service> services = createServices(id);
+			activateAndRegister(services);
 			save(servicesFile(id), services);
-
 			fSimulationList.add(id);
 			save();
 
-		} catch (IOException ex) {
+		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
-	
-	public static String name(String...nameparts) {
+
+	public static String name(String... nameparts) {
 		StringBuffer buffer = new StringBuffer();
 		for (String namepart : nameparts) {
 			buffer.append(namepart);
 			buffer.append("/");
 		}
-		
+
 		buffer.deleteCharAt(buffer.length() - 1);
 		return buffer.toString();
 	}
 
 	private boolean exists(String id) {
-		for(String simulation : fSimulationList) {
+		for (String simulation : fSimulationList) {
 			if (id.equals(simulation.equals(id))) {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
 	private void save() throws IOException {
 		save(fConfig, fSimulationList);
 		fLogger.info("Simulation list saved.");
+	}
+
+	private void load() throws IOException {
+		if (!fConfig.exists()) {
+			fSimulationList = new ArrayList<String>();
+			return;
+		}
+
+		FileInputStream stream = null;
+		try {
+			stream = new FileInputStream(fConfig);
+			fSimulationList = (List<String>) fStream.fromXML(stream);
+		} finally {
+			MiscUtils.safeClose(stream, true);
+		}
 	}
 
 	private File createFolder(String id) throws IOException {
@@ -201,8 +216,9 @@ public class SimulationControl implements SimulationControlMBean {
 	private List<Service> createServices(String id) {
 		ArrayList<Service> services = new ArrayList<Service>();
 		try {
-			services.add(createService(id, "scheduler", new SchedulerJMX(id, this)));
-			services.add(createService(id, "scheduler", new CheckpointManagerJMX(id)));
+			services.add(createService(id, "scheduler", new Scheduler(id, this)));
+			services.add(createService(id, "checkpoint", new CheckpointManager(
+					id)));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -216,7 +232,7 @@ public class SimulationControl implements SimulationControlMBean {
 				+ serviceid;
 		return new Service(oName, master);
 	}
-	
+
 	public RMIObjectManager objectManager() {
 		return fObjectManager;
 	}
