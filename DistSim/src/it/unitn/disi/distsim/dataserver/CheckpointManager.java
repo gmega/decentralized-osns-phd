@@ -19,12 +19,12 @@ public class CheckpointManager implements CheckpointManagerMBean {
 	@XStreamAlias("sim-id")
 	private String fSimId;
 
+	@XStreamAlias("autostart")
+	private boolean fRunning;
+
 	@XStreamOmitField
 	private volatile SimulationControl fParent;
 
-	@XStreamOmitField
-	private DataManagerImpl fManager;
-	
 	public CheckpointManager(String id) {
 		this.fSimId = id;
 	}
@@ -36,6 +36,7 @@ public class CheckpointManager implements CheckpointManagerMBean {
 		try {
 			fParent.objectManager().publish(mgr,
 					fParent.name(fSimId, "datamgr"));
+			fRunning = true;
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to start checkpoint manager.", ex);
 		}
@@ -52,17 +53,24 @@ public class CheckpointManager implements CheckpointManagerMBean {
 
 	@Override
 	public synchronized void stop() {
-		fParent.objectManager().remove(fParent.name(fSimId, "chkpmgr"));
+		fParent.objectManager().remove(
+				SimulationControl.name(fSimId, "chkpmgr"));
+		fRunning = false;
 	}
 
 	@Override
 	public synchronized boolean isRunning() {
-		return fManager != null;
+		return fRunning;
 	}
 
 	@Override
 	public synchronized void setControl(SimulationControl parent) {
 		fParent = parent;
+	}
+
+	@Override
+	public boolean shouldAutoStart() {
+		return fRunning;
 	}
 
 }

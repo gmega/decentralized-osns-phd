@@ -48,7 +48,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	@Attribute(value = "skipmetrics", defaultValue = "false")
 	private boolean fSkipMetrics;
-	
+
 	private BitSet fCloudBitmap;
 
 	// -------------------------------------------------------------------------
@@ -63,7 +63,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
-				"id", "source", "target", "ttc", "pl", "ttcloud");
+				"id", "source", "target", "ed", "rd", "edcloud");
 
 		try {
 			IScheduleIterator schedule = this.iterator();
@@ -80,12 +80,24 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int source = MiscUtils.indexOf(ids,
 						Integer.parseInt(e.attributes.get("node")));
 
+				long startTime = System.nanoTime();
 				List<? extends INodeMetric<?>> metric = simHelper()
 						.bruteForceSimulate(e.toString(), graph, e.root,
 								source, e.lis, e.dis, ids, cloudNodes, false,
 								fCloudSims, fMonitorClusters);
+				System.err
+						.println("PERF: O " + (System.nanoTime() - startTime));
 
 				printResults(e.root, source, metric, writer, ids);
+
+				startTime = System.nanoTime();
+				metric = simHelper().bruteForceSimulateMulti(graph, e.root,
+						source, e.lis, e.dis, ids);
+				System.err
+						.println("PERF: N " + (System.nanoTime() - startTime));
+
+				printResults(e.root, source, metric, writer, ids);
+
 			}
 		} finally {
 			shutdown();
@@ -172,9 +184,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 			writer.set("id", root);
 			writer.set("source", ids[source]);
 			writer.set("target", ids[i]);
-			writer.set("ttc", ed.getMetric(i) / fRepeat);
-			writer.set("ttcloud", cloud.getMetric(i) / fRepeat);
-			writer.set("pl", rd.getMetric(i) / fRepeat);
+			writer.set("rd", rd != null ? rd.getMetric(i) / fRepeat : 0);
+			writer.set("edcloud", cloud.getMetric(i) / fRepeat);
+			writer.set("ed", ed.getMetric(i) / fRepeat);
 			writer.emmitRow();
 		}
 	}

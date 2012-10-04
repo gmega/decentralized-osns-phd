@@ -44,15 +44,14 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 
 	private volatile int fRemaining;
 
-	public SchedulerImpl(ISchedule schedule, TableWriter writeLog,
-			TableReader recover) throws IOException {
-		this(schedule, recover, writeLog, Logger.getLogger(SchedulerImpl.class
-				.getName() + ".assignment"), Logger.getLogger(SchedulerImpl.class));
+	public SchedulerImpl(ISchedule schedule, TableWriter writeLog) throws IOException {
+		this(schedule, writeLog, Logger.getLogger(SchedulerImpl.class
+				.getName() + ".assignment"), Logger
+				.getLogger(SchedulerImpl.class));
 	}
 
-	public SchedulerImpl(ISchedule schedule, TableReader recover,
-			TableWriter writeLog, Logger assignment, Logger other)
-			throws IOException {
+	public SchedulerImpl(ISchedule schedule, TableWriter writeLog,
+			Logger assignment, Logger other) throws IOException {
 		fExperiments = new ExperimentEntry[schedule.size()];
 		fRemaining = schedule.size();
 		IScheduleIterator iterator = schedule.iterator();
@@ -62,10 +61,6 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 						(Integer) iterator.nextIfAvailable());
 			}
 			Arrays.sort(fExperiments);
-		}
-
-		if (recover != null) {
-			replayLog(recover);
 		}
 
 		fController = new Thread(new WorkerControl(POLLING_INTERVAL));
@@ -88,7 +83,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 		}
 	}
 
-	private void replayLog(TableReader log) throws IOException {
+	public void replayLog(TableReader log) throws IOException {
 		fOther.info("Replaying experiment log file...");
 		int done = 0;
 		while (log.hasNext()) {
@@ -166,10 +161,9 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 		}
 	}
 
-	protected void deadWorker(WorkerEntry entry) {
-		fOther.warn("Worker "
-				+ entry.id
-				+ " has died. Now checking if it had any experiments assigned to it.");
+	protected void deadWorker(RemoteException ex, WorkerEntry entry) {
+		fOther.warn("Worker " + entry.id + " has died (" + ex.getMessage()
+				+ "). Now checking if it had any experiments assigned to it.");
 		fWorkers.remove(entry.id);
 		synchronized (fExperiments) {
 			for (ExperimentEntry exp : fExperiments) {
@@ -326,7 +320,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 						// Worker presumed dead.
 						// XXX maybe check exception type to see
 						// if that's actually the case?
-						deadWorker(entry);
+						deadWorker(ex, entry);
 					}
 				}
 

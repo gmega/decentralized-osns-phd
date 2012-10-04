@@ -246,15 +246,17 @@ public class TEExperimentHelper {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<INodeMetric<Double>> bruteForceSimulateMulti(IndexedNeighborGraph graph, int root,
-			int source, double[] li, double[] di, int[] ids) throws Exception {
+	public List<INodeMetric<Double>> bruteForceSimulateMulti(
+			IndexedNeighborGraph graph, int root, int source, double[] li,
+			double[] di, int[] ids) throws Exception {
 		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids, root);
-		stb.addMultiConnectivitySimulation(source, fRepetitions);
+		stb.addMultiConnectivitySimulation(source, fRepetitions,
+				new SumAccumulation("ed", graph.size()));
 		stb.createProcesses(li, di, fYaoConf);
 		SimulationTask task = stb.simulationTask(fBurnin);
-		
+
 		task.call();
-		
+
 		return (List<INodeMetric<Double>>) task.metric(source);
 	}
 
@@ -332,7 +334,14 @@ public class TEExperimentHelper {
 			int k, int[] ids) throws Exception {
 
 		ITopKEstimator tpk = estimator.call(graph, w);
+		return topKEstimate(taskString, graph, source, target, lIs, dIs, k,
+				ids, tpk);
+	}
 
+	public Pair<IndexedNeighborGraph, Double> topKEstimate(String taskString,
+			IndexedNeighborGraph graph, int source, int target, double[] lIs,
+			double[] dIs, int k, int[] ids, ITopKEstimator tpk)
+			throws Exception {
 		System.out.println("Source: " + ids[source] + " Target: " + ids[target]
 				+ ".");
 

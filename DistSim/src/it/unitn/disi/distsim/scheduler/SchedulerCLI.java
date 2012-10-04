@@ -121,7 +121,10 @@ public class SchedulerCLI {
 		
 		SchedulerImpl master = new SchedulerImpl(scheduler, new TableWriter(new PrintWriter(
 				new FileWriter(fOutputLog, append)), !append, "experiment",
-				"status"), reader);
+				"status"));
+		if (reader != null) {
+			master.replayLog(reader);
+		}
 		mgr.publish(master, fQueueId);
 		master.start();
 	}

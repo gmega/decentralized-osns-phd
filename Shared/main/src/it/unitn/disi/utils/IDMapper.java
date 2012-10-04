@@ -27,7 +27,7 @@ public interface IDMapper {
 		}
 
 	};
-
+	
 	/**
 	 * @return the remapped ID.
 	 * @throws NoSuchElementException

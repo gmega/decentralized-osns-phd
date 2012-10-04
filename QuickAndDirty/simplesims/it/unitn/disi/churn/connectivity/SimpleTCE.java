@@ -10,8 +10,7 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import java.util.Arrays;
 
 /**
- * Fast, single-source temporal connectivity experiment. Supports special
- * "cloud" nodes that are treated as always up.
+ * Fast, single-source temporal connectivity experiment. 
  * 
  * @author giuliano
  */
@@ -107,9 +106,6 @@ public class SimpleTCE implements IEventObserver {
 	}
 
 	protected void reached(int source, int node, ISimulationEngine engine) {
-		if (node == 4) {
-			System.out.println("RF:" + source);
-		}
 		fReached[node] = engine.clock().time();
 		fReachedCount++;
 	}

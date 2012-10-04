@@ -14,7 +14,8 @@ public class AssignmentReader extends SequentialAttributeReader<Object> {
 
 		Assignment assignment = new Assignment(ids.length);
 		for (int i = 0; !rootChanged(); i++) {
-			int node = idOf(Integer.parseInt(get("node")), ids);
+			int node = Integer.parseInt(get("node"));
+			node = ids != null ? idOf(node, ids) : node;
 			assignment.li[node] = Double.parseDouble(get("li"));
 			assignment.di[node] = Double.parseDouble(get("di"));
 			assignment.nodes[i] = node;

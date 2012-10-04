@@ -1,5 +1,7 @@
 package it.unitn.disi.distsim.scheduler;
 
+import java.io.File;
+
 import it.unitn.disi.distsim.control.ServiceMBean;
 
 /**
@@ -19,6 +21,6 @@ public interface SchedulerMBean extends ServiceMBean {
 
 	public String getQueueName();
 
-	public String getReplayLog();
+	public File getReplayLog();
 	
 }

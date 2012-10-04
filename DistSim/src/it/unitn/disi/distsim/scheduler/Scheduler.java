@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 
 import javax.management.AttributeChangeNotification;
@@ -36,17 +37,14 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	@XStreamAlias("sim-id")
 	private volatile String fSimId;
 
-	@XStreamAlias("read-log")
-	private String fReadLog;
-
-	@XStreamAlias("write-log")
-	private String fWriteLog;
-
 	@XStreamAlias("scheduler-type")
 	private SchedulerType fSchedulerType;
 
 	@XStreamAlias("scheduler-config")
 	private HashMap<String, String> fProperties = new HashMap<String, String>();
+	
+	@XStreamAlias("autostart")
+	private boolean fRunning;
 
 	@XStreamOmitField
 	private SchedulerImpl fMaster = null;
@@ -55,7 +53,8 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		fSimId = simId;
 		fControl = parent;
 	}
-	
+
+	@SuppressWarnings("unused")
 	private Scheduler() {
 		super();
 	}
@@ -65,17 +64,22 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		checkNotRunning();
 
 		try {
-			SchedulerImpl impl = new SchedulerImpl(createSchedule(), replayLog(),
-					writeLog(), Logger.getLogger(logName("assignment")),
-					Logger.getLogger(logName("messages")));
+			TableReader replay = replayLog();
+			SchedulerImpl impl = new SchedulerImpl(createSchedule(),
+					writeLog(), Logger.getLogger(loggerName("assignment")),
+					Logger.getLogger(loggerName("messages")));
+
+			if (replay != null) {
+				impl.replayLog(replay);
+			}
 
 			fMaster = impl;
 			fControl.objectManager().publish(impl,
-					fControl.name(fSimId, "queue"));
+					SimulationControl.name(fSimId, "queue"));
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
-		
+
 		fMaster.start();
 
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
@@ -83,26 +87,25 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 						+ "] started.", "isRunning", "boolean", false, true));
 	}
 
-	private TableWriter writeLog() throws IOException {
-		FileOutputStream writeLog;
-		if (fWriteLog == null) {
-			if (fReadLog != null) {
-				writeLog = new FileOutputStream(new File(fReadLog), true);
-			} else {
-				return null;
-			}
-		} else {
-			writeLog = new FileOutputStream(new File(fWriteLog));
-		}
-
-		return new TableWriter(writeLog, "id", "status");
-	}
-
 	private TableReader replayLog() throws IOException {
-		if (fReadLog != null) {
-			return new TableReader(new FileInputStream(new File(fReadLog)));
+		File replayLog = getReplayLog();
+		if (replayLog.exists()) {
+			return new TableReader(new FileInputStream(replayLog));
 		}
 		return null;
+	}
+
+	private TableWriter writeLog() throws IOException {
+		File replayLog = getReplayLog();
+		boolean append = replayLog.exists();
+		PrintWriter out = new PrintWriter(new FileOutputStream(replayLog,
+				append));
+		TableWriter writer = new TableWriter(out, append, "experiment", "status");
+
+		// Eagerly prints header so we have no problems when reading back file.
+		writer.emmitHeader();
+		
+		return writer;
 	}
 
 	private ISchedule createSchedule() {
@@ -167,18 +170,23 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		return fProperties.toString();
 	}
 
-	private String logName(String string) {
+	private String loggerName(String string) {
 		return Scheduler.class.getName() + "." + fSimId + "." + string;
 	}
 
 	@Override
-	public String getReplayLog() {
-		return fReadLog;
+	public File getReplayLog() {
+		return new File(fControl.getConfigFolder(), fSimId + "-scheduler.log");
 	}
 
 	@Override
 	public void setControl(SimulationControl parent) {
 		fControl = parent;
+	}
+	
+	@Override
+	public boolean shouldAutoStart() {
+		return fRunning;
 	}
 
 }

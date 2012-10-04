@@ -203,7 +203,7 @@ public class TableWriter implements ITableWriter {
 		return idx;
 	}
 
-	private void emmitHeader() {
+	public void emmitHeader() {
 		if (fPrintHeader) {
 			return;
 		}

@@ -10,8 +10,8 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import java.util.Arrays;
 
 /**
- * Fast, single-source temporal connectivity experiment. Supports special
- * "cloud" nodes that are treated as always up.
+ * Extended single-source temporal connectivity experiment. Supports
+ * measurements of receiver delay, and cloud nodes.
  * 
  * @author giuliano
  */
@@ -61,7 +61,6 @@ public class ComplexTCE extends SimpleTCE {
 		snapshotUptimes(engine);
 	}
 
-
 	protected void reached(int source, int node, ISimulationEngine engine) {
 		super.reached(source, node, engine);
 		IClockData clock = engine.clock();
@@ -70,7 +69,7 @@ public class ComplexTCE extends SimpleTCE {
 		if (fSampler != null) {
 			fSampler.reached(node, this);
 		}
-		
+
 		if (isDone()) {
 			engine.unbound(this);
 		}

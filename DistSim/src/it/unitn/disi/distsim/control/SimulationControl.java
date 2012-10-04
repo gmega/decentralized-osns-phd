@@ -21,8 +21,6 @@ import org.apache.log4j.Logger;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /**
@@ -179,6 +177,7 @@ public class SimulationControl implements SimulationControlMBean {
 		fLogger.info("Simulation list saved.");
 	}
 
+	@SuppressWarnings("unchecked")
 	private void load() throws IOException {
 		if (!fConfig.exists()) {
 			fSimulationList = new ArrayList<String>();

@@ -6,6 +6,7 @@ import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
+import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -78,22 +79,11 @@ public class SimulationTaskBuilder {
 	}
 
 	public SimulationTaskBuilder addMultiConnectivitySimulation(int source,
-			final int repeats) {
-		final MultiTCE multi = new MultiTCE(fGraph, source, repeats);
+			final int repeats, IMetricAccumulator<Double> accumulator) {
+		final MultiTCE multi = new MultiTCE(fGraph, source, repeats, accumulator);
 		addSim(multi);
-
-		addMetric(source, new INodeMetric<Double>() {
-			@Override
-			public Object id() {
-				return "ed";
-			}
-
-			@Override
-			public Double getMetric(int i) {
-				return multi.reachTime(i);
-			}
-		});
-
+		addMetric(source, accumulator);
+		
 		return this;
 	}
 

@@ -9,6 +9,8 @@ import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.measure.IMetricAccumulator;
+import it.unitn.disi.simulator.measure.INodeMetric;
 
 @Binding
 public class MultiTCE implements IEventObserver {
@@ -21,15 +23,20 @@ public class MultiTCE implements IEventObserver {
 
 	private final int fTotal;
 
+	private final IMetricAccumulator<Double> fAccumulator;
+
 	private int fComplete;
 
-	private double[] fEd;
-
 	public MultiTCE(IndexedNeighborGraph graph, int source, int samples) {
+		this(graph, source, samples, null);
+	}
+
+	public MultiTCE(IndexedNeighborGraph graph, int source, int samples,
+			IMetricAccumulator<Double> accumulator) {
 		fTotal = samples;
 		fGraph = graph;
 		fSource = source;
-		fEd = new double[graph.size()];
+		fAccumulator = accumulator;
 	}
 
 	@Override
@@ -55,10 +62,19 @@ public class MultiTCE implements IEventObserver {
 		}
 	}
 
-	private void add(SimpleTCE tce) {
-		for (int i = 0; i < fGraph.size(); i++) {
-			fEd[i] += tce.reachTime(i);
-		}
+	private void add(final SimpleTCE tce) {
+		fAccumulator.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "ed";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return tce.reachTime(i);
+			}
+		});
 	}
 
 	private boolean isSourceLogin(Schedulable schedulable) {
@@ -69,10 +85,6 @@ public class MultiTCE implements IEventObserver {
 	@Override
 	public boolean isDone() {
 		return fComplete >= fTotal;
-	}
-
-	public double reachTime(int i) {
-		return fEd[i] - fEd[fSource];
 	}
 
 }

@@ -4,6 +4,7 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
@@ -60,15 +61,17 @@ public abstract class AbstractWorker implements ITransformer {
 	 * @param idField
 	 *            the field identifying the ego network in the experiment
 	 *            specification file.
-
 	 */
 	public AbstractWorker(IResolver resolver, String idField) {
 		fGraphConfig = ObjectCreator.createInstance(GraphConfigurator.class,
 				"", resolver);
 		fYaoConfig = ObjectCreator.createInstance(YaoChurnConfigurator.class,
 				"", resolver);
-		fClient = ObjectCreator.createInstance(
-				SchedulerClient.class, "", resolver);
+
+		ControlClient cclient = ObjectCreator.createInstance(
+				ControlClient.class, "", resolver);
+
+		fClient = new SchedulerClient(cclient);
 
 		fExperimentReader = new ExperimentReader(idField);
 		ObjectCreator.fieldInject(ExperimentReader.class, fExperimentReader,
@@ -84,9 +87,9 @@ public abstract class AbstractWorker implements ITransformer {
 		}
 		return fHelper;
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	protected ExperimentReader experimentReader() {
 		return fExperimentReader;
 	}

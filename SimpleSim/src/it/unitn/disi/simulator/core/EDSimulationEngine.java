@@ -100,28 +100,69 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 */
 	public void run() {
 		checkNotRunning();
+		checkCanRun();
+		
 		fRunning = true;
 
 		// Main simulation loop.
-		while (!fQueue.isEmpty() && !fDone) {
-			Schedulable p = fQueue.remove();
-			fTime = p.time();
-			p.scheduled(this);
-			updateProcessCount(p);
-
-			// Only run the simulations if burn in time is over.
-			if (!isBurningIn()) {
-				notifyObservers(p, time());
-			}
-
-			// It's best to do this here, so as to allow observer code an
-			// opportunity to expire Schedulables before they get rescheduled.
-			if (!p.isExpired()) {
-				schedule(p);
+		while (!fDone) {
+			if(!uncheckedStep()) {
+				break;
 			}
 		}
 	}
+	
+	// -------------------------------------------------------------------------
+	
+	public int step(int events) {
+		checkCanRun();
+		fRunning = true;
+		
+		for(int i = 0; i < events; i++) {
+			if(!uncheckedStep() || fDone) {
+				return i;
+			}
+		}
+		
+		return events;
+	}
+	
+	// -------------------------------------------------------------------------
 
+
+	public void checkCanRun() throws IllegalStateException {
+		if(!fRunning && fDone) {
+			throw new IllegalStateException("Can't step a simulation that's" +
+					" already done.");
+		}
+	}
+	
+	// -------------------------------------------------------------------------
+	
+	private boolean uncheckedStep() {
+		if(fQueue.isEmpty()) {
+			return false;
+		}
+		
+		Schedulable p = fQueue.remove();
+		fTime = p.time();
+		p.scheduled(this);
+		updateProcessCount(p);
+
+		// Only run the simulations if burn in time is over.
+		if (!isBurningIn()) {
+			notifyObservers(p, time());
+		}
+
+		// It's best to do this here, so as to allow observer code an
+		// opportunity to expire Schedulables before they get rescheduled.
+		if (!p.isExpired()) {
+			schedule(p);
+		}
+		
+		return true;
+	}
+	
 	// -------------------------------------------------------------------------
 
 	/**
@@ -161,6 +202,12 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	@Override
 	public void stop() {
 		fDone = true;
+	}
+	
+	// -------------------------------------------------------------------------
+
+	public boolean isDone() {
+		return fDone;
 	}
 
 	// -------------------------------------------------------------------------

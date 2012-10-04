@@ -33,4 +33,10 @@ public interface ISimulationEngine {
 	 */
 	public void stop();
 
+	/**
+	 * @return <code>true</code> if the simulation is done, or
+	 *         <code>false</code> otherwise.
+	 */
+	public boolean isDone();
+
 }

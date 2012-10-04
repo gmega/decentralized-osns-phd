@@ -57,7 +57,7 @@ public class SchedulerClient implements ISchedule, IWorker {
 
 	private IScheduler connect() {
 		try {
-			return fClient.lookup("scheduler", IScheduler.class);
+			return fClient.lookup("queue", IScheduler.class);
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to resolve registry at supplied address/port. "
 					+ "Is the master instance running? Is the queue id right?");
