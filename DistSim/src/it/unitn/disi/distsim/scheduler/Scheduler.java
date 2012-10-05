@@ -107,6 +107,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 		// Eagerly prints header so we have no problems when reading back file.
 		writer.emmitHeader();
+		out.flush();
 
 		return writer;
 	}
@@ -123,6 +124,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@Override
 	public synchronized void stop() {
+		fMaster.shutdown();
 		fMaster = null;
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fSimId

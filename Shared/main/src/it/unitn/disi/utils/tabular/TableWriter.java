@@ -31,25 +31,25 @@ public class TableWriter implements ITableWriter {
 	public TableWriter(OutputStream output, String... fields) {
 		this(new PrintStream(output), fields);
 	}
-	
+
 	public TableWriter(PrintStream output, String... fields) {
 		this(FS, output, fields);
 	}
-	
+
 	public TableWriter(Writer output, String... fields) {
 		this(new PrintWriter(output), fields);
 	}
 
 	public TableWriter(PrintWriter output, String... fields) {
-		this(output, true, fields);
+		this(output, false, fields);
 	}
-	
+
 	public TableWriter(PrintWriter output, boolean append, String... fields) {
 		this(FS, output, append, fields);
 	}
 
 	public TableWriter(String separator, PrintStream output, String... fields) {
-		this(separator, new PrintWriter(output), true, fields);
+		this(separator, new PrintWriter(output), false, fields);
 	}
 
 	public TableWriter(String separator, PrintWriter output, boolean append,
@@ -149,7 +149,7 @@ public class TableWriter implements ITableWriter {
 	public boolean set(String key, Object object) {
 		return this.set(key, object.toString());
 	}
-	
+
 	public void set(int index, String str) {
 		fCurrentRecord[index] = str;
 	}
@@ -191,7 +191,7 @@ public class TableWriter implements ITableWriter {
 	public void flush() {
 		fOut.flush();
 	}
-	
+
 	public int indexOf(String key) {
 		int idx = -1;
 		for (int i = 0; i < fFields.length; i++) {
@@ -204,10 +204,11 @@ public class TableWriter implements ITableWriter {
 	}
 
 	public void emmitHeader() {
-		if (fPrintHeader) {
+		if (!fPrintHeader) {
 			return;
 		}
-		fPrintHeader = true;
+
+		fPrintHeader = false;
 		StringBuffer hb = new StringBuffer();
 		for (String field : fFields) {
 			hb.append(field);

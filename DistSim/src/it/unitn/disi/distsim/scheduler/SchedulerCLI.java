@@ -120,7 +120,7 @@ public class SchedulerCLI {
 		}
 		
 		SchedulerImpl master = new SchedulerImpl(scheduler, new TableWriter(new PrintWriter(
-				new FileWriter(fOutputLog, append)), !append, "experiment",
+				new FileWriter(fOutputLog, append)), append, "experiment",
 				"status"));
 		if (reader != null) {
 			master.replayLog(reader);
