@@ -1,8 +1,8 @@
 package it.unitn.disi.distsim.scheduler;
 
-import java.io.File;
-
 import it.unitn.disi.distsim.control.ServiceMBean;
+
+import java.io.File;
 
 /**
  * JMX configuration management interface for {@link IScheduler}.

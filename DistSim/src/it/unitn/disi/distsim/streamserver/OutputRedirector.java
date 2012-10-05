@@ -1,5 +1,7 @@
 package it.unitn.disi.distsim.streamserver;
 
+import it.unitn.disi.cli.ITransformer;
+
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -10,8 +12,6 @@ import org.apache.log4j.Logger;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-
-import it.unitn.disi.cli.ITransformer;
 
 /**
  * Command line utility for shipping output streams from a process to a remote

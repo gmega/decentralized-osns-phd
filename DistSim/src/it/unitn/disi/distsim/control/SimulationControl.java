@@ -1,5 +1,10 @@
 package it.unitn.disi.distsim.control;
 
+import it.unitn.disi.distsim.dataserver.CheckpointManager;
+import it.unitn.disi.distsim.scheduler.Scheduler;
+import it.unitn.disi.distsim.xstream.NotificationBroadcastConverter;
+import it.unitn.disi.utils.MiscUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,11 +12,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import it.unitn.disi.distsim.dataserver.CheckpointManager;
-import it.unitn.disi.distsim.scheduler.Scheduler;
-import it.unitn.disi.distsim.xstream.NotificationBroadcastConverter;
-import it.unitn.disi.utils.MiscUtils;
 
 import javax.management.MBeanServer;
 import javax.management.NotificationBroadcasterSupport;

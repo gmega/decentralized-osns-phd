@@ -1,9 +1,9 @@
 package it.unitn.disi.distsim.scheduler;
 
+import it.unitn.disi.utils.collections.Pair;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
-import it.unitn.disi.utils.collections.Pair;
 
 public interface ISchedulerAdmin extends Remote {
 

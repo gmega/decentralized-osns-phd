@@ -1,5 +1,12 @@
 package it.unitn.disi.distsim.dataserver;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.large.catalog.CatalogReader;
+import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
+import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.large.catalog.PartialLoader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.rmi.RemoteException;
@@ -8,13 +15,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
-
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
 
 /**
  * Exceedingly simple graph "server" which simple wraps an

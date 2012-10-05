@@ -1,5 +1,7 @@
 package it.unitn.disi.distsim.dataserver;
 
+import it.unitn.disi.distsim.control.SimulationControl;
+
 import java.io.File;
 import java.rmi.RemoteException;
 
@@ -7,8 +9,6 @@ import org.apache.log4j.Logger;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
-
-import it.unitn.disi.distsim.control.SimulationControl;
 
 @XStreamAlias("checkpoint-manager")
 public class CheckpointManager implements CheckpointManagerMBean {

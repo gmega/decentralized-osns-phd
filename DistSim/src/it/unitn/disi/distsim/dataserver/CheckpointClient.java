@@ -1,5 +1,8 @@
 package it.unitn.disi.distsim.dataserver;
 
+import it.unitn.disi.distsim.control.ControlClient;
+import it.unitn.disi.utils.collections.Pair;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -8,9 +11,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import org.apache.log4j.Logger;
-
-import it.unitn.disi.distsim.control.ControlClient;
-import it.unitn.disi.utils.collections.Pair;
 
 public class CheckpointClient implements Runnable {
 
