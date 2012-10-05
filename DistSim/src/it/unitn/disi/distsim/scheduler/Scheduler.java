@@ -1,7 +1,7 @@
 package it.unitn.disi.distsim.scheduler;
 
+import it.unitn.disi.distsim.control.ISimulation;
 import it.unitn.disi.distsim.control.ManagedService;
-import it.unitn.disi.distsim.control.SimulationControl;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.Schedulers;
 import it.unitn.disi.distsim.scheduler.generators.Schedulers.SchedulerType;
@@ -29,7 +29,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		SchedulerMBean, ManagedService {
 
 	@XStreamOmitField
-	private SimulationControl fControl;
+	private ISimulation fControl;
 
 	@XStreamOmitField
 	private int fSequence;
@@ -42,14 +42,14 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@XStreamAlias("scheduler-config")
 	private HashMap<String, String> fProperties = new HashMap<String, String>();
-	
+
 	@XStreamAlias("autostart")
 	private boolean fRunning;
 
 	@XStreamOmitField
 	private SchedulerImpl fMaster = null;
 
-	public Scheduler(String simId, SimulationControl parent) {
+	public Scheduler(String simId, ISimulation parent) {
 		fSimId = simId;
 		fControl = parent;
 	}
@@ -74,8 +74,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 			}
 
 			fMaster = impl;
-			fControl.objectManager().publish(impl,
-					SimulationControl.name(fSimId, "queue"));
+			fControl.publish("queue", impl);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
@@ -85,6 +84,9 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fSimId
 						+ "] started.", "isRunning", "boolean", false, true));
+		
+		fRunning = true;
+		fControl.attributeListUpdated(this);
 	}
 
 	private TableReader replayLog() throws IOException {
@@ -100,11 +102,12 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		boolean append = replayLog.exists();
 		PrintWriter out = new PrintWriter(new FileOutputStream(replayLog,
 				append));
-		TableWriter writer = new TableWriter(out, append, "experiment", "status");
+		TableWriter writer = new TableWriter(out, append, "experiment",
+				"status");
 
 		// Eagerly prints header so we have no problems when reading back file.
 		writer.emmitHeader();
-		
+
 		return writer;
 	}
 
@@ -124,6 +127,8 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fSimId
 						+ "] stopped.", "isRunning", "boolean", false, true));
+		fRunning = false;
+		fControl.attributeListUpdated(this);
 	}
 
 	@Override
@@ -140,6 +145,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	public void setSchedulerType(String type) {
 		checkNotRunning();
 		fSchedulerType = SchedulerType.valueOf(type.toUpperCase());
+		fControl.attributeListUpdated(this);
 	}
 
 	@Override
@@ -163,6 +169,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		}
 
 		fProperties = props;
+		fControl.attributeListUpdated(this);
 	}
 
 	@Override
@@ -176,14 +183,14 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@Override
 	public File getReplayLog() {
-		return new File(fControl.getConfigFolder(), fSimId + "-scheduler.log");
+		return new File(fControl.baseFolder(), fSimId + "-scheduler.log");
 	}
 
 	@Override
-	public void setControl(SimulationControl parent) {
+	public void setSimulation(ISimulation parent) {
 		fControl = parent;
 	}
-	
+
 	@Override
 	public boolean shouldAutoStart() {
 		return fRunning;

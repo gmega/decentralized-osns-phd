@@ -2,26 +2,22 @@ package it.unitn.disi.distsim.control;
 
 import it.unitn.disi.distsim.dataserver.CheckpointManager;
 import it.unitn.disi.distsim.scheduler.Scheduler;
-import it.unitn.disi.distsim.xstream.NotificationBroadcastConverter;
-import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.distsim.xstream.XStreamSerializer;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import javax.management.MBeanServer;
-import javax.management.NotificationBroadcasterSupport;
 import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 
-import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /**
  * {@link SimulationControl} implements the scaffolding code that puts together
@@ -34,118 +30,70 @@ public class SimulationControl implements SimulationControlMBean {
 	private static final Logger fLogger = Logger
 			.getLogger(SimulationControl.class);
 
-	private XStream fStream;
-
-	private MBeanServer fServer;
-
 	private final File fMasterFolder;
 
-	private final File fConfig;
-
-	private final RMIObjectManager fObjectManager;
+	private final File fConfigFile;
 
 	private final int fRegistryPort;
 
 	private File fConfigFolder;
 
-	private List<String> fSimulationList;
+	private List<String> fSimulationKeys;
+
+	private List<Simulation> fSimulationList;
+
+	private final ISerializer fSerializer;
+
+	private final RMIObjectManager fObjectManager;
+
+	private MBeanServer fServer;
 
 	public SimulationControl(File master, int registryPort) {
+		XStreamSerializer xStream = new XStreamSerializer();
+		xStream.addClass(Service.class);
+
+		fSerializer = xStream;
 		fMasterFolder = master;
 		fConfigFolder = new File(master, "config");
 		fRegistryPort = registryPort;
 		fObjectManager = new RMIObjectManager(fRegistryPort, false);
-		fConfig = new File(fMasterFolder, "config.xml");
+		fConfigFile = new File(fMasterFolder, "config.xml");
+		fSimulationList = new ArrayList<Simulation>();
 	}
 
 	public synchronized void initialize(MBeanServer server) throws Exception {
 		fServer = server;
-		fStream = xstreamSetup();
-
 		fObjectManager.start();
-
 		if (!fConfigFolder.exists()) {
 			fConfigFolder.mkdir();
 		}
 
 		load();
 
-		Iterator<String> it = fSimulationList.iterator();
+		Iterator<String> it = fSimulationKeys.iterator();
 		while (it.hasNext()) {
 			String id = it.next();
-			File base = simulationFolder(id);
-			if (!base.exists()) {
-				fLogger.warn("Simulation " + id
-						+ " no longer exists. Removing from registry.");
+			Simulation sim = Simulation.initialize(id, this);
+			if (sim == null) {
 				it.remove();
-				continue;
 			}
-
-			File config = servicesFile(id);
-			if (!config.exists()) {
-				fLogger.warn("Simulation " + id
-						+ " has no services.xml file and will be ignored.");
-				continue;
-			}
-
-			@SuppressWarnings("unchecked")
-			List<Service> services = (List<Service>) fStream.fromXML(config);
-			activateAndRegister(services);
+			fSimulationList.add(sim);
 		}
 
 		save();
 	}
 
-	private XStream xstreamSetup() {
-		XStream xstream = new XStream(new DomDriver());
-
-		xstream.omitField(NotificationBroadcasterSupport.class, "notifInfo");
-		xstream.omitField(NotificationBroadcasterSupport.class, "executor");
-		xstream.omitField(NotificationBroadcasterSupport.class, "listenerList");
-
-		xstream.registerConverter(new NotificationBroadcastConverter(xstream
-				.getMapper(), xstream.getReflectionProvider()));
-
-		xstream.processAnnotations(Service.class);
-		xstream.processAnnotations(Scheduler.class);
-		xstream.processAnnotations(CheckpointManager.class);
-
-		return xstream;
-	}
-
-	private void activateAndRegister(List<Service> services) throws Exception {
-		for (Service service : services) {
-			service.bean.setControl(this);
-			fServer.registerMBean(service.bean, new ObjectName(
-					service.serviceName));
-		}
-	}
-
-	private File servicesFile(String id) {
-		return new File(simulationFolder(id), "services.xml");
-	}
-
-	private File simulationFolder(String id) {
-		return new File(fMasterFolder, id);
-	}
-
 	@Override
 	public synchronized void create(String id) {
-
 		if (exists(id)) {
 			throw new IllegalArgumentException("Simulation with id " + id
 					+ " already exists.");
 		}
 
 		try {
-			createFolder(id);
-
-			List<Service> services = createServices(id);
-			activateAndRegister(services);
-			save(servicesFile(id), services);
-			fSimulationList.add(id);
+			fSimulationList.add(Simulation.initialize(id, this));
+			fSimulationKeys.add(id);
 			save();
-
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -163,7 +111,7 @@ public class SimulationControl implements SimulationControlMBean {
 	}
 
 	private boolean exists(String id) {
-		for (String simulation : fSimulationList) {
+		for (String simulation : fSimulationKeys) {
 			if (id.equals(simulation.equals(id))) {
 				return true;
 			}
@@ -173,91 +121,164 @@ public class SimulationControl implements SimulationControlMBean {
 	}
 
 	private void save() throws IOException {
-		save(fConfig, fSimulationList);
+		fSerializer.saveObject(fSimulationKeys, fConfigFile);
 		fLogger.info("Simulation list saved.");
 	}
 
 	@SuppressWarnings("unchecked")
 	private void load() throws IOException {
-		if (!fConfig.exists()) {
-			fSimulationList = new ArrayList<String>();
+		if (!fConfigFile.exists()) {
+			fSimulationKeys = new ArrayList<String>();
 			return;
 		}
 
-		FileInputStream stream = null;
-		try {
-			stream = new FileInputStream(fConfig);
-			fSimulationList = (List<String>) fStream.fromXML(stream);
-		} finally {
-			MiscUtils.safeClose(stream, true);
-		}
+		fSimulationKeys = (List<String>) fSerializer.loadObject(fConfigFile);
 	}
 
-	private File createFolder(String id) throws IOException {
-		File simfolder = simulationFolder(id);
-		if (!simfolder.exists()) {
-			simfolder.mkdir();
-		}
-		return simfolder;
-	}
-
-	private void save(File file, Object object) throws IOException {
-		FileOutputStream stream = null;
-		try {
-			stream = new FileOutputStream(file);
-			fStream.toXML(object, stream);
-		} finally {
-			MiscUtils.safeClose(stream, true);
-		}
-
-	}
-
-	private List<Service> createServices(String id) {
-		ArrayList<Service> services = new ArrayList<Service>();
-		try {
-			services.add(createService(id, "scheduler", new Scheduler(id, this)));
-			services.add(createService(id, "checkpoint", new CheckpointManager(
-					id)));
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-
-		return services;
-	}
-
-	private Service createService(String simId, String serviceid,
-			ManagedService master) {
-		String oName = "simulations:type=" + simId + ",group=service,name="
-				+ serviceid;
-		return new Service(oName, master);
+	@Override
+	public File getMasterFolder() {
+		return fMasterFolder;
 	}
 
 	public RMIObjectManager objectManager() {
 		return fObjectManager;
 	}
 
-	@Override
-	public File getMasterOutputFolder() {
-		return fMasterFolder;
+	public MBeanServer jmxServer() {
+		return fServer;
 	}
 
-	@XStreamAlias("service")
-	private static class Service {
+	public ISerializer serializer() {
+		return fSerializer;
+	}
+}
 
-		@XStreamAlias("service-id")
-		public final String serviceName;
+@XStreamAlias("service")
+class Service {
 
-		@XStreamAlias("config")
-		public final ManagedService bean;
+	@XStreamAlias("service-id")
+	public final String serviceName;
 
-		public Service(String name, ManagedService bean) {
-			this.bean = bean;
-			this.serviceName = name;
+	@XStreamAlias("config")
+	public final ManagedService bean;
+
+	public Service(String name, ManagedService bean) {
+		this.bean = bean;
+		this.serviceName = name;
+	}
+}
+
+class Simulation implements ISimulation {
+
+	private static final Logger fLogger = Logger.getLogger(Simulation.class);
+
+	private final String fId;
+
+	private File fBase;
+
+	private List<Service> fServiceList;
+
+	private final SimulationControl fParent;
+
+	public static Simulation initialize(String id, SimulationControl parent)
+			throws Exception {
+
+		File base = simulationFolder(parent.getMasterFolder(), id);
+		Simulation sim = new Simulation(base, id, parent);
+		if (!base.exists()) {
+			base.mkdir();
+			return sim.create(base);
+		} else {
+			return sim.load(base);
+		}
+	}
+
+	private static File simulationFolder(File master, String id) {
+		return new File(master, id);
+	}
+
+	private Simulation(File base, String id, SimulationControl parent) {
+		fId = id;
+		fBase = base;
+		fParent = parent;
+	}
+
+	public File baseFolder() {
+		return fBase;
+	}
+
+	private Simulation create(File base) throws Exception {
+		fServiceList = new ArrayList<Service>();
+		try {
+			fServiceList.add(createService("scheduler",
+					new Scheduler(fId, this)));
+			fServiceList.add(createService("checkpoint", new CheckpointManager(
+					fId, this)));
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		activateAndRegister();
+		serviceConfigurationUpdated();
+		return this;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Simulation load(File base) throws Exception {
+		fServiceList = (List<Service>) fParent.serializer().loadObject(
+				serviceFile());
+
+		activateAndRegister();
+		return this;
+	}
+
+	private Service createService(String serviceid, ManagedService master) {
+		String oName = "simulations:type=" + fId + ",group=service,name="
+				+ serviceid;
+		return new Service(oName, master);
+	}
+
+	private File serviceFile() {
+		return new File(fBase, "services.xml");
+	}
+
+	private void activateAndRegister() throws Exception {
+		for (Service service : fServiceList) {
+			service.bean.setSimulation(this);
+			fParent.jmxServer().registerMBean(service.bean,
+					new ObjectName(service.serviceName));
+			
+			if (service.bean.shouldAutoStart()) {
+				fLogger.info("Autostart " + service.serviceName);
+				service.bean.start();
+			}
+		}
+	}
+
+	public void publish(String key, Remote remote) throws RemoteException {
+		fParent.objectManager().publish(remote,
+				SimulationControl.name(fId, key));
+	}
+
+	public void remove(String key) {
+		fParent.objectManager().remove(SimulationControl.name(fId, key));
+	}
+	
+	public void attributeListUpdated(ManagedService service) {
+		serviceConfigurationUpdated();
+	}
+
+	public void serviceConfigurationUpdated() {
+		try {
+			fParent.serializer().saveObject(fServiceList, serviceFile());
+		} catch (IOException ex) {
+			fLogger.error("Failed to save configuration file " + serviceFile()
+					+ ".", ex);
 		}
 	}
 
 	@Override
-	public File getConfigFolder() {
-		return fConfigFolder;
+	public String id() {
+		return fId;
 	}
+
 }

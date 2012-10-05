@@ -21,12 +21,7 @@ public interface SimulationControlMBean {
 	 * @return the master output folder (at the server) in which all simulation
 	 *         data will be stored.
 	 */
-	public File getMasterOutputFolder();
+	public File getMasterFolder();
 
-	/**
-	 * @return the config folder from which configuration files are to be read
-	 *         and written.
-	 */
-	public File getConfigFolder();
 
 }

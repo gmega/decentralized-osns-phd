@@ -1,6 +1,6 @@
 package it.unitn.disi.distsim.dataserver;
 
-import it.unitn.disi.distsim.control.SimulationControl;
+import it.unitn.disi.distsim.control.ISimulation;
 
 import java.io.File;
 import java.rmi.RemoteException;
@@ -23,28 +23,29 @@ public class CheckpointManager implements CheckpointManagerMBean {
 	private boolean fRunning;
 
 	@XStreamOmitField
-	private volatile SimulationControl fParent;
+	private volatile ISimulation fSimulation;
 
-	public CheckpointManager(String id) {
-		this.fSimId = id;
+	public CheckpointManager(String id, ISimulation simulation) {
+		fSimId = id;
+		fSimulation = simulation;
 	}
 
 	@Override
 	public synchronized void start() {
 		DataManagerImpl mgr = new DataManagerImpl(checkpointFolder(),
-				fParent.getConfigFolder(), fSimId);
+				fSimulation.baseFolder(), fSimId);
 		try {
-			fParent.objectManager().publish(mgr,
-					fParent.name(fSimId, "datamgr"));
+			fSimulation.publish("datamgr", mgr);
 			fRunning = true;
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to start checkpoint manager.", ex);
 		}
+		
+		fSimulation.attributeListUpdated(this);
 	}
 
 	private File checkpointFolder() {
-		File chkpFolder = new File(fParent.getMasterOutputFolder(),
-				"checkpoints");
+		File chkpFolder = new File(fSimulation.baseFolder(), "checkpoints");
 		if (!chkpFolder.exists()) {
 			chkpFolder.mkdir();
 		}
@@ -53,9 +54,9 @@ public class CheckpointManager implements CheckpointManagerMBean {
 
 	@Override
 	public synchronized void stop() {
-		fParent.objectManager().remove(
-				SimulationControl.name(fSimId, "chkpmgr"));
+		fSimulation.remove("chkpmgr");
 		fRunning = false;
+		fSimulation.attributeListUpdated(this);
 	}
 
 	@Override
@@ -64,8 +65,8 @@ public class CheckpointManager implements CheckpointManagerMBean {
 	}
 
 	@Override
-	public synchronized void setControl(SimulationControl parent) {
-		fParent = parent;
+	public synchronized void setSimulation(ISimulation simulation) {
+		fSimulation = simulation;
 	}
 
 	@Override
