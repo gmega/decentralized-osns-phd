@@ -2,6 +2,7 @@ package it.unitn.disi.distsim.control;
 
 import it.unitn.disi.distsim.dataserver.CheckpointManager;
 import it.unitn.disi.distsim.scheduler.Scheduler;
+import it.unitn.disi.distsim.streamserver.StreamServer;
 import it.unitn.disi.distsim.xstream.XStreamSerializer;
 
 import java.io.File;
@@ -210,16 +211,20 @@ class Simulation implements ISimulation {
 	private Simulation create(File base) throws Exception {
 		fServiceList = new ArrayList<Service>();
 		try {
-			fServiceList.add(createService("scheduler",
-					new Scheduler(fId, this)));
-			fServiceList.add(createService("checkpoint", new CheckpointManager(
-					fId, this)));
+			defaultServiceList();
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 		activateAndRegister();
 		serviceConfigurationUpdated();
 		return this;
+	}
+
+	public void defaultServiceList() {
+		fServiceList.add(createService("scheduler",	new Scheduler(this)));
+		fServiceList.add(createService("checkpoint", new CheckpointManager(
+				fId, this)));
+		fServiceList.add(createService("outputstreamer", new StreamServer(this)));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -246,7 +251,7 @@ class Simulation implements ISimulation {
 			service.bean.setSimulation(this);
 			fParent.jmxServer().registerMBean(service.bean,
 					new ObjectName(service.serviceName));
-			
+
 			if (service.bean.shouldAutoStart()) {
 				fLogger.info("Autostart " + service.serviceName);
 				service.bean.start();
@@ -262,7 +267,7 @@ class Simulation implements ISimulation {
 	public void remove(String key) {
 		fParent.objectManager().remove(SimulationControl.name(fId, key));
 	}
-	
+
 	public void attributeListUpdated(ManagedService service) {
 		serviceConfigurationUpdated();
 	}

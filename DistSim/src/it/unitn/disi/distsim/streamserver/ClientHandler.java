@@ -22,7 +22,7 @@ public class ClientHandler implements Runnable {
 
 	private final File fOutputFolder;
 
-	private final StreamServer fParent;
+	private final StreamServerImpl fParent;
 
 	private volatile String fClientId;
 	
@@ -30,7 +30,7 @@ public class ClientHandler implements Runnable {
 
 	private Thread fThread;
 
-	public ClientHandler(Socket socket, File outputFolder, StreamServer parent) {
+	public ClientHandler(Socket socket, File outputFolder, StreamServerImpl parent) {
 		fSocket = socket;
 		fOutputFolder = outputFolder;
 		fParent = parent;

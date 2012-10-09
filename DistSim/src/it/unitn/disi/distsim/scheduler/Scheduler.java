@@ -34,9 +34,6 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	@XStreamOmitField
 	private int fSequence;
 
-	@XStreamAlias("sim-id")
-	private volatile String fSimId;
-
 	@XStreamAlias("scheduler-type")
 	private SchedulerType fSchedulerType;
 
@@ -49,8 +46,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	@XStreamOmitField
 	private SchedulerImpl fMaster = null;
 
-	public Scheduler(String simId, ISimulation parent) {
-		fSimId = simId;
+	public Scheduler(ISimulation parent) {
 		fControl = parent;
 	}
 
@@ -82,9 +78,9 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		fMaster.start();
 
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
-				System.currentTimeMillis(), "Scheduler [" + fSimId
+				System.currentTimeMillis(), "Scheduler [" + fControl.id()
 						+ "] started.", "isRunning", "boolean", false, true));
-		
+
 		fRunning = true;
 		fControl.attributeListUpdated(this);
 	}
@@ -127,7 +123,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		fMaster.shutdown();
 		fMaster = null;
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
-				System.currentTimeMillis(), "Scheduler [" + fSimId
+				System.currentTimeMillis(), "Scheduler [" + fControl.id()
 						+ "] stopped.", "isRunning", "boolean", false, true));
 		fRunning = false;
 		fControl.attributeListUpdated(this);
@@ -136,11 +132,6 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	@Override
 	public boolean isRunning() {
 		return fMaster != null;
-	}
-
-	@Override
-	public String getQueueName() {
-		return fSimId;
 	}
 
 	@Override
@@ -180,12 +171,12 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	}
 
 	private String loggerName(String string) {
-		return Scheduler.class.getName() + "." + fSimId + "." + string;
+		return Scheduler.class.getName() + "." + fControl.id() + "." + string;
 	}
 
 	@Override
 	public File getReplayLog() {
-		return new File(fControl.baseFolder(), fSimId + "-scheduler.log");
+		return new File(fControl.baseFolder(), fControl.id() + "-scheduler.log");
 	}
 
 	@Override

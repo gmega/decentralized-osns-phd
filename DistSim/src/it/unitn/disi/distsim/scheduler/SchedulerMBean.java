@@ -19,8 +19,6 @@ public interface SchedulerMBean extends ServiceMBean {
 
 	public String getSchedulerProperties();
 
-	public String getQueueName();
-
 	public File getReplayLog();
 	
 }
