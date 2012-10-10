@@ -26,7 +26,7 @@ public class StreamServerImpl implements Runnable {
 
 	private volatile boolean fShutdownSignalled;
 
-	private volatile Shutdown fShutdownHook;
+	private volatile Thread fShutdownHook;
 
 	public StreamServerImpl(int port, File output) {
 		fPort = port;
@@ -41,15 +41,16 @@ public class StreamServerImpl implements Runnable {
 
 		fLogger.info("Output folder is: " + fOutput + ".");
 
-		Thread flusher = new Thread(new TimedFlusher(STREAM_FLUSHING_INTERVAL));
+		Thread flusher = new Thread(new TimedFlusher(STREAM_FLUSHING_INTERVAL),
+				"Stream Flusher");
 		flusher.start();
 
 		ServerSocket socket = null;
 		try {
 			socket = new ServerSocket(fPort, MAX_BACKLOG);
-			fShutdownHook = new Shutdown(socket, Thread.currentThread(),
-					flusher);
-			Runtime.getRuntime().addShutdownHook(new Thread(fShutdownHook));
+			fShutdownHook = new Thread(new Shutdown(socket,
+					Thread.currentThread(), flusher));
+			Runtime.getRuntime().addShutdownHook(fShutdownHook);
 			mainLoop(socket);
 		} catch (Exception ex) {
 			if (!(ex instanceof SocketException) || !fShutdownSignalled) {
@@ -61,6 +62,11 @@ public class StreamServerImpl implements Runnable {
 				fLogger.error("Error closing server socket.", eex);
 			}
 		}
+	}
+
+	public void stop() {
+		Runtime.getRuntime().removeShutdownHook(fShutdownHook);
+		fShutdownHook.run();
 	}
 
 	private void mainLoop(ServerSocket socket) throws IOException {

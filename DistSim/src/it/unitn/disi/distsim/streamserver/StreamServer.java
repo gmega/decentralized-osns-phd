@@ -5,7 +5,9 @@ import java.io.File;
 import it.unitn.disi.distsim.control.ISimulation;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
+@XStreamAlias("streamserver")
 public class StreamServer implements StreamServerMBean {
 
 	@XStreamAlias("autostart")
@@ -14,10 +16,13 @@ public class StreamServer implements StreamServerMBean {
 	@XStreamAlias("port")
 	private int fPort;
 
+	@XStreamOmitField
 	private ISimulation fParent;
 	
+	@XStreamOmitField
 	private StreamServerImpl fServerImpl;
 	
+	@XStreamOmitField
 	private Thread fServerThread;
 
 	public StreamServer(ISimulation parent) {
@@ -29,8 +34,10 @@ public class StreamServer implements StreamServerMBean {
 	public synchronized void start() {
 		checkNotRunning();
 		fServerImpl = new StreamServerImpl(fPort, checkOutputFolder());
-		fServerThread = new Thread(fServerImpl);
+		fServerThread = new Thread(fServerImpl, "Stream Server Loop");
 		fServerThread.start();
+		fRunning = true;
+		fParent.attributeListUpdated(this);
 	}
 
 	private File checkOutputFolder() {
@@ -43,18 +50,31 @@ public class StreamServer implements StreamServerMBean {
 	}
 
 	@Override
-	public synchronized void stop() {
+	public void stop() {
+		
+		if(!isRunning()) {
+			return;
+		}
+		
 		fServerThread.interrupt();
+		fServerImpl.stop();
 		try {
 			fServerThread.join();
 		} catch (InterruptedException e) {
 			// Swallows.
 		}
+		
+		synchronized(this) {
+			fServerImpl = null;
+			fServerThread = null;
+			fRunning = false;
+			fParent.attributeListUpdated(this);
+		}
 	}
 
 	@Override
 	public synchronized boolean isRunning() {
-		return fRunning;
+		return fServerImpl != null;
 	}
 
 	@Override

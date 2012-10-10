@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import it.unitn.disi.distsim.control.ISerializer;
 import it.unitn.disi.distsim.dataserver.CheckpointManager;
 import it.unitn.disi.distsim.scheduler.Scheduler;
+import it.unitn.disi.distsim.streamserver.StreamServer;
 import it.unitn.disi.utils.MiscUtils;
 
 import javax.management.NotificationBroadcasterSupport;
@@ -36,6 +37,7 @@ public class XStreamSerializer implements ISerializer {
 				.getMapper(), fStream.getReflectionProvider()));
 		fStream.processAnnotations(Scheduler.class);
 		fStream.processAnnotations(CheckpointManager.class);
+		fStream.processAnnotations(StreamServer.class);
 	}
 
 	@Override
