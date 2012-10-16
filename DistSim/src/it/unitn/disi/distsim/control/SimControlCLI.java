@@ -40,9 +40,10 @@ public class SimControlCLI {
 		Logger logger = log4jInit();
 		printPortInfo(logger);
 		serverInit(logger);
-		logger.info("Server is up.");
+		logger.info("Server is up. Hit CTRL+C to stop.");
 		
-		// Holds this thread forever.
+		// Holds this thread forever, as the JMX server doesn't run on daemon
+		// mode.
 		while(true) {
 			synchronized(this) {
 				this.wait();
@@ -50,8 +51,7 @@ public class SimControlCLI {
 		}
 	}
 
-	private void serverInit(Logger logger) throws Exception {
-		
+	private void serverInit(Logger logger) throws Exception {		
 		logger.info("Registering JMX services.");
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		ObjectName name = new ObjectName("simulations:type=SimulationControl");

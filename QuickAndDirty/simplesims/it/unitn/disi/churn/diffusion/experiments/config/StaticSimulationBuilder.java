@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.diffusion.config;
+package it.unitn.disi.churn.diffusion.experiments.config;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.HFloodSM;

@@ -15,10 +15,12 @@ public interface IDataManager extends Remote {
 	 *            apply to different workers.
 	 * 
 	 * @return a {@link WorkUnit} object, with the configuration (if available)
-	 *         and existing checkpoint (if available).
+	 *         and latest existing checkpoint (if available).
 	 */
 	public WorkUnit workUnit(int wid, String wtype) throws RemoteException;
 
 	public void writeCheckpoint(int wid, byte[] state) throws RemoteException;
+	
+	public void clearCheckpoints(int wid) throws RemoteException;
 
 }

@@ -89,7 +89,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 				pI, pJ }, fBurnin);
 		
 		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(churnSim, repetitions, cloud,
+		EdgeDelayEstimator sexp = new EdgeDelayEstimator(churnSim, repetitions, cloud,
 				observer);
 		sims.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, sexp));

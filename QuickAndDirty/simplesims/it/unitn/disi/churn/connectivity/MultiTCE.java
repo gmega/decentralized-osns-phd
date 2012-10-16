@@ -11,6 +11,9 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.utils.logging.IProgressTracker;
+import it.unitn.disi.utils.logging.Progress;
+import it.unitn.disi.utils.logging.ProgressTracker;
 
 @Binding
 public class MultiTCE implements IEventObserver {
@@ -23,20 +26,30 @@ public class MultiTCE implements IEventObserver {
 
 	private final int fTotal;
 
-	private final IMetricAccumulator<Double> fAccumulator;
+	private final IMetricAccumulator<Double> fEd;
+	
+	private final IMetricAccumulator<Double> fRd;
+
+	private final IProgressTracker fTracker;
 
 	private int fComplete;
 
+	private int fMaxActive;
+
 	public MultiTCE(IndexedNeighborGraph graph, int source, int samples) {
-		this(graph, source, samples, null);
+		this(graph, source, samples, null, null, IProgressTracker.NULL_TRACKER);
 	}
 
 	public MultiTCE(IndexedNeighborGraph graph, int source, int samples,
-			IMetricAccumulator<Double> accumulator) {
+			IMetricAccumulator<Double> ed, IMetricAccumulator<Double> rd,
+			IProgressTracker tracker) {
 		fTotal = samples;
 		fGraph = graph;
 		fSource = source;
-		fAccumulator = accumulator;
+		fEd = ed;
+		fRd = rd;
+		fTracker = tracker;
+		fTracker.startTask();
 	}
 
 	@Override
@@ -46,6 +59,7 @@ public class MultiTCE implements IEventObserver {
 			fActive.add(new SimpleTCE(fGraph, fSource));
 		}
 
+		fMaxActive = Math.max(fActive.size(), fMaxActive);
 		Iterator<SimpleTCE> it = fActive.iterator();
 		while (it.hasNext()) {
 			SimpleTCE tce = it.next();
@@ -53,21 +67,39 @@ public class MultiTCE implements IEventObserver {
 			if (tce.isDone()) {
 				it.remove();
 				fComplete++;
+				fTracker.tick();
+				if (fComplete % 1000 == 0) {
+					System.err.println("Active: " + fActive.size() + ", Max: "
+							+ fMaxActive);
+				}
 				add(tce);
 			}
 		}
 
 		if (isDone()) {
-			engine.unbound(this);
+			engine.stop();
 		}
 	}
 
 	private void add(final SimpleTCE tce) {
-		fAccumulator.add(new INodeMetric<Double>() {
+		fEd.add(new INodeMetric<Double>() {
 
 			@Override
 			public Object id() {
 				return "ed";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return tce.reachTime(i);
+			}
+		});
+		
+		fRd.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "rd";
 			}
 
 			@Override

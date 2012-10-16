@@ -37,10 +37,8 @@ public class DataManagerImpl implements IDataManager {
 
 		FileOutputStream oStream = null;
 		try {
-
 			oStream = new FileOutputStream(chkpFile(id));
 			oStream.write(state);
-
 		} catch (IOException ex) {
 			fLogger.error("Failed to create checkpoint " + id + " for sim "
 					+ fSimId, ex);
@@ -61,7 +59,7 @@ public class DataManagerImpl implements IDataManager {
 		}
 	}
 
-	public byte[] readCheckpoint(int id) throws RemoteException {
+	private byte[] readCheckpoint(int id) throws RemoteException {
 		acquire(id);
 
 		FileInputStream iStream = null;
@@ -90,6 +88,19 @@ public class DataManagerImpl implements IDataManager {
 		} finally {
 			close(iStream);
 			release(id);
+		}
+	}
+
+	@Override
+	public void clearCheckpoints(int wid) throws RemoteException {
+		acquire(wid);
+		try {
+			File file = chkpFile(wid);
+			if (file != null) {
+				file.delete();
+			}
+		} finally {
+			release(wid);
 		}
 	}
 
@@ -127,17 +138,17 @@ public class DataManagerImpl implements IDataManager {
 		// First, try worker-specific config file.
 		File file = new File(fConfigsFolder, wtype + "-" + fSimId
 				+ ".properties");
-		
+
 		// If doesn't exist, retries with simulation-wide config file.
 		if (!file.exists()) {
 			file = new File(fConfigsFolder, fSimId + ".properties");
 		}
-		
+
 		// Nope, no config file.
 		if (!file.exists()) {
 			file = null;
 		}
-		
+
 		return file;
 	}
 
@@ -146,7 +157,7 @@ public class DataManagerImpl implements IDataManager {
 	}
 
 	public void acquire(int id) throws ConcurrentAccessException {
-		if (!fPending.putIfAbsent(id, true)) {
+		if (fPending.putIfAbsent(id, true) != null) {
 			throw new ConcurrentAccessException();
 		}
 	}

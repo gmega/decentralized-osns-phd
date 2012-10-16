@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
-import it.unitn.disi.churn.diffusion.Message;
+import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.utils.collections.Pair;
 
 public interface ICloud {
 
-	public static Message[] NO_UPDATE = new Message[] {};
+	public static HFloodMMsg[] NO_UPDATE = new HFloodMMsg[] {};
 
 	/**
 	 * Writes an update to the profile page of a user.
@@ -16,7 +16,7 @@ public interface ICloud {
 	 * @param update
 	 *            the update to write.
 	 */
-	public void writeUpdate(int page, Message update);
+	public void writeUpdate(int page, HFloodMMsg update);
 
 	/**
 	 * Fetches from the cloud all updates that are more recent than a given
@@ -32,7 +32,7 @@ public interface ICloud {
 	 * @return all updates with timestamp larger or equal to the query
 	 *         timestamp.
 	 */
-	public Message[] fetchUpdates(int accessor, int page, double timestamp);
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp);
 
 	/**
 	 * Returns access statistics to the cloud.

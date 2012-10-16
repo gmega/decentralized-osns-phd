@@ -9,6 +9,7 @@ import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.IProgressTracker;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,11 +80,14 @@ public class SimulationTaskBuilder {
 	}
 
 	public SimulationTaskBuilder addMultiConnectivitySimulation(int source,
-			final int repeats, IMetricAccumulator<Double> accumulator) {
-		final MultiTCE multi = new MultiTCE(fGraph, source, repeats, accumulator);
+			final int repeats, IMetricAccumulator<Double> ed, IMetricAccumulator<Double> rd,
+			IProgressTracker tracker) {
+		final MultiTCE multi = new MultiTCE(fGraph, source, repeats,
+				ed, rd, tracker);
 		addSim(multi);
-		addMetric(source, accumulator);
-		
+		addMetric(source, ed);
+		addMetric(source, rd);
+
 		return this;
 	}
 

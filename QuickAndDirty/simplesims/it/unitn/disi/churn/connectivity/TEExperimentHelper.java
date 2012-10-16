@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
-import it.unitn.disi.churn.connectivity.p2p.Utils;
+import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.DunnTopK;
 import it.unitn.disi.graph.analysis.DunnTopK.Mode;
@@ -15,6 +15,8 @@ import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.SumAccumulation;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.IProgressTracker;
+import it.unitn.disi.utils.logging.Progress;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.lambda.functions.implementations.F2;
 
@@ -114,7 +117,7 @@ public class TEExperimentHelper {
 		fYaoConf = yaoConf;
 		fBurnin = burnin;
 		fRepetitions = repetitions;
-		fExecutor = new TaskExecutor(cores);
+		fExecutor = new TaskExecutor(cores, 10);
 	}
 
 	public void shutdown(boolean wait) throws InterruptedException {
@@ -185,34 +188,49 @@ public class TEExperimentHelper {
 	 * @throws Exception
 	 */
 	public List<? extends INodeMetric<?>>[] bruteForceSimulate(String taskStr,
-			IndexedNeighborGraph graph, int sourceStart, int sourceEnd,
-			double[] lIs, double[] dIs, int root, int[] ids, int[] cloudNodes,
-			boolean sampleActivations, boolean cloudSim,
-			boolean monitorComponents) throws Exception {
+			final IndexedNeighborGraph graph, final int sourceStart,
+			final int sourceEnd, final double[] lIs, final double[] dIs,
+			final int root, final int[] ids, final int[] cloudNodes,
+			final boolean sampleActivations, final boolean cloudSim,
+			final boolean monitorComponents, boolean adaptive) throws Exception {
 
 		int sources = sourceEnd - sourceStart + 1;
 
 		fExecutor.start(taskStr, fRepetitions);
 
-		for (int j = 0; j < fRepetitions; j++) {
-			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
-					ids, root);
-			// Stacks sources.
-			for (int i = sourceStart; i <= sourceEnd; i++) {
-				builder.addConnectivitySimulation(i, cloudNodes, null);
-				if (monitorComponents) {
-					builder.andComponentTracker();
-				}
+		Thread submitter = new Thread(new Runnable() {
 
-				if (cloudSim) {
-					builder.addCloudSimulation(i);
+			public void run() {
+				for (int j = 0; j < fRepetitions && !Thread.interrupted(); j++) {
+					SimulationTaskBuilder builder = new SimulationTaskBuilder(
+							graph, ids, root);
+					// Stacks sources.
+					for (int i = sourceStart; i <= sourceEnd; i++) {
+						builder.addConnectivitySimulation(i, cloudNodes, null);
+						if (monitorComponents) {
+							builder.andComponentTracker();
+						}
+
+						if (cloudSim) {
+							builder.addCloudSimulation(i);
+						}
+					}
+
+					builder.createProcesses(lIs, dIs, fYaoConf);
+
+					try {
+						fExecutor.submit(builder.simulationTask(fBurnin));
+					} catch (InterruptedException e) {
+						break;
+					} catch (RejectedExecutionException ex) {
+						System.err
+								.println("Batch terminated, submission halted.");
+						break;
+					}
 				}
 			}
-
-			builder.createProcesses(lIs, dIs, fYaoConf);
-
-			fExecutor.submit(builder.simulationTask(fBurnin));
-		}
+		}, "Task Submission Thread");
+		submitter.start();
 
 		@SuppressWarnings("unchecked")
 		List<SumAccumulation>[] metric = new List[sources];
@@ -231,14 +249,22 @@ public class TEExperimentHelper {
 			SimulationTask task = (SimulationTask) taskResult;
 			int[] tSources = task.sources();
 
+			boolean done = true;
 			for (int source : tSources) {
 				@SuppressWarnings("unchecked")
 				List<INodeMetric<Double>> result = (List<INodeMetric<Double>>) task
 						.metric(source);
 				for (INodeMetric<Double> networkMetric : result) {
-					addMatchingMetric(metric[source - sourceStart],
+					done &= addMatchingMetric(metric[source - sourceStart],
 							networkMetric, graph.size());
 				}
+			}
+
+			if (done && adaptive) {
+				System.err.println("Simulation done after " + i
+						+ " repetitions.");
+				fExecutor.cancelBatch();
+				break;
 			}
 		}
 
@@ -249,9 +275,14 @@ public class TEExperimentHelper {
 	public List<INodeMetric<Double>> bruteForceSimulateMulti(
 			IndexedNeighborGraph graph, int root, int source, double[] li,
 			double[] di, int[] ids) throws Exception {
+
+		IProgressTracker tracker = Progress.newTracker("root: " + root
+				+ ", size: " + li.length, fRepetitions);
+
 		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids, root);
 		stb.addMultiConnectivitySimulation(source, fRepetitions,
-				new SumAccumulation("ed", graph.size()));
+				new SumAccumulation("ed", graph.size()), new SumAccumulation(
+						"rd", graph.size()), tracker);
 		stb.createProcesses(li, di, fYaoConf);
 		SimulationTask task = stb.simulationTask(fBurnin);
 
@@ -260,7 +291,7 @@ public class TEExperimentHelper {
 		return (List<INodeMetric<Double>>) task.metric(source);
 	}
 
-	private void addMatchingMetric(List<SumAccumulation> list,
+	private boolean addMatchingMetric(List<SumAccumulation> list,
 			INodeMetric<Double> networkMetric, int length) {
 
 		SumAccumulation aggregate = null;
@@ -272,11 +303,14 @@ public class TEExperimentHelper {
 		}
 
 		if (aggregate == null) {
-			aggregate = new SumAccumulation(networkMetric.id(), length);
+			aggregate = new SumAccumulation(networkMetric.id(), length,
+					SumAccumulation.DEFAULT_PRECISION, (30 / 3600.0));
 			list.add(aggregate);
 		}
 
 		aggregate.add(networkMetric);
+
+		return aggregate.isPreciseEnough();
 	}
 
 	/**
@@ -291,10 +325,10 @@ public class TEExperimentHelper {
 			IndexedNeighborGraph graph, int root, int source, double[] lIs,
 			double[] dIs, int[] ids, int[] cloudNodes,
 			boolean sampleActivations, boolean cloudSim,
-			boolean monitorComponents) throws Exception {
+			boolean monitorComponents, boolean adaptive) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
 				root, ids, cloudNodes, sampleActivations, cloudSim,
-				monitorComponents)[0];
+				monitorComponents, adaptive)[0];
 	}
 
 	/**
@@ -365,7 +399,7 @@ public class TEExperimentHelper {
 		INodeMetric<Double> estimate = Utils.lookup(
 				bruteForceSimulate(taskString, kPathGraph, remappedSource,
 						remappedSource, liSub, diSub, ids, null, false, false,
-						false), "ed", Double.class);
+						false, false), "ed", Double.class);
 
 		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
 				estimate.getMetric(remappedTarget));

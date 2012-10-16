@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity.p2p;
+package it.unitn.disi.churn.diffusion.experiments.config;
 
 import it.unitn.disi.simulator.measure.INodeMetric;
 

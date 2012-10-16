@@ -2,6 +2,7 @@ package it.unitn.disi.churn.connectivity.p2p;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -31,6 +32,10 @@ import peersim.config.IResolver;
 @AutoConfig
 public class SimWorker extends AbstractWorker implements ITransformer {
 
+	private static final int M1 = 0x1;
+	private static final int M2 = 0x2;
+	private static final int M3 = 0x3;
+
 	/**
 	 * Bitmap containing which nodes in which neighborhoods are cloud nodes.
 	 */
@@ -49,6 +54,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 	@Attribute(value = "skipmetrics", defaultValue = "false")
 	private boolean fSkipMetrics;
 
+	@Attribute(value = "simmode", defaultValue = "1")
+	private int fSimMode;
+
 	private BitSet fCloudBitmap;
 
 	// -------------------------------------------------------------------------
@@ -65,6 +73,13 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
 				"id", "source", "target", "ed", "rd", "edcloud");
 
+		TableWriter fastWriter = new TableWriter(
+				new PrefixedWriter("ESF:", oup), "id", "source", "target",
+				"ed", "rd", "edcloud");
+
+		TableWriter adaptiveWriter = new TableWriter(new PrefixedWriter("ESA:",
+				oup), "id", "source", "target", "ed", "rd", "edcloud");
+
 		try {
 			IScheduleIterator schedule = this.iterator();
 			Integer row;
@@ -80,24 +95,46 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int source = MiscUtils.indexOf(ids,
 						Integer.parseInt(e.attributes.get("node")));
 
+				System.err.println("Burnin sim (normal) - " + row);
 				long startTime = System.nanoTime();
-				List<? extends INodeMetric<?>> metric = simHelper()
-						.bruteForceSimulate(e.toString(), graph, e.root,
-								source, e.lis, e.dis, ids, cloudNodes, false,
-								fCloudSims, fMonitorClusters);
-				System.err
-						.println("PERF: O " + (System.nanoTime() - startTime));
+				List<? extends INodeMetric<?>> metric;
 
-				printResults(e.root, source, metric, writer, ids);
+				if ((fSimMode & M1) != 0) {
+					metric = simHelper().bruteForceSimulate(e.toString(),
+							graph, e.root, source, e.lis, e.dis, ids,
+							cloudNodes, false, fCloudSims, fMonitorClusters,
+							false);
+					System.err.println("PERF: O "
+							+ (System.nanoTime() - startTime));
 
-				startTime = System.nanoTime();
-				metric = simHelper().bruteForceSimulateMulti(graph, e.root,
-						source, e.lis, e.dis, ids);
-				System.err
-						.println("PERF: N " + (System.nanoTime() - startTime));
+					printResults(e.root, source, metric, writer, ids);
+				}
 
-				printResults(e.root, source, metric, writer, ids);
+				if ((fSimMode & M2) != 0) {
+					System.err.println("Burnin sim (adaptive) - " + row);
 
+					startTime = System.nanoTime();
+					metric = simHelper().bruteForceSimulate(e.toString(),
+							graph, e.root, source, e.lis, e.dis, ids,
+							cloudNodes, false, fCloudSims, fMonitorClusters,
+							true);
+					System.err.println("PERF: OA "
+							+ (System.nanoTime() - startTime));
+
+					printResults(e.root, source, metric, adaptiveWriter, ids);
+				}
+				
+				if ((fSimMode & M3) != 0) {
+					System.err.println("Fast sim - " + row);
+					startTime = System.nanoTime();
+					metric = simHelper().bruteForceSimulateMulti(graph, e.root,
+							source, e.lis, e.dis, ids);
+					System.err.println("PERF: N "
+							+ (System.nanoTime() - startTime));
+
+					printResults(e.root, source, metric, fastWriter, ids);
+				}
+				
 			}
 		} finally {
 			shutdown();
@@ -132,9 +169,15 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 			System.err.println("-- Cloud bitmap is "
 					+ cloudBitmapFile.getName() + ".");
 			System.err.print("- Reading...");
-			ObjectInputStream stream = new ObjectInputStream(
-					new FileInputStream(new File(fCloudBitmapFile)));
-			cloudBmp = (BitSet) stream.readObject();
+			ObjectInputStream stream = null;
+
+			try {
+				stream = new ObjectInputStream(new FileInputStream(new File(
+						fCloudBitmapFile)));
+				cloudBmp = (BitSet) stream.readObject();
+			} finally {
+				MiscUtils.safeClose(stream, false);
+			}
 			System.err.println("done.");
 		}
 
@@ -184,9 +227,9 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 			writer.set("id", root);
 			writer.set("source", ids[source]);
 			writer.set("target", ids[i]);
-			writer.set("rd", rd != null ? rd.getMetric(i) / fRepeat : 0);
-			writer.set("edcloud", cloud.getMetric(i) / fRepeat);
-			writer.set("ed", ed.getMetric(i) / fRepeat);
+			writer.set("rd", rd != null ? rd.getMetric(i) : 0);
+			writer.set("edcloud", cloud != null ? cloud.getMetric(i) : 0);
+			writer.set("ed", ed.getMetric(i));
 			writer.emmitRow();
 		}
 	}

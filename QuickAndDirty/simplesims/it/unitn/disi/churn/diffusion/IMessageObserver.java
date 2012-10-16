@@ -4,6 +4,6 @@ import it.unitn.disi.simulator.core.IClockData;
 
 public interface IMessageObserver {
 
-	public void messageReceived(Message message, IClockData clock);
+	public void messageReceived(HFloodMMsg message, IClockData clock);
 	
 }

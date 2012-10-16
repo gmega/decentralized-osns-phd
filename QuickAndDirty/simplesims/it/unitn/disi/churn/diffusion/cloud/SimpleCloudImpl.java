@@ -2,7 +2,7 @@ package it.unitn.disi.churn.diffusion.cloud;
 
 import java.util.Arrays;
 
-import it.unitn.disi.churn.diffusion.Message;
+import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -17,7 +17,7 @@ public class SimpleCloudImpl implements ICloud {
 
 	public static final String PRODUCTIVE = "cloud_productive";
 
-	private Message fUpdate;
+	private HFloodMMsg fUpdate;
 
 	private int fPublisher;
 
@@ -32,7 +32,7 @@ public class SimpleCloudImpl implements ICloud {
 	}
 
 	@Override
-	public void writeUpdate(int id, Message update) {
+	public void writeUpdate(int id, HFloodMMsg update) {
 		if (id > 0 && fPublisher != id) {
 			throw new IllegalArgumentException();
 		}
@@ -42,7 +42,7 @@ public class SimpleCloudImpl implements ICloud {
 	}
 
 	@Override
-	public Message[] fetchUpdates(int accessor, int page, double timestamp) {
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp) {
 		fTotal[accessor]++;
 
 		// No update or update too old.
@@ -51,7 +51,7 @@ public class SimpleCloudImpl implements ICloud {
 		}
 
 		fProductive[accessor]++;
-		return new Message[] { fUpdate };
+		return new HFloodMMsg[] { fUpdate };
 	}
 
 	public Pair<Integer, Integer> accesses(int id) {

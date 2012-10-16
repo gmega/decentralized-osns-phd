@@ -1,6 +1,10 @@
 package it.unitn.disi.churn.diffusion;
 
+import java.util.Arrays;
+
+import it.unitn.disi.churn.diffusion.HFloodMM.IBroadcastObserver;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
+import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
@@ -11,31 +15,48 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
 /**
- * {@link DiffusionWick} identifies the initial login of the source node and
- * causes it to be reached "out of the blue".
+ * {@link DiffusionWick} starts the update dissemination from the source and
+ * collects the metrics for each message.
  * 
  * It also maintains the uptime snapshots required for the computation of the
  * receiver delay, which it exports by means of the {@link INodeMetric}
  * interface.
  */
 @Binding
-public class DiffusionWick implements IEventObserver {
+public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private final int fSource;
 
 	private final double fDelay;
 
+	private int fMessages;
+
 	private double[] fSnapshot;
+
+	private HFloodMM[] fFlood;
 
 	private Poster fPoster;
 
-	public DiffusionWick(int source) {
-		this(source, 0.0);
+	private SimpleMutableMetric fEd;
+
+	private SimpleMutableMetric fRd;
+	
+	private boolean fDisseminating;
+
+	public DiffusionWick(int source, HFloodMM[] flood) {
+		this(source, 1, 0.0, flood);
 	}
 
-	public DiffusionWick(int source, double delay) {
+	public DiffusionWick(int source, int messages, double delay,
+			HFloodMM[] flood) {
 		fSource = source;
 		fDelay = delay;
+		fMessages = messages;
+
+		fEd = new SimpleMutableMetric("ed", flood.length);
+		fRd = new SimpleMutableMetric("rd", flood.length);
+
+		fFlood = flood;
 	}
 
 	public void setPoster(Poster poster) {
@@ -53,10 +74,10 @@ public class DiffusionWick implements IEventObserver {
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
-		if (engine.clock().time() < fDelay) {
+		if (engine.clock().time() < fDelay || fDisseminating) {
 			return;
 		}
-		
+
 		IProcess process = (IProcess) schedulable;
 		// First login of the source.
 		if (process.id() == fSource && process.isUp()) {
@@ -64,16 +85,33 @@ public class DiffusionWick implements IEventObserver {
 				throw new IllegalStateException(
 						"Poster has not been initialized.");
 			}
-			System.err.println("Wick fired.");
+			
+			fDisseminating = true;
+			
+			System.err.println("Wick fired (" + fMessages + ").");
 			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
+			fMessages--;
+
 			// We're no longer binding.
-			engine.unbound(this);
+			if (fMessages == 0) {
+				engine.unbound(this);
+				engine.stop();
+			}
+			
 		}
 	}
 
 	public double up(int i) {
 		return fSnapshot[i];
+	}
+	
+	public INodeMetric<Double> ed() {
+		return fEd;
+	}
+	
+	public INodeMetric<Double> rd() {
+		return fRd;
 	}
 
 	private double[] uptimeSnapshot(INetwork network, IClockData clock) {
@@ -86,7 +124,7 @@ public class DiffusionWick implements IEventObserver {
 
 	@Override
 	public boolean isDone() {
-		return fSnapshot != null;
+		return fMessages == 0;
 	}
 
 	public interface Poster {
@@ -116,27 +154,50 @@ public class DiffusionWick implements IEventObserver {
 
 		private ICloud fCloud;
 
-		private Message fMessage;
+		private HFloodMMsg fMessage;
 
-		public PostMM(IDisseminationService source, ICloud cloud) {
-			fSourceProtocol = source;
+		public PostMM(ICloud cloud) {
+			fSourceProtocol = fFlood[fSource];
 			fCloud = cloud;
 		}
 
 		@Override
 		public void post(ISimulationEngine engine) {
 			fCloud.resetAccessCounters();
-			Message update = new Message(engine.clock().rawTime(), fSource);
+			HFloodMMsg update = new HFloodMMsg(engine.clock().rawTime(), fSource);
 			fSourceProtocol.post(update, engine);
 			fCloud.writeUpdate(fSource, update);
 			System.err.println("START TIME: " + engine.clock().rawTime());
 			fMessage = update;
 		}
 
-		public Message getMessage() {
+		public HFloodMMsg getMessage() {
 			return fMessage;
 		}
 
+	}
+
+	@Override
+	public void broadcastDone(HFloodMMsg message) {
+		HFloodSM source = getSM(fSource);
+		for (int i = 0; i < fFlood.length; i++) {
+			HFloodSM sm = getSM(i);
+			
+			double ed = fEd.getMetric(i);
+			ed = ed + (sm.rawEndToEndDelay() - source.rawEndToEndDelay()); 
+			fEd.setValue(ed, i);
+			
+			double rd = fRd.getMetric(i);
+			rd = rd + (sm.rawReceiverDelay() - fSnapshot[i]);
+			fRd.setValue(rd, i);
+		}
+		
+		fDisseminating = false;
+		Arrays.fill(fSnapshot, Double.MIN_VALUE);
+	}
+
+	public HFloodSM getSM(int i) {
+		return fFlood[i].get(((PostMM) fPoster).getMessage());
 	}
 
 }

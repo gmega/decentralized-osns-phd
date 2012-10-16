@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
-import it.unitn.disi.churn.diffusion.Message;
+import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
@@ -136,7 +136,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	}
 
 	@Override
-	public void messageReceived(Message message, IClockData clock) {
+	public void messageReceived(HFloodMMsg message, IClockData clock) {
 		// Sanity check.
 		if (fNextShift < 0) {
 			throw new IllegalStateException(
@@ -173,10 +173,14 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 		@Override
 		public void scheduled(ISimulationEngine engine) {
-
 			if (fDone) {
 				return;
 			}
+			
+			if (!fSim.network().process(fId).isUp()) {
+				throw new IllegalStateException("A node that is down cannot access the cloud.");
+			}
+			
 			fDone = true;
 			IClockData clock = engine.clock();
 
@@ -185,8 +189,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			double queryTimestamp = fNextAccess - fTimerPeriod + ROUNDOFF_SUM;
 
 			// Fetch updates.
-			Message[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp);
-
+			HFloodMMsg[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp);
+			//System.err.println("Cloud access.");
 			if (DEBUG) {
 				System.err.println("("
 						+ clock.rawTime()
@@ -200,13 +204,13 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			}
 
 			if (updates == ICloud.NO_UPDATE) {
-				fDisseminationService.post(new Message(clock.rawTime(), -1),
+				fDisseminationService.post(new HFloodMMsg(clock.rawTime(), -1),
 						engine);
 			} else {
 				// XXX note that we disseminate old timestamp information when
 				// there's an update. Updates are therefore not so useful for
 				// conveying freshness in this implementation.
-				for (Message update : updates) {
+				for (HFloodMMsg update : updates) {
 					fDisseminationService.post(update, engine);
 				}
 			}

@@ -35,5 +35,30 @@ public interface IProgressTracker {
 	 * @return the title for this {@link IProgressTracker}.
 	 */
 	public abstract String title();
+	
+	public static IProgressTracker NULL_TRACKER = new IProgressTracker() {
+		
+		@Override
+		public String title() {
+			return "Null tracker";
+		}
+		
+		@Override
+		public void tick(int ticks) {
+		}
+		
+		@Override
+		public void tick() {
+		}
+		
+		@Override
+		public void startTask() {
+		}
+		
+		@Override
+		public void done() {
+		}
+		
+	};
 
 }

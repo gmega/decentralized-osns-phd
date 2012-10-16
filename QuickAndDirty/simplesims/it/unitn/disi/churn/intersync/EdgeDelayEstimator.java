@@ -11,12 +11,12 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
 /**
- * Very simple experiment for sampling the synchronization time of two nodes.
+ * Very simple experiment for sampling edge delay.
  * 
  * @author giuliano
  */
 @Binding
-public class TrueSyncEstimator implements IEventObserver {
+public class EdgeDelayEstimator implements IEventObserver {
 
 	private EDSimulationEngine fParent;
 
@@ -28,7 +28,7 @@ public class TrueSyncEstimator implements IEventObserver {
 
 	private final boolean fCloud;
 
-	public TrueSyncEstimator(EDSimulationEngine engine, int samples,
+	public EdgeDelayEstimator(EDSimulationEngine engine, int samples,
 			boolean cloud, IValueObserver observer) {
 		fSamples = samples;
 		fPendingUps = new TDoubleArrayList();

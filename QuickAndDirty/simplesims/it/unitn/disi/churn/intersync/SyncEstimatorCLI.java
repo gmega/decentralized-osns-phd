@@ -159,7 +159,7 @@ public class SyncEstimatorCLI {
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
 			sims.add(new Pair<Integer, IEventObserver>(
-					IProcess.PROCESS_SCHEDULABLE_TYPE, new TrueSyncEstimator(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, new EdgeDelayEstimator(
 							sim, repeats, false, stats.remove(0))));
 		}
 

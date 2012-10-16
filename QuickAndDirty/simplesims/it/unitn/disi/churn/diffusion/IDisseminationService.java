@@ -14,12 +14,12 @@ public interface IDisseminationService {
 	 * Post a new message.
 	 * 
 	 * @param message
-	 *            the {@link Message} to post.
+	 *            the {@link HFloodMMsg} to post.
 	 * 
 	 * @param state
 	 *            a simulation engine.
 	 */
-	public void post(Message message, ISimulationEngine engine);
+	public void post(IMessage message, ISimulationEngine engine);
 
 	/**
 	 * Registers an {@link IMessageObserver} with this dissemination service.

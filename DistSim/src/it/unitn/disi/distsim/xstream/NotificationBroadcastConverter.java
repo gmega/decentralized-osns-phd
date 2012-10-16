@@ -19,7 +19,7 @@ public class NotificationBroadcastConverter extends ReflectionConverter {
 	}
 	
 	@Override
-	public boolean canConvert(Class type) {
+	public boolean canConvert(@SuppressWarnings("rawtypes") Class type) {
 		return NotificationBroadcasterSupport.class.isAssignableFrom(type);
 	}
 

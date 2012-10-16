@@ -3,8 +3,9 @@ package it.unitn.disi.distsim.dataserver;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.utils.collections.Pair;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.rmi.NotBoundException;
@@ -30,9 +31,44 @@ public class CheckpointClient implements Runnable {
 		fApp = app;
 	}
 
+	public Object workUnit(int wid, String wtype) {
+
+		WorkUnit unit;
+		try {
+			unit = fManager.workUnit(wid, wtype);
+			if (unit.isNull()) {
+				return null;
+			}
+		} catch (RemoteException ex) {
+			fLogger.error("Error retrieving checkpoint.", ex);
+			return null;
+		}
+
+		ObjectInputStream iStream;
+
+		try {
+			iStream = new ObjectInputStream(new ByteArrayInputStream(
+					unit.checkpoint));
+			return iStream.readObject();
+		} catch (Exception ex) {
+			fLogger.error("Error de-serializing checkpoint.", ex);
+			return null;
+		}
+
+	}
+
+	public void taskDone(int wid) {
+		try {
+			fManager.clearCheckpoints(wid);
+		} catch (RemoteException ex) {
+			fLogger.error("Failed to clear checkpoint data for task " + wid
+					+ ".", ex);
+		}
+	}
+
 	@Override
 	public void run() {
-		while (Thread.interrupted()) {
+		while (!Thread.interrupted()) {
 			try {
 				Thread.sleep(fChkpInterval);
 			} catch (InterruptedException ex) {
@@ -55,21 +91,27 @@ public class CheckpointClient implements Runnable {
 		int wid;
 
 		try {
+			fApp.checkpointStart();
+
 			oup = new ObjectOutputStream(buffer);
 			Pair<Integer, Serializable> checkpoint = fApp.state();
-			oup.writeObject(checkpoint.b);
-			wid = checkpoint.a;
-		} catch (IOException ex) {
-			// Can't happen.
-			throw new InternalError();
+			if (checkpoint != null) {
+				oup.writeObject(checkpoint.b);
+				wid = checkpoint.a;
+				fManager.writeCheckpoint(wid, buffer.toByteArray());
+			}
+		} catch (Exception ex) {
+			fLogger.error("Error submitting checkpoint.", ex);
+		} finally {
+			fApp.checkpointEnd();
 		}
-
-		fManager.writeCheckpoint(wid, buffer.toByteArray());
 	}
 
 	public static interface Application {
 		public void checkpointStart();
+
 		public Pair<Integer, Serializable> state();
+
 		public void checkpointEnd();
 	}
 

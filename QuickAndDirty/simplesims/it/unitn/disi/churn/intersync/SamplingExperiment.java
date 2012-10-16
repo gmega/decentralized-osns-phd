@@ -97,7 +97,7 @@ public class SamplingExperiment implements ITransformer {
 	private void simSamples(EDSimulationEngine engine) {
 		System.err.println("No burn-in.");
 		final IncrementalStats stats = new IncrementalStats();
-		TrueSyncEstimator sexp = new TrueSyncEstimator(engine, repetitions,
+		EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, repetitions,
 				cloud, new IValueObserver() {
 					@Override
 					public void observe(double value) {
@@ -120,7 +120,7 @@ public class SamplingExperiment implements ITransformer {
 		};
 
 		for (int i = 0; i < repetitions; i++) {
-			TrueSyncEstimator sexp = new TrueSyncEstimator(engine, 1, cloud,
+			EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, 1, cloud,
 					obs);
 			runSim(burnin, sexp);
 		}
@@ -131,7 +131,7 @@ public class SamplingExperiment implements ITransformer {
 		final TDoubleArrayList p2All = new TDoubleArrayList();
 
 		System.err.print("Generating...");
-		TrueSyncEstimator sexp = new TrueSyncEstimator(engine, repetitions,
+		EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, repetitions,
 				cloud, IValueObserver.NULL_OBSERVER) {
 			@Override
 			protected void register(double p2Login, TDoubleArrayList p1Logins) {

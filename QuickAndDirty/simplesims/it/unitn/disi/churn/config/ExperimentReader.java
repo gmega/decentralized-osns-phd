@@ -9,6 +9,7 @@ import it.unitn.disi.utils.tabular.TableReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -162,7 +163,9 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	public static class Experiment {
+	public static class Experiment implements Serializable {
+
+		private static final long serialVersionUID = 1L;
 
 		public final int root;
 

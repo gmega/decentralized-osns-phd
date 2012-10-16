@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient.Application;
+import it.unitn.disi.distsim.dataserver.WorkUnit;
 import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.simulator.random.SimulationTaskException;
@@ -20,20 +21,18 @@ import peersim.config.ObjectCreator;
 
 public abstract class Worker implements Runnable, Application {
 
-	private static final int ONE_HOUR = 3600000;
+	private static final int ONE_SECOND = 1000;
+	
+	private static final int ONE_MINUTE = 60 * ONE_SECOND;
+	
+	private static final int ONE_HOUR = 60 * ONE_MINUTE;
 
 	private static final Logger fLogger = Logger.getLogger(Worker.class);
 
 	/**
-	 * ID of this simulation.
-	 */
-	@Attribute("sim_id")
-	protected String fSimId;
-
-	/**
 	 * How many repetitions to run.
 	 */
-	@Attribute("repeat")
+	@Attribute("repetitions")
 	protected int fRepeat;
 
 	/**
@@ -54,10 +53,14 @@ public abstract class Worker implements Runnable, Application {
 
 	private final Thread fCheckpoint;
 
+	private final ControlClient fControl;
+
 	/**
 	 * The iterator which will feed us experiments.
 	 */
 	private final SchedulerClient fClient;
+
+	private final CheckpointClient fChkpClient;
 
 	/**
 	 * Executor for taking advantage of multicore processors.
@@ -65,25 +68,25 @@ public abstract class Worker implements Runnable, Application {
 	private TaskExecutor fExecutor;
 
 	public Worker(@Attribute(Attribute.AUTO) IResolver resolver) {
-		fExecutor = new TaskExecutor(fCores, fCores + 1);
 		fMutex = new ReentrantLock();
 
-		ControlClient ctrl = ObjectCreator.createInstance(ControlClient.class,
-				"", resolver);
+		fControl = ObjectCreator.createInstance(ControlClient.class, "",
+				resolver);
 
 		try {
-			fCheckpoint = new Thread(
-					new CheckpointClient(ctrl, this, ONE_HOUR),
+			fChkpClient = new CheckpointClient(fControl, this, 10 * ONE_SECOND);
+			fCheckpoint = new Thread(fChkpClient,
 					"Application checkpoint thread");
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 
-		fClient = new SchedulerClient(ctrl);
+		fClient = new SchedulerClient(fControl);
 	}
 
 	@Override
 	public void run() {
+		fExecutor = new TaskExecutor(fCores, fCores + 1);
 		try {
 			initialize();
 			fCheckpoint.start();
@@ -102,18 +105,22 @@ public abstract class Worker implements Runnable, Application {
 			Object experimentData = load(row);
 			Object results = runTasks(row, experimentData);
 			outputResults(results);
+			taskDone();
 		}
 	}
 
 	private Object runTasks(final int id, final Object data) {
-		newTask(id, data);
 
-		fExecutor.start(label(id, data), fRepeat);
+		startTask(id, data);
+
+		final int iterations = fRepeat - fState.iteration;
+
+		fExecutor.start(label(id, data), iterations);
 
 		Thread submitter = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				for (int i = 0; i < fRepeat; i++) {
+				for (int i = 0; i < iterations; i++) {
 					SimulationTask sTask = createTask(id, data);
 					try {
 						fExecutor.submit(sTask);
@@ -126,13 +133,19 @@ public abstract class Worker implements Runnable, Application {
 
 		submitter.start();
 
-		for (int i = 0; i < fRepeat; i++) {
+		for (int i = 0; i < iterations; i++) {
 			SimulationTask task = getTask(fExecutor);
 			if (task == null) {
 				continue;
 			}
 			fMutex.lock();
 			aggregate(fState.aggregate, i, task);
+			if (isPreciseEnough(fState.aggregate)) {
+				submitter.interrupt();
+				fMutex.unlock();
+				fExecutor.cancelBatch();
+				break;
+			}
 			fState.iteration++;
 			fMutex.unlock();
 		}
@@ -173,14 +186,27 @@ public abstract class Worker implements Runnable, Application {
 		return lab.toString();
 	}
 
-	private void newTask(int id, Object data) {
+	private void startTask(int id, Object data) {
 		fMutex.lock();
 
-		fState = new SimulationState();
-		fState.taskId = id;
-		fState.iteration = 0;
-		fState.aggregate = resultAggregate(id, data);
+		Object chkp = fChkpClient.workUnit(id, "");
 
+		if (chkp != null) {
+			fState = (SimulationState) chkp;
+		} else {
+			fState = new SimulationState();
+			fState.taskId = id;
+			fState.iteration = 0;
+			fState.aggregate = resultAggregate(id, data);
+		}
+
+		fMutex.unlock();
+	}
+
+	private void taskDone() {
+		fMutex.lock();
+		fChkpClient.taskDone(fState.taskId);
+		fState = null;
 		fMutex.unlock();
 	}
 
@@ -189,7 +215,10 @@ public abstract class Worker implements Runnable, Application {
 	}
 
 	public Pair<Integer, Serializable> state() {
-		return new Pair<Integer, Serializable>(fState.taskId, fState);
+		if (fState != null) {
+			return new Pair<Integer, Serializable>(fState.taskId, fState);
+		}
+		return null;
 	}
 
 	public void checkpointEnd() {
@@ -244,6 +273,13 @@ public abstract class Worker implements Runnable, Application {
 	 * @return
 	 */
 	protected abstract Serializable resultAggregate(int id, Object data);
+
+	/**
+	 * @param aggregate
+	 * @return <code>true</code> if the estimator is precise enough and
+	 *         simulations should stop, or <code>false</code> otherwise.
+	 */
+	protected abstract boolean isPreciseEnough(Object aggregate);
 
 	protected abstract void aggregate(Object aggregate, int i,
 			SimulationTask task);

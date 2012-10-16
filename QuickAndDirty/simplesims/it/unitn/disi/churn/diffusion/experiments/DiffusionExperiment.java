@@ -1,14 +1,14 @@
-package it.unitn.disi.churn.diffusion;
+package it.unitn.disi.churn.diffusion.experiments;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.connectivity.p2p.Utils;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
-import it.unitn.disi.churn.diffusion.config.ChurnSimulationBuilder;
-import it.unitn.disi.churn.diffusion.config.CloudSimulationBuilder;
-import it.unitn.disi.churn.diffusion.config.StaticSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.ChurnSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;

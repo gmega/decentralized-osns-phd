@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.diffusion.config;
+package it.unitn.disi.churn.diffusion.experiments.config;
 
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
@@ -86,7 +86,7 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, IProcess[] processes) {
+			final int source, int messages, IProcess[] processes) {
 
 		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
@@ -97,7 +97,7 @@ public class CloudSimulationBuilder {
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
-		final HFloodMM[] prots = create(processes, runner, source);
+		final HFloodMM[] prots = create(processes, runner, messages);
 		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size(), source);
 		create(engine, processes, prots, cloud, source);
 
@@ -105,8 +105,8 @@ public class CloudSimulationBuilder {
 		metrics.add(cloud.totalAccesses());
 		metrics.add(cloud.productiveAccesses());
 
-		addWickOrAnchor(source, prots, processes, engine, cloud, observers,
-				metrics);
+		addWickOrAnchor(source, messages, prots, processes, engine, cloud,
+				observers, metrics);
 
 		engine.setEventObservers(observers);
 
@@ -115,9 +115,9 @@ public class CloudSimulationBuilder {
 
 	}
 
-	private void addWickOrAnchor(final int source, final HFloodMM[] prots,
-			IProcess[] processes, EDSimulationEngine engine,
-			SimpleCloudImpl cloud,
+	private void addWickOrAnchor(final int source, int messages,
+			final HFloodMM[] prots, IProcess[] processes,
+			EDSimulationEngine engine, SimpleCloudImpl cloud,
 			List<Pair<Integer, ? extends IEventObserver>> observers,
 			List<INodeMetric<? extends Object>> metrics) {
 
@@ -128,9 +128,14 @@ public class CloudSimulationBuilder {
 			return;
 		}
 
-		DiffusionWick wick = new DiffusionWick(source, fNUPBurnin);
-		final PostMM poster = wick.new PostMM(prots[source], cloud);
+		DiffusionWick wick = new DiffusionWick(source, messages, fNUPBurnin,  prots);
+		final PostMM poster = wick.new PostMM(cloud);
 		wick.setPoster(poster);
+
+		// Adds the diffusion wick as the global message tracker.
+		for (HFloodMM protocol : prots) {
+			protocol.addBroadcastObserver(wick);
+		}
 
 		// If the source is a fixed node, we need to add a synthetic login to
 		// fire the wick.
@@ -141,19 +146,19 @@ public class CloudSimulationBuilder {
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, wick));
 
-		metrics.add(MMMetrics.rdMetric(prots, wick));
-		metrics.add(MMMetrics.edMetric(prots, wick));
+		metrics.add(wick.ed());
+		metrics.add(wick.rd());
 	}
 
 	private HFloodMM[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int source) {
+			int messages) {
 		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
 		for (int i = 0; i < protocols.length; i++) {
 			protocols[i] = new HFloodMM(HFLOOD_PID, fGraph, peerSelector(),
 					processes[i],
 					new CachingTransformer(new LiveTransformer()), runner,
-					i == source);
+					messages == 1);
 			processes[i].addProtocol(protocols[i]);
 		}
 		return protocols;
@@ -233,11 +238,11 @@ public class CloudSimulationBuilder {
 			super(engine, period, type, pid);
 		}
 
-		@Override
-		protected boolean hasReachedEndState(ISimulationEngine engine,
-				ICyclicProtocol protocol) {
-			return ((HFloodMM) protocol).isReached();
-		}
+//		@Override
+//		protected boolean hasReachedEndState(ISimulationEngine engine,
+//				ICyclicProtocol protocol) {
+//			return ((HFloodMM) protocol).isReached();
+//		}
 	}
 
 	private class OneShotProcess extends IProcess {

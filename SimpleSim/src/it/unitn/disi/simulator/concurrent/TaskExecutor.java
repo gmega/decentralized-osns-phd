@@ -24,11 +24,13 @@ public class TaskExecutor {
 
 	private static final Logger fLogger = Logger.getLogger(TaskExecutor.class);
 
-	private final CallbackThreadPoolExecutor<Object> fExecutor;
+	private volatile CallbackThreadPoolExecutor<Object> fExecutor;
+
+	private final int fCores;
 
 	private final LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>(
 			10);
-	
+
 	private final Semaphore fSema;
 
 	private final AtomicInteger fTasks = new AtomicInteger();
@@ -40,8 +42,14 @@ public class TaskExecutor {
 	public TaskExecutor(int cores) {
 		this(cores, Integer.MAX_VALUE);
 	}
-	
+
 	public TaskExecutor(int cores, int maxQueuedTasks) {
+		createExecutor(cores);
+		fSema = new Semaphore(maxQueuedTasks);
+		fCores = cores;
+	}
+
+	public void createExecutor(int cores) {
 		fExecutor = new CallbackThreadPoolExecutor<Object>(cores > 0 ? cores
 				: Runtime.getRuntime().availableProcessors(),
 				new IExecutorCallback<Object>() {
@@ -67,8 +75,6 @@ public class TaskExecutor {
 						}
 					}
 				});
-		
-		fSema = new Semaphore(maxQueuedTasks);
 	}
 
 	public synchronized void start(String task, int taskBlock) {
@@ -79,10 +85,12 @@ public class TaskExecutor {
 		fTracker.startTask();
 	}
 
-	public void submit(Callable<? extends Object> callable) throws InterruptedException {
+	public void submit(Callable<? extends Object> callable)
+			throws InterruptedException {
 		if (fTasks.decrementAndGet() < 0) {
 			throw new IllegalStateException("Task block is complete.");
 		}
+
 		fSema.acquire();
 		fExecutor.submit(callable);
 	}
@@ -92,6 +100,26 @@ public class TaskExecutor {
 			throw new IllegalStateException("All tasks have been consumed.");
 		}
 		return fReady.poll(Long.MAX_VALUE, TimeUnit.DAYS);
+	}
+
+	public synchronized void cancelBatch() {
+		// Stops accepting new tasks.
+		fTasks.set(0);
+		fConsumed.set(0);
+
+		// If this aborts with an interrupted exception, there might be
+		// unwanted tasks joining the queue later. It is a freakshow condition,
+		// so I won't bother with it for now, but will check.
+		try {
+			// Waits for all submitted tasks to terminate.
+			shutdown(true);
+		} catch (InterruptedException ex) {
+			throw new RuntimeException(
+					"Shutdown interrupted, state might be inconsistent.");
+		} finally {
+			fReady.clear();
+			createExecutor(fCores);
+		}
 	}
 
 	public void shutdown(boolean wait) throws InterruptedException {

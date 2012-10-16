@@ -41,7 +41,7 @@ public class HFloodSM implements ICyclicProtocol {
 
 	private BitSet fMappedHistory;
 
-	private Message fMessage;
+	private IMessage fMessage;
 
 	private State fState = State.IDLE;
 
@@ -80,7 +80,7 @@ public class HFloodSM implements ICyclicProtocol {
 	 * @param initial
 	 *            the initial history that came with it.
 	 */
-	public void setMessage(Message message, BitSet initial) {
+	public void setMessage(IMessage message, BitSet initial) {
 		fHistory.clear();
 		fMappedHistory.clear();
 
@@ -91,6 +91,10 @@ public class HFloodSM implements ICyclicProtocol {
 		fMessage = message;
 		fEndToEndDelay = Double.NEGATIVE_INFINITY;
 		fRawReceiverDelay = Double.NEGATIVE_INFINITY;
+		
+		if (message != null) {
+			changeState(State.IDLE);
+		}
 	}
 
 	/**
@@ -105,6 +109,8 @@ public class HFloodSM implements ICyclicProtocol {
 			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(id());
 			changeState(State.ACTIVE);
+		} else {
+			duplicateReceived(clock);
 		}
 	}
 
@@ -195,6 +201,10 @@ public class HFloodSM implements ICyclicProtocol {
 		}
 		return fMappedHistory;
 	}
+	
+	protected void duplicateReceived(IClockData clock) {
+		// To be overridden by subclasses.
+	}
 
 	protected BitSet sendMessage(HFloodSM sender, BitSet history,
 			IClockData clock) {
@@ -216,7 +226,7 @@ public class HFloodSM implements ICyclicProtocol {
 		return fRawReceiverDelay;
 	}
 
-	public Message message() {
+	public IMessage message() {
 		return fMessage;
 	}
 

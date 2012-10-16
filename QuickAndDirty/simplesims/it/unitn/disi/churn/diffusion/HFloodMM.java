@@ -30,18 +30,24 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	private State fState;
 
 	private int fPid;
+	
+	private IProcess fProcess;
+	
+	private boolean fOneShot;
 
-	private boolean fSource;
+	private BroadcastTracker fCollector = new BroadcastTracker();
 
 	private HFloodSM[] fProtocols = new HFloodSM[2];
 
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
 
+	private ArrayList<IBroadcastObserver> fBcastObservers = new ArrayList<IBroadcastObserver>();
+
 	public HFloodMM(int pid, IndexedNeighborGraph graph,
 			IPeerSelector selector, IProcess process,
 			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			boolean source) {
+			boolean oneShot) {
 
 		fProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this);
@@ -51,26 +57,32 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		fRunner = runner;
 		fPid = pid;
-		fSource = source;
+		fProcess = process;
+		fOneShot = oneShot;
 	}
 
-	public void post(Message message, ISimulationEngine engine) {
+	public void post(IMessage genericMessage, ISimulationEngine engine) {
+		HFloodMMsg message = (HFloodMMsg) genericMessage;
+		
 		if (message.isNUP()) {
 			fProtocols[NO_UPDATE].setMessage(message, null);
 			fProtocols[NO_UPDATE].markReached(engine.clock());
 		}
 
 		else {
-			if (fSource) {
+			if (message.source() == fProcess.id()) {
+				if (!fCollector.isBroadcastDone()) {
+					throw new IllegalStateException(
+							"Can't disseminate more than one update at a time.");
+				}
+				message.setTracker(fCollector);
+				fCollector.beginBroadcast(engine, message);
 				// Eagerly sets the message to all network participants (it's
 				// easier this way).
 				INetwork network = engine.network();
 				for (int i = 0; i < network.size(); i++) {
 					HFloodMM hfmm = (HFloodMM) network.process(i).getProtocol(
 							fPid);
-					if (hfmm.fProtocols[UPDATE].getState() != State.IDLE) {
-						throw new IllegalStateException();
-					}
 					hfmm.fProtocols[UPDATE].setMessage(message, null);
 				}
 			} else {
@@ -95,6 +107,14 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		fObservers.remove(observer);
 	}
 
+	public void addBroadcastObserver(IBroadcastObserver observer) {
+		fBcastObservers.add(observer);
+	}
+
+	public void removeBroadcastObserver(IBroadcastObserver observer) {
+		fBcastObservers.add(observer);
+	}
+
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
 
@@ -105,7 +125,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		// If dissemination is done, we're done.
 		if (fProtocols[UPDATE].getState() == State.DONE) {
-			fState = State.DONE;
+			fState = fOneShot ? State.DONE : State.IDLE;
 		}
 
 		// Otherwise we're either active...
@@ -128,18 +148,18 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	@Override
 	public HFloodSM get(HFloodSM caller, INetwork network, int id) {
 		HFloodMM neighbor = (HFloodMM) network.process(id).getProtocol(fPid);
-		return neighbor.get(caller.message());
+		return neighbor.get((HFloodMMsg) caller.message());
 	}
 
-	public HFloodSM get(Message message) {
+	public HFloodSM get(HFloodMMsg message) {
 		return message.isNUP() ? fProtocols[NO_UPDATE] : fProtocols[UPDATE];
 	}
-	
+
 	public boolean isReached() {
 		return fProtocols[UPDATE].isReached();
 	}
 
-	private void messageReceived(Message message, IClockData clock) {
+	private void messageReceived(HFloodMMsg message, IClockData clock) {
 		for (IMessageObserver observer : fObservers) {
 			observer.messageReceived(message, clock);
 		}
@@ -156,7 +176,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		@Override
 		protected BitSet sendMessage(HFloodSM sender, BitSet history,
 				IClockData clock) {
-			Message message = sender.message();
+			HFloodMMsg message = (HFloodMMsg) sender.message();
 			if (!message.isNUP()) {
 				throw new IllegalStateException(message + " != "
 						+ this.message());
@@ -169,7 +189,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		}
 
 		@Override
-		public void setMessage(Message message, BitSet history) {
+		public void setMessage(IMessage message, BitSet history) {
 			if (message() == null
 					|| message.timestamp() > message().timestamp()) {
 				super.setMessage(message, history);
@@ -186,13 +206,58 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			super(graph, selector, process, transformer, reference);
 		}
 
+		public void rearm() {
+			super.setMessage(null, null);
+		}
+
 		@Override
 		public void markReached(IClockData clock) {
 			boolean notify = !isReached();
 			super.markReached(clock);
 			if (notify) {
-				messageReceived(message(), clock);
+				messageReceived((HFloodMMsg) message(), clock);
+				HFloodMMsg msg = (HFloodMMsg) message();
+				if (msg.getTracker() != null) {
+					System.err.println("Message reached node " + fProcess.id());
+					msg.getTracker().decrement();
+				}
 			}
 		}
+	}
+
+	class BroadcastTracker {
+
+		private int fIntendedDestinations;
+		
+		private HFloodMMsg fMessage;
+
+		public void beginBroadcast(ISimulationEngine engine, HFloodMMsg message) {
+			fIntendedDestinations = engine.network().size();
+			fMessage = message;
+		}
+
+		public void decrement() {
+			fIntendedDestinations--;
+			System.err.println("Indended dests: " + fIntendedDestinations);
+			if (fIntendedDestinations < 0) {
+				throw new IllegalStateException();
+			}
+
+			if (fIntendedDestinations == 0) {
+				for (IBroadcastObserver observer : fBcastObservers) {
+					observer.broadcastDone(fMessage);
+				}
+				fMessage = null;
+			}
+		}
+
+		public boolean isBroadcastDone() {
+			return fIntendedDestinations == 0;
+		}
+
+	}
+
+	public static interface IBroadcastObserver {
+		public void broadcastDone(HFloodMMsg message);
 	}
 }
