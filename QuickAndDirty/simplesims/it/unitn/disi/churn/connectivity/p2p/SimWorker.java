@@ -34,7 +34,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 	private static final int M1 = 0x1;
 	private static final int M2 = 0x2;
-	private static final int M3 = 0x3;
+	private static final int M3 = 0x4;
 
 	/**
 	 * Bitmap containing which nodes in which neighborhoods are cloud nodes.
@@ -95,11 +95,12 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				int source = MiscUtils.indexOf(ids,
 						Integer.parseInt(e.attributes.get("node")));
 
-				System.err.println("Burnin sim (normal) - " + row);
 				long startTime = System.nanoTime();
 				List<? extends INodeMetric<?>> metric;
 
 				if ((fSimMode & M1) != 0) {
+					System.err.println("Burnin sim (normal) - " + row);
+
 					metric = simHelper().bruteForceSimulate(e.toString(),
 							graph, e.root, source, e.lis, e.dis, ids,
 							cloudNodes, false, fCloudSims, fMonitorClusters,

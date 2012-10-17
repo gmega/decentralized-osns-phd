@@ -25,6 +25,8 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 @Binding
 public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
+	private static final long serialVersionUID = 1L;
+
 	private final int fSource;
 
 	private final double fDelay;
@@ -92,13 +94,6 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
 			fMessages--;
-
-			// We're no longer binding.
-			if (fMessages == 0) {
-				engine.unbound(this);
-				engine.stop();
-			}
-			
 		}
 	}
 
@@ -178,7 +173,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	}
 
 	@Override
-	public void broadcastDone(HFloodMMsg message) {
+	public void broadcastDone(HFloodMMsg message, ISimulationEngine engine) {
 		HFloodSM source = getSM(fSource);
 		for (int i = 0; i < fFlood.length; i++) {
 			HFloodSM sm = getSM(i);
@@ -194,6 +189,12 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		
 		fDisseminating = false;
 		Arrays.fill(fSnapshot, Double.MIN_VALUE);
+		
+		// We're no longer binding.
+		if (fMessages == 0) {
+			engine.unbound(this);
+			engine.stop();
+		}
 	}
 
 	public HFloodSM getSM(int i) {

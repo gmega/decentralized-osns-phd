@@ -1,11 +1,13 @@
 package it.unitn.disi.simulator.core;
 
+import java.io.Serializable;
+
 /**
  * An {@link IEventObserver} is an observer for simulation events.
  * 
  * @author giuliano
  */
-public interface IEventObserver {
+public interface IEventObserver extends Serializable {
 
 	public static final Double UNKNOWN = -1D;
 

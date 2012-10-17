@@ -22,5 +22,7 @@ public interface IClockData {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean isBurningIn();
+	
+	public ISimulationEngine engine();
 
 }

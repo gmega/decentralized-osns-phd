@@ -13,7 +13,7 @@ public class Exponential implements IDistribution {
 
 	private final double fLambda;
 	
-	private final IDistribution fU;;
+	private final IDistribution fU;
 	
 	public Exponential(
 			@Attribute("lambda") double lambda, 

@@ -1,5 +1,6 @@
 package it.unitn.disi.simulator.core;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -7,8 +8,11 @@ import java.util.ArrayList;
  * 
  * @author giuliano
  */
-public abstract class Schedulable implements Comparable<Schedulable> {
+public abstract class Schedulable implements Comparable<Schedulable>,
+		Serializable {
 
+	private static final long serialVersionUID = 1L;
+	
 	private final ArrayList<IEventObserver> fObservers;
 
 	public Schedulable() {

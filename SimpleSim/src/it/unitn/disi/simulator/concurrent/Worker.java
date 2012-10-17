@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient.Application;
-import it.unitn.disi.distsim.dataserver.WorkUnit;
 import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.simulator.random.SimulationTaskException;
@@ -25,8 +24,6 @@ public abstract class Worker implements Runnable, Application {
 	
 	private static final int ONE_MINUTE = 60 * ONE_SECOND;
 	
-	private static final int ONE_HOUR = 60 * ONE_MINUTE;
-
 	private static final Logger fLogger = Logger.getLogger(Worker.class);
 
 	/**
@@ -60,6 +57,9 @@ public abstract class Worker implements Runnable, Application {
 	 */
 	private final SchedulerClient fClient;
 
+	/**
+	 * Client to the checkpoint manager.
+	 */
 	private final CheckpointClient fChkpClient;
 
 	/**
@@ -74,7 +74,7 @@ public abstract class Worker implements Runnable, Application {
 				resolver);
 
 		try {
-			fChkpClient = new CheckpointClient(fControl, this, 10 * ONE_SECOND);
+			fChkpClient = new CheckpointClient(fControl, this, 30*ONE_MINUTE);
 			fCheckpoint = new Thread(fChkpClient,
 					"Application checkpoint thread");
 		} catch (Exception ex) {

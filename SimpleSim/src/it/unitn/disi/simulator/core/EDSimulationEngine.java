@@ -2,6 +2,7 @@ package it.unitn.disi.simulator.core;
 
 import it.unitn.disi.utils.collections.Pair;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -13,7 +14,9 @@ import java.util.Set;
  * @author giuliano
  */
 public class EDSimulationEngine implements Runnable, INetwork, IClockData,
-		ISimulationEngine {
+		ISimulationEngine, Serializable {
+
+	private static final long serialVersionUID = 2524387383691123240L;
 
 	private final IProcess[] fProcesses;
 
@@ -25,7 +28,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private boolean fRunning;
 
-	private boolean fDone;
+	private volatile boolean fDone;
 
 	private double fTime = 0.0;
 
@@ -101,49 +104,54 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public void run() {
 		checkNotRunning();
 		checkCanRun();
-		
+
 		fRunning = true;
 
 		// Main simulation loop.
 		while (!fDone) {
-			if(!uncheckedStep()) {
+			if (!uncheckedStep()) {
 				break;
 			}
 		}
+
+		fRunning = false;
+
+		synchronized (this) {
+			notify();
+		}
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public int step(int events) {
 		checkCanRun();
 		fRunning = true;
-		
-		for(int i = 0; i < events; i++) {
-			if(!uncheckedStep() || fDone) {
+
+		for (int i = 0; i < events; i++) {
+			if (!uncheckedStep() || fDone) {
 				return i;
 			}
 		}
-		
+
 		return events;
 	}
-	
-	// -------------------------------------------------------------------------
 
+	// -------------------------------------------------------------------------
 
 	public void checkCanRun() throws IllegalStateException {
-		if(!fRunning && fDone) {
-			throw new IllegalStateException("Can't step a simulation that's" +
-					" already done.");
+		if (!fRunning && fDone) {
+			throw new IllegalStateException("Can't step a simulation that's"
+					+ " already done.");
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	private boolean uncheckedStep() {
-		if(fQueue.isEmpty()) {
+		if (fQueue.isEmpty()) {
 			return false;
 		}
-		
+
 		Schedulable p = fQueue.remove();
 		fTime = p.time();
 		p.scheduled(this);
@@ -159,10 +167,10 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		if (!p.isExpired()) {
 			schedule(p);
 		}
-		
+
 		return true;
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	/**
@@ -203,7 +211,32 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public void stop() {
 		fDone = true;
 	}
-	
+
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The pause method might be called from another thread to temporarily
+	 * interrupt execution of this simulation engine.
+	 */
+	public void pause() {
+		// Stops the engine cold.
+		stop();
+
+		// Waits for the work thread to finish.
+		synchronized (this) {
+			while (fRunning) {
+				try {
+					this.wait();
+				} catch (InterruptedException ex) {
+					// Ignore it.
+				}
+			}
+		}
+
+		// Restores fDone status to allow resuming execution.
+		fDone = false;
+	}
+
 	// -------------------------------------------------------------------------
 
 	public boolean isDone() {
@@ -349,5 +382,12 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public double time() {
 		return Math.max(0, rawTime() - fBurnin);
 	}
+	
+	// -------------------------------------------------------------------------
+	
+	public ISimulationEngine engine() {
+		return this;
+	}
 
+	// -------------------------------------------------------------------------
 }

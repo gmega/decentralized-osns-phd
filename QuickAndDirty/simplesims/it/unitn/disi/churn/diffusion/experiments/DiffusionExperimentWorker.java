@@ -40,7 +40,7 @@ import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
-public class DiffusionExperiment2 extends Worker {
+public class DiffusionExperimentWorker extends Worker {
 	
 	@Attribute("period")
 	private double fPeriod;
@@ -88,7 +88,7 @@ public class DiffusionExperiment2 extends Worker {
 
 	private BitSet fFixedMap;
 
-	public DiffusionExperiment2(@Attribute(Attribute.AUTO) IResolver resolver,
+	public DiffusionExperimentWorker(@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute(value = "churn", defaultValue = "false") boolean churn)
 			throws Exception {
 		super(resolver);
@@ -256,10 +256,23 @@ public class DiffusionExperiment2 extends Worker {
 			printCloudAcessStatistics(result.a, result.b);
 		}
 	}
-
+	
+	@SuppressWarnings("unchecked")
 	private void printCloudAcessStatistics(ExperimentData data,
 			MetricsCollector metrics) {
-
+		
+		INodeMetric<Double> tot = metrics.getMetric(SimpleCloudImpl.TOTAL);
+		INodeMetric<Double> prod = metrics.getMetric(SimpleCloudImpl.PRODUCTIVE);
+		
+		for (int i = 0; i < data.graph.size(); i++) {
+			fCloudStatWriter.set("id", data.experiment.root);
+			fCloudStatWriter.set("source", data.source);
+			fCloudStatWriter.set("target", data.ids[i]);
+			fCloudStatWriter.set("accup", prod.getMetric(i));
+			fCloudStatWriter.set("accnup", tot.getMetric(i));
+			fCloudStatWriter.set("exps",fRepeat);
+			fCloudStatWriter.emmitRow();
+		}
 	}
 
 	@SuppressWarnings("unchecked")

@@ -30,9 +30,9 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	private State fState;
 
 	private int fPid;
-	
+
 	private IProcess fProcess;
-	
+
 	private boolean fOneShot;
 
 	private BroadcastTracker fCollector = new BroadcastTracker();
@@ -63,7 +63,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	public void post(IMessage genericMessage, ISimulationEngine engine) {
 		HFloodMMsg message = (HFloodMMsg) genericMessage;
-		
+
 		if (message.isNUP()) {
 			fProtocols[NO_UPDATE].setMessage(message, null);
 			fProtocols[NO_UPDATE].markReached(engine.clock());
@@ -219,7 +219,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 				HFloodMMsg msg = (HFloodMMsg) message();
 				if (msg.getTracker() != null) {
 					System.err.println("Message reached node " + fProcess.id());
-					msg.getTracker().decrement();
+					msg.getTracker().decrement(clock.engine());
 				}
 			}
 		}
@@ -228,7 +228,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	class BroadcastTracker {
 
 		private int fIntendedDestinations;
-		
+
 		private HFloodMMsg fMessage;
 
 		public void beginBroadcast(ISimulationEngine engine, HFloodMMsg message) {
@@ -236,16 +236,16 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			fMessage = message;
 		}
 
-		public void decrement() {
+		public void decrement(ISimulationEngine engine) {
 			fIntendedDestinations--;
-			System.err.println("Indended dests: " + fIntendedDestinations);
+			System.err.println("Remaining: " + fIntendedDestinations);
 			if (fIntendedDestinations < 0) {
 				throw new IllegalStateException();
 			}
 
 			if (fIntendedDestinations == 0) {
 				for (IBroadcastObserver observer : fBcastObservers) {
-					observer.broadcastDone(fMessage);
+					observer.broadcastDone(fMessage, engine);
 				}
 				fMessage = null;
 			}
@@ -258,6 +258,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	}
 
 	public static interface IBroadcastObserver {
-		public void broadcastDone(HFloodMMsg message);
+		public void broadcastDone(HFloodMMsg message, ISimulationEngine engine);
 	}
 }

@@ -1,8 +1,12 @@
 package it.unitn.disi.simulator.core;
 
+import java.io.Serializable;
+
 import it.unitn.disi.simulator.random.IDistribution;
 
-public class RenewalProcess extends IProcess {
+public class RenewalProcess extends IProcess implements Serializable {
+
+	private static final long serialVersionUID = -5308561729336795474L;
 
 	private final int fId;
 
