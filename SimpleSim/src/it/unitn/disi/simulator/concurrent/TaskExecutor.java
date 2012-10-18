@@ -38,6 +38,8 @@ public class TaskExecutor {
 	private final AtomicInteger fConsumed = new AtomicInteger();
 
 	private volatile IProgressTracker fTracker;
+	
+	private volatile boolean fDiscard;
 
 	public TaskExecutor(int cores) {
 		this(cores, Integer.MAX_VALUE);
@@ -67,6 +69,10 @@ public class TaskExecutor {
 					}
 
 					private void queue(Object result) {
+						if (fDiscard) {
+							return;
+						}
+						
 						try {
 							fSema.release();
 							fReady.offer(result, Long.MAX_VALUE, TimeUnit.DAYS);
@@ -103,7 +109,8 @@ public class TaskExecutor {
 	}
 
 	public synchronized void cancelBatch() {
-		// Stops accepting new tasks.
+		// Stops accepting new tasks, and do not allow client to consume
+		// any more tasks from this batch.
 		fTasks.set(0);
 		fConsumed.set(0);
 
@@ -111,12 +118,18 @@ public class TaskExecutor {
 		// unwanted tasks joining the queue later. It is a freakshow condition,
 		// so I won't bother with it for now, but will check.
 		try {
+			// Any task that completes from here will be discarded.
+			synchronized(fExecutor) {
+				fDiscard = true;
+			}
+			
 			// Waits for all submitted tasks to terminate.
 			shutdown(true);
 		} catch (InterruptedException ex) {
 			throw new RuntimeException(
 					"Shutdown interrupted, state might be inconsistent.");
 		} finally {
+			fDiscard = false;
 			fReady.clear();
 			createExecutor(fCores);
 		}
