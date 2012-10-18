@@ -21,9 +21,9 @@ import peersim.config.ObjectCreator;
 public abstract class Worker implements Runnable, Application {
 
 	private static final int ONE_SECOND = 1000;
-	
+
 	private static final int ONE_MINUTE = 60 * ONE_SECOND;
-	
+
 	private static final Logger fLogger = Logger.getLogger(Worker.class);
 
 	/**
@@ -74,7 +74,7 @@ public abstract class Worker implements Runnable, Application {
 				resolver);
 
 		try {
-			fChkpClient = new CheckpointClient(fControl, this, 30*ONE_MINUTE);
+			fChkpClient = new CheckpointClient(fControl, this, 30 * ONE_MINUTE);
 			fCheckpoint = new Thread(fChkpClient,
 					"Application checkpoint thread");
 		} catch (Exception ex) {
@@ -120,7 +120,7 @@ public abstract class Worker implements Runnable, Application {
 		Thread submitter = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				for (int i = 0; i < iterations; i++) {
+				for (int i = 0; i < iterations && !Thread.interrupted(); i++) {
 					SimulationTask sTask = createTask(id, data);
 					try {
 						fExecutor.submit(sTask);
@@ -144,6 +144,11 @@ public abstract class Worker implements Runnable, Application {
 				submitter.interrupt();
 				fMutex.unlock();
 				fExecutor.cancelBatch();
+				try {
+					submitter.join();
+				} catch (InterruptedException e) {
+					// Don't care.
+				}
 				break;
 			}
 			fState.iteration++;

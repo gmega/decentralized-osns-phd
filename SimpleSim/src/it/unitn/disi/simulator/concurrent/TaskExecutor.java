@@ -10,13 +10,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
 /**
  * Helper class for running blocks of tasks and getting the results for
- * completed tasks first.
+ * completed tasks first. There are plenty of ways of using this class wrong.
  * 
  * @author giuliano
  */
@@ -26,28 +25,32 @@ public class TaskExecutor {
 
 	private volatile CallbackThreadPoolExecutor<Object> fExecutor;
 
+	private volatile LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>();
+
+	private volatile Semaphore fSema;
+
 	private final int fCores;
 
-	private final LinkedBlockingQueue<Object> fReady = new LinkedBlockingQueue<Object>(
-			10);
+	private int fBlockSize;
 
-	private final Semaphore fSema;
+	private int fTasks;
 
-	private final AtomicInteger fTasks = new AtomicInteger();
-
-	private final AtomicInteger fConsumed = new AtomicInteger();
+	private int fConsumed;
 
 	private volatile IProgressTracker fTracker;
-	
-	private volatile boolean fDiscard;
+
+	private boolean fDiscard;
+
+	private int fMaxQueuedTasks;
 
 	public TaskExecutor(int cores) {
 		this(cores, Integer.MAX_VALUE);
 	}
 
 	public TaskExecutor(int cores, int maxQueuedTasks) {
+		fMaxQueuedTasks = maxQueuedTasks;
 		createExecutor(cores);
-		fSema = new Semaphore(maxQueuedTasks);
+		semaphoreAndQueue();
 		fCores = cores;
 	}
 
@@ -56,7 +59,8 @@ public class TaskExecutor {
 				: Runtime.getRuntime().availableProcessors(),
 				new IExecutorCallback<Object>() {
 					@Override
-					public void taskFailed(Future<Object> task, Throwable ex) {
+					public synchronized void taskFailed(Future<Object> task,
+							Throwable ex) {
 						fTracker.tick();
 						fLogger.error("Task ended with an error.", ex);
 						queue(ex);
@@ -72,20 +76,16 @@ public class TaskExecutor {
 						if (fDiscard) {
 							return;
 						}
-						
-						try {
-							fSema.release();
-							fReady.offer(result, Long.MAX_VALUE, TimeUnit.DAYS);
-						} catch (InterruptedException ex) {
-							ex.printStackTrace();
-						}
+						fSema.release();
+						fReady.offer(result);
 					}
 				});
 	}
 
 	public synchronized void start(String task, int taskBlock) {
-		fTasks.set(taskBlock);
-		fConsumed.set(taskBlock);
+		fTasks = taskBlock;
+		fConsumed = taskBlock;
+		fBlockSize = taskBlock;
 		fTracker = Progress.synchronizedTracker(Progress.newTracker(task,
 				taskBlock));
 		fTracker.startTask();
@@ -93,45 +93,89 @@ public class TaskExecutor {
 
 	public void submit(Callable<? extends Object> callable)
 			throws InterruptedException {
-		if (fTasks.decrementAndGet() < 0) {
-			throw new IllegalStateException("Task block is complete.");
+		Semaphore sema;
+		CallbackThreadPoolExecutor<Object> executor;
+		synchronized (this) {
+			if (fTasks == 0) {
+				throw new IllegalStateException("Task block is complete.");
+			}
+			fTasks--;
+			sema = fSema;
+			executor = fExecutor;
 		}
 
-		fSema.acquire();
-		fExecutor.submit(callable);
+		sema.acquire();
+
+		synchronized (this) {
+			executor.submit(callable);
+		}
 	}
 
 	public Object consume() throws InterruptedException {
-		if (fConsumed.decrementAndGet() < 0) {
-			throw new IllegalStateException("All tasks have been consumed.");
+		LinkedBlockingQueue<Object> queue;
+		synchronized (this) {
+			if (fConsumed == 0) {
+				throw new IllegalStateException("All tasks have been consumed.");
+			}
+			fConsumed--;
+			queue = fReady;
 		}
-		return fReady.poll(Long.MAX_VALUE, TimeUnit.DAYS);
+
+		return queue.poll(Long.MAX_VALUE, TimeUnit.DAYS);
 	}
 
 	public synchronized void cancelBatch() {
-		// Stops accepting new tasks, and do not allow client to consume
-		// any more tasks from this batch.
-		fTasks.set(0);
-		fConsumed.set(0);
 
-		// If this aborts with an interrupted exception, there might be
-		// unwanted tasks joining the queue later. It is a freakshow condition,
-		// so I won't bother with it for now, but will check.
+		// Blocks new tasks from being submitted and consumed.
+		fTasks = 0;
+		fConsumed = 0;
+
+		// Now we have to deal with the fact that:
+		//
+		// 1. there is an unknown number of consumers blocked on #consume();
+		// 2. there are an unknown number of producers blocked on #submit().
+
+		// To deal with consumers, we stuff the queue with exceptions. This way
+		// we guarantee they will all unblock.
+		fillQueue();
+
+		// To deal with producers, we add all permits the semaphore needs. This
+		// way we guarantee they will not be kept on hold.
+		fSema.release(fBlockSize);
+
 		try {
-			// Any task that completes from here will be discarded.
-			synchronized(fExecutor) {
-				fDiscard = true;
-			}
-			
-			// Waits for all submitted tasks to terminate.
+			// Shuts down the executor.
 			shutdown(true);
+
+			// When shutdown returns, no more tasks can possibly be pending,
+			// because shut down the executor synchronously.
+			//
+			// Now we replace the queue and the semaphore. New requests will use
+			// these, while old ones, which might still be stuck inside of
+			// submit/consume (waking up from the semaphore, or the poll call),
+			// will have the old objects in their stacks.
+			semaphoreAndQueue();
+
 		} catch (InterruptedException ex) {
 			throw new RuntimeException(
 					"Shutdown interrupted, state might be inconsistent.");
 		} finally {
-			fDiscard = false;
-			fReady.clear();
+			// Recreates the executor.
 			createExecutor(fCores);
+		}
+
+	}
+
+	public void semaphoreAndQueue() {
+		fReady = new LinkedBlockingQueue<Object>();
+		fSema = new Semaphore(fMaxQueuedTasks);
+	}
+
+	private void fillQueue() {
+		InterruptedException ex = new InterruptedException(
+				"Task batch interrupted.");
+		for (int i = 0; i < fBlockSize; i++) {
+			fReady.add(ex);
 		}
 	}
 
