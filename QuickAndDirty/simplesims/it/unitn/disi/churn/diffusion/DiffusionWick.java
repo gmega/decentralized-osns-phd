@@ -3,6 +3,7 @@ package it.unitn.disi.churn.diffusion;
 import java.util.Arrays;
 
 import it.unitn.disi.churn.diffusion.HFloodMM.IBroadcastObserver;
+import it.unitn.disi.churn.diffusion.cloud.AccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
 import it.unitn.disi.simulator.core.Binding;
@@ -42,8 +43,16 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	private SimpleMutableMetric fEd;
 
 	private SimpleMutableMetric fRd;
+
+	private AccessStatistics fAll;
 	
+	private AccessStatistics fUpdate;
+	
+	private double fStartTime;
+
 	private boolean fDisseminating;
+	
+	private boolean fFirst = true;
 
 	public DiffusionWick(int source, HFloodMM[] flood) {
 		this(source, 1, 0.0, flood);
@@ -57,6 +66,9 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 		fEd = new SimpleMutableMetric("ed", flood.length);
 		fRd = new SimpleMutableMetric("rd", flood.length);
+		
+		fAll = new AccessStatistics("cloud_all", flood.length);
+		fUpdate = new AccessStatistics("cloud_upd", flood.length);
 
 		fFlood = flood;
 	}
@@ -76,8 +88,16 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
-		if (engine.clock().time() < fDelay || fDisseminating) {
+		
+		IClockData clock = engine.clock();
+		
+		if (clock.time() < fDelay || fDisseminating) {
 			return;
+		}
+		
+		if (fFirst) {
+			fFirst = false;
+			fAll.startTrackingSession(clock.rawTime());
 		}
 
 		IProcess process = (IProcess) schedulable;
@@ -87,9 +107,9 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 				throw new IllegalStateException(
 						"Poster has not been initialized.");
 			}
-			
+
 			fDisseminating = true;
-			
+			fUpdate.startTrackingSession(clock.rawTime());
 			System.err.println("Wick fired (" + fMessages + ").");
 			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
@@ -100,13 +120,21 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	public double up(int i) {
 		return fSnapshot[i];
 	}
-	
+
 	public INodeMetric<Double> ed() {
 		return fEd;
 	}
-	
+
 	public INodeMetric<Double> rd() {
 		return fRd;
+	}
+	
+	public AccessStatistics allAccesses() {
+		return fUpdate;
+	}
+	
+	public AccessStatistics updates() {
+		return fAll;
 	}
 
 	private double[] uptimeSnapshot(INetwork network, IClockData clock) {
@@ -142,7 +170,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		}
 
 	}
-
+	
 	public class PostMM implements Poster {
 
 		private IDisseminationService fSourceProtocol;
@@ -154,15 +182,18 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		public PostMM(ICloud cloud) {
 			fSourceProtocol = fFlood[fSource];
 			fCloud = cloud;
+			fCloud.addAccessListener(fAll);
+			fCloud.addAccessListener(fUpdate);
 		}
 
 		@Override
 		public void post(ISimulationEngine engine) {
-			fCloud.resetAccessCounters();
-			HFloodMMsg update = new HFloodMMsg(engine.clock().rawTime(), fSource);
+			HFloodMMsg update = new HFloodMMsg(engine.clock().rawTime(),
+					fSource);
 			fSourceProtocol.post(update, engine);
-			fCloud.writeUpdate(fSource, update);
+			fCloud.writeUpdate(fSource, fSource, update, engine);
 			System.err.println("START TIME: " + engine.clock().rawTime());
+			fStartTime = engine.clock().rawTime();
 			fMessage = update;
 		}
 
@@ -170,6 +201,9 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			return fMessage;
 		}
 
+		public ICloud cloud() {
+			return fCloud;
+		}
 	}
 
 	@Override
@@ -177,23 +211,28 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		HFloodSM source = getSM(fSource);
 		for (int i = 0; i < fFlood.length; i++) {
 			HFloodSM sm = getSM(i);
-			
+
 			double ed = fEd.getMetric(i);
-			ed = ed + (sm.rawEndToEndDelay() - source.rawEndToEndDelay()); 
+			ed = ed + (sm.rawEndToEndDelay() - source.rawEndToEndDelay());
 			fEd.setValue(ed, i);
-			
+
 			double rd = fRd.getMetric(i);
 			rd = rd + (sm.rawReceiverDelay() - fSnapshot[i]);
 			fRd.setValue(rd, i);
 		}
-		
+		fUpdate.stopTrackingSession(engine.clock().rawTime());
+
 		fDisseminating = false;
 		Arrays.fill(fSnapshot, Double.MIN_VALUE);
 		
+		System.out.println("BT: " + (engine.clock().rawTime() - fStartTime));
+
 		// We're no longer binding.
 		if (fMessages == 0) {
 			engine.unbound(this);
 			engine.stop();
+			
+			fAll.stopTrackingSession(engine.clock().rawTime());
 		}
 	}
 

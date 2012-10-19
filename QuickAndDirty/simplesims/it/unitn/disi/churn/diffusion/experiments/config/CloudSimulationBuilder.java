@@ -8,6 +8,7 @@ import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
+import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
@@ -98,12 +99,10 @@ public class CloudSimulationBuilder {
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
 		final HFloodMM[] prots = create(processes, runner, messages);
-		SimpleCloudImpl cloud = new SimpleCloudImpl(fGraph.size(), source);
+		SimpleCloudImpl cloud = new SimpleCloudImpl(source);
 		create(engine, processes, prots, cloud, source);
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
-		metrics.add(cloud.totalAccesses());
-		metrics.add(cloud.productiveAccesses());
 
 		addWickOrAnchor(source, messages, prots, processes, engine, cloud,
 				observers, metrics);
@@ -128,7 +127,8 @@ public class CloudSimulationBuilder {
 			return;
 		}
 
-		DiffusionWick wick = new DiffusionWick(source, messages, fNUPBurnin,  prots);
+		DiffusionWick wick = new DiffusionWick(source, messages, fNUPBurnin,
+				prots);
 		final PostMM poster = wick.new PostMM(cloud);
 		wick.setPoster(poster);
 
@@ -148,6 +148,14 @@ public class CloudSimulationBuilder {
 
 		metrics.add(wick.ed());
 		metrics.add(wick.rd());
+
+		metrics.add(wick.allAccesses().accesses(AccessType.productive));
+		metrics.add(wick.allAccesses().accesses(AccessType.nup));
+		metrics.add(wick.allAccesses().accruedTime());
+
+		metrics.add(wick.updates().accesses(AccessType.productive));
+		metrics.add(wick.updates().accesses(AccessType.nup));
+		metrics.add(wick.updates().accruedTime());
 	}
 
 	private HFloodMM[] create(IProcess[] processes,
@@ -238,11 +246,11 @@ public class CloudSimulationBuilder {
 			super(engine, period, type, pid);
 		}
 
-//		@Override
-//		protected boolean hasReachedEndState(ISimulationEngine engine,
-//				ICyclicProtocol protocol) {
-//			return ((HFloodMM) protocol).isReached();
-//		}
+		// @Override
+		// protected boolean hasReachedEndState(ISimulationEngine engine,
+		// ICyclicProtocol protocol) {
+		// return ((HFloodMM) protocol).isReached();
+		// }
 	}
 
 	private class OneShotProcess extends IProcess {

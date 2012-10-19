@@ -249,6 +249,11 @@ public class TEExperimentHelper {
 			SimulationTask task = (SimulationTask) taskResult;
 			int[] tSources = task.sources();
 
+			if (((Integer) task.id()) != graph.size()) {
+				throw new IllegalStateException(((Integer) task.id()) + " != "
+						+ graph.size());
+			}
+
 			boolean done = true;
 			for (int source : tSources) {
 				@SuppressWarnings("unchecked")
@@ -264,6 +269,7 @@ public class TEExperimentHelper {
 				System.err.println("Simulation done after " + i
 						+ " repetitions.");
 				fExecutor.cancelBatch();
+				submitter.join();
 				break;
 			}
 		}

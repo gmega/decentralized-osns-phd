@@ -1,7 +1,5 @@
 package it.unitn.disi.distsim.control;
 
-import it.unitn.disi.utils.MiscUtils;
-
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -13,7 +11,8 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
- * Client-side component for accessing simulation controls.
+ * Client-side component for accessing {@link SimulationControl} and its
+ * services.
  * 
  * @author giuliano
  */
@@ -22,7 +21,7 @@ public class ControlClient {
 
 	private static final Logger fLogger = Logger.getLogger(ControlClient.class);
 
-	private final String fControllerHost;
+	private final String fControlHost;
 
 	private final int fControlPort;
 
@@ -33,11 +32,25 @@ public class ControlClient {
 	public ControlClient(@Attribute("control.host") String host,
 			@Attribute("control.port") int port,
 			@Attribute("sim-id") String simId) {
-		fControllerHost = host;
+		fControlHost = host;
 		fControlPort = port;
 		fSimId = simId;
 	}
 
+	/**
+	 * Looks up a service.
+	 * 
+	 * @param serviceKey
+	 *            the service key.
+	 * @param cls
+	 *            the expected interface for the service.
+	 * @return a reference to the service, or <code>null</code> if a service
+	 *         with the require id cannot be found.
+	 * 
+	 * @throws RemoteException
+	 *             if something goes wrong while contacting the service
+	 *             registry.
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> T lookup(String serviceKey, Class<T> cls) throws RemoteException {
 		Registry rmiReg = registry();
@@ -47,14 +60,13 @@ public class ControlClient {
 		} catch (NotBoundException ex) {
 			fLogger.error("Service not bound under expected registry location "
 					+ key + ".");
-			throw MiscUtils.nestRuntimeException(ex);
+			return null;
 		}
 	}
 
 	private Registry registry() throws RemoteException {
 		if (fRegistry == null) {
-			fRegistry = LocateRegistry.getRegistry(fControllerHost,
-					fControlPort);
+			fRegistry = LocateRegistry.getRegistry(fControlHost, fControlPort);
 		}
 
 		return fRegistry;

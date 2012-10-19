@@ -1,8 +1,10 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -17,82 +19,52 @@ public class SimpleCloudImpl implements ICloud {
 
 	public static final String PRODUCTIVE = "cloud_productive";
 
+	private ArrayList<IAccessListener> fAccessListeners = new ArrayList<IAccessListener>();
+
 	private HFloodMMsg fUpdate;
 
 	private int fPublisher;
 
-	private int[] fProductive;
-
-	private int[] fTotal;
-
-	public SimpleCloudImpl(int size, int publisher) {
-		fProductive = new int[size];
-		fTotal = new int[size];
+	public SimpleCloudImpl(int publisher) {
 		fPublisher = publisher;
 	}
 
 	@Override
-	public void writeUpdate(int id, HFloodMMsg update) {
-		if (id > 0 && fPublisher != id) {
+	public void writeUpdate(int accessor, int page, HFloodMMsg update,
+			ISimulationEngine engine) {
+		if (page > 0 && fPublisher != page) {
 			throw new IllegalArgumentException();
 		}
 
-		fPublisher = id;
+		fPublisher = page;
 		fUpdate = update;
+		
+		accessed(accessor, page, engine, AccessType.write);
 	}
 
 	@Override
-	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp) {
-		fTotal[accessor]++;
-
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp,
+			ISimulationEngine engine) {
+		
 		// No update or update too old.
 		if (fUpdate == null || fUpdate.timestamp() <= timestamp) {
+			accessed(accessor, page, engine, AccessType.nup);
 			return NO_UPDATE;
 		}
 
-		fProductive[accessor]++;
+		accessed(accessor, page, engine, AccessType.productive);
 		return new HFloodMMsg[] { fUpdate };
 	}
 
-	public Pair<Integer, Integer> accesses(int id) {
-		return new Pair<Integer, Integer>(fTotal[id], fProductive[id]);
+	private void accessed(int accessor, int page, ISimulationEngine engine,
+			AccessType type) {
+		for (int i = 0; i < fAccessListeners.size(); i++) {
+			fAccessListeners.get(i).registerAccess(accessor, page, type);
+		}
 	}
 
 	@Override
-	public void resetAccessCounters() {
-		Arrays.fill(fProductive, 0);
-		Arrays.fill(fTotal, 0);
-	}
-
-	public INodeMetric<Double> totalAccesses() {
-		return new INodeMetric<Double>() {
-
-			@Override
-			public Object id() {
-				return TOTAL;
-			}
-
-			@Override
-			public Double getMetric(int i) {
-				return (double) fTotal[i];
-			}
-
-		};
-	}
-
-	public INodeMetric<Double> productiveAccesses() {
-		return new INodeMetric<Double>() {
-
-			@Override
-			public Object id() {
-				return PRODUCTIVE;
-			}
-
-			@Override
-			public Double getMetric(int i) {
-				return (double) fProductive[i];
-			}
-
-		};
+	public void addAccessListener(IAccessListener listener) {
+		fAccessListeners.add(listener);
 	}
 }

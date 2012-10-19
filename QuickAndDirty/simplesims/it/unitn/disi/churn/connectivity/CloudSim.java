@@ -55,7 +55,7 @@ public class CloudSim implements IEventObserver {
 				// will also mark the source).
 				for (int i = 0; i < fTimes.length; i++) {
 					if (parent.process(i).isUp()) {
-						reached(time, i);
+						reached(time, i, state);
 					}
 				}
 			}
@@ -66,7 +66,7 @@ public class CloudSim implements IEventObserver {
 
 		int id = process.id();
 		if (!isReached(id)) {
-			reached(time, id);
+			reached(time, id, state);
 		}
 	}
 
@@ -74,11 +74,15 @@ public class CloudSim implements IEventObserver {
 		return fTimes[id] != Double.MAX_VALUE;
 	}
 
-	private void reached(double time, int i) {
+	private void reached(double time, int i, ISimulationEngine engine) {
 		fTimes[i] = time;
 		fReached++;
 		if (fReached > fTimes.length) {
 			throw new IllegalStateException();
+		}
+		
+		if (isDone()) {
+			engine.unbound(this);
 		}
 	}
 

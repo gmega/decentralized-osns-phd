@@ -19,6 +19,7 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
+import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.experiments.config.ChurnSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
@@ -41,7 +42,7 @@ import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class DiffusionExperimentWorker extends Worker {
-	
+
 	@Attribute("period")
 	private double fPeriod;
 
@@ -59,13 +60,13 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@Attribute(value = "fixed_node_map", defaultValue = "none")
 	private String fFixedMapFile;
-	
+
 	@Attribute(value = "access_delay")
 	private double fDelay;
 
 	@Attribute(value = "messages", defaultValue = "1")
 	private int fMessages;
-	
+
 	@Attribute(value = "cloudassisted", defaultValue = "false")
 	private boolean fCloudAssisted;
 
@@ -80,7 +81,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private IGraphProvider fProvider;
 
-//	private TableWriter fCoreWriter;
+	// private TableWriter fCoreWriter;
 
 	private TableWriter fLatencyWriter;
 
@@ -88,7 +89,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private BitSet fFixedMap;
 
-	public DiffusionExperimentWorker(@Attribute(Attribute.AUTO) IResolver resolver,
+	public DiffusionExperimentWorker(
+			@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute(value = "churn", defaultValue = "false") boolean churn)
 			throws Exception {
 		super(resolver);
@@ -109,16 +111,16 @@ public class DiffusionExperimentWorker extends Worker {
 				"id", "source", "target", "edsum", "rdsum", "size", "fixed",
 				"exps", "msgs");
 
-//		fCoreWriter = new TableWriter(new PrefixedWriter("CO:", System.out),
-//				"id", "source", "edsum", "size");
+		// fCoreWriter = new TableWriter(new PrefixedWriter("CO:", System.out),
+		// "id", "source", "edsum", "size");
 
 		fCloudStatWriter = new TableWriter(
 				new PrefixedWriter("CS:", System.out), "id", "source",
-				"target", "accup", "accnup", "exps");
+				"target", "totup", "totnup", "totime", "updup", "updnup",
+				"updtime");
 
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
-
 		fFixedMap = fixedNodeMap();
 		System.err.print("There are " + fFixedMap.cardinality()
 				+ " fixed nodes.");
@@ -222,6 +224,20 @@ public class DiffusionExperimentWorker extends Worker {
 		if (fNUPAnchor < 0) {
 			collector.addAccumulator(new SumAccumulation("ed", graph.size()));
 			collector.addAccumulator(new SumAccumulation("rd", graph.size()));
+
+			collector.addAccumulator(new SumAccumulation("cloud_all."
+					+ AccessType.nup, graph.size()));
+			collector.addAccumulator(new SumAccumulation("cloud_all."
+					+ AccessType.productive, graph.size()));
+			collector
+					.addAccumulator(new SumAccumulation("cloud_all.accrued", 1));
+
+			collector.addAccumulator(new SumAccumulation("cloud_upd."
+					+ AccessType.nup, graph.size()));
+			collector.addAccumulator(new SumAccumulation("cloud_upd."
+					+ AccessType.productive, graph.size()));
+			collector
+					.addAccumulator(new SumAccumulation("cloud_upd.accrued", 1));
 		}
 
 		if (fCloudAssisted) {
@@ -256,21 +272,36 @@ public class DiffusionExperimentWorker extends Worker {
 			printCloudAcessStatistics(result.a, result.b);
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void printCloudAcessStatistics(ExperimentData data,
 			MetricsCollector metrics) {
-		
-		INodeMetric<Double> tot = metrics.getMetric(SimpleCloudImpl.TOTAL);
-		INodeMetric<Double> prod = metrics.getMetric(SimpleCloudImpl.PRODUCTIVE);
-		
+
+		INodeMetric<Double> totup = metrics.getMetric("cloud_all."
+				+ AccessType.productive);
+		INodeMetric<Double> totnup = metrics.getMetric("cloud_all."
+				+ AccessType.nup);
+		INodeMetric<Double> totime = metrics.getMetric("cloud_all.accrued");
+
+		INodeMetric<Double> updup = metrics.getMetric("cloud_upd."
+				+ AccessType.productive);
+		INodeMetric<Double> updnup = metrics.getMetric("cloud_upd."
+				+ AccessType.nup);
+		INodeMetric<Double> updtime = metrics.getMetric("cloud_upd.accrued");
+
 		for (int i = 0; i < data.graph.size(); i++) {
 			fCloudStatWriter.set("id", data.experiment.root);
 			fCloudStatWriter.set("source", data.source);
 			fCloudStatWriter.set("target", data.ids[i]);
-			fCloudStatWriter.set("accup", prod.getMetric(i));
-			fCloudStatWriter.set("accnup", tot.getMetric(i));
-			fCloudStatWriter.set("exps",fRepeat);
+
+			fCloudStatWriter.set("totup", totup.getMetric(i));
+			fCloudStatWriter.set("totnup", totnup.getMetric(i));
+			fCloudStatWriter.set("totime", totime.getMetric(0));
+
+			fCloudStatWriter.set("updup", updup.getMetric(i));
+			fCloudStatWriter.set("updnup", updnup.getMetric(i));
+			fCloudStatWriter.set("updtime", updtime.getMetric(0));
+
 			fCloudStatWriter.emmitRow();
 		}
 	}
@@ -317,9 +348,9 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	private static class ExperimentData implements Serializable {
-		
+
 		private static final long serialVersionUID = 1L;
-		
+
 		private final Experiment experiment;
 		private final IndexedNeighborGraph graph;
 		private final int[] ids;

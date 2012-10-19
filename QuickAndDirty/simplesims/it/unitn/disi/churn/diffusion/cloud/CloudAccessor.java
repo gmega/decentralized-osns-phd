@@ -20,6 +20,8 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
  */
 public class CloudAccessor implements IEventObserver, IMessageObserver {
 
+	private static final long serialVersionUID = 7135912692487883268L;
+
 	private static final boolean DEBUG = false;
 
 	private static final double ROUNDOFF_SUM = 0.0000000000001D;
@@ -39,7 +41,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	private double fNextAccess;
 
 	private double fNextShift;
-	
+
 	private double fLastAccess;
 
 	/**
@@ -163,6 +165,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private class CloudAccess extends Schedulable {
 
+		private static final long serialVersionUID = -8609040165590560819L;
+
 		private final double fTime;
 
 		private boolean fDone;
@@ -176,11 +180,12 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			if (fDone) {
 				return;
 			}
-			
+
 			if (!fSim.network().process(fId).isUp()) {
-				throw new IllegalStateException("A node that is down cannot access the cloud.");
+				throw new IllegalStateException(
+						"A node that is down cannot access the cloud.");
 			}
-			
+
 			fDone = true;
 			IClockData clock = engine.clock();
 
@@ -189,8 +194,9 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			double queryTimestamp = fNextAccess - fTimerPeriod + ROUNDOFF_SUM;
 
 			// Fetch updates.
-			HFloodMMsg[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp);
-			//System.err.println("Cloud access.");
+			HFloodMMsg[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp,
+					engine);
+			// System.err.println("Cloud access.");
 			if (DEBUG) {
 				System.err.println("("
 						+ clock.rawTime()
@@ -214,12 +220,13 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 					fDisseminationService.post(update, engine);
 				}
 			}
-			
-			/* XXX add back this check and fix the cases in which it fails.
- 			if (clock.rawTime() - fLastAccess < fTimerPeriod) {
-				throw new IllegalStateException();
-			} */
-			
+
+			/*
+			 * XXX add back this check and fix the cases in which it fails. if
+			 * (clock.rawTime() - fLastAccess < fTimerPeriod) { throw new
+			 * IllegalStateException(); }
+			 */
+
 			fLastAccess = clock.rawTime();
 
 			// Our knowledge got more recent.

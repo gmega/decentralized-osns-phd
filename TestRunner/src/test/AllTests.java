@@ -30,6 +30,7 @@ import it.unitn.disi.newscasting.experiments.ComponentSelectorTest;
 import it.unitn.disi.newscasting.experiments.schedulers.RandomSchedulerTest;
 import it.unitn.disi.newscasting.internal.demers.DemersTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
+import it.unitn.disi.simulator.concurrent.TaskExecutorTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.newscast.TestPeerSelectors;
 import it.unitn.disi.sps.newscast.TestQueueManager;
@@ -105,7 +106,8 @@ import peersim.config.PluginContainerTest;
 	TestTopKShortest.class,
 	TestTopKShortestDisjoint.class,
 	TestLiveGraphTransformer.class,
-	BiasedCentralitySelectorTest.class
+	BiasedCentralitySelectorTest.class,
+	TaskExecutorTest.class,
 })
 
 public class AllTests extends PeerSimTest {

@@ -49,9 +49,9 @@ public class TaskExecutor {
 
 	public TaskExecutor(int cores, int maxQueuedTasks) {
 		fMaxQueuedTasks = maxQueuedTasks;
+		fCores = cores;
 		createExecutor(cores);
 		semaphoreAndQueue();
-		fCores = cores;
 	}
 
 	public void createExecutor(int cores) {

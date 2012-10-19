@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Simple wrapper to a simple persistence layer.
+ * Interface to a simple persistence layer.
  * 
  * @author giuliano
  */

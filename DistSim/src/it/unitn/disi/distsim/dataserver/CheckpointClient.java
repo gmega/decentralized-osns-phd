@@ -92,6 +92,7 @@ public class CheckpointClient implements Runnable {
 
 		try {
 			fApp.checkpointStart();
+			fLogger.info("Start checkpoint.");
 
 			oup = new ObjectOutputStream(buffer);
 			Pair<Integer, Serializable> checkpoint = fApp.state();
@@ -105,6 +106,8 @@ public class CheckpointClient implements Runnable {
 		} finally {
 			fApp.checkpointEnd();
 		}
+		
+		fLogger.info("Checkpoint done.");
 	}
 
 	public static interface Application {

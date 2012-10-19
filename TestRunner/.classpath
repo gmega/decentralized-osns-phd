@@ -12,5 +12,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -40,7 +40,9 @@ public class OutputRedirector implements ITransformer {
 
 		Socket socket = null;
 		byte[] buffer = new byte[1048576];
+		
 		try {
+			
 			logger.info("Contacting streaming server at " + fAddress + ":"
 					+ fPort);
 			socket = new Socket(fAddress, fPort);

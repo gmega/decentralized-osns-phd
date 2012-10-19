@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
-import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 
 public interface ICloud {
 
@@ -10,13 +10,17 @@ public interface ICloud {
 	/**
 	 * Writes an update to the profile page of a user.
 	 * 
+	 * @param writer
+	 *            id of the node performing the write.
+	 * 
 	 * @param page
 	 *            id of the page (same as the id of the user).
 	 * 
 	 * @param update
 	 *            the update to write.
 	 */
-	public void writeUpdate(int page, HFloodMMsg update);
+	public void writeUpdate(int writer, int page, HFloodMMsg update,
+			ISimulationEngine engine);
 
 	/**
 	 * Fetches from the cloud all updates that are more recent than a given
@@ -32,23 +36,35 @@ public interface ICloud {
 	 * @return all updates with timestamp larger or equal to the query
 	 *         timestamp.
 	 */
-	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp);
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp,
+			ISimulationEngine engine);
 
 	/**
-	 * Returns access statistics to the cloud.
+	 * Registers an access listener.
 	 * 
-	 * @param id
-	 *            id of the node for which we want to obtain statistics for.
-	 * 
-	 * @return a {@link Pair} containing the total number of accesses made by
-	 *         the node, and the total number of <i>productive</i> accesses(i.e.
-	 *         accesses that resulted in real updates being fetched) made by the
-	 *         node.
+	 * @param listener
+	 *            the listener to be registered.
 	 */
-	public Pair<Integer, Integer> accesses(int id);
+	public void addAccessListener(IAccessListener listener);
 
-	/**
-	 * Resets the access counters for the cloud.
-	 */
-	public void resetAccessCounters();
+	public interface IAccessListener {
+		/**
+		 * Gets called back whenever someone accesses the cloud.
+		 * 
+		 * @param accessor
+		 *            id of the node performing the access.
+		 * @param page
+		 *            id of the data object being accessed to.
+		 * @param write
+		 *            <code>true</code> if the access is a write or,
+		 *            <code>false</code> if it's a read.
+		 */
+		public void registerAccess(int accessor, int page, AccessType type);
+	}
+	
+	public enum AccessType {
+		write,
+		productive,
+		nup
+	}
 }

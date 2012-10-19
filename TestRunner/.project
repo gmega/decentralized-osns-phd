@@ -3,6 +3,7 @@
 	<name>TestRunner</name>
 	<comment></comment>
 	<projects>
+		<project>SimpleSim</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
