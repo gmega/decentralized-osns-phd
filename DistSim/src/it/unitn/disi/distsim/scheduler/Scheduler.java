@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import javax.management.AttributeChangeNotification;
@@ -209,4 +210,27 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		return fRunning;
 	}
 
+	@Override
+	public int total() {
+		if (fMaster == null) {
+			return 0;
+		}
+		
+		return fMaster.total();
+	}
+
+	@Override
+	public int remaining() {
+		if (fMaster == null) {
+			return 0;
+		}
+		
+		try {
+			return fMaster.remaining();
+		} catch (RemoteException e) {
+			// Shouldn't happen.
+			throw new RuntimeException(e);
+		}
+	}
+	
 }

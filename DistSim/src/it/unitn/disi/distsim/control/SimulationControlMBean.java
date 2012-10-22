@@ -18,10 +18,17 @@ public interface SimulationControlMBean {
 	public void create(String id);
 
 	/**
+	 * Deletes a simulation with a given ID, and clears all of its files.
+	 * 
+	 * @param id
+	 *            the unique id of this simulation.
+	 */
+	public void delete(String id);
+
+	/**
 	 * @return the master output folder (at the server) in which all simulation
 	 *         data will be stored.
 	 */
 	public File getMasterFolder();
-
 
 }

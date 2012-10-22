@@ -233,10 +233,12 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	@Override
 	public void stop() {
+		fStopPermits--;
 		if (fStopPermits == 0) {
 			fDone = true;
+			System.out.println("Permits depleted -- engine arrest.");
 		}
-		fStopPermits--;
+		System.out.println("Remaining permits: " + fStopPermits);
 	}
 	
 	// -------------------------------------------------------------------------

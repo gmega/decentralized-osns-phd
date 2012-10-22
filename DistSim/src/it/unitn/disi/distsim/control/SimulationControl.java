@@ -100,6 +100,47 @@ public class SimulationControl implements SimulationControlMBean {
 		}
 	}
 
+	@Override
+	public synchronized void delete(String id) {
+		if (exists(id)) {
+			throw new IllegalArgumentException("Unknown simulation id " + id
+					+ ".");
+		}
+
+		Simulation sim = locate(id);
+		File file = sim.baseFolder();
+		wipeTree(file);
+		
+		fSimulationList.remove(id);
+		
+		try {
+			save();
+		} catch (Exception ex) {
+			fLogger.error("Error saving list.", ex);
+		}
+		
+	}
+
+	private void wipeTree(File root) {
+		for (File child : root.listFiles()) {
+			if (child.isFile()) {
+				wipeTerminal(child); 
+			} else {
+				wipeTree(child);
+			}
+		}
+		wipeTerminal(root);
+	}
+
+	private void wipeTerminal(File root) {
+		try {
+			root.delete();
+			fLogger.info("Deleted " + root.getName() + ".");
+		} catch (Exception ex) {
+			fLogger.error("Failed to delete " + root + ".", ex);
+		}
+	}
+
 	public static String name(String... nameparts) {
 		StringBuffer buffer = new StringBuffer();
 		for (String namepart : nameparts) {
@@ -112,13 +153,18 @@ public class SimulationControl implements SimulationControlMBean {
 	}
 
 	private boolean exists(String id) {
-		for (String simulation : fSimulationKeys) {
+		return locate(id) != null;
+	}
+	
+	private Simulation locate(String id) {
+		
+		for (Simulation simulation : fSimulationList) {
 			if (id.equals(simulation.equals(id))) {
-				return true;
+				return simulation;
 			}
 		}
 
-		return false;
+		return null;
 	}
 
 	private void save() throws IOException {
@@ -221,10 +267,11 @@ class Simulation implements ISimulation {
 	}
 
 	public void defaultServiceList() {
-		fServiceList.add(createService("scheduler",	new Scheduler(this)));
-		fServiceList.add(createService("checkpoint", new CheckpointManager(
-				fId, this)));
-		fServiceList.add(createService("outputstreamer", new StreamServer(this)));
+		fServiceList.add(createService("scheduler", new Scheduler(this)));
+		fServiceList.add(createService("checkpoint", new CheckpointManager(fId,
+				this)));
+		fServiceList
+				.add(createService("outputstreamer", new StreamServer(this)));
 	}
 
 	@SuppressWarnings("unchecked")
