@@ -35,6 +35,8 @@ public class CloudSimulationBuilder {
 
 	private static final int HFLOOD_PID = 0;
 
+	private static final int BASELINE_PID = 1;
+
 	public static final int ACCESSES = 0;
 
 	public static final int PRODUCTIVE = 0;
@@ -87,9 +89,11 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, int messages, IProcess[] processes) {
+			final int source, int messages, boolean baseline,
+			IProcess[] processes) {
 
-		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
+		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin,
+				baseline ? 2 : 1);
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		PausingCyclicProtocolRunner<HFloodMM> runner = new Runner(engine,
@@ -98,23 +102,33 @@ public class CloudSimulationBuilder {
 		observers.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
-		final HFloodMM[] prots = create(processes, runner, messages);
+		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
+
+		HFloodMM[] prots = create(processes, runner, HFLOOD_PID, messages,
+				false);
 		SimpleCloudImpl cloud = new SimpleCloudImpl(source);
 		create(engine, processes, prots, cloud, source);
 
-		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
-
-		addWickOrAnchor(source, messages, prots, processes, engine, cloud,
+		addWickOrAnchor(source, messages, "", prots, processes, engine, cloud,
 				observers, metrics);
+
+		if (baseline) {
+			HFloodMM[] baselineProts = create(processes, runner, BASELINE_PID,
+					messages, true);
+			cloud = new SimpleCloudImpl(source);
+			create(engine, processes, baselineProts, cloud, source);
+
+			addWickOrAnchor(source, messages, "b", baselineProts, processes,
+					engine, cloud, observers, metrics);
+		}
 
 		engine.setEventObservers(observers);
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
 				engine, metrics);
-
 	}
 
-	private void addWickOrAnchor(final int source, int messages,
+	private void addWickOrAnchor(final int source, int messages, String prefix,
 			final HFloodMM[] prots, IProcess[] processes,
 			EDSimulationEngine engine, SimpleCloudImpl cloud,
 			List<Pair<Integer, ? extends IEventObserver>> observers,
@@ -127,8 +141,8 @@ public class CloudSimulationBuilder {
 			return;
 		}
 
-		DiffusionWick wick = new DiffusionWick(source, messages, fNUPBurnin,
-				prots);
+		DiffusionWick wick = new DiffusionWick(prefix, source, messages,
+				fNUPBurnin, prots);
 		final PostMM poster = wick.new PostMM(cloud);
 		wick.setPoster(poster);
 
@@ -160,13 +174,13 @@ public class CloudSimulationBuilder {
 
 	private HFloodMM[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int messages) {
+			int pid, int messages, boolean baseline) {
 		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
 		for (int i = 0; i < protocols.length; i++) {
-			protocols[i] = new HFloodMM(HFLOOD_PID, fGraph, peerSelector(),
+			protocols[i] = new HFloodMM(pid, fGraph, peerSelector(),
 					processes[i],
 					new CachingTransformer(new LiveTransformer()), runner,
-					messages == 1);
+					baseline, messages == 1);
 			processes[i].addProtocol(protocols[i]);
 		}
 		return protocols;
@@ -203,6 +217,8 @@ public class CloudSimulationBuilder {
 
 	@Binding
 	private class Anchor extends Schedulable implements IEventObserver {
+
+		private static final long serialVersionUID = 6287804680484080985L;
 
 		private boolean fDone = false;
 
@@ -242,6 +258,9 @@ public class CloudSimulationBuilder {
 
 	@Binding
 	private class Runner extends PausingCyclicProtocolRunner<HFloodMM> {
+
+		private static final long serialVersionUID = -1967306468271406257L;
+
 		public Runner(ISimulationEngine engine, double period, int type, int pid) {
 			super(engine, period, type, pid);
 		}
@@ -254,6 +273,8 @@ public class CloudSimulationBuilder {
 	}
 
 	private class OneShotProcess extends IProcess {
+
+		private static final long serialVersionUID = 9180863943276733681L;
 
 		private final IProcess fDelegate;
 

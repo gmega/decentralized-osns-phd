@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 public abstract class IProcess extends Schedulable {
 
+	private static final long serialVersionUID = -6326282369880873309L;
+	
 	public static int PROCESS_SCHEDULABLE_TYPE = 0;
 
 	public static enum State {

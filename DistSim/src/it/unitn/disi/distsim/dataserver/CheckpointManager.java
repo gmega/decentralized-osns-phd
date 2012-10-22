@@ -40,7 +40,7 @@ public class CheckpointManager implements CheckpointManagerMBean {
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to start checkpoint manager.", ex);
 		}
-		
+
 		fSimulation.attributeListUpdated(this);
 	}
 
@@ -72,6 +72,29 @@ public class CheckpointManager implements CheckpointManagerMBean {
 	@Override
 	public boolean shouldAutoStart() {
 		return fRunning;
+	}
+
+	@Override
+	public void reset() {
+		File chkpFolder = checkpointFolder();
+		if (!chkpFolder.exists()) {
+			return;
+		}
+
+		fLogger.info("Clearing checkpoints.");
+
+		for (File checkpoint : chkpFolder.listFiles()) {
+			if (checkpoint.getName().endsWith(
+					"." + DataManagerImpl.CHK_EXTENSION)) {
+				if (checkpoint.delete()) {
+					fLogger.info("Checkpoint " + checkpoint.getName()
+							+ " deleted.");
+				} else {
+					fLogger.error("Failed to delete " + checkpoint.getName()
+							+ ".");
+				}
+			}
+		}
 	}
 
 }

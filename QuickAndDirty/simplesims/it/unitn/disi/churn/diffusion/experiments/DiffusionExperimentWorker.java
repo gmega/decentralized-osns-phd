@@ -61,6 +61,9 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fixed_node_map", defaultValue = "none")
 	private String fFixedMapFile;
 
+	@Attribute(value = "baseline", defaultValue = "false")
+	private boolean fBaseline;
+
 	@Attribute(value = "access_delay")
 	private double fDelay;
 
@@ -81,11 +84,13 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private IGraphProvider fProvider;
 
-	// private TableWriter fCoreWriter;
-
 	private TableWriter fLatencyWriter;
+	
+	private TableWriter fBaselineLatencyWriter;
 
 	private TableWriter fCloudStatWriter;
+	
+	private TableWriter fBaselineCStatWriter;
 
 	private BitSet fFixedMap;
 
@@ -110,14 +115,21 @@ public class DiffusionExperimentWorker extends Worker {
 		fLatencyWriter = new TableWriter(new PrefixedWriter("ES:", System.out),
 				"id", "source", "target", "edsum", "rdsum", "size", "fixed",
 				"exps", "msgs");
-
-		// fCoreWriter = new TableWriter(new PrefixedWriter("CO:", System.out),
-		// "id", "source", "edsum", "size");
+				
+		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:", System.out),
+				"id", "source", "target", "b.edsum", "b.rdsum", "size", "fixed",
+				"exps", "msgs");
 
 		fCloudStatWriter = new TableWriter(
 				new PrefixedWriter("CS:", System.out), "id", "source",
 				"target", "totup", "totnup", "totime", "updup", "updnup",
 				"updtime");
+		
+		fBaselineCStatWriter = new TableWriter(
+				new PrefixedWriter("CSB:", System.out), "id", "source",
+				"target", "b.totup", "b.totnup", "b.totime", "b.updup", "b.updnup",
+				"b.updtime");
+
 
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
@@ -199,7 +211,8 @@ public class DiffusionExperimentWorker extends Worker {
 			if (fCloudAssisted) {
 				elements = new CloudSimulationBuilder(fBurnin, fDelay,
 						fNUPBurnin, fSelector.charAt(0), graph, diffusion,
-						fNUPAnchor).build(source, fMessages, processes);
+						fNUPAnchor).build(source, fMessages, fBaseline,
+						processes);
 			} else {
 				elements = new ChurnSimulationBuilder().build(fBurnin, fPeriod,
 						exp.experiment, source, fSelector, graph, diffusion,
@@ -222,22 +235,10 @@ public class DiffusionExperimentWorker extends Worker {
 		MetricsCollector collector = new MetricsCollector();
 
 		if (fNUPAnchor < 0) {
-			collector.addAccumulator(new SumAccumulation("ed", graph.size()));
-			collector.addAccumulator(new SumAccumulation("rd", graph.size()));
-
-			collector.addAccumulator(new SumAccumulation("cloud_all."
-					+ AccessType.nup, graph.size()));
-			collector.addAccumulator(new SumAccumulation("cloud_all."
-					+ AccessType.productive, graph.size()));
-			collector
-					.addAccumulator(new SumAccumulation("cloud_all.accrued", 1));
-
-			collector.addAccumulator(new SumAccumulation("cloud_upd."
-					+ AccessType.nup, graph.size()));
-			collector.addAccumulator(new SumAccumulation("cloud_upd."
-					+ AccessType.productive, graph.size()));
-			collector
-					.addAccumulator(new SumAccumulation("cloud_upd.accrued", 1));
+			addCloudMetrics("", graph, collector);
+			if (fBaseline) {
+				addCloudMetrics("b", graph, collector);
+			}
 		}
 
 		if (fCloudAssisted) {
@@ -248,6 +249,35 @@ public class DiffusionExperimentWorker extends Worker {
 		}
 
 		return new Pair<ExperimentData, MetricsCollector>(exp, collector);
+	}
+
+	public void addCloudMetrics(String prefix, IndexedNeighborGraph graph,
+			MetricsCollector collector) {
+		collector.addAccumulator(new SumAccumulation(prefix(prefix, "ed"),
+				graph.size()));
+		collector.addAccumulator(new SumAccumulation(prefix(prefix, "rd"),
+				graph.size()));
+
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_all." + AccessType.nup), graph.size()));
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_all." + AccessType.productive), graph.size()));
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_all.accrued"), 1));
+
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_upd." + AccessType.nup), graph.size()));
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_upd." + AccessType.productive), graph.size()));
+		collector.addAccumulator(new SumAccumulation(prefix(prefix,
+				"cloud_upd.accrued"), 1));
+	}
+
+	private String prefix(String prefix, String string) {
+		if (prefix.equals("")) {
+			return string;
+		}
+		return prefix + "." + string;
 	}
 
 	@Override
@@ -265,65 +295,73 @@ public class DiffusionExperimentWorker extends Worker {
 		Pair<ExperimentData, MetricsCollector> result = (Pair<ExperimentData, MetricsCollector>) resultObj;
 
 		if (fNUPAnchor < 0) {
-			printLatencies(result.a, result.b);
+			printLatencies("", fLatencyWriter, result.a, result.b);
 		}
 
 		if (fCloudAssisted) {
-			printCloudAcessStatistics(result.a, result.b);
+			printCloudAcessStatistics("", fCloudStatWriter, result.a, result.b);
+			if (fBaseline) {
+				printLatencies("b", fBaselineLatencyWriter, result.a, result.b);
+				printCloudAcessStatistics("b", fBaselineCStatWriter, result.a, result.b);
+			}
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void printCloudAcessStatistics(ExperimentData data,
-			MetricsCollector metrics) {
+	private void printCloudAcessStatistics(String prefix, TableWriter writer,
+			ExperimentData data, MetricsCollector metrics) {
 
-		INodeMetric<Double> totup = metrics.getMetric("cloud_all."
-				+ AccessType.productive);
-		INodeMetric<Double> totnup = metrics.getMetric("cloud_all."
-				+ AccessType.nup);
-		INodeMetric<Double> totime = metrics.getMetric("cloud_all.accrued");
+		INodeMetric<Double> totup = metrics.getMetric(prefix(prefix,
+				"cloud_all." + AccessType.productive));
+		INodeMetric<Double> totnup = metrics.getMetric(prefix(prefix,
+				"cloud_all." + AccessType.nup));
+		INodeMetric<Double> totime = metrics.getMetric(prefix(prefix,
+				"cloud_all.accrued"));
 
-		INodeMetric<Double> updup = metrics.getMetric("cloud_upd."
-				+ AccessType.productive);
-		INodeMetric<Double> updnup = metrics.getMetric("cloud_upd."
-				+ AccessType.nup);
-		INodeMetric<Double> updtime = metrics.getMetric("cloud_upd.accrued");
+		INodeMetric<Double> updup = metrics.getMetric(prefix(prefix,
+				"cloud_upd." + AccessType.productive));
+		INodeMetric<Double> updnup = metrics.getMetric(prefix(prefix,
+				"cloud_upd." + AccessType.nup));
+		INodeMetric<Double> updtime = metrics.getMetric(prefix(prefix,
+				"cloud_upd.accrued"));
 
 		for (int i = 0; i < data.graph.size(); i++) {
-			fCloudStatWriter.set("id", data.experiment.root);
-			fCloudStatWriter.set("source", data.source);
-			fCloudStatWriter.set("target", data.ids[i]);
+			writer.set("id", data.experiment.root);
+			writer.set("source", data.source);
+			writer.set("target", data.ids[i]);
 
-			fCloudStatWriter.set("totup", totup.getMetric(i));
-			fCloudStatWriter.set("totnup", totnup.getMetric(i));
-			fCloudStatWriter.set("totime", totime.getMetric(0));
+			writer.set(prefix(prefix, "totup"), totup.getMetric(i));
+			writer.set(prefix(prefix, "totnup"), totnup.getMetric(i));
+			writer.set(prefix(prefix, "totime"), totime.getMetric(0));
 
-			fCloudStatWriter.set("updup", updup.getMetric(i));
-			fCloudStatWriter.set("updnup", updnup.getMetric(i));
-			fCloudStatWriter.set("updtime", updtime.getMetric(0));
+			writer.set(prefix(prefix, "updup"), updup.getMetric(i));
+			writer.set(prefix(prefix, "updnup"), updnup.getMetric(i));
+			writer.set(prefix(prefix, "updtime"),
+					updtime.getMetric(0));
 
-			fCloudStatWriter.emmitRow();
+			writer.emmitRow();
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void printLatencies(ExperimentData data, MetricsCollector metrics) {
+	private void printLatencies(String prefix, TableWriter writer,
+			ExperimentData data, MetricsCollector metrics) {
 
-		INodeMetric<Double> ed = metrics.getMetric("ed");
-		INodeMetric<Double> rd = metrics.getMetric("rd");
+		INodeMetric<Double> ed = metrics.getMetric(prefix(prefix, "ed"));
+		INodeMetric<Double> rd = metrics.getMetric(prefix(prefix, "rd"));
 
 		for (int i = 0; i < data.graph.size(); i++) {
-			fLatencyWriter.set("id", data.experiment.root);
-			fLatencyWriter.set("source", data.source);
-			fLatencyWriter.set("target", data.ids[i]);
-			fLatencyWriter.set("edsum", ed.getMetric(i));
-			fLatencyWriter.set("rdsum", rd.getMetric(i));
-			fLatencyWriter.set("size", data.graph.size());
-			fLatencyWriter.set("fixed", fFixedMap.get(data.ids[i]));
-			fLatencyWriter.set("exps", fRepeat);
-			fLatencyWriter.set("msgs", fMessages);
+			writer.set("id", data.experiment.root);
+			writer.set("source", data.source);
+			writer.set("target", data.ids[i]);
+			writer.set(prefix(prefix, "edsum"), ed.getMetric(i));
+			writer.set(prefix(prefix, "rdsum"), rd.getMetric(i));
+			writer.set("size", data.graph.size());
+			writer.set("fixed", fFixedMap.get(data.ids[i]));
+			writer.set("exps", fRepeat);
+			writer.set("msgs", fMessages);
 
-			fLatencyWriter.emmitRow();
+			writer.emmitRow();
 		}
 	}
 

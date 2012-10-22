@@ -45,32 +45,41 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	private SimpleMutableMetric fRd;
 
 	private AccessStatistics fAll;
-	
+
 	private AccessStatistics fUpdate;
-	
+
 	private double fStartTime;
 
 	private boolean fDisseminating;
-	
+
 	private boolean fFirst = true;
 
 	public DiffusionWick(int source, HFloodMM[] flood) {
-		this(source, 1, 0.0, flood);
+		this("", source, 1, 0.0, flood);
 	}
 
-	public DiffusionWick(int source, int messages, double delay,
-			HFloodMM[] flood) {
+	public DiffusionWick(String mPrefix, int source, int messages,
+			double delay, HFloodMM[] flood) {
 		fSource = source;
 		fDelay = delay;
 		fMessages = messages;
 
-		fEd = new SimpleMutableMetric("ed", flood.length);
-		fRd = new SimpleMutableMetric("rd", flood.length);
-		
-		fAll = new AccessStatistics("cloud_all", flood.length);
-		fUpdate = new AccessStatistics("cloud_upd", flood.length);
+		fEd = new SimpleMutableMetric(prefix(mPrefix, "ed"), flood.length);
+		fRd = new SimpleMutableMetric(prefix(mPrefix, "rd"), flood.length);
+
+		fAll = new AccessStatistics(prefix(mPrefix, "cloud_all"), flood.length);
+		fUpdate = new AccessStatistics(prefix(mPrefix, "cloud_upd"),
+				flood.length);
 
 		fFlood = flood;
+	}
+
+	private Object prefix(String mPrefix, String string) {
+		if (mPrefix.equals("")) {
+			return string;
+		}
+
+		return mPrefix + "." + string;
 	}
 
 	public void setPoster(Poster poster) {
@@ -88,13 +97,13 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
-		
+
 		IClockData clock = engine.clock();
-		
+
 		if (clock.time() < fDelay || fDisseminating) {
 			return;
 		}
-		
+
 		if (fFirst) {
 			fFirst = false;
 			fAll.startTrackingSession(clock.rawTime());
@@ -128,11 +137,11 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 	public INodeMetric<Double> rd() {
 		return fRd;
 	}
-	
+
 	public AccessStatistics allAccesses() {
 		return fUpdate;
 	}
-	
+
 	public AccessStatistics updates() {
 		return fAll;
 	}
@@ -170,7 +179,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		}
 
 	}
-	
+
 	public class PostMM implements Poster {
 
 		private IDisseminationService fSourceProtocol;
@@ -224,14 +233,14 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 		fDisseminating = false;
 		Arrays.fill(fSnapshot, Double.MIN_VALUE);
-		
+
 		System.out.println("BT: " + (engine.clock().rawTime() - fStartTime));
 
 		// We're no longer binding.
 		if (fMessages == 0) {
 			engine.unbound(this);
 			engine.stop();
-			
+
 			fAll.stopTrackingSession(engine.clock().rawTime());
 		}
 	}

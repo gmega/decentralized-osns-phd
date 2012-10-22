@@ -24,11 +24,9 @@ import org.apache.log4j.Logger;
  */
 public class GraphServerImpl implements IGraphProvider {
 
-	private static final long serialVersionUID = 1L;
-
 	private static final Logger fLogger = Logger
 			.getLogger(GraphServerImpl.class);
-
+ 
 	private final File fGraph;
 
 	private final File fCatalog;

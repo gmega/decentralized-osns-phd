@@ -126,6 +126,9 @@ public abstract class Worker implements Runnable, Application {
 						fExecutor.submit(sTask);
 					} catch (InterruptedException e) {
 						break;
+					} catch (IllegalStateException e) {
+						// We might get this when the batch is suspended.
+						break;
 					}
 				}
 			}

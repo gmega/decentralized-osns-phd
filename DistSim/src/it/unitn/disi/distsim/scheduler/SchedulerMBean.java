@@ -1,6 +1,6 @@
 package it.unitn.disi.distsim.scheduler;
 
-import it.unitn.disi.distsim.control.ServiceMBean;
+import it.unitn.disi.distsim.control.ResettableService;
 
 import java.io.File;
 
@@ -9,7 +9,7 @@ import java.io.File;
  * 
  * @author giuliano
  */
-public interface SchedulerMBean extends ServiceMBean {
+public interface SchedulerMBean extends ResettableService {
 
 	public void setSchedulerType(String type);
 
@@ -20,5 +20,5 @@ public interface SchedulerMBean extends ServiceMBean {
 	public String getSchedulerProperties();
 
 	public File getReplayLog();
-	
+
 }

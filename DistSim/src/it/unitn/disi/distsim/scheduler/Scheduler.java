@@ -84,6 +84,26 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		fRunning = true;
 		fControl.attributeListUpdated(this);
 	}
+	
+	@Override
+	public void reset() {
+		boolean wasRunning = fRunning;
+		// Stops the scheduler.
+		if (fRunning) {
+			stop();
+		}
+
+		// Blows up the log.
+		File replayLog = getReplayLog();
+		if (replayLog.exists()) {
+			replayLog.delete();
+		}
+		
+		// Restarts.
+		if (wasRunning) {
+			start();
+		}
+	}
 
 	private TableReader replayLog() throws IOException {
 		File replayLog = getReplayLog();

@@ -148,7 +148,7 @@ public class TaskExecutor {
 			shutdown(true);
 
 			// When shutdown returns, no more tasks can possibly be pending,
-			// because shut down the executor synchronously.
+			// because we've shut down the executor synchronously.
 			//
 			// Now we replace the queue and the semaphore. New requests will use
 			// these, while old ones, which might still be stuck inside of

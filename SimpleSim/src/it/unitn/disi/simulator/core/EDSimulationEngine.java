@@ -36,12 +36,35 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private int fLive;
 
+	private int fStopPermits;
+
 	// -------------------------------------------------------------------------
 
 	public EDSimulationEngine(IProcess[] processes, double burnin) {
+		this(processes, burnin, 1);
+	}
+
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Constructs a new event-drive simulation engine.
+	 * 
+	 * @param processes
+	 *            the {@link IProcess}es that compose this system.
+	 * @param burnin
+	 *            the burn-in period before which observers will not be
+	 *            notified.
+	 * @param stopPermits
+	 *            the number of <b>stop permits</b> of this engine. This
+	 *            corresponds to the number of times that {@link #stop()} has to
+	 *            be called before the simulation stops.
+	 */
+	public EDSimulationEngine(IProcess[] processes, double burnin,
+			int stopPermits) {
 
 		fProcesses = processes;
 		fQueue = new PriorityQueue<Schedulable>();
+		fStopPermits = stopPermits;
 
 		// Counts initially live processes.
 		for (IProcess process : processes) {
@@ -96,7 +119,8 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 * Runs the simulation until either: <li>
 	 * <ol>
 	 * <li>there are no more {@link Schedulable}s to schedule;</li>
-	 * <li>all <b>binding</b> {@link IEventObserver}s are <b>done</b>.</li>
+	 * <li>all <b>binding</b> {@link IEventObserver}s are <b>done</b>;</li>
+	 * <li>{@link #stop()} is called and {@link #stopPermits()} is zero. </li>
 	 * </ol>
 	 * 
 	 * @see IEventObserver
@@ -209,7 +233,16 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	@Override
 	public void stop() {
-		fDone = true;
+		if (fStopPermits == 0) {
+			fDone = true;
+		}
+		fStopPermits--;
+	}
+	
+	// -------------------------------------------------------------------------
+
+	public int stopPermits() {
+		return fStopPermits;
 	}
 
 	// -------------------------------------------------------------------------
@@ -342,6 +375,8 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		return this;
 	}
 
+	// -------------------------------------------------------------------------
+
 	@Override
 	public IClockData clock() {
 		return this;
@@ -382,9 +417,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public double time() {
 		return Math.max(0, rawTime() - fBurnin);
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public ISimulationEngine engine() {
 		return this;
 	}

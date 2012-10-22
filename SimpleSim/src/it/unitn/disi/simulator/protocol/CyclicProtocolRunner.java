@@ -12,6 +12,8 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
 public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		IEventObserver {
 
+	private static final long serialVersionUID = -4612665670548461258L;
+
 	protected final int fPid;
 
 	private boolean fDone;
