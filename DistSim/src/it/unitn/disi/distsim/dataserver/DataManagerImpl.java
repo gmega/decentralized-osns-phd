@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 
 public class DataManagerImpl implements IDataManager {
 
-	public static final String CHK_EXTENSION = ".chk";
+	public static final String CHK_EXTENSION = "ckp";
 
 	private static final Logger fLogger = Logger
 			.getLogger(DataManagerImpl.class);

@@ -211,7 +211,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	}
 
 	@Override
-	public int total() {
+	public int getTotal() {
 		if (fMaster == null) {
 			return 0;
 		}
@@ -220,7 +220,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	}
 
 	@Override
-	public int remaining() {
+	public int getRemaining() {
 		if (fMaster == null) {
 			return 0;
 		}

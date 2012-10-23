@@ -11,12 +11,12 @@ import java.io.File;
  */
 public interface SchedulerMBean extends ResettableService {
 
+	public int getTotal();
+	
+	public int getRemaining();
+
 	public void setSchedulerType(String type);
 	
-	public int total();
-	
-	public int remaining();
-
 	public String getSchedulerType();
 
 	public void setSchedulerProperties(String properties);
