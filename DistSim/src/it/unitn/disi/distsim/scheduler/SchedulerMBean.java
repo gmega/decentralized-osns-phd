@@ -14,6 +14,8 @@ public interface SchedulerMBean extends ResettableService {
 	public int getTotal();
 	
 	public int getRemaining();
+	
+	public int getActiveWorkers();
 
 	public void setSchedulerType(String type);
 	

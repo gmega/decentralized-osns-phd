@@ -172,14 +172,14 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		checkNotRunning();
 		HashMap<String, String> props = new HashMap<String, String>();
 
-		String[] items = properties.split(",");
+		String[] items = properties.split(":");
 		for (String item : items) {
 			String[] pair = item.split("=");
 			if (pair.length != 2) {
 				throw new IllegalArgumentException("Malformed property ["
 						+ item + "].");
 			}
-			props.put(pair[0], pair[1]);
+			props.put(pair[0].trim(), pair[1].trim());
 		}
 
 		fProperties = props;
@@ -188,10 +188,21 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@Override
 	public String getSchedulerProperties() {
-		String pString = fProperties.toString();
-		// Eats away the curly braces.
-		pString = pString.substring(1, pString.length());
-		return pString;
+		if (fProperties.size() == 0) {
+			return "";
+		}
+		
+		StringBuffer buffer = new StringBuffer();
+		for (String key : fProperties.keySet()) {
+			String value = fProperties.get(key);
+			buffer.append(key);
+			buffer.append(" = ");
+			buffer.append(value);
+			buffer.append(":");
+		}
+		
+		buffer.deleteCharAt(buffer.length() - 1);
+		return buffer.toString();
 	}
 
 	private String loggerName(String string) {
@@ -234,6 +245,11 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 			// Shouldn't happen.
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public int getActiveWorkers() {
+		return fMaster.activeWorkers();
 	}
 	
 }

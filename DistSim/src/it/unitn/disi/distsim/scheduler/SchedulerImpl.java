@@ -235,6 +235,10 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 			fExperiments.notifyAll();
 		}
 	}
+	
+	public int activeWorkers() {
+		return fWorkers.size();
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override
