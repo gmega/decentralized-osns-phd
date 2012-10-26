@@ -25,6 +25,8 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
 public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		CyclicProtocolRunner<K> {
 
+	private static final long serialVersionUID = 2331151499227503459L;
+	
 	private PausingSchedulable fSchedulable;
 
 	public PausingCyclicProtocolRunner(ISimulationEngine engine, double period,
@@ -80,6 +82,8 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		 */
 		return new IEventObserver() {
 
+			private static final long serialVersionUID = 3473732509369626300L;
+
 			@Override
 			public void eventPerformed(ISimulationEngine state,
 					Schedulable schedulable, double nextShift) {
@@ -99,6 +103,8 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 	}
 
 	class PausingSchedulable extends CyclicSchedulable {
+
+		private static final long serialVersionUID = -3943967429987661763L;
 
 		private boolean fPaused = true;
 

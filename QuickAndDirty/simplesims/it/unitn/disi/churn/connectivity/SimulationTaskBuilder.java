@@ -80,10 +80,10 @@ public class SimulationTaskBuilder {
 	}
 
 	public SimulationTaskBuilder addMultiConnectivitySimulation(int source,
-			final int repeats, IMetricAccumulator<Double> ed, IMetricAccumulator<Double> rd,
-			IProgressTracker tracker) {
-		final MultiTCE multi = new MultiTCE(fGraph, source, repeats,
-				ed, rd, tracker);
+			final int repeats, IMetricAccumulator<Double> ed,
+			IMetricAccumulator<Double> rd, IProgressTracker tracker) {
+		final MultiTCE multi = new MultiTCE(fGraph, source, repeats, ed, rd,
+				tracker);
 		addSim(multi);
 		addMetric(source, ed);
 		addMetric(source, rd);
@@ -152,7 +152,10 @@ public class SimulationTaskBuilder {
 					}
 				});
 
-		EDSimulationEngine engine = new EDSimulationEngine(fProcesses, burnIn);
+		// Creates engine with zero permits so it arrests when all binding
+		// observers are unbound.
+		EDSimulationEngine engine = new EDSimulationEngine(fProcesses, burnIn,
+				0);
 		engine.setEventObservers(fSims);
 
 		return new SimulationTask(fGraph.size(), engine, null, metrics);

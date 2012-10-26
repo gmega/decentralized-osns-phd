@@ -172,7 +172,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		checkNotRunning();
 		HashMap<String, String> props = new HashMap<String, String>();
 
-		String[] items = properties.split(":");
+		String[] items = properties.split(",");
 		for (String item : items) {
 			String[] pair = item.split("=");
 			if (pair.length != 2) {
@@ -188,7 +188,10 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@Override
 	public String getSchedulerProperties() {
-		return fProperties.toString();
+		String pString = fProperties.toString();
+		// Eats away the curly braces.
+		pString = pString.substring(1, pString.length());
+		return pString;
 	}
 
 	private String loggerName(String string) {

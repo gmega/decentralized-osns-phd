@@ -20,7 +20,6 @@ import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
-import it.unitn.disi.churn.diffusion.experiments.config.ChurnSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -33,6 +32,7 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.MetricsCollector;
+import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.simulator.measure.SumAccumulation;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.utils.MiscUtils;
@@ -61,6 +61,9 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fixed_node_map", defaultValue = "none")
 	private String fFixedMapFile;
 
+	@Attribute(value = "p2psims", defaultValue = "true")
+	private boolean fP2PSims;
+
 	@Attribute(value = "baseline", defaultValue = "false")
 	private boolean fBaseline;
 
@@ -85,11 +88,11 @@ public class DiffusionExperimentWorker extends Worker {
 	private IGraphProvider fProvider;
 
 	private TableWriter fLatencyWriter;
-	
+
 	private TableWriter fBaselineLatencyWriter;
 
 	private TableWriter fCloudStatWriter;
-	
+
 	private TableWriter fBaselineCStatWriter;
 
 	private BitSet fFixedMap;
@@ -113,29 +116,36 @@ public class DiffusionExperimentWorker extends Worker {
 
 	protected void initialize() throws Exception {
 		fLatencyWriter = new TableWriter(new PrefixedWriter("ES:", System.out),
-				"id", "source", "target", "edsum", "rdsum", "size", "fixed",
-				"exps", "msgs");
-				
-		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:", System.out),
-				"id", "source", "target", "b.edsum", "b.rdsum", "size", "fixed",
+				"id", "source", "target", "edsumd", "edsum", "edsumu",
+				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
+
+		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
+				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
+				"b.edsumu", "b.rdsumd", "b.rdsum", "b.rdsumu", "size", "fixed",
 				"exps", "msgs");
 
 		fCloudStatWriter = new TableWriter(
 				new PrefixedWriter("CS:", System.out), "id", "source",
 				"target", "totup", "totnup", "totime", "updup", "updnup",
 				"updtime");
-		
-		fBaselineCStatWriter = new TableWriter(
-				new PrefixedWriter("CSB:", System.out), "id", "source",
-				"target", "b.totup", "b.totnup", "b.totime", "b.updup", "b.updnup",
-				"b.updtime");
 
+		fBaselineCStatWriter = new TableWriter(new PrefixedWriter("CSB:",
+				System.out), "id", "source", "target", "b.totup", "b.totnup",
+				"b.totime", "b.updup", "b.updnup", "b.updtime");
 
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
 		fFixedMap = fixedNodeMap();
-		System.err.print("There are " + fFixedMap.cardinality()
+		System.err.println("There are " + fFixedMap.cardinality()
 				+ " fixed nodes.");
+
+		if (fCloudAssisted) {
+			System.err.println("-- Cloud sims are on.");
+			if (fBaseline) {
+				System.err.println("-- Baseline cloud sims are on.");
+			}
+		}
+
 	}
 
 	private BitSet fixedNodeMap() throws Exception {
@@ -162,6 +172,10 @@ public class DiffusionExperimentWorker extends Worker {
 
 		int source = Integer.parseInt(experiment.attributes.get("node"));
 		int[] ids = fProvider.verticesOf(experiment.root);
+
+		for (int i = 0; i < ids.length; i++) {
+			System.out.println("ID:" + ids[i] + " " + i);
+		}
 
 		return new ExperimentData(experiment, graph, source, ids, cloudNodes(
 				experiment, ids, fFixedMap), churnSeeds);
@@ -194,9 +208,12 @@ public class DiffusionExperimentWorker extends Worker {
 		// Static experiment.
 		if (exp.experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
-			elements = builder.build(fBurnin, fPeriod, exp.experiment, source,
+			elements = builder.build(fPeriod, exp.experiment, source,
 					fSelector, graph, diffusion);
-		} else {
+		}
+
+		// Experiments with churn.
+		else {
 			// Create regular processes.
 			IProcess[] processes = fYaoChurn
 					.createProcesses(exp.experiment.lis, exp.experiment.dis,
@@ -208,16 +225,10 @@ public class DiffusionExperimentWorker extends Worker {
 						State.up);
 			}
 
-			if (fCloudAssisted) {
-				elements = new CloudSimulationBuilder(fBurnin, fDelay,
-						fNUPBurnin, fSelector.charAt(0), graph, diffusion,
-						fNUPAnchor).build(source, fMessages, fBaseline,
-						processes);
-			} else {
-				elements = new ChurnSimulationBuilder().build(fBurnin, fPeriod,
-						exp.experiment, source, fSelector, graph, diffusion,
-						processes);
-			}
+			elements = new CloudSimulationBuilder(fBurnin, fDelay, fNUPBurnin,
+					fSelector.charAt(0), graph, diffusion, fNUPAnchor).build(
+					source, fMessages, fP2PSims, fCloudAssisted, fBaseline,
+					processes);
 		}
 
 		return new SimulationTask(
@@ -242,9 +253,9 @@ public class DiffusionExperimentWorker extends Worker {
 		}
 
 		if (fCloudAssisted) {
-			collector.addAccumulator(new SumAccumulation(SimpleCloudImpl.TOTAL,
+			collector.addAccumulator(new AvgAccumulation(SimpleCloudImpl.TOTAL,
 					graph.size()));
-			collector.addAccumulator(new SumAccumulation(
+			collector.addAccumulator(new AvgAccumulation(
 					SimpleCloudImpl.PRODUCTIVE, graph.size()));
 		}
 
@@ -253,11 +264,15 @@ public class DiffusionExperimentWorker extends Worker {
 
 	public void addCloudMetrics(String prefix, IndexedNeighborGraph graph,
 			MetricsCollector collector) {
-		collector.addAccumulator(new SumAccumulation(prefix(prefix, "ed"),
+
+		// These have to be divided by the number of messages to yield the
+		// real average.
+		collector.addAccumulator(new AvgAccumulation(prefix(prefix, "ed"),
 				graph.size()));
-		collector.addAccumulator(new SumAccumulation(prefix(prefix, "rd"),
+		collector.addAccumulator(new AvgAccumulation(prefix(prefix, "rd"),
 				graph.size()));
 
+		// These have also to be divided by the number of experiments.
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_all." + AccessType.nup), graph.size()));
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
@@ -302,7 +317,8 @@ public class DiffusionExperimentWorker extends Worker {
 			printCloudAcessStatistics("", fCloudStatWriter, result.a, result.b);
 			if (fBaseline) {
 				printLatencies("b", fBaselineLatencyWriter, result.a, result.b);
-				printCloudAcessStatistics("b", fBaselineCStatWriter, result.a, result.b);
+				printCloudAcessStatistics("b", fBaselineCStatWriter, result.a,
+						result.b);
 			}
 		}
 	}
@@ -336,8 +352,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set(prefix(prefix, "updup"), updup.getMetric(i));
 			writer.set(prefix(prefix, "updnup"), updnup.getMetric(i));
-			writer.set(prefix(prefix, "updtime"),
-					updtime.getMetric(0));
+			writer.set(prefix(prefix, "updtime"), updtime.getMetric(0));
 
 			writer.emmitRow();
 		}
@@ -347,15 +362,21 @@ public class DiffusionExperimentWorker extends Worker {
 	private void printLatencies(String prefix, TableWriter writer,
 			ExperimentData data, MetricsCollector metrics) {
 
-		INodeMetric<Double> ed = metrics.getMetric(prefix(prefix, "ed"));
-		INodeMetric<Double> rd = metrics.getMetric(prefix(prefix, "rd"));
+		AvgAccumulation ed = (AvgAccumulation) metrics.getMetric(prefix(prefix,
+				"ed"));
+		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric(prefix(prefix,
+				"rd"));
 
 		for (int i = 0; i < data.graph.size(); i++) {
 			writer.set("id", data.experiment.root);
 			writer.set("source", data.source);
 			writer.set("target", data.ids[i]);
+			writer.set(prefix(prefix, "edsumd"), ed.lowerConfidenceLimit(i));
 			writer.set(prefix(prefix, "edsum"), ed.getMetric(i));
+			writer.set(prefix(prefix, "edsumu"), ed.upperConfidenceLimit(i));
+			writer.set(prefix(prefix, "rdsumd"), rd.lowerConfidenceLimit(i));
 			writer.set(prefix(prefix, "rdsum"), rd.getMetric(i));
+			writer.set(prefix(prefix, "rdsumu"), rd.upperConfidenceLimit(i));
 			writer.set("size", data.graph.size());
 			writer.set("fixed", fFixedMap.get(data.ids[i]));
 			writer.set("exps", fRepeat);

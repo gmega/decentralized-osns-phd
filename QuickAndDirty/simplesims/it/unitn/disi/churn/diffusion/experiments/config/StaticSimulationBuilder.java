@@ -22,7 +22,7 @@ import java.util.Random;
 public class StaticSimulationBuilder extends DiffusionSimulationBuilder {
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			double burnin, double period, Experiment experiment, int source,
+			double period, Experiment experiment, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random) {
 
 		IProcess processes[] = new IProcess[graph.size()];

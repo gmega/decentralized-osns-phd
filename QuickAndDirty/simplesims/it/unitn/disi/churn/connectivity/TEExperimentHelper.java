@@ -13,7 +13,7 @@ import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.simulator.measure.SumAccumulation;
+import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
@@ -233,9 +233,9 @@ public class TEExperimentHelper {
 		submitter.start();
 
 		@SuppressWarnings("unchecked")
-		List<SumAccumulation>[] metric = new List[sources];
+		List<AvgAccumulation>[] metric = new List[sources];
 		for (int i = 0; i < metric.length; i++) {
-			metric[i] = new ArrayList<SumAccumulation>();
+			metric[i] = new ArrayList<AvgAccumulation>();
 		}
 
 		for (int i = 0; i < fRepetitions; i++) {
@@ -287,7 +287,7 @@ public class TEExperimentHelper {
 
 		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids, root);
 		stb.addMultiConnectivitySimulation(source, fRepetitions,
-				new SumAccumulation("ed", graph.size()), new SumAccumulation(
+				new AvgAccumulation("ed", graph.size()), new AvgAccumulation(
 						"rd", graph.size()), tracker);
 		stb.createProcesses(li, di, fYaoConf);
 		SimulationTask task = stb.simulationTask(fBurnin);
@@ -297,20 +297,20 @@ public class TEExperimentHelper {
 		return (List<INodeMetric<Double>>) task.metric(source);
 	}
 
-	private boolean addMatchingMetric(List<SumAccumulation> list,
+	private boolean addMatchingMetric(List<AvgAccumulation> list,
 			INodeMetric<Double> networkMetric, int length) {
 
-		SumAccumulation aggregate = null;
+		AvgAccumulation aggregate = null;
 
-		for (SumAccumulation candidate : list) {
+		for (AvgAccumulation candidate : list) {
 			if (candidate.id().equals(networkMetric.id())) {
 				aggregate = candidate;
 			}
 		}
 
 		if (aggregate == null) {
-			aggregate = new SumAccumulation(networkMetric.id(), length,
-					SumAccumulation.DEFAULT_PRECISION, (30 / 3600.0));
+			aggregate = new AvgAccumulation(networkMetric.id(), length,
+					AvgAccumulation.DEFAULT_PRECISION, (30 / 3600.0));
 			list.add(aggregate);
 		}
 

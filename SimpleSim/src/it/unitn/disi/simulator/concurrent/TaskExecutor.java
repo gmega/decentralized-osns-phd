@@ -136,11 +136,16 @@ public class TaskExecutor {
 		// 2. there are an unknown number of producers blocked on #submit().
 
 		// To deal with consumers, we stuff the queue with exceptions. This way
-		// we guarantee they will all unblock.
+		// we guarantee they will all unblock, and realize that there are no new
+		// completed tasks from this batch coming their way.
 		fillQueue();
 
-		// To deal with producers, we add all permits the semaphore needs. This
-		// way we guarantee they will not be kept on hold.
+		// To deal with producers, we stuff the semaphore with permits. This
+		// way we guarantee they will not be kept on hold. This coupled with the
+		// fact that we shutdown the executor without releasing the monitor lock
+		// ensures that producers that are trying to submit will get a
+		// RejectedExcecutionException, and realize someone interrupted the
+		// current batch.
 		fSema.release(fBlockSize);
 
 		try {
@@ -166,7 +171,7 @@ public class TaskExecutor {
 
 	}
 
-	public void semaphoreAndQueue() {
+	private void semaphoreAndQueue() {
 		fReady = new LinkedBlockingQueue<Object>();
 		fSema = new Semaphore(fMaxQueuedTasks);
 	}

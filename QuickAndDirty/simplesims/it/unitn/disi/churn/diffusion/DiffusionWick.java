@@ -28,6 +28,8 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private static final long serialVersionUID = 1L;
 
+	private static final boolean DUMP_DELAY_POINTS = false;
+
 	private final int fSource;
 
 	private final double fDelay;
@@ -191,8 +193,10 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		public PostMM(ICloud cloud) {
 			fSourceProtocol = fFlood[fSource];
 			fCloud = cloud;
-			fCloud.addAccessListener(fAll);
-			fCloud.addAccessListener(fUpdate);
+			if (fCloud != null) {
+				fCloud.addAccessListener(fAll);
+				fCloud.addAccessListener(fUpdate);
+			}
 		}
 
 		@Override
@@ -200,8 +204,10 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			HFloodMMsg update = new HFloodMMsg(engine.clock().rawTime(),
 					fSource);
 			fSourceProtocol.post(update, engine);
-			fCloud.writeUpdate(fSource, fSource, update, engine);
-			System.err.println("START TIME: " + engine.clock().rawTime());
+			if (fCloud != null) {
+				fCloud.writeUpdate(fSource, fSource, update, engine);
+				System.err.println("START TIME: " + engine.clock().rawTime());
+			}
 			fStartTime = engine.clock().rawTime();
 			fMessage = update;
 		}
@@ -222,13 +228,21 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			HFloodSM sm = getSM(i);
 
 			double ed = fEd.getMetric(i);
-			ed = ed + (sm.rawEndToEndDelay() - source.rawEndToEndDelay());
+			double edSample = (sm.rawEndToEndDelay() - source.rawEndToEndDelay());
+			ed = ed + edSample;
 			fEd.setValue(ed, i);
 
 			double rd = fRd.getMetric(i);
-			rd = rd + (sm.rawReceiverDelay() - fSnapshot[i]);
+			double rdSample = (sm.rawReceiverDelay() - fSnapshot[i]);
+			rd = rd + rdSample;
 			fRd.setValue(rd, i);
+
+			if (DUMP_DELAY_POINTS) {
+				System.out.println("VED: " + fSource + " " + i + " "
+						+ edSample + " " + rdSample);
+			}
 		}
+
 		fUpdate.stopTrackingSession(engine.clock().rawTime());
 
 		fDisseminating = false;

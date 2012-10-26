@@ -9,7 +9,18 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
- * Simple discrete event simulator tailored for churn simulations.
+ * Simple discrete event simulator tailored for churn simulations. This class is
+ * <code>not</code> thread-safe, though it is intended to be used with two
+ * threads:
+ * 
+ * <ol>
+ * <li>one thread runs the main simulation loop ({@link #run()})</li>
+ * <li>another thread can call {@link #pause()}).</li>
+ * <ol>
+ * 
+ * This is mainly to enable checkpointing: the engine can be paused until its
+ * state gets dumped to disk, and that's it.
+ * 
  * 
  * @author giuliano
  */
@@ -99,10 +110,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			}
 		}
 
-		if (fBindingObservers.size() == 0) {
-			throw new IllegalArgumentException(
-					"At least one binding observer needs to be installed.");
-		}
+		fStopPermits += fBindingObservers.size();
 	}
 
 	// -------------------------------------------------------------------------
@@ -120,7 +128,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 * <ol>
 	 * <li>there are no more {@link Schedulable}s to schedule;</li>
 	 * <li>all <b>binding</b> {@link IEventObserver}s are <b>done</b>;</li>
-	 * <li>{@link #stop()} is called and {@link #stopPermits()} is zero. </li>
+	 * <li>{@link #stop()} is called and {@link #stopPermits()} is zero.</li>
 	 * </ol>
 	 * 
 	 * @see IEventObserver
@@ -166,6 +174,11 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		if (!fRunning && fDone) {
 			throw new IllegalStateException("Can't step a simulation that's"
 					+ " already done.");
+		}
+
+		if (fStopPermits == 0) {
+			throw new IllegalStateException(
+					"Can't step a simulation that has no permits.");
 		}
 	}
 
@@ -223,28 +236,40 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 *            the observer that is now done.
 	 */
 	public void unbound(IEventObserver observer) {
-		fBindingObservers.remove(observer);
-		if (fBindingObservers.size() == 0) {
-			fDone = true;
+		if (!fBindingObservers.remove(observer)) {
+			throw new IllegalStateException(
+					"Observer attempted to unbind twice.");
 		}
+		stop(1);
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void stop(int drain) {
+		fStopPermits = Math.max(fStopPermits - drain, 0);
+		
+		if (fStopPermits == 0) {
+			fDone = true;
+		} 
 	}
 
 	// -------------------------------------------------------------------------
 
 	@Override
 	public void stop() {
-		fStopPermits--;
-		if (fStopPermits == 0) {
-			fDone = true;
-			System.out.println("Permits depleted -- engine arrest.");
-		}
-		System.out.println("Remaining permits: " + fStopPermits);
+		stop(1);
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	public int stopPermits() {
 		return fStopPermits;
+	}
+	
+	// -------------------------------------------------------------------------
+	
+	public void setStopPermits(int permits) {
+		fStopPermits = permits;
 	}
 
 	// -------------------------------------------------------------------------
@@ -255,9 +280,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 */
 	public void pause() {
 		// Stops the engine cold.
-		stop();
+		stop(fStopPermits);
 
-		// Waits for the work thread to finish.
+		// Waits for the main loop thread to finish.
 		synchronized (this) {
 			while (fRunning) {
 				try {

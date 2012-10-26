@@ -102,29 +102,31 @@ public class SimulationControl implements SimulationControlMBean {
 
 	@Override
 	public synchronized void delete(String id) {
-		if (exists(id)) {
+		if (!exists(id)) {
 			throw new IllegalArgumentException("Unknown simulation id " + id
 					+ ".");
 		}
 
 		Simulation sim = locate(id);
+		sim.deactivateAndUnregister();
 		File file = sim.baseFolder();
 		wipeTree(file);
-		
+
 		fSimulationList.remove(id);
-		
+		fSimulationKeys.remove(id);
+
 		try {
 			save();
 		} catch (Exception ex) {
 			fLogger.error("Error saving list.", ex);
 		}
-		
+
 	}
 
 	private void wipeTree(File root) {
 		for (File child : root.listFiles()) {
 			if (child.isFile()) {
-				wipeTerminal(child); 
+				wipeTerminal(child);
 			} else {
 				wipeTree(child);
 			}
@@ -155,11 +157,11 @@ public class SimulationControl implements SimulationControlMBean {
 	private boolean exists(String id) {
 		return locate(id) != null;
 	}
-	
+
 	private Simulation locate(String id) {
-		
+
 		for (Simulation simulation : fSimulationList) {
-			if (id.equals(simulation.equals(id))) {
+			if (id.equals(simulation.id())) {
 				return simulation;
 			}
 		}
@@ -303,6 +305,23 @@ class Simulation implements ISimulation {
 				fLogger.info("Autostart " + service.serviceName);
 				service.bean.start();
 			}
+		}
+	}
+
+	public void deactivateAndUnregister() {
+		for (Service descriptor : fServiceList) {
+			ManagedService service = descriptor.bean;
+			try {
+				if (service.isRunning()) {
+					service.stop();
+				}
+				fParent.jmxServer().unregisterMBean(
+						new ObjectName(descriptor.serviceName));
+			} catch (Exception ex) {
+				fLogger.error("Failed to stop service "
+						+ descriptor.serviceName + ".", ex);
+			}
+
 		}
 	}
 

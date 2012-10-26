@@ -33,10 +33,6 @@ import java.util.Random;
 
 public class CloudSimulationBuilder {
 
-	private static final int HFLOOD_PID = 0;
-
-	private static final int BASELINE_PID = 1;
-
 	public static final int ACCESSES = 0;
 
 	public static final int PRODUCTIVE = 0;
@@ -89,32 +85,49 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, int messages, boolean baseline,
-			IProcess[] processes) {
+			final int source, int messages, boolean dissemination,
+			boolean cloudAssist, boolean baseline, IProcess[] processes) {
 
-		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin,
-				baseline ? 2 : 1);
+		int permits = 0;
+		permits += dissemination ? 1 : 0;
+		permits += baseline ? 1 : 0;
+
+		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
+		
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-
-		PausingCyclicProtocolRunner<HFloodMM> runner = new Runner(engine,
-				SECOND, 1, HFLOOD_PID);
-		observers.add(new Pair<Integer, IEventObserver>(1, runner));
-		observers.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, runner.networkObserver()));
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 
-		HFloodMM[] prots = create(processes, runner, HFLOOD_PID, messages,
-				false);
-		SimpleCloudImpl cloud = new SimpleCloudImpl(source);
-		create(engine, processes, prots, cloud, source);
+		HFloodMM[] prots;
+		SimpleCloudImpl cloud = null;
 
-		addWickOrAnchor(source, messages, "", prots, processes, engine, cloud,
-				observers, metrics);
+		int pid = 0;
+		if (dissemination) {
+			PausingCyclicProtocolRunner<HFloodMM> runner = new Runner(engine,
+					SECOND, 1, pid);
 
-		if (baseline) {
-			HFloodMM[] baselineProts = create(processes, runner, BASELINE_PID,
-					messages, true);
+			observers.add(new Pair<Integer, IEventObserver>(1, runner));
+			observers
+					.add(new Pair<Integer, IEventObserver>(
+							IProcess.PROCESS_SCHEDULABLE_TYPE, runner
+									.networkObserver()));
+
+			prots = create(processes, runner, pid, messages);
+			
+			if (cloudAssist) {
+				cloud = new SimpleCloudImpl(source);
+				create(engine, processes, prots, cloud, source);
+			}
+
+			addWickOrAnchor(source, messages, "", prots, processes, engine,
+					cloud, observers, metrics);
+			pid++;
+		}
+
+		if (cloudAssist && baseline) {
+			// Note we don't register a runner for the baseline, as it's not
+			// supposed to actually run.
+			HFloodMM[] baselineProts = create(processes, null, pid, messages);
 			cloud = new SimpleCloudImpl(source);
 			create(engine, processes, baselineProts, cloud, source);
 
@@ -123,6 +136,7 @@ public class CloudSimulationBuilder {
 		}
 
 		engine.setEventObservers(observers);
+		engine.setStopPermits(permits);
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
 				engine, metrics);
@@ -162,25 +176,27 @@ public class CloudSimulationBuilder {
 
 		metrics.add(wick.ed());
 		metrics.add(wick.rd());
+		
+		if (cloud != null) {
+			metrics.add(wick.allAccesses().accesses(AccessType.productive));
+			metrics.add(wick.allAccesses().accesses(AccessType.nup));
+			metrics.add(wick.allAccesses().accruedTime());
 
-		metrics.add(wick.allAccesses().accesses(AccessType.productive));
-		metrics.add(wick.allAccesses().accesses(AccessType.nup));
-		metrics.add(wick.allAccesses().accruedTime());
-
-		metrics.add(wick.updates().accesses(AccessType.productive));
-		metrics.add(wick.updates().accesses(AccessType.nup));
-		metrics.add(wick.updates().accruedTime());
+			metrics.add(wick.updates().accesses(AccessType.productive));
+			metrics.add(wick.updates().accesses(AccessType.nup));
+			metrics.add(wick.updates().accruedTime());
+		}
 	}
 
 	private HFloodMM[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int pid, int messages, boolean baseline) {
+			int pid, int messages) {
 		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
 		for (int i = 0; i < protocols.length; i++) {
 			protocols[i] = new HFloodMM(pid, fGraph, peerSelector(),
 					processes[i],
 					new CachingTransformer(new LiveTransformer()), runner,
-					baseline, messages == 1);
+					messages == 1);
 			processes[i].addProtocol(protocols[i]);
 		}
 		return protocols;

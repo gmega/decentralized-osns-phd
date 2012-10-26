@@ -33,8 +33,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	private IProcess fProcess;
 
-	private boolean fNoP2P;
-
 	private boolean fOneShot;
 
 	private BroadcastTracker fCollector = new BroadcastTracker();
@@ -49,7 +47,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			IPeerSelector selector, IProcess process,
 			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			boolean noP2P, boolean oneShot) {
+			boolean oneShot) {
 
 		fProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this);
@@ -61,7 +59,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		fPid = pid;
 		fProcess = process;
 		fOneShot = oneShot;
-		fNoP2P = noP2P;
 	}
 
 	public void post(IMessage genericMessage, ISimulationEngine engine) {
@@ -97,7 +94,9 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 			fProtocols[UPDATE].markReached(engine.clock());
 		}
 
-		fRunner.wakeUp();
+		if (fRunner != null) {
+			fRunner.wakeUp();
+		}
 	}
 
 	@Override
@@ -121,11 +120,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
 
-		// If the P2P network is enabled, cycles the protocols.
-		if (!fNoP2P) {
-			for (int i = 0; i < fProtocols.length; i++) {
-				fProtocols[i].nextCycle(engine, process);
-			}
+		for (int i = 0; i < fProtocols.length; i++) {
+			fProtocols[i].nextCycle(engine, process);
 		}
 
 		// If dissemination is done, we're done.
@@ -134,9 +130,8 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		}
 
 		// Otherwise we're either active...
-		else if (!fNoP2P
-				&& (fProtocols[UPDATE].getState() == State.ACTIVE || fProtocols[NO_UPDATE]
-						.getState() == State.ACTIVE)) {
+		else if (fProtocols[UPDATE].getState() == State.ACTIVE
+				|| fProtocols[NO_UPDATE].getState() == State.ACTIVE) {
 			fState = State.ACTIVE;
 		}
 
@@ -226,7 +221,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 				messageReceived((HFloodMMsg) message(), clock);
 				HFloodMMsg msg = (HFloodMMsg) message();
 				if (msg.getTracker() != null) {
-					System.err.println("Message reached node " + fProcess.id());
 					msg.getTracker().decrement(clock.engine());
 				}
 			}
@@ -246,7 +240,6 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		public void decrement(ISimulationEngine engine) {
 			fIntendedDestinations--;
-			System.err.println("Remaining: " + fIntendedDestinations);
 			if (fIntendedDestinations < 0) {
 				throw new IllegalStateException();
 			}
