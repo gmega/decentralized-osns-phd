@@ -248,7 +248,12 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	}
 
 	@Override
-	public int getActiveWorkers() {
+	public int getAssigned() {
+		return fMaster.activeJobs();
+	}
+
+	@Override
+	public int getRegisteredWorkers() {
 		return fMaster.activeWorkers();
 	}
 	

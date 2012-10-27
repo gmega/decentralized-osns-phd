@@ -43,6 +43,8 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	private volatile TableWriter fWriter;
 
 	private volatile int fRemaining;
+	
+	private volatile int fActive;
 
 	public SchedulerImpl(ISchedule schedule, TableWriter writeLog) throws IOException {
 		this(schedule, writeLog, Logger.getLogger(SchedulerImpl.class
@@ -155,6 +157,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 				fWriter.set("status", ExperimentState.assigned);
 				fWriter.emmitRow();
 				fWriter.flush();
+				fActive++;
 			}
 
 			return acquired;
@@ -171,6 +174,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 					exp.worker = null;
 					fOther.info("Job " + exp.id
 							+ " has been returned to the pool.");
+					fActive--;
 				}
 			}
 		}
@@ -200,7 +204,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	private int id(Pair<Integer, Integer> pair) {
 		return pair.a;
 	}
-
+	
 	@Override
 	public int remaining() throws RemoteException {
 		return fRemaining;
@@ -229,6 +233,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 			fExperiments[idx].done = true;
 			fExperiments[idx].worker = null;
 			fRemaining--;
+			fActive--;
 
 			// No more experiments to run, wake up everyone who's
 			// waiting.
@@ -238,6 +243,10 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	
 	public int activeWorkers() {
 		return fWorkers.size();
+	}
+	
+	public int activeJobs() {
+		return fActive;
 	}
 
 	@SuppressWarnings("unchecked")
