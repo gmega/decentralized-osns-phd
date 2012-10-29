@@ -164,7 +164,7 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	@Override
-	protected Object load(Integer row) throws Exception {
+	protected Serializable load(Integer row) throws Exception {
 		Experiment experiment = fReader.readExperiment(row, fProvider);
 		IndexedNeighborGraph graph = fProvider.subgraph(experiment.root);
 		Random churnSeeds = fFixSeed ? new Random(
@@ -183,7 +183,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected SimulationTask createTask(int id, Object data) {
+	protected SimulationTask createTask(int id, Serializable data) {
 		ExperimentData exp = (ExperimentData) data;
 		IndexedNeighborGraph graph = exp.graph;
 
@@ -245,11 +245,9 @@ public class DiffusionExperimentWorker extends Worker {
 		IndexedNeighborGraph graph = exp.graph;
 		MetricsCollector collector = new MetricsCollector();
 
-		if (fNUPAnchor < 0) {
-			addCloudMetrics("", graph, collector);
-			if (fBaseline) {
-				addCloudMetrics("b", graph, collector);
-			}
+		addCloudMetrics("", graph, collector);
+		if (fBaseline) {
+			addCloudMetrics("b", graph, collector);
 		}
 
 		if (fCloudAssisted) {
@@ -309,9 +307,7 @@ public class DiffusionExperimentWorker extends Worker {
 		@SuppressWarnings("unchecked")
 		Pair<ExperimentData, MetricsCollector> result = (Pair<ExperimentData, MetricsCollector>) resultObj;
 
-		if (fNUPAnchor < 0) {
-			printLatencies("", fLatencyWriter, result.a, result.b);
-		}
+		printLatencies("", fLatencyWriter, result.a, result.b);
 
 		if (fCloudAssisted) {
 			printCloudAcessStatistics("", fCloudStatWriter, result.a, result.b);
@@ -358,7 +354,6 @@ public class DiffusionExperimentWorker extends Worker {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void printLatencies(String prefix, TableWriter writer,
 			ExperimentData data, MetricsCollector metrics) {
 

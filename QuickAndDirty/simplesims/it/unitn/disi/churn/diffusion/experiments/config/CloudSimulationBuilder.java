@@ -51,7 +51,7 @@ public class CloudSimulationBuilder {
 
 	private final double fNUPBurnin;
 
-	private final double fNUPOnly;
+	private final double fNUPAnchor;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -81,7 +81,7 @@ public class CloudSimulationBuilder {
 		fBurnin = burnin;
 		fSelectorType = selectorType;
 		fNUPBurnin = nupBurnin;
-		fNUPOnly = nupOnly;
+		fNUPAnchor = nupOnly;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -91,9 +91,10 @@ public class CloudSimulationBuilder {
 		int permits = 0;
 		permits += dissemination ? 1 : 0;
 		permits += baseline ? 1 : 0;
+		permits += fNUPAnchor > 0 ? 1 : 0;
 
 		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
-		
+
 		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
@@ -103,8 +104,8 @@ public class CloudSimulationBuilder {
 
 		int pid = 0;
 		if (dissemination) {
-			PausingCyclicProtocolRunner<HFloodMM> runner = new Runner(engine,
-					SECOND, 1, pid);
+			PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
+					engine, SECOND, 1, pid);
 
 			observers.add(new Pair<Integer, IEventObserver>(1, runner));
 			observers
@@ -113,13 +114,13 @@ public class CloudSimulationBuilder {
 									.networkObserver()));
 
 			prots = create(processes, runner, pid, messages);
-			
+
 			if (cloudAssist) {
 				cloud = new SimpleCloudImpl(source);
 				create(engine, processes, prots, cloud, source);
 			}
 
-			addWickOrAnchor(source, messages, "", prots, processes, engine,
+			addWickAndAnchor(source, messages, "", prots, processes, engine,
 					cloud, observers, metrics);
 			pid++;
 		}
@@ -131,7 +132,7 @@ public class CloudSimulationBuilder {
 			cloud = new SimpleCloudImpl(source);
 			create(engine, processes, baselineProts, cloud, source);
 
-			addWickOrAnchor(source, messages, "b", baselineProts, processes,
+			addWickAndAnchor(source, messages, "b", baselineProts, processes,
 					engine, cloud, observers, metrics);
 		}
 
@@ -142,17 +143,14 @@ public class CloudSimulationBuilder {
 				engine, metrics);
 	}
 
-	private void addWickOrAnchor(final int source, int messages, String prefix,
-			final HFloodMM[] prots, IProcess[] processes,
+	private void addWickAndAnchor(final int source, int messages,
+			String prefix, final HFloodMM[] prots, IProcess[] processes,
 			EDSimulationEngine engine, SimpleCloudImpl cloud,
 			List<Pair<Integer, ? extends IEventObserver>> observers,
 			List<INodeMetric<? extends Object>> metrics) {
 
-		if (fNUPOnly > 0) {
-			Anchor anchor = new Anchor();
-			observers.add(new Pair<Integer, IEventObserver>(anchor.type(),
-					anchor));
-			return;
+		if (fNUPAnchor > 0) {
+			engine.schedule(new Anchor());
 		}
 
 		DiffusionWick wick = new DiffusionWick(prefix, source, messages,
@@ -176,7 +174,7 @@ public class CloudSimulationBuilder {
 
 		metrics.add(wick.ed());
 		metrics.add(wick.rd());
-		
+
 		if (cloud != null) {
 			metrics.add(wick.allAccesses().accesses(AccessType.productive));
 			metrics.add(wick.allAccesses().accesses(AccessType.nup));
@@ -232,37 +230,25 @@ public class CloudSimulationBuilder {
 	}
 
 	@Binding
-	private class Anchor extends Schedulable implements IEventObserver {
+	private class Anchor extends Schedulable {
 
 		private static final long serialVersionUID = 6287804680484080985L;
 
-		private boolean fDone = false;
-
-		@Override
-		public void eventPerformed(ISimulationEngine engine,
-				Schedulable schedulable, double nextShift) {
-			engine.unbound(this);
-			fDone = true;
-		}
-
-		@Override
-		public boolean isDone() {
-			return fDone;
-		}
-
 		@Override
 		public boolean isExpired() {
-			return fDone;
+			return true;
 		}
 
 		@Override
-		public void scheduled(ISimulationEngine state) {
-			// Nothing to do.
+		public void scheduled(ISimulationEngine engine) {
+			System.err.println("Anchor dropped at " + engine.clock().rawTime()
+					+ ".");
+			engine.stop();
 		}
 
 		@Override
 		public double time() {
-			return fNUPOnly;
+			return fBurnin + fBurnin + fNUPAnchor;
 		}
 
 		@Override
@@ -272,23 +258,7 @@ public class CloudSimulationBuilder {
 
 	}
 
-	@Binding
-	private class Runner extends PausingCyclicProtocolRunner<HFloodMM> {
-
-		private static final long serialVersionUID = -1967306468271406257L;
-
-		public Runner(ISimulationEngine engine, double period, int type, int pid) {
-			super(engine, period, type, pid);
-		}
-
-		// @Override
-		// protected boolean hasReachedEndState(ISimulationEngine engine,
-		// ICyclicProtocol protocol) {
-		// return ((HFloodMM) protocol).isReached();
-		// }
-	}
-
-	private class OneShotProcess extends IProcess {
+	class OneShotProcess extends IProcess {
 
 		private static final long serialVersionUID = 9180863943276733681L;
 
