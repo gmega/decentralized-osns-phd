@@ -15,7 +15,7 @@ import java.util.Set;
  * 
  * <ol>
  * <li>one thread runs the main simulation loop ({@link #run()})</li>
- * <li>another thread can call {@link #pause()}).</li>
+ * <li>another thread can call {@link #pause()} and {@link #resume()}).</li>
  * <ol>
  * 
  * This is mainly to enable checkpointing: the engine can be paused until its
@@ -33,17 +33,19 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private final PriorityQueue<Schedulable> fQueue;
 
-	private IEventObserver[][] fObservers;
+	private final double fBurnin;
 
-	private Set<IEventObserver> fBindingObservers = new HashSet<IEventObserver>();
+	private final Set<IEventObserver> fBindingObservers;
+
+	private volatile boolean fPaused = false;
 
 	private boolean fRunning;
 
-	private volatile boolean fDone;
+	private boolean fDone;
 
 	private double fTime = 0.0;
 
-	private double fBurnin;
+	private IEventObserver[][] fObservers;
 
 	private int fLive;
 
@@ -72,7 +74,6 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 */
 	public EDSimulationEngine(IProcess[] processes, double burnin,
 			int stopPermits) {
-
 		fProcesses = processes;
 		fQueue = new PriorityQueue<Schedulable>();
 		fStopPermits = stopPermits;
@@ -84,7 +85,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			}
 			fQueue.add(process);
 		}
-
+		fBindingObservers = new HashSet<IEventObserver>();
 		fBurnin = burnin;
 	}
 
@@ -137,19 +138,37 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		checkNotRunning();
 		checkCanRun();
 
-		fRunning = true;
-
 		// Main simulation loop.
 		while (!fDone) {
-			if (!uncheckedStep()) {
-				break;
+			waitForClearance();
+			fRunning = true;
+			while (!fPaused) {
+				if (!uncheckedStep()) {
+					fDone = true;
+					break;
+				}
 			}
+
+			/**
+			 * JMM note: write to volatile guarantees that the state seen by the
+			 * thread calling pause -- which needs to read the volatile and find
+			 * a false before returning -- will be consistent with all changes
+			 * made by the thread running the main simulation loop.
+			 */
+			fRunning = false;
 		}
+	}
 
-		fRunning = false;
+	// -------------------------------------------------------------------------
 
-		synchronized (this) {
-			notify();
+	private synchronized void waitForClearance() {
+		while (fPaused) {
+			try {
+				this.notify();
+				this.wait();
+			} catch (InterruptedException ex) {
+				// Does nothing.
+			}
 		}
 	}
 
@@ -166,46 +185,6 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		}
 
 		return events;
-	}
-
-	// -------------------------------------------------------------------------
-
-	public void checkCanRun() throws IllegalStateException {
-		if (!fRunning && fDone) {
-			throw new IllegalStateException("Can't step a simulation that's"
-					+ " already done.");
-		}
-
-		if (fStopPermits == 0) {
-			throw new IllegalStateException(
-					"Can't step a simulation that has no permits.");
-		}
-	}
-
-	// -------------------------------------------------------------------------
-
-	private boolean uncheckedStep() {
-		if (fQueue.isEmpty()) {
-			return false;
-		}
-
-		Schedulable p = fQueue.remove();
-		fTime = p.time();
-		p.scheduled(this);
-		updateProcessCount(p);
-
-		// Only run the simulations if burn in time is over.
-		if (!isBurningIn()) {
-			notifyObservers(p, time());
-		}
-
-		// It's best to do this here, so as to allow observer code an
-		// opportunity to expire Schedulables before they get rescheduled.
-		if (!p.isExpired()) {
-			schedule(p);
-		}
-
-		return true;
 	}
 
 	// -------------------------------------------------------------------------
@@ -245,16 +224,6 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
-	private void stop(int drain) {
-		fStopPermits = Math.max(fStopPermits - drain, 0);
-		
-		if (fStopPermits == 0) {
-			fDone = true;
-		} 
-	}
-
-	// -------------------------------------------------------------------------
-
 	@Override
 	public void stop() {
 		stop(1);
@@ -265,9 +234,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	public int stopPermits() {
 		return fStopPermits;
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public void setStopPermits(int permits) {
 		fStopPermits = permits;
 	}
@@ -276,31 +245,92 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	/**
 	 * The pause method might be called from another thread to temporarily
-	 * interrupt execution of this simulation engine.
+	 * interrupt execution of this simulation engine. When this method returns,
+	 * it is guaranteed that the main simulation loop thread will be paused, and
+	 * no changes can be made to the state of the simulation engine.
 	 */
 	public void pause() {
-		// Stops the engine cold.
-		stop(fStopPermits);
-
-		// Waits for the main loop thread to finish.
+		fPaused = true;
 		synchronized (this) {
 			while (fRunning) {
 				try {
+					// Waits for the simulation loop thread to enter
+					// waitForClearance.
 					this.wait();
-				} catch (InterruptedException ex) {
-					// Ignore it.
+				} catch (InterruptedException e) {
+					// does nothing.
 				}
 			}
 		}
+	}
 
-		// Restores fDone status to allow resuming execution.
-		fDone = false;
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The resume method is called by another thread to resume execution of the
+	 * simulation engine.
+	 */
+	public void resume() {
+		fPaused = false;
+		synchronized (this) {
+			this.notify();
+		}
 	}
 
 	// -------------------------------------------------------------------------
 
 	public boolean isDone() {
 		return fDone;
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void checkCanRun() throws IllegalStateException {
+		if (!fRunning && fDone) {
+			throw new IllegalStateException("Can't step a simulation that's"
+					+ " already done.");
+		}
+
+		if (fStopPermits == 0) {
+			throw new IllegalStateException(
+					"Can't step a simulation that has no permits.");
+		}
+	}
+
+	// -------------------------------------------------------------------------
+
+	private boolean uncheckedStep() {
+		if (fQueue.isEmpty()) {
+			return false;
+		}
+
+		Schedulable p = fQueue.remove();
+		fTime = p.time();
+		p.scheduled(this);
+		updateProcessCount(p);
+
+		// Only run the simulations if burn in time is over.
+		if (!isBurningIn()) {
+			notifyObservers(p, time());
+		}
+
+		// It's best to do this here, so as to allow observer code an
+		// opportunity to expire Schedulables before they get rescheduled.
+		if (!p.isExpired()) {
+			schedule(p);
+		}
+
+		return true;
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void stop(int drain) {
+		fStopPermits = Math.max(fStopPermits - drain, 0);
+
+		if (fStopPermits == 0) {
+			fDone = true;
+		}
 	}
 
 	// -------------------------------------------------------------------------

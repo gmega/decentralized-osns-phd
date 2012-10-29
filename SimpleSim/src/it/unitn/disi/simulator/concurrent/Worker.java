@@ -102,14 +102,14 @@ public abstract class Worker implements Runnable, Application {
 		IScheduleIterator schedule = fClient.iterator();
 		Integer row;
 		while ((row = (Integer) schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
-			Object experimentData = load(row);
+			Serializable experimentData = load(row);
 			Object results = runTasks(row, experimentData);
 			outputResults(results);
 			taskDone();
 		}
 	}
 
-	private Object runTasks(final int id, final Object data) {
+	private Object runTasks(final int id, final Serializable data) {
 
 		startTask(id, data);
 
@@ -258,7 +258,7 @@ public abstract class Worker implements Runnable, Application {
 	 *            experiment id.
 	 * @return the data, or handle to data required by the experiment.
 	 */
-	protected abstract Object load(Integer row) throws Exception;
+	protected abstract Serializable load(Integer row) throws Exception;
 
 	/**
 	 * Creates a {@link SimulationTask} for a given experiment.
@@ -270,7 +270,7 @@ public abstract class Worker implements Runnable, Application {
 	 * 
 	 * @return a {@link SimulationTask} ready to be executed.
 	 */
-	protected abstract SimulationTask createTask(int id, Object data);
+	protected abstract SimulationTask createTask(int id, Serializable data);
 
 	/**
 	 * Creates a new result aggregate, which will aggregate results for all

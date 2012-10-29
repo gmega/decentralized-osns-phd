@@ -6,22 +6,27 @@ import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class SimulationTask implements Callable<SimulationTask> {
+public class SimulationTask implements Callable<SimulationTask>, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private final Pair<Integer, List<? extends INodeMetric<? extends Object>>>[] fMetrics;
 
-	private final Object fId;
+	private final Serializable fId;
 
 	private final int[] fSources;
 
 	private final EDSimulationEngine fEngine;
 
 	private final Map<String, ? extends Object> fParameters;
-
+	
+	private boolean fActive;
+	
 	/**
 	 * Constructs a new {@link SimulationTask}.
 	 * 
@@ -31,7 +36,7 @@ public class SimulationTask implements Callable<SimulationTask> {
 	 *            an array of {@link INodeMetric} lists, one per source.
 	 */
 	public SimulationTask(
-			Object id,
+			Serializable id,
 			EDSimulationEngine engine,
 			Map<String, ? extends Object> parameters,
 			Pair<Integer, List<? extends INodeMetric<? extends Object>>>[] metrics) {
@@ -53,11 +58,17 @@ public class SimulationTask implements Callable<SimulationTask> {
 	@Override
 	public SimulationTask call() throws SimulationTaskException {
 		try {
+			fActive = true;
 			fEngine.run();
+			fActive = false;
 		} catch (Exception ex) {
 			throw new SimulationTaskException(fParameters, fEngine, ex);
 		}
 		return this;
+	}
+	
+	public boolean isActive() {
+		return fActive;
 	}
 
 	public EDSimulationEngine engine() {

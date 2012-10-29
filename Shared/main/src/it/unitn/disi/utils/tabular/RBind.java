@@ -30,8 +30,6 @@ public class RBind implements ITransformer {
 
 	private int fCurrentLine = 1;
 
-	private int fIndulged = 0;
-
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 		TableReader reader = new TableReader(new BufferedInputStream(is));
