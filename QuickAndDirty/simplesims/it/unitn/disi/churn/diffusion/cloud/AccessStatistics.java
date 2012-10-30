@@ -7,7 +7,7 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 public class AccessStatistics implements IAccessListener {
 
 	private final Object fId;
-
+	
 	private double fLastSession = -1;
 
 	private double fAccruedTime;
@@ -46,6 +46,11 @@ public class AccessStatistics implements IAccessListener {
 
 	@Override
 	public void registerAccess(int accessor, int page, AccessType type) {
+		// Won't register accesses outside of tracking sessions.
+		if (!isCounting()) {
+			return;
+		}
+		
 		switch (type) {
 
 		case productive:

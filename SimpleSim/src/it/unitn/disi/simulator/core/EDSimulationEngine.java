@@ -11,15 +11,15 @@ import java.util.Set;
 /**
  * Simple discrete event simulator tailored for churn simulations. This class is
  * <code>not</code> thread-safe, though it is intended to be used with two
- * threads:
+ * threads in the following specific situation:
  * 
  * <ol>
  * <li>one thread runs the main simulation loop ({@link #run()})</li>
- * <li>another thread can call {@link #pause()} and {@link #resume()}).</li>
+ * <li>another thread calls {@link #pause()} and {@link #resume()}.</li>
  * <ol>
  * 
  * This is mainly to enable checkpointing: the engine can be paused until its
- * state gets dumped to disk, and that's it.
+ * state gets dumped to disk, and then resumed.
  * 
  * 
  * @author giuliano
@@ -134,7 +134,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 * 
 	 * @see IEventObserver
 	 */
-	public void run() {
+	public synchronized void run() {
 		checkNotRunning();
 		checkCanRun();
 
@@ -142,7 +142,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		while (!fDone) {
 			waitForClearance();
 			fRunning = true;
-			while (!fPaused) {
+			while (!fPaused && !fDone) {
 				if (!uncheckedStep()) {
 					fDone = true;
 					break;
@@ -161,7 +161,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
-	private synchronized void waitForClearance() {
+	private void waitForClearance() {
 		while (fPaused) {
 			try {
 				this.notify();
