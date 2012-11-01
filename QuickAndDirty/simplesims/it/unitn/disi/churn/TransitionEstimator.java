@@ -42,7 +42,7 @@ public class TransitionEstimator implements IEventObserver {
 			}
 		} else {
 			if (fTarget.holds(network)) {
-				fTimeToHit.observe(fStopWatch.stop(clock.time()));
+				fTimeToHit.observe(fStopWatch.stop(clock.time()), null);
 			}
 		}
 

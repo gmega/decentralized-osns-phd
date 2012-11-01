@@ -60,7 +60,7 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 			}
 		}
 
-		initializeProgress(id, tasks.size());
+		initializeProgress(id, g.size(), tasks.size());
 
 		for (EdgeTask task : tasks) {
 			synchronized (task) {
@@ -87,23 +87,25 @@ public class ParallelParwiseEstimator implements IExecutorCallback<Object> {
 
 		EDSimulationEngine churnSim = new EDSimulationEngine(new IProcess[] {
 				pI, pJ }, fBurnin);
-		
+
 		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-		EdgeDelayEstimator sexp = new EdgeDelayEstimator(churnSim, repetitions, cloud,
-				observer);
+		EdgeDelaySampler sexp = new EdgeDelaySampler(churnSim, repetitions,
+				cloud, observer);
 		sims.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, sexp));
 
 		churnSim.setEventObservers(sims);
+		churnSim.setStopPermits(1);
 
 		return new EdgeTask(churnSim, observer, i, j);
 	}
 
 	// ------------------------------------------------------------------------
 
-	private synchronized void initializeProgress(int sampleId, int size) {
+	private synchronized void initializeProgress(int sampleId, int gsize,
+			int size) {
 		fTracker = Progress.newTracker("est. TTC sample " + sampleId + " ("
-				+ size + ")", size);
+				+ gsize + ", " + size + ")", size);
 		fTracker.startTask();
 	}
 

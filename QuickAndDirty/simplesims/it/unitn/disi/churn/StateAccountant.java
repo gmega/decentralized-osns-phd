@@ -19,12 +19,12 @@ public class StateAccountant {
 	}
 
 	public void enterState(double time) {
-		fTimeToHit.observe(check(time - fLastExit));
+		fTimeToHit.observe(check(time - fLastExit), null);
 		fLastEnter = time;
 	}
 
 	public void exitState(double time) {
-		fPermanence.observe(check(time - fLastEnter));
+		fPermanence.observe(check(time - fLastEnter), null);
 		fLastExit = time;
 	}
 

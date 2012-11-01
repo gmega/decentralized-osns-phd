@@ -12,6 +12,7 @@ import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
+import it.unitn.disi.simulator.measure.AvgEvaluator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.utils.collections.Pair;
@@ -310,7 +311,7 @@ public class TEExperimentHelper {
 
 		if (aggregate == null) {
 			aggregate = new AvgAccumulation(networkMetric.id(), length,
-					AvgAccumulation.DEFAULT_PRECISION, (30 / 3600.0));
+					AvgEvaluator.DEFAULT_PRECISION, (30 / 3600.0));
 			list.add(aggregate);
 		}
 

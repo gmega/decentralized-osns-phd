@@ -8,6 +8,7 @@ import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IEventObserver;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.random.GeneralizedPareto;
@@ -56,8 +57,6 @@ public class SamplingExperiment implements ITransformer {
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		
-		
 
 		switch (fMode) {
 
@@ -97,13 +96,14 @@ public class SamplingExperiment implements ITransformer {
 	private void simSamples(EDSimulationEngine engine) {
 		System.err.println("No burn-in.");
 		final IncrementalStats stats = new IncrementalStats();
-		EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, repetitions,
+		EdgeDelaySampler sexp = new EdgeDelaySampler(engine, repetitions,
 				cloud, new IValueObserver() {
 					@Override
-					public void observe(double value) {
+					public void observe(double value, ISimulationEngine engine) {
 						stats.add(value);
 						System.out.println(stats.getAverage());
 					}
+
 				});
 
 		runSim(0.0, sexp);
@@ -113,15 +113,14 @@ public class SamplingExperiment implements ITransformer {
 		final IncrementalStats stats = new IncrementalStats();
 		IValueObserver obs = new IValueObserver() {
 			@Override
-			public void observe(double value) {
+			public void observe(double value, ISimulationEngine engine) {
 				stats.add(value);
 				System.out.println(stats.getAverage());
 			}
 		};
 
 		for (int i = 0; i < repetitions; i++) {
-			EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, 1, cloud,
-					obs);
+			EdgeDelaySampler sexp = new EdgeDelaySampler(engine, 1, cloud, obs);
 			runSim(burnin, sexp);
 		}
 	}
@@ -131,11 +130,12 @@ public class SamplingExperiment implements ITransformer {
 		final TDoubleArrayList p2All = new TDoubleArrayList();
 
 		System.err.print("Generating...");
-		EdgeDelayEstimator sexp = new EdgeDelayEstimator(engine, repetitions,
+		EdgeDelaySampler sexp = new EdgeDelaySampler(engine, repetitions,
 				cloud, IValueObserver.NULL_OBSERVER) {
 			@Override
-			protected void register(double p2Login, TDoubleArrayList p1Logins) {
-				super.register(p2Login, p1Logins);
+			protected void register(double p2Login, TDoubleArrayList p1Logins,
+					ISimulationEngine engine) {
+				super.register(p2Login, p1Logins, engine);
 				p1All.addAll(p1Logins);
 				p2All.add(p2Login);
 			}
@@ -193,7 +193,7 @@ public class SamplingExperiment implements ITransformer {
 		RenewalProcess pJ = new RenewalProcess(1,
 				distGen.uptimeDistribution(li[1]),
 				distGen.downtimeDistribution(di[1]), State.down);
-		
+
 		EDSimulationEngine churnSim = new EDSimulationEngine(
 				new RenewalProcess[] { pI, pJ }, burnin);
 		return churnSim;

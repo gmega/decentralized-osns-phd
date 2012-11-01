@@ -16,7 +16,9 @@ import it.unitn.disi.simulator.measure.IValueObserver;
  * @author giuliano
  */
 @Binding
-public class EdgeDelayEstimator implements IEventObserver {
+public class EdgeDelaySampler implements IEventObserver {
+
+	private static final long serialVersionUID = 1L;
 
 	private EDSimulationEngine fParent;
 
@@ -28,7 +30,7 @@ public class EdgeDelayEstimator implements IEventObserver {
 
 	private final boolean fCloud;
 
-	public EdgeDelayEstimator(EDSimulationEngine engine, int samples,
+	public EdgeDelaySampler(EDSimulationEngine engine, int samples,
 			boolean cloud, IValueObserver observer) {
 		fSamples = samples;
 		fPendingUps = new TDoubleArrayList();
@@ -53,7 +55,7 @@ public class EdgeDelayEstimator implements IEventObserver {
 
 		// P1 and P2 are synchronized.
 		if (senderUp(p) && p.process(1).isUp()) {
-			register(time, fPendingUps);
+			register(time, fPendingUps, state);
 			fPendingUps.resetQuick();
 		}
 
@@ -62,9 +64,10 @@ public class EdgeDelayEstimator implements IEventObserver {
 		}
 	}
 
-	protected void register(double p2Login, TDoubleArrayList p1Logins) {
+	protected void register(double p2Login, TDoubleArrayList p1Logins,
+			ISimulationEngine engine) {
 		for (int i = 0; i < p1Logins.size() && fSamples > 0; i++, fSamples--) {
-			fObserver.observe(p2Login - p1Logins.get(i));
+			fObserver.observe(p2Login - p1Logins.get(i), engine);
 		}
 	}
 
@@ -76,6 +79,5 @@ public class EdgeDelayEstimator implements IEventObserver {
 	public boolean isDone() {
 		return fSamples <= 0;
 	}
-
 
 }

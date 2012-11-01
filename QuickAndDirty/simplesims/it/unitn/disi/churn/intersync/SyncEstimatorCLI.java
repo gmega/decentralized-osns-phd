@@ -135,6 +135,8 @@ public class SyncEstimatorCLI {
 			System.out.println(stat.toString());
 		}
 	}
+	
+	// ------------------------------------------------------------------------
 
 	private List<IValueObserver> mkStats() {
 		List<IValueObserver> stats = new ArrayList<IValueObserver>();
@@ -159,7 +161,7 @@ public class SyncEstimatorCLI {
 		ExperimentType type = ExperimentType.valueOf(fType);
 		if (type == ExperimentType.true_average || type == ExperimentType.all) {
 			sims.add(new Pair<Integer, IEventObserver>(
-					IProcess.PROCESS_SCHEDULABLE_TYPE, new EdgeDelayEstimator(
+					IProcess.PROCESS_SCHEDULABLE_TYPE, new EdgeDelaySampler(
 							sim, repeats, false, stats.remove(0))));
 		}
 

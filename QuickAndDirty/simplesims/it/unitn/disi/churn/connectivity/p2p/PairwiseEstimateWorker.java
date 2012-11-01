@@ -1,11 +1,14 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
 import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.intersync.BMEdgeDelayEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.measure.AvgEvaluator;
+import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.statistics.StatUtils;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
@@ -17,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 
+import org.lambda.functions.Function0;
 import org.lambda.functions.implementations.F0;
 
 import peersim.config.Attribute;
@@ -26,6 +30,15 @@ import peersim.util.IncrementalStats;
 
 @AutoConfig
 public class PairwiseEstimateWorker extends AbstractWorker {
+
+	@Attribute("mode")
+	private String fMode;
+
+	@Attribute("minbatches")
+	private int fMinBatches;
+
+	@Attribute("batchsize")
+	private int fBatchSize;
 
 	public PairwiseEstimateWorker(@Attribute(Attribute.AUTO) IResolver resolver)
 			throws IOException {
@@ -52,26 +65,14 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 
 				int[] ids = provider().verticesOf(e.root);
 
-				GraphTask gt = ppe.estimate(
-						new F0<it.unitn.disi.simulator.measure.IValueObserver>() {
-							{
-								ret(new IncrementalStatsAdapter(
-										new IncrementalStats()));
-							};
-						}, executor, graph, fRepeat, e.lis, e.dis, fYaoConfig
-								.distributionGenerator(), false, e.root, ids);
+				GraphTask gt = ppe.estimate(getEstimator(), executor, graph,
+						fRepeat, e.lis, e.dis,
+						fYaoConfig.distributionGenerator(), false, e.root, ids);
 
 				gt.await();
 
-				System.err.println("-- err flush -- ");
-				System.err.flush();
-
-				System.out.println("-- out flush -- ");
-				System.out.flush();
-
 				for (EdgeTask task : gt.edgeTasks) {
-					IncrementalStatsAdapter adapt = (IncrementalStatsAdapter) task.stats;
-					IncrementalStats stats = adapt.getStats();
+					IncrementalStats stats = getStat(task.stats);
 
 					writer.set("id", e.root);
 					writer.set("source", ids[task.i]);
@@ -88,6 +89,33 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 				executor.shutdown();
 				executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 			}
+		}
+	}
+
+	private IncrementalStats getStat(IValueObserver stats) {
+		if (stats instanceof IncrementalStatsAdapter) {
+			return ((IncrementalStatsAdapter) stats).getStats();
+		} else if (stats instanceof BMEdgeDelayEstimator) {
+			return ((BMEdgeDelayEstimator) stats).getStats();
+		}
+		return null;
+	}
+
+	private Function0<IValueObserver> getEstimator() {
+		if ("bm".equals(fMode)) {
+			return new F0<IValueObserver>() {
+				{
+					ret(new BMEdgeDelayEstimator(fMinBatches, fBatchSize,
+							new AvgEvaluator(fMinBatches, 0.05, 30 / 3600.0)));
+				}
+			};
+		} else {
+			return new F0<IValueObserver>() {
+				{
+					ret(new IncrementalStatsAdapter(new IncrementalStats(),
+							null));
+				}
+			};
 		}
 	}
 }

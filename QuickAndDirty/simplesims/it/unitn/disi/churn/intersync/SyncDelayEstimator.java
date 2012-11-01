@@ -39,21 +39,27 @@ public class SyncDelayEstimator implements IEventObserver {
 
 	private TransitionEstimator[] transitionTrackers(IValueObserver[] observers) {
 		TransitionEstimator[] estimators = new TransitionEstimator[3];
-		estimators[0] = new TransitionEstimator(_00, _11, new CountWrapper(0, observers[0]));
-		estimators[1] = new TransitionEstimator(_01, _11, new CountWrapper(1, observers[1]));
-		estimators[2] = new TransitionEstimator(_10, _11, new CountWrapper(2, observers[2]));
-		return estimators;
-	}
-	
-	private TransitionEstimator[] stationaryTrackers(IValueObserver[] observers) {
-		TransitionEstimator[] estimators = new TransitionEstimator[4];
-		estimators[0] = new StationaryEstimator(_00, new CountWrapper(3, observers[0]));
-		estimators[1] = new StationaryEstimator(_01, new CountWrapper(4, observers[1]));
-		estimators[2] = new StationaryEstimator(_10, new CountWrapper(5, observers[2]));
-		estimators[3] = new StationaryEstimator(_11, new CountWrapper(6, observers[3]));
+		estimators[0] = new TransitionEstimator(_00, _11, new CountWrapper(0,
+				observers[0]));
+		estimators[1] = new TransitionEstimator(_01, _11, new CountWrapper(1,
+				observers[1]));
+		estimators[2] = new TransitionEstimator(_10, _11, new CountWrapper(2,
+				observers[2]));
 		return estimators;
 	}
 
+	private TransitionEstimator[] stationaryTrackers(IValueObserver[] observers) {
+		TransitionEstimator[] estimators = new TransitionEstimator[4];
+		estimators[0] = new StationaryEstimator(_00, new CountWrapper(3,
+				observers[0]));
+		estimators[1] = new StationaryEstimator(_01, new CountWrapper(4,
+				observers[1]));
+		estimators[2] = new StationaryEstimator(_10, new CountWrapper(5,
+				observers[2]));
+		estimators[3] = new StationaryEstimator(_11, new CountWrapper(6,
+				observers[3]));
+		return estimators;
+	}
 
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
@@ -100,9 +106,9 @@ public class SyncDelayEstimator implements IEventObserver {
 		}
 
 		@Override
-		public void observe(double value) {
+		public void observe(double value, ISimulationEngine engine) {
 			fActualSamples[fIndex]++;
-			fDelegate.observe(value);
+			fDelegate.observe(value, engine);
 		}
 
 	}
