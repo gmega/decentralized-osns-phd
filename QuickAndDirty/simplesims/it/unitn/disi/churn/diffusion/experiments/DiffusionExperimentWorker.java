@@ -89,6 +89,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private TableWriter fLatencyWriter;
 
+	private TableWriter fP2PCostWriter;
+
 	private TableWriter fBaselineLatencyWriter;
 
 	private TableWriter fCloudStatWriter;
@@ -118,6 +120,9 @@ public class DiffusionExperimentWorker extends Worker {
 		fLatencyWriter = new TableWriter(new PrefixedWriter("ES:", System.out),
 				"id", "source", "target", "edsumd", "edsum", "edsumu",
 				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
+
+		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
+				"id", "source", "target", "uprec", "nuprec", "msgtime");
 
 		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
 				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
@@ -284,6 +289,10 @@ public class DiffusionExperimentWorker extends Worker {
 				"cloud_upd." + AccessType.productive), graph.size()));
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_upd.accrued"), 1));
+
+		collector.addAccumulator(new SumAccumulation("msg.up", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.nup", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.accrued", 1));
 	}
 
 	private String prefix(String prefix, String string) {
@@ -308,6 +317,7 @@ public class DiffusionExperimentWorker extends Worker {
 		Pair<ExperimentData, MetricsCollector> result = (Pair<ExperimentData, MetricsCollector>) resultObj;
 
 		printLatencies("", fLatencyWriter, result.a, result.b);
+		printP2PCosts(fP2PCostWriter, result.a, result.b);
 
 		if (fCloudAssisted) {
 			printCloudAcessStatistics("", fCloudStatWriter, result.a, result.b);
@@ -316,6 +326,26 @@ public class DiffusionExperimentWorker extends Worker {
 				printCloudAcessStatistics("b", fBaselineCStatWriter, result.a,
 						result.b);
 			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void printP2PCosts(TableWriter writer, ExperimentData data,
+			MetricsCollector metrics) {
+		INodeMetric<Double> updates = metrics.getMetric("msg.up");
+		INodeMetric<Double> noUpdates = metrics.getMetric("msg.nup");
+		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
+
+		for (int i = 0; i < data.graph.size(); i++) {
+			writer.set("id", data.experiment.root);
+			writer.set("source", data.source);
+			writer.set("target", data.ids[i]);
+
+			writer.set("uprec", updates.getMetric(i));
+			writer.set("nuprec", noUpdates.getMetric(i));
+			writer.set("msgtime", time.getMetric(0));
+
+			writer.emmitRow();
 		}
 	}
 

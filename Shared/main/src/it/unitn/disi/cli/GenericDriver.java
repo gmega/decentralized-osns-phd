@@ -232,7 +232,7 @@ public class GenericDriver {
 		if (kvPair.length != 2) {
 			return;
 		}
-		props.put(kvPair[0], expand(kvPair[1], props));
+		props.put(kvPair[0].trim(), expand(kvPair[1].trim(), props));
 	}
 
 	private String expand(String string, Map<String, Object> props) {

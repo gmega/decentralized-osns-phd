@@ -162,9 +162,10 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		return fProtocols[UPDATE].isReached();
 	}
 
-	private void messageReceived(HFloodMMsg message, IClockData clock) {
+	private void messageReceived(HFloodMMsg message, IClockData clock,
+			boolean duplicate) {
 		for (IMessageObserver observer : fObservers) {
-			observer.messageReceived(message, clock);
+			observer.messageReceived(fProcess, message, clock, duplicate);
 		}
 	}
 
@@ -215,10 +216,11 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 		@Override
 		public void markReached(IClockData clock) {
-			boolean notify = !isReached();
+			boolean duplicate = isReached();
 			super.markReached(clock);
-			if (notify) {
-				messageReceived((HFloodMMsg) message(), clock);
+			messageReceived((HFloodMMsg) message(), clock, duplicate);
+
+			if (!duplicate) {
 				HFloodMMsg msg = (HFloodMMsg) message();
 				if (msg.getTracker() != null) {
 					msg.getTracker().decrement(clock.engine());
@@ -236,6 +238,10 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		public void beginBroadcast(ISimulationEngine engine, HFloodMMsg message) {
 			fIntendedDestinations = engine.network().size();
 			fMessage = message;
+			
+			for (IBroadcastObserver observer : fBcastObservers) {
+				observer.broadcastStarted(message, engine);
+			}
 		}
 
 		public void decrement(ISimulationEngine engine) {
@@ -259,6 +265,11 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 	}
 
 	public static interface IBroadcastObserver {
+
+		public void broadcastStarted(HFloodMMsg message,
+				ISimulationEngine engine);
+
 		public void broadcastDone(HFloodMMsg message, ISimulationEngine engine);
+
 	}
 }

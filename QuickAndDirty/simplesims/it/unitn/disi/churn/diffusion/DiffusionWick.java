@@ -3,7 +3,7 @@ package it.unitn.disi.churn.diffusion;
 import java.util.Arrays;
 
 import it.unitn.disi.churn.diffusion.HFloodMM.IBroadcastObserver;
-import it.unitn.disi.churn.diffusion.cloud.AccessStatistics;
+import it.unitn.disi.churn.diffusion.cloud.CloudAccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
 import it.unitn.disi.simulator.core.Binding;
@@ -46,9 +46,9 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private SimpleMutableMetric fRd;
 
-	private AccessStatistics fAll;
+	private CloudAccessStatistics fAll;
 
-	private AccessStatistics fUpdate;
+	private CloudAccessStatistics fUpdate;
 
 	private double fStartTime;
 
@@ -69,8 +69,9 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		fEd = new SimpleMutableMetric(prefix(mPrefix, "ed"), flood.length);
 		fRd = new SimpleMutableMetric(prefix(mPrefix, "rd"), flood.length);
 
-		fAll = new AccessStatistics(prefix(mPrefix, "cloud_all"), flood.length);
-		fUpdate = new AccessStatistics(prefix(mPrefix, "cloud_upd"),
+		fAll = new CloudAccessStatistics(prefix(mPrefix, "cloud_all"),
+				flood.length);
+		fUpdate = new CloudAccessStatistics(prefix(mPrefix, "cloud_upd"),
 				flood.length);
 
 		fFlood = flood;
@@ -140,11 +141,11 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		return fRd;
 	}
 
-	public AccessStatistics allAccesses() {
+	public CloudAccessStatistics allAccesses() {
 		return fUpdate;
 	}
 
-	public AccessStatistics updates() {
+	public CloudAccessStatistics updates() {
 		return fAll;
 	}
 
@@ -219,6 +220,11 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		public ICloud cloud() {
 			return fCloud;
 		}
+
+	}
+
+	@Override
+	public void broadcastStarted(HFloodMMsg message, ISimulationEngine engine) {
 	}
 
 	@Override
@@ -228,7 +234,8 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			HFloodSM sm = getSM(i);
 
 			double ed = fEd.getMetric(i);
-			double edSample = (sm.rawEndToEndDelay() - source.rawEndToEndDelay());
+			double edSample = (sm.rawEndToEndDelay() - source
+					.rawEndToEndDelay());
 			ed = ed + edSample;
 			fEd.setValue(ed, i);
 
@@ -238,8 +245,8 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			fRd.setValue(rd, i);
 
 			if (DUMP_DELAY_POINTS) {
-				System.out.println("VED: " + fSource + " " + i + " "
-						+ edSample + " " + rdSample);
+				System.out.println("VED: " + fSource + " " + i + " " + edSample
+						+ " " + rdSample);
 			}
 		}
 

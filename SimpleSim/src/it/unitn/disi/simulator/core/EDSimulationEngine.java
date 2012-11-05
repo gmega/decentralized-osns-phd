@@ -153,10 +153,12 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			 * JMM note: write to volatile guarantees that the state seen by the
 			 * thread calling pause -- which needs to read the volatile and find
 			 * a false before returning -- will be consistent with all changes
-			 * made by the thread running the main simulation loop.
+			 * made by the thread running the main simulation loop before it
+			 * paused.
 			 */
 			fRunning = false;
 		}
+
 	}
 
 	// -------------------------------------------------------------------------

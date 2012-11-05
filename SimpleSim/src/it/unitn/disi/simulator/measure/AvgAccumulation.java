@@ -1,28 +1,21 @@
 package it.unitn.disi.simulator.measure;
 
-import it.unitn.disi.statistics.StatUtils;
 import peersim.util.IncrementalStats;
 
 public class AvgAccumulation implements IMetricAccumulator<Double> {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final int LOWER_SIGNIFICANCE_BOUND = 100;
-
-	public static final double DEFAULT_PRECISION = 0.05;
-
 	private IncrementalStats[] fMetric;
 
 	private Object fId;
 
-	private double fResolutionLimit;
-
-	private double fPrecision;
-
 	private boolean fPrecise;
+	
+	private AvgEvaluator fTester;
 
 	public AvgAccumulation(Object id, int length) {
-		this(id, length, DEFAULT_PRECISION, 0.0);
+		this(id, length, AvgEvaluator.DEFAULT_PRECISION, 0.0);
 	}
 
 	public AvgAccumulation(Object id, int length, double precision,
@@ -32,8 +25,7 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 		for (int i = 0; i < fMetric.length; i++) {
 			fMetric[i] = new IncrementalStats();
 		}
-		fPrecision = precision;
-		fResolutionLimit = reslimit;
+		fTester = new AvgEvaluator(precision, reslimit);
 	}
 
 	/*
@@ -57,17 +49,11 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 	}
 	
 	public Double lowerConfidenceLimit(int i) {
-		if(!hasEnoughSamples(fMetric[i])) {
-			return Double.NaN;
-		}
-		return StatUtils.lowerConfidenceLimit(fMetric[i]);
+		return fTester.lowerConfidenceLimit(fMetric[i]);
 	}
 	
 	public Double upperConfidenceLimit(int i) {
-		if(!hasEnoughSamples(fMetric[i])) {
-			return Double.NaN;
-		}
-		return StatUtils.upperConfidenceLimit(fMetric[i]);	
+		return fTester.upperConfidenceLimit(fMetric[i]);
 	}
 
 	/*
@@ -82,31 +68,8 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 		fPrecise = true;
 		for (int i = 0; i < fMetric.length; i++) {
 			fMetric[i].add(metric.getMetric(i));
-			fPrecise &= isPrecise(fMetric[i]);
+			fPrecise &= fTester.isPrecise(fMetric[i]);
 		}
-	}
-
-	private boolean isPrecise(IncrementalStats stats) {
-		if(!hasEnoughSamples(stats)) {
-			return false;
-		}
-		
-		double upper = StatUtils.upperConfidenceLimit(stats);
-		double avg = stats.getAverage();
-
-		return isAbsolutePrecise(upper, avg) || isRelativePrecise(upper, avg);
-	}
-
-	public boolean hasEnoughSamples(IncrementalStats stats) {
-		return stats.getN() >= LOWER_SIGNIFICANCE_BOUND;
-	}
-
-	private boolean isRelativePrecise(double upper, double avg) {
-		return ((upper - avg) / Math.abs(avg)) < fPrecision;
-	}
-
-	private boolean isAbsolutePrecise(double upper, double avg) {
-		return (upper - avg) < fResolutionLimit;
 	}
 
 	@Override

@@ -138,7 +138,14 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	}
 
 	@Override
-	public void messageReceived(HFloodMMsg message, IClockData clock) {
+	public void messageReceived(IProcess process, HFloodMMsg message,
+			IClockData clock, boolean duplicate) {
+		
+		// Duplicates are not important.
+		if (duplicate) {
+			return;
+		}
+		
 		// Sanity check.
 		if (fNextShift < 0) {
 			throw new IllegalStateException(

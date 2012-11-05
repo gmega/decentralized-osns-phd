@@ -5,6 +5,7 @@ import it.unitn.disi.churn.diffusion.DiffusionWick;
 import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
 import it.unitn.disi.churn.diffusion.HFloodMM;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
+import it.unitn.disi.churn.diffusion.MessageStatistics;
 import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
@@ -113,7 +114,7 @@ public class CloudSimulationBuilder {
 							IProcess.PROCESS_SCHEDULABLE_TYPE, runner
 									.networkObserver()));
 
-			prots = create(processes, runner, pid, messages);
+			prots = create(processes, runner, pid, messages, metrics);
 
 			if (cloudAssist) {
 				cloud = new SimpleCloudImpl(source);
@@ -128,7 +129,8 @@ public class CloudSimulationBuilder {
 		if (cloudAssist && baseline) {
 			// Note we don't register a runner for the baseline, as it's not
 			// supposed to actually run.
-			HFloodMM[] baselineProts = create(processes, null, pid, messages);
+			HFloodMM[] baselineProts = create(processes, null, pid, messages,
+					metrics);
 			cloud = new SimpleCloudImpl(source);
 			create(engine, processes, baselineProts, cloud, source);
 
@@ -188,15 +190,23 @@ public class CloudSimulationBuilder {
 
 	private HFloodMM[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int pid, int messages) {
+			int pid, int messages, List<INodeMetric<? extends Object>> metrics) {
 		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
+		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size());
 		for (int i = 0; i < protocols.length; i++) {
 			protocols[i] = new HFloodMM(pid, fGraph, peerSelector(),
 					processes[i],
 					new CachingTransformer(new LiveTransformer()), runner,
 					messages == 1);
 			processes[i].addProtocol(protocols[i]);
+			protocols[i].addMessageObserver(mstats);
+			protocols[i].addBroadcastObserver(mstats);
 		}
+
+		metrics.add(mstats.accruedTime());
+		metrics.add(mstats.noUpdates());
+		metrics.add(mstats.updates());
+
 		return protocols;
 	}
 
