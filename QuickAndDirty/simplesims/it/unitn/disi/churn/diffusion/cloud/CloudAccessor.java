@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
@@ -24,8 +25,6 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private static final boolean DEBUG = false;
 
-	private static final double ROUNDOFF_SUM = 0.0000000000001D;
-
 	private final IDisseminationService fDisseminationService;
 
 	private final ICloud fCloud;
@@ -38,11 +37,15 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private CloudAccess fAccessor;
 
-	private double fNextAccess;
+	private CloudAccessor[] fOthers;
+
+	private final Random fRandom;
+
+	private double fLastHeard;
 
 	private double fNextShift;
 
-	private double fLastAccess;
+	private double fCurrentTimer;
 
 	/**
 	 * Constructs a new {@link CloudAccessor}.
@@ -64,13 +67,18 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	 */
 	public CloudAccessor(ISimulationEngine sim,
 			IDisseminationService disseminationService, ICloud cloud,
-			double period, double delay, int id) {
+			double period, double delay, int id, Random random) {
 		fDisseminationService = disseminationService;
 		fSim = sim;
 		fCloud = cloud;
 		fId = id;
 		fTimerPeriod = period;
-		fNextAccess = fTimerPeriod + delay;
+		fRandom = random;
+		fCurrentTimer = fTimerPeriod + delay;
+	}
+
+	public void setOthers(CloudAccessor[] others) {
+		fOthers = others;
 	}
 
 	@Override
@@ -86,23 +94,45 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 		}
 
 		fNextShift = nextShift;
+
+		// If logged in with timer already expired, add a little delta to give
+		// some opportunity for the gossip protocols to disseminate stuff.
+		// before going for cloud.
+		if (nextAccess() < state.clock().rawTime()) {
+			for (CloudAccessor other : fOthers) {
+				if (other == null) {
+					continue;
+				}
+				// Neighbor has fresher information, reschedule our access.
+				if (other.fLastHeard > this.fLastHeard) {
+					updateKnowledge(other.fLastHeard, state.clock());
+				}
+			}
+		}
+
 		scheduleCloudAccess(nextShift, state.clock());
 	}
 
-	private void updateKnowledge(double lastSeen, IClockData clock) {
-		fNextAccess = Math.max(fNextAccess, lastSeen + fTimerPeriod);
+	private void updateKnowledge(double lastHeard, IClockData clock) {
+		fLastHeard = Math.max(fLastHeard, lastHeard);
+		fCurrentTimer = nextTimer();
 		if (DEBUG) {
 			System.err.println("(" + clock.rawTime() + "): node " + fId
-					+ " update last seen to " + lastSeen + ". Next access at "
-					+ fNextAccess + ".");
+					+ " next access at " + nextAccess() + ".");
 		}
 		scheduleCloudAccess(fNextShift, clock);
+	}
+
+	private double nextTimer() {
+		fCurrentTimer = fRandom == null ? fTimerPeriod : fRandom.nextDouble()
+				* fTimerPeriod * 2;
+		return fCurrentTimer;
 	}
 
 	private void scheduleCloudAccess(double nextShift, IClockData clock) {
 		// We schedule the accessor if the next access is to
 		// happen during the current session.
-		boolean access = fNextAccess < nextShift;
+		boolean access = nextAccess() < nextShift;
 
 		// Yet, it could be that:
 		// 1. we had a scheduled access, but got information regarding
@@ -117,7 +147,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			}
 
 			// 1b. Otherwise, we just nudge it by the amount required.
-			else if (fNextAccess != fAccessor.time()) {
+			else if (nextAccess() != fAccessor.time()) {
 				fAccessor.cancel();
 				scheduleAccess(clock);
 			}
@@ -133,19 +163,19 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	}
 
 	private void scheduleAccess(IClockData clock) {
-		fAccessor = new CloudAccess(Math.max(clock.rawTime(), fNextAccess));
+		fAccessor = new CloudAccess(Math.max(clock.rawTime(), nextAccess()));
 		fSim.schedule(fAccessor);
 	}
 
 	@Override
 	public void messageReceived(IProcess process, HFloodMMsg message,
 			IClockData clock, boolean duplicate) {
-		
+
 		// Duplicates are not important.
 		if (duplicate) {
 			return;
 		}
-		
+
 		// Sanity check.
 		if (fNextShift < 0) {
 			throw new IllegalStateException(
@@ -157,8 +187,17 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 					+ " received [" + message.toString()
 					+ "] from P2P network.");
 		}
-
+		
+		// NUP is old, just leave it.
+		if (message.timestamp() < fLastHeard) {
+			return;
+		}
+		
 		updateKnowledge(message.timestamp(), clock);
+	}
+
+	double nextAccess() {
+		return fLastHeard + fCurrentTimer;
 	}
 
 	@Override
@@ -196,12 +235,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			fDone = true;
 			IClockData clock = engine.clock();
 
-			// Need the roundoff sum to avoid a roundoff error causing us to
-			// query behind the timestamp for an update we already know.
-			double queryTimestamp = fNextAccess - fTimerPeriod + ROUNDOFF_SUM;
-
 			// Fetch updates.
-			HFloodMMsg[] updates = fCloud.fetchUpdates(fId, -1, queryTimestamp,
+			HFloodMMsg[] updates = fCloud.fetchUpdates(fId, -1, fLastHeard,
 					engine);
 			// System.err.println("Cloud access.");
 			if (DEBUG) {
@@ -210,7 +245,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 						+ "): node "
 						+ fId
 						+ " accessed the cloud with query timestamp ["
-						+ queryTimestamp
+						+ fLastHeard
 						+ "] got "
 						+ ((updates == ICloud.NO_UPDATE) ? "NUP" : Arrays
 								.toString(updates)));
@@ -234,10 +269,10 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			 * IllegalStateException(); }
 			 */
 
-			fLastAccess = clock.rawTime();
+			fLastHeard = clock.rawTime();
 
 			// Our knowledge got more recent.
-			updateKnowledge(fLastAccess, clock);
+			updateKnowledge(fLastHeard, clock);
 		}
 
 		public void cancel() {
