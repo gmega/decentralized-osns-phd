@@ -1,5 +1,6 @@
 package it.unitn.disi.simulator.measure;
 
+import it.unitn.disi.statistics.StatUtils;
 import peersim.util.IncrementalStats;
 
 public class AvgAccumulation implements IMetricAccumulator<Double> {
@@ -12,7 +13,7 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 
 	private boolean fPrecise;
 	
-	private AvgEvaluator fTester;
+	private final AvgEvaluator fTester;
 
 	public AvgAccumulation(Object id, int length) {
 		this(id, length, AvgEvaluator.DEFAULT_PRECISION, 0.0);
@@ -49,10 +50,21 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 	}
 	
 	public Double lowerConfidenceLimit(int i) {
+
+		// XXX Hack to fix strange bug on a temporary basis.
+		if (fTester == null) {
+			return StatUtils.lowerConfidenceLimit(fMetric[i]);
+		}
 		return fTester.lowerConfidenceLimit(fMetric[i]);
 	}
 	
 	public Double upperConfidenceLimit(int i) {
+
+		// XXX Hack to fix strange bug on a temporary basis.
+		if (fTester == null) {
+			return StatUtils.upperConfidenceLimit(fMetric[i]);
+		}
+
 		return fTester.upperConfidenceLimit(fMetric[i]);
 	}
 
@@ -66,9 +78,20 @@ public class AvgAccumulation implements IMetricAccumulator<Double> {
 	@Override
 	public void add(INodeMetric<Double> metric) {
 		fPrecise = true;
+		
+		if (fTester == null) {
+			System.err.println("Tester was null.");
+		}
+		
 		for (int i = 0; i < fMetric.length; i++) {
 			fMetric[i].add(metric.getMetric(i));
-			fPrecise &= fTester.isPrecise(fMetric[i]);
+			
+			// XXX Hack to fix strange bug on a temporary basis.
+			if (fTester != null) {
+				fPrecise &= fTester.isPrecise(fMetric[i]);
+			} else {
+				fPrecise = false;
+			}
 		}
 	}
 

@@ -87,12 +87,14 @@ public abstract class Worker implements Runnable, Application {
 	@Override
 	public void run() {
 		fExecutor = new TaskExecutor(fCores, fCores + 1);
+		fLogger.info("Using " + fCores + " cores.");
 		try {
 			initialize();
 			fCheckpoint.start();
 			this.run0();
 		} catch (Exception ex) {
-			fLogger.error(ex);
+			fLogger.error("Error during worker execution.", ex);
+			// TODO add worker-master error reporting code here.
 		} finally {
 			fCheckpoint.interrupt();
 		}
@@ -200,8 +202,10 @@ public abstract class Worker implements Runnable, Application {
 		Object chkp = fChkpClient.workUnit(id, "");
 
 		if (chkp != null) {
+			fLogger.info("Retrieved checkpoint for task " + id + ".");
 			fState = (SimulationState) chkp;
 		} else {
+			fLogger.info("No checkpoint for task " + id + ".");
 			fState = new SimulationState();
 			fState.taskId = id;
 			fState.iteration = 0;

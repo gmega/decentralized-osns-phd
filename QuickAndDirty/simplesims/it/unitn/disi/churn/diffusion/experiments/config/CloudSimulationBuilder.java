@@ -54,6 +54,10 @@ public class CloudSimulationBuilder {
 
 	private final double fNUPAnchor;
 
+	private final boolean fRandomize;
+	
+	private final double fLoginGrace;
+
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
 	 * 
@@ -75,7 +79,7 @@ public class CloudSimulationBuilder {
 	 */
 	public CloudSimulationBuilder(double burnin, double period,
 			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
-			Random random, double nupOnly) {
+			Random random, double nupOnly, double loginGrace, boolean randomize) {
 		fDelay = period;
 		fGraph = graph;
 		fRandom = random;
@@ -83,6 +87,8 @@ public class CloudSimulationBuilder {
 		fSelectorType = selectorType;
 		fNUPBurnin = nupBurnin;
 		fNUPAnchor = nupOnly;
+		fRandomize = randomize;
+		fLoginGrace = loginGrace;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -219,10 +225,11 @@ public class CloudSimulationBuilder {
 				continue;
 			}
 			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
-					fDelay, fBurnin, i);
+					fDelay, fBurnin, fLoginGrace, i, fRandomize ? fRandom : null);
 			process[i].addObserver(accessors[i]);
 			dissemination[i].addMessageObserver(accessors[i]);
 		}
+
 		return accessors;
 	}
 

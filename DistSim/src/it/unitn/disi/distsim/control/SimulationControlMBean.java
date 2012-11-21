@@ -26,6 +26,14 @@ public interface SimulationControlMBean {
 	public void delete(String id);
 
 	/**
+	 * Resets all services registered under a simulation.
+	 * 
+	 * @param id
+	 *            the unique id of the simulation to reset.
+	 */
+	public void reset(String id);
+
+	/**
 	 * @return the master output folder (at the server) in which all simulation
 	 *         data will be stored.
 	 */

@@ -79,6 +79,12 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fast", defaultValue = "false")
 	private boolean f;
 
+	@Attribute(value = "randomized", defaultValue = "false")
+	private boolean fRandomized;
+
+	@Attribute(value = "login_grace", defaultValue = "0.00138888888")
+	private double fLoginGrace;
+
 	private volatile int fSeedUniquefier;
 
 	private final YaoChurnConfigurator fYaoChurn;
@@ -148,6 +154,12 @@ public class DiffusionExperimentWorker extends Worker {
 			System.err.println("-- Cloud sims are on.");
 			if (fBaseline) {
 				System.err.println("-- Baseline cloud sims are on.");
+			}
+
+			if (fRandomized) {
+				System.err.println("-- Periods are randomized:" + fDelay);
+			} else {
+				System.err.println("-- Periods are fixed:" + fDelay);
 			}
 		}
 
@@ -231,9 +243,9 @@ public class DiffusionExperimentWorker extends Worker {
 			}
 
 			elements = new CloudSimulationBuilder(fBurnin, fDelay, fNUPBurnin,
-					fSelector.charAt(0), graph, diffusion, fNUPAnchor).build(
-					source, fMessages, fP2PSims, fCloudAssisted, fBaseline,
-					processes);
+					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
+					fLoginGrace, fRandomized).build(source, fMessages,
+					fP2PSims, fCloudAssisted, fBaseline, processes);
 		}
 
 		return new SimulationTask(

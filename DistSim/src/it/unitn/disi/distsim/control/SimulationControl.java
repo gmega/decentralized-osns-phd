@@ -102,12 +102,7 @@ public class SimulationControl implements SimulationControlMBean {
 
 	@Override
 	public synchronized void delete(String id) {
-		if (!exists(id)) {
-			throw new IllegalArgumentException("Unknown simulation id " + id
-					+ ".");
-		}
-
-		Simulation sim = locate(id);
+		Simulation sim = checkedGet(id);
 		sim.deactivateAndUnregister();
 		File file = sim.baseFolder();
 		wipeTree(file);
@@ -121,6 +116,32 @@ public class SimulationControl implements SimulationControlMBean {
 			fLogger.error("Error saving list.", ex);
 		}
 
+	}
+
+	@Override
+	public synchronized void reset(String id) {
+		Simulation sim = checkedGet(id);
+		sim.resetAll();
+	}
+
+	@Override
+	public File getMasterFolder() {
+		return fMasterFolder;
+	}
+
+	public RMIObjectManager objectManager() {
+		return fObjectManager;
+	}
+
+	public static String name(String... nameparts) {
+		StringBuffer buffer = new StringBuffer();
+		for (String namepart : nameparts) {
+			buffer.append(namepart);
+			buffer.append("/");
+		}
+
+		buffer.deleteCharAt(buffer.length() - 1);
+		return buffer.toString();
 	}
 
 	private void wipeTree(File root) {
@@ -141,17 +162,6 @@ public class SimulationControl implements SimulationControlMBean {
 		} catch (Exception ex) {
 			fLogger.error("Failed to delete " + root + ".", ex);
 		}
-	}
-
-	public static String name(String... nameparts) {
-		StringBuffer buffer = new StringBuffer();
-		for (String namepart : nameparts) {
-			buffer.append(namepart);
-			buffer.append("/");
-		}
-
-		buffer.deleteCharAt(buffer.length() - 1);
-		return buffer.toString();
 	}
 
 	private boolean exists(String id) {
@@ -184,13 +194,17 @@ public class SimulationControl implements SimulationControlMBean {
 		fSimulationKeys = (List<String>) fSerializer.loadObject(fConfigFile);
 	}
 
-	@Override
-	public File getMasterFolder() {
-		return fMasterFolder;
+	private void checkExists(String id) throws IllegalArgumentException {
+		if (!exists(id)) {
+			throw new IllegalArgumentException("Unknown simulation id " + id
+					+ ".");
+		}
 	}
 
-	public RMIObjectManager objectManager() {
-		return fObjectManager;
+	private Simulation checkedGet(String id) throws IllegalArgumentException {
+		checkExists(id);
+		Simulation sim = locate(id);
+		return sim;
 	}
 
 	public MBeanServer jmxServer() {
@@ -254,6 +268,15 @@ class Simulation implements ISimulation {
 
 	public File baseFolder() {
 		return fBase;
+	}
+
+	public void resetAll() {
+		for (Service container : fServiceList) {
+			ManagedService service = container.bean;
+			if (service instanceof ResettableService) {
+				((ResettableService) service).reset();
+			}
+		}
 	}
 
 	private Simulation create(File base) throws Exception {

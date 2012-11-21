@@ -13,9 +13,12 @@ plot_neighborhood <- function(g, root_id) {
 	tkplot(subg)
 }
 
+#
+# Plots multiple CDF functions together with a legend.
+#
 multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col, 
 		pos = NULL, names = NULL, xlim=NULL, quantiles, quantilep=0.95, 
-		round_dec=2, legend.cex=1, marker.col="darkgray", ...) {
+		round_dec=2, legend.cex=1, marker.col="darkgray", complete_lines = FALSE, ...) {
 	
 	qs <- c()
 	qs[1:length(datasets)] <- 0
@@ -50,28 +53,38 @@ multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col,
 			y <- freqsets[[i]]
 		}
 		
-		qs[i] <- round(quantile(datasets[[i]], c(quantilep))[[1]], round_dec)
+    qs[i] <- round(quantile(datasets[[i]], c(quantilep))[[1]], round_dec)
     
-    	if (first) {
-			plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], lty=lty[i], ...)
-			if (any(quantiles)) {
+    if (first) {
+      plot(y ~ x, lwd=lwd, xlim=xlim, type="l", col=col[i], lty=lty[i], ...)
+      if (any(quantiles)) {
 				abline(h=c(quantilep), lty=2, lwd=lwd, col=marker.col)
 			}
-      		first <- FALSE
+      first <- FALSE
+      
     	} else {
       		lines(y ~ x, lwd=lwd, type="l", col=col[i], lty=lty[i])
     	}
 		
-		if (quantiles[i]) {
-			print(qs[i])
-			abline(v=c(qs[i]), lwd=lwd, col=marker.col, lty=2)
-			axis(3, at=c(qs[i]))
-		}
-		
+      if (quantiles[i]) {
+        print(qs[i])
+        abline(v=c(qs[i]), lwd=lwd, col=marker.col, lty=2)
+        axis(3, at=c(qs[i]))
+      }
+      
+      if (complete_lines && (max(x) < xlim[2])) {
+        lines(c(max(x), xlim[2]*2), c(1.0, 1.0), lwd=lwd, col=col[i], lty=lty[i])
+      }
 	}
 	
 	if (!is.null(names)) {
-		legend(pos, names, lwd=lwd, lty=lty, col=col)
+	  xpos <- pos[1]
+	  ypos <- NULL
+    if (length(pos) > 1) {
+      ypos <- pos[2]
+    }
+	
+		legend(x=xpos, y=ypos, names, lwd=lwd, lty=lty, col=col, bg="white", cex=legend.cex)
 	}
 	
 	return(qs)
