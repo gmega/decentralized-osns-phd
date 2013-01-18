@@ -3,7 +3,7 @@ package it.unitn.disi.churn.diffusion.experiments.config;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
 import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
-import it.unitn.disi.churn.diffusion.HFloodMM;
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
 import it.unitn.disi.churn.diffusion.RandomSelector;
@@ -42,7 +42,7 @@ public class CloudSimulationBuilder {
 
 	private final double fBurnin;
 
-	private final double fDelay;
+	private final double fPeriod;
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -55,8 +55,10 @@ public class CloudSimulationBuilder {
 	private final double fNUPAnchor;
 
 	private final boolean fRandomize;
-	
+
 	private final double fLoginGrace;
+
+	private final double fFixedFraction;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -79,8 +81,9 @@ public class CloudSimulationBuilder {
 	 */
 	public CloudSimulationBuilder(double burnin, double period,
 			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
-			Random random, double nupOnly, double loginGrace, boolean randomize) {
-		fDelay = period;
+			Random random, double nupOnly, double loginGrace,
+			double fixedFraction, boolean randomize) {
+		fPeriod = period;
 		fGraph = graph;
 		fRandom = random;
 		fBurnin = burnin;
@@ -89,11 +92,13 @@ public class CloudSimulationBuilder {
 		fNUPAnchor = nupOnly;
 		fRandomize = randomize;
 		fLoginGrace = loginGrace;
+		fFixedFraction = fixedFraction;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, int messages, boolean dissemination,
-			boolean cloudAssist, boolean baseline, IProcess[] processes) {
+			final int source, int messages, int quenchDesync,
+			boolean dissemination, boolean cloudAssist, boolean baseline,
+			IProcess[] processes) {
 
 		int permits = 0;
 		permits += dissemination ? 1 : 0;
@@ -106,12 +111,12 @@ public class CloudSimulationBuilder {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 
-		HFloodMM[] prots;
+		DisseminationServiceImpl[] prots;
 		SimpleCloudImpl cloud = null;
 
 		int pid = 0;
 		if (dissemination) {
-			PausingCyclicProtocolRunner<HFloodMM> runner = new PausingCyclicProtocolRunner<HFloodMM>(
+			PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = new PausingCyclicProtocolRunner<DisseminationServiceImpl>(
 					engine, SECOND, 1, pid);
 
 			observers.add(new Pair<Integer, IEventObserver>(1, runner));
@@ -120,7 +125,8 @@ public class CloudSimulationBuilder {
 							IProcess.PROCESS_SCHEDULABLE_TYPE, runner
 									.networkObserver()));
 
-			prots = create(processes, runner, pid, messages, metrics);
+			prots = create(processes, runner, pid, messages, quenchDesync,
+					metrics);
 
 			if (cloudAssist) {
 				cloud = new SimpleCloudImpl(source);
@@ -135,8 +141,8 @@ public class CloudSimulationBuilder {
 		if (cloudAssist && baseline) {
 			// Note we don't register a runner for the baseline, as it's not
 			// supposed to actually run.
-			HFloodMM[] baselineProts = create(processes, null, pid, messages,
-					metrics);
+			DisseminationServiceImpl[] baselineProts = create(processes, null,
+					pid, messages, quenchDesync, metrics);
 			cloud = new SimpleCloudImpl(source);
 			create(engine, processes, baselineProts, cloud, source);
 
@@ -152,8 +158,9 @@ public class CloudSimulationBuilder {
 	}
 
 	private void addWickAndAnchor(final int source, int messages,
-			String prefix, final HFloodMM[] prots, IProcess[] processes,
-			EDSimulationEngine engine, SimpleCloudImpl cloud,
+			String prefix, final DisseminationServiceImpl[] prots,
+			IProcess[] processes, EDSimulationEngine engine,
+			SimpleCloudImpl cloud,
 			List<Pair<Integer, ? extends IEventObserver>> observers,
 			List<INodeMetric<? extends Object>> metrics) {
 
@@ -167,7 +174,7 @@ public class CloudSimulationBuilder {
 		wick.setPoster(poster);
 
 		// Adds the diffusion wick as the global message tracker.
-		for (HFloodMM protocol : prots) {
+		for (DisseminationServiceImpl protocol : prots) {
 			protocol.addBroadcastObserver(wick);
 		}
 
@@ -194,16 +201,18 @@ public class CloudSimulationBuilder {
 		}
 	}
 
-	private HFloodMM[] create(IProcess[] processes,
+	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int pid, int messages, List<INodeMetric<? extends Object>> metrics) {
-		HFloodMM[] protocols = new HFloodMM[fGraph.size()];
+			int pid, int messages, int quenchDesync,
+			List<INodeMetric<? extends Object>> metrics) {
+		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
+				.size()];
 		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size());
 		for (int i = 0; i < protocols.length; i++) {
-			protocols[i] = new HFloodMM(pid, fGraph, peerSelector(),
-					processes[i],
-					new CachingTransformer(new LiveTransformer()), runner,
-					messages == 1);
+			protocols[i] = new DisseminationServiceImpl(pid, fGraph,
+					peerSelector(), processes[i], new CachingTransformer(
+							new LiveTransformer()), runner, messages == 1,
+					quenchDesync, maxQuenchAge());
 			processes[i].addProtocol(protocols[i]);
 			protocols[i].addMessageObserver(mstats);
 			protocols[i].addBroadcastObserver(mstats);
@@ -216,16 +225,25 @@ public class CloudSimulationBuilder {
 		return protocols;
 	}
 
+	private double maxQuenchAge() {
+		if (!fRandomize) {
+			return fPeriod;
+		} 
+		
+		return (fFixedFraction*fPeriod) + 2*(1 - fFixedFraction)*fPeriod;
+	}
+
 	private CloudAccessor[] create(EDSimulationEngine engine,
-			IProcess[] process, HFloodMM[] dissemination, ICloud cloud,
-			int source) {
+			IProcess[] process, DisseminationServiceImpl[] dissemination,
+			ICloud cloud, int source) {
 		CloudAccessor[] accessors = new CloudAccessor[process.length];
 		for (int i = 0; i < accessors.length; i++) {
 			if (i == source) {
 				continue;
 			}
 			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
-					fDelay, fBurnin, fLoginGrace, i, fRandomize ? fRandom : null);
+					fPeriod, fBurnin, fLoginGrace, fFixedFraction, i,
+					fRandomize ? fRandom : null);
 			process[i].addObserver(accessors[i]);
 			dissemination[i].addMessageObserver(accessors[i]);
 		}

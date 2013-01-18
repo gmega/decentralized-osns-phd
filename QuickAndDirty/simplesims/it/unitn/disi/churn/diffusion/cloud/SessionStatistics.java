@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
-import it.unitn.disi.churn.diffusion.HFloodMM.IBroadcastObserver;
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.IBroadcastObserver;
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;

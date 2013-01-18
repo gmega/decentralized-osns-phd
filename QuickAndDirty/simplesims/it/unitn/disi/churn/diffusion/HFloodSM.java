@@ -62,7 +62,7 @@ public class HFloodSM implements ICyclicProtocol {
 		fTransformer = transformer;
 		fProcess = process;
 		fReference = reference;
-		
+
 		setMessage(null, null);
 	}
 
@@ -91,7 +91,7 @@ public class HFloodSM implements ICyclicProtocol {
 		fMessage = message;
 		fEndToEndDelay = Double.NEGATIVE_INFINITY;
 		fRawReceiverDelay = Double.NEGATIVE_INFINITY;
-		
+
 		if (message != null) {
 			changeState(State.IDLE);
 		}
@@ -104,7 +104,7 @@ public class HFloodSM implements ICyclicProtocol {
 	 * @param clock
 	 */
 	public void markReached(IClockData clock) {
-		if (!isReached()) {
+		if (!isReached() && fState != State.DONE) {
 			fEndToEndDelay = clock.time();
 			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(id());
@@ -120,6 +120,17 @@ public class HFloodSM implements ICyclicProtocol {
 
 	public int id() {
 		return fProcess.id();
+	}
+
+	/**
+	 * Halts dissemination at this protocol instance. If the protocol hasn't
+	 * been started yet, it will simply not react when the update finally
+	 * arrives.
+	 * 
+	 * @param engine
+	 */
+	public void stop() {
+		changeState(State.DONE);
 	}
 
 	@Override
@@ -201,7 +212,7 @@ public class HFloodSM implements ICyclicProtocol {
 		}
 		return fMappedHistory;
 	}
-	
+
 	protected void duplicateReceived(IClockData clock) {
 		// To be overridden by subclasses.
 	}

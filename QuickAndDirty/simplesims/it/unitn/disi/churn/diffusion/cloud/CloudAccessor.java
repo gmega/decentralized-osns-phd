@@ -31,6 +31,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private final ISimulationEngine fSim;
 
+	private final double fFixedFraction;
+
 	private final double fTimerPeriod;
 
 	private final int fId;
@@ -41,7 +43,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private double fLastHeard;
 
-	private double fRandomizedTimer;
+	private double fTargetAccess;
 
 	private double fLoginGrace;
 
@@ -57,6 +59,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	 * @param period
 	 *            period with which we are willing to wait without updates
 	 *            before going for the cloud.
+	 * @param fixed
+	 *            portion of the timer that should not be randomized.
 	 * @param delay
 	 *            initial delay for which we won't go for the cloud, regardless
 	 *            of the access period. Useful to specify a burnin period.
@@ -65,8 +69,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	 */
 	public CloudAccessor(ISimulationEngine sim,
 			IDisseminationService disseminationService, ICloud cloud,
-			double period, double delay, double loginGrace, int id,
-			Random random) {
+			double period, double delay, double loginGrace,
+			double fixedFraction, int id, Random random) {
 		fDisseminationService = disseminationService;
 		fSim = sim;
 		fCloud = cloud;
@@ -74,7 +78,8 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 		fTimerPeriod = period;
 		fRandom = random;
 		fLoginGrace = loginGrace;
-		fRandomizedTimer = fTimerPeriod + delay;
+		fFixedFraction = fixedFraction;
+		fTargetAccess = fTimerPeriod + delay;
 	}
 
 	@Override
@@ -97,7 +102,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			// bother. The session is probably too short to be worth it anyway.
 			if (nextShift > (clock.rawTime() + fLoginGrace)) {
 				// Otherwise, nudge.
-				fRandomizedTimer = (clock.rawTime() - fLastHeard) + fLoginGrace;
+				fTargetAccess = (clock.rawTime() - fLastHeard) + fLoginGrace;
 				if (DEBUG) {
 					printEvent("NUDGE", fLastHeard, clock.rawTime(),
 							nextAccess());
@@ -112,7 +117,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 
 	private void newTimer(IClockData clock, boolean fixed) {
 		fLastHeard = clock.rawTime();
-		fRandomizedTimer = nextTimer(fixed);
+		fTargetAccess = nextTimer(fixed);
 		if (DEBUG) {
 			printEvent("NEWTIMER", clock.rawTime(), nextAccess());
 		}
@@ -120,8 +125,14 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	}
 
 	private double nextTimer(boolean noRandom) {
-		return (fRandom == null || noRandom) ? fTimerPeriod : fRandom
-				.nextDouble() * fTimerPeriod * 2;
+		if (fRandom == null || noRandom) {
+			return fTimerPeriod;
+		}
+
+		double fixed = fTimerPeriod * fFixedFraction;
+		double variable = fRandom.nextDouble() * fTimerPeriod
+				* (1.0 - fFixedFraction) * 2;
+		return fixed + variable;
 	}
 
 	private void scheduleCloudAccess(IClockData clock) {
@@ -190,7 +201,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 			return;
 		}
 
-		newTimer(clock, true);
+		newTimer(clock, false);
 	}
 
 	private void printEvent(String eid, Object... stuff) {
@@ -211,7 +222,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 	}
 
 	private double nextAccess() {
-		return fLastHeard + fRandomizedTimer;
+		return fLastHeard + fTargetAccess;
 	}
 
 	private IProcess process() {

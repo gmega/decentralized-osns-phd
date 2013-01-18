@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.diffusion.experiments.config;
 
 import it.unitn.disi.churn.diffusion.DiffusionWick;
-import it.unitn.disi.churn.diffusion.HFloodMM;
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
@@ -11,9 +11,9 @@ public abstract class MMMetrics implements INodeMetric<Double> {
 
 	protected DiffusionWick fWick;
 
-	private HFloodMM[] fFlood;
+	private DisseminationServiceImpl[] fFlood;
 
-	public MMMetrics(HFloodMM[] hflood, DiffusionWick wick) {
+	public MMMetrics(DisseminationServiceImpl[] hflood, DiffusionWick wick) {
 		fFlood = hflood;
 		fWick = wick;
 	}
@@ -23,7 +23,7 @@ public abstract class MMMetrics implements INodeMetric<Double> {
 				.getMessage());
 	}
 
-	public static INodeMetric<Double> rdMetric(HFloodMM[] hflood,
+	public static INodeMetric<Double> rdMetric(DisseminationServiceImpl[] hflood,
 			DiffusionWick wick) {
 		return new MMMetrics(hflood, wick) {
 
@@ -40,7 +40,7 @@ public abstract class MMMetrics implements INodeMetric<Double> {
 		};
 	}
 
-	public static INodeMetric<Double> edMetric(HFloodMM[] hflood,
+	public static INodeMetric<Double> edMetric(DisseminationServiceImpl[] hflood,
 			DiffusionWick wick) {
 		return new MMMetrics(hflood, wick) {
 

@@ -70,8 +70,14 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "access_delay")
 	private double fDelay;
 
+	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
+	private double fFixedFraction;
+
 	@Attribute(value = "messages", defaultValue = "1")
 	private int fMessages;
+
+	@Attribute(value = "quench_desync", defaultValue = "1")
+	private int fQuenchDesync;
 
 	@Attribute(value = "cloudassisted", defaultValue = "false")
 	private boolean fCloudAssisted;
@@ -152,12 +158,16 @@ public class DiffusionExperimentWorker extends Worker {
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
+			System.err.println("-- Quench runs every " + fQuenchDesync
+					+ " rounds.");
 			if (fBaseline) {
 				System.err.println("-- Baseline cloud sims are on.");
 			}
 
 			if (fRandomized) {
-				System.err.println("-- Periods are randomized:" + fDelay);
+				System.err.println("-- Periods are randomized  ["
+						+ (fDelay * fFixedFraction) + "/"
+						+ (fDelay * (1.0 - fFixedFraction)) + "]");
 			} else {
 				System.err.println("-- Periods are fixed:" + fDelay);
 			}
@@ -244,8 +254,9 @@ public class DiffusionExperimentWorker extends Worker {
 
 			elements = new CloudSimulationBuilder(fBurnin, fDelay, fNUPBurnin,
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
-					fLoginGrace, fRandomized).build(source, fMessages,
-					fP2PSims, fCloudAssisted, fBaseline, processes);
+					fLoginGrace, fFixedFraction, fRandomized).build(source,
+					fMessages, fQuenchDesync, fP2PSims, fCloudAssisted,
+					fBaseline, processes);
 		}
 
 		return new SimulationTask(

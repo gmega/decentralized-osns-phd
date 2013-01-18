@@ -13,13 +13,16 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 
 /**
- * {@link HFloodMM} manages multiple messages by creating multiple instances of
- * {@link HFloodSM}.
+ * {@link DisseminationServiceImpl} knows how to disseminate messages. Ideally
+ * this should glue together the different disseminaton protocols and a
+ * "database" component who can tell which are the known messages. Currently,
+ * however, it's a mix between the former and the latter, with protocols
+ * themselves keeping track of which messages are known and which are not.
  * 
  * @author giuliano
  */
-public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
-		IDisseminationService {
+public class DisseminationServiceImpl implements ICyclicProtocol,
+		IProtocolReference<HFloodSM>, IDisseminationService {
 
 	private static final int UPDATE = 0;
 
@@ -27,46 +30,55 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	private final PausingCyclicProtocolRunner<? extends ICyclicProtocol> fRunner;
 
+	private final int fPid;
+
+	private final IProcess fProcess;
+
+	private final boolean fOneShot;
+
+	private final double fMaxQuenchAge;
+
+	private final int fQuenchDesync;
+
+	private int fQuenchRound;
+
 	private State fState;
-
-	private int fPid;
-
-	private IProcess fProcess;
-
-	private boolean fOneShot;
 
 	private BroadcastTracker fCollector = new BroadcastTracker();
 
-	private HFloodSM[] fProtocols = new HFloodSM[2];
+	private HFloodSM[] fPushProtocols = new HFloodSM[2];
 
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
 
 	private ArrayList<IBroadcastObserver> fBcastObservers = new ArrayList<IBroadcastObserver>();
 
-	public HFloodMM(int pid, IndexedNeighborGraph graph,
+	public DisseminationServiceImpl(int pid, IndexedNeighborGraph graph,
 			IPeerSelector selector, IProcess process,
 			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			boolean oneShot) {
+			boolean oneShot, int quenchDesync, double maxQuenchAge) {
 
-		fProtocols[UPDATE] = new HFloodUP(graph, selector, process,
+		fPushProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this);
 
-		fProtocols[NO_UPDATE] = new HFloodNUP(graph, selector, process,
+		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, selector, process,
 				transformer, this);
 
 		fRunner = runner;
 		fPid = pid;
 		fProcess = process;
 		fOneShot = oneShot;
+		fMaxQuenchAge = maxQuenchAge;
+		fQuenchDesync = quenchDesync;
+		fQuenchRound = 0;
 	}
 
 	public void post(IMessage genericMessage, ISimulationEngine engine) {
 		HFloodMMsg message = (HFloodMMsg) genericMessage;
 
 		if (message.isNUP()) {
-			fProtocols[NO_UPDATE].setMessage(message, null);
-			fProtocols[NO_UPDATE].markReached(engine.clock());
+			fPushProtocols[NO_UPDATE].setMessage(message, null);
+			fPushProtocols[NO_UPDATE].markReached(engine.clock());
 		}
 
 		else {
@@ -81,17 +93,17 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 				// easier this way).
 				INetwork network = engine.network();
 				for (int i = 0; i < network.size(); i++) {
-					HFloodMM hfmm = (HFloodMM) network.process(i).getProtocol(
-							fPid);
-					hfmm.fProtocols[UPDATE].setMessage(message, null);
+					DisseminationServiceImpl hfmm = (DisseminationServiceImpl) network
+							.process(i).getProtocol(fPid);
+					hfmm.fPushProtocols[UPDATE].setMessage(message, null);
 				}
 			} else {
-				if (fProtocols[UPDATE].getState() != State.IDLE) {
+				if (fPushProtocols[UPDATE].getState() != State.IDLE) {
 					throw new IllegalStateException();
 				}
 			}
 			// Marks the current as reached.
-			fProtocols[UPDATE].markReached(engine.clock());
+			fPushProtocols[UPDATE].markReached(engine.clock());
 		}
 
 		if (fRunner != null) {
@@ -119,19 +131,26 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
+		fPushProtocols[UPDATE].nextCycle(engine, process);
+		if (fQuenchRound == 0) {
+			if (shouldStopQuench(engine)) {
+				fPushProtocols[NO_UPDATE].stop();
+			}
+			fPushProtocols[NO_UPDATE].nextCycle(engine, process);
 
-		for (int i = 0; i < fProtocols.length; i++) {
-			fProtocols[i].nextCycle(engine, process);
+			fQuenchRound = fQuenchDesync;
 		}
 
+		fQuenchRound--;
+
 		// If dissemination is done, we're done.
-		if (fProtocols[UPDATE].getState() == State.DONE) {
+		if (fPushProtocols[UPDATE].getState() == State.DONE) {
 			fState = fOneShot ? State.DONE : State.IDLE;
 		}
 
 		// Otherwise we're either active...
-		else if (fProtocols[UPDATE].getState() == State.ACTIVE
-				|| fProtocols[NO_UPDATE].getState() == State.ACTIVE) {
+		else if (fPushProtocols[UPDATE].getState() == State.ACTIVE
+				|| fPushProtocols[NO_UPDATE].getState() == State.ACTIVE) {
 			fState = State.ACTIVE;
 		}
 
@@ -143,6 +162,15 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		}
 	}
 
+	private boolean shouldStopQuench(ISimulationEngine engine) {
+		IMessage msg = fPushProtocols[NO_UPDATE].message();
+		if (msg == null) {
+			return false;
+		}
+		double ts = fPushProtocols[NO_UPDATE].message().timestamp();
+		return (engine.clock().rawTime() - ts) > fMaxQuenchAge;
+	}
+
 	@Override
 	public State getState() {
 		return fState;
@@ -150,16 +178,18 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 
 	@Override
 	public HFloodSM get(HFloodSM caller, INetwork network, int id) {
-		HFloodMM neighbor = (HFloodMM) network.process(id).getProtocol(fPid);
+		DisseminationServiceImpl neighbor = (DisseminationServiceImpl) network
+				.process(id).getProtocol(fPid);
 		return neighbor.get((HFloodMMsg) caller.message());
 	}
 
 	public HFloodSM get(HFloodMMsg message) {
-		return message.isNUP() ? fProtocols[NO_UPDATE] : fProtocols[UPDATE];
+		return message.isNUP() ? fPushProtocols[NO_UPDATE]
+				: fPushProtocols[UPDATE];
 	}
 
 	public boolean isReached() {
-		return fProtocols[UPDATE].isReached();
+		return fPushProtocols[UPDATE].isReached();
 	}
 
 	private void messageReceived(HFloodMMsg message, IClockData clock,
@@ -229,6 +259,42 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		}
 	}
 
+	//
+	// class Antientropy implements ICyclicProtocol {
+	//
+	// private final IndexedNeighborGraph fGraph;
+	//
+	// private final IPeerSelector fSelector;
+	//
+	// private State fState;
+	//
+	// private int fQueryCount;
+	//
+	// public Antientropy(IPeerSelector selector, IndexedNeighborGraph graph) {
+	// fGraph = graph;
+	// fSelector = selector;
+	// fState = State.WAITING;
+	// }
+	//
+	// @Override
+	// public void nextCycle(ISimulationEngine sim, IProcess process) {
+	// int peer = fSelector.selectPeer(process.id(), fGraph, EMPTY_BITSET,
+	// sim.network());
+	// if (peer < 0) {
+	//
+	// }
+	//
+	// fQueryCount++;
+	//
+	// }
+	//
+	// @Override
+	// public State getState() {
+	// return State.ACTIVE;
+	// }
+	//
+	// }
+
 	class BroadcastTracker {
 
 		private int fIntendedDestinations;
@@ -238,7 +304,7 @@ public class HFloodMM implements ICyclicProtocol, IProtocolReference<HFloodSM>,
 		public void beginBroadcast(ISimulationEngine engine, HFloodMMsg message) {
 			fIntendedDestinations = engine.network().size();
 			fMessage = message;
-			
+
 			for (IBroadcastObserver observer : fBcastObservers) {
 				observer.broadcastStarted(message, engine);
 			}

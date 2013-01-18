@@ -9,6 +9,7 @@ import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
+import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.IValueObserver;
@@ -23,6 +24,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,6 +32,8 @@ import org.lambda.functions.implementations.F0;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 import peersim.util.IncrementalStats;
 
 @AutoConfig
@@ -48,6 +52,11 @@ public class P2PLGExperiment implements ITransformer {
 	private int fCores;
 
 	private YaoChurnConfigurator fYaoConf;
+
+	public P2PLGExperiment(@Attribute(Attribute.AUTO) IResolver resolver) {
+		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
+				resolver);
+	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -101,12 +110,12 @@ public class P2PLGExperiment implements ITransformer {
 
 		double[] li = new double[graph.size()];
 		double[] di = new double[graph.size()];
-		IAverageGenerator gen = fYaoConf.averageGenerator();
+		IAverageGenerator gen = fYaoConf.averageGenerator(new Random());
 
 		for (int i = 0; i < graph.size(); i++) {
 			li[i] = gen.nextLI();
 			di[i] = gen.nextDI();
-			System.out.println(i + " " + li[i] + " " + +di[i]);
+			System.out.println("S:" + i + " " + li[i] + " " + di[i]);
 		}
 
 		return ppse.estimate(new F0<IValueObserver>() {
@@ -140,10 +149,9 @@ public class P2PLGExperiment implements ITransformer {
 		}
 
 		for (int j = 0; j < fRepetitions; j++) {
-			@SuppressWarnings("unchecked")
-			Pair<Integer, List<INodeMetric<? extends Object>>> result = ((Pair<Integer, List<INodeMetric<? extends Object>>>[]) taskExecutor
-					.consume())[0];
-			INodeMetric<Double> ed = Utils.lookup(result.b, "ed", Double.class);
+			SimulationTask task = (SimulationTask)taskExecutor.consume();
+			List<? extends INodeMetric<?>> result = task.metric(0);
+			INodeMetric<Double> ed = Utils.lookup(result, "ed", Double.class);
 			for (int i = 0; i < ttc.length; i++) {
 				ttc[i] += ed.getMetric(i);
 			}

@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.intersync;
+package it.unitn.disi.churn.intersync.markov;
 
 import java.util.ArrayList;
 

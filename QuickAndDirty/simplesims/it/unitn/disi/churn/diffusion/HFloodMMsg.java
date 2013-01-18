@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion;
 
-import it.unitn.disi.churn.diffusion.HFloodMM.BroadcastTracker;
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.BroadcastTracker;
 
 public class HFloodMMsg implements IMessage {
 

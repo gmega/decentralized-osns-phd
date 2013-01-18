@@ -2,7 +2,7 @@ package it.unitn.disi.churn.diffusion;
 
 import java.util.Arrays;
 
-import it.unitn.disi.churn.diffusion.HFloodMM.IBroadcastObserver;
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.IBroadcastObserver;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
@@ -38,7 +38,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private double[] fSnapshot;
 
-	private HFloodMM[] fFlood;
+	private DisseminationServiceImpl[] fFlood;
 
 	private Poster fPoster;
 
@@ -56,12 +56,12 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private boolean fFirst = true;
 
-	public DiffusionWick(int source, HFloodMM[] flood) {
+	public DiffusionWick(int source, DisseminationServiceImpl[] flood) {
 		this("", source, 1, 0.0, flood);
 	}
 
 	public DiffusionWick(String mPrefix, int source, int messages,
-			double delay, HFloodMM[] flood) {
+			double delay, DisseminationServiceImpl[] flood) {
 		fSource = source;
 		fDelay = delay;
 		fMessages = messages;
