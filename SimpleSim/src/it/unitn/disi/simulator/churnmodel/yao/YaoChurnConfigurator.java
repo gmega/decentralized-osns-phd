@@ -32,8 +32,12 @@ public class YaoChurnConfigurator {
 	}
 
 	public synchronized IAverageGenerator averageGenerator() {
+		return averageGenerator(CommonState.r);
+	}
+	
+	public synchronized IAverageGenerator averageGenerator(Random random) {
 		if (fAssignments.toLowerCase().equals("yao")) {
-			return YaoPresets.averageGenerator("yao", CommonState.r);
+			return YaoPresets.averageGenerator("yao", random);
 		}
 
 		throw new IllegalArgumentException(fAssignments);

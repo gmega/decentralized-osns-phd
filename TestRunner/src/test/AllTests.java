@@ -6,6 +6,7 @@ import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.churn.connectivity.TestTCExperiment;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelectorTest;
 import it.unitn.disi.churn.diffusion.TestLiveGraphTransformer;
+import it.unitn.disi.churn.diffusion.graph.BranchingGeneratorTest;
 import it.unitn.disi.cli.TestEventDecoder;
 import it.unitn.disi.f2f.DiscoveryProtocolTest;
 import it.unitn.disi.graph.BFSIterableTest;
@@ -108,6 +109,7 @@ import peersim.config.PluginContainerTest;
 	TestLiveGraphTransformer.class,
 	BiasedCentralitySelectorTest.class,
 	TaskExecutorTest.class,
+	BranchingGeneratorTest.class
 })
 
 public class AllTests extends PeerSimTest {
