@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
 import gnu.trove.list.array.TIntArrayList;
-import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
@@ -93,7 +93,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				printCloud(e.root, ids, cloudNodes);
 
 				int source = MiscUtils.indexOf(ids,
-						Integer.parseInt(e.attributes.get("node")));
+						Integer.parseInt(e.attributes.get("source")));
 
 				long startTime = System.nanoTime();
 				List<? extends INodeMetric<?>> metric;
@@ -124,18 +124,18 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 					printResults(e.root, source, metric, adaptiveWriter, ids);
 				}
-				
+
 				if ((fSimMode & M3) != 0) {
 					System.err.println("Fast sim - " + row);
 					startTime = System.nanoTime();
 					metric = simHelper().bruteForceSimulateMulti(graph, e.root,
-							source, e.lis, e.dis, ids);
+							source, e.lis, e.dis, ids, null);
 					System.err.println("PERF: N "
 							+ (System.nanoTime() - startTime));
 
 					printResults(e.root, source, metric, fastWriter, ids);
 				}
-				
+
 			}
 		} finally {
 			shutdown();

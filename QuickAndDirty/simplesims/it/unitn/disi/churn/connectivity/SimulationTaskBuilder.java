@@ -8,6 +8,7 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.utils.DenseIDMapper;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.IProgressTracker;
 
@@ -27,27 +28,76 @@ public class SimulationTaskBuilder {
 
 	private final int fRoot;
 
-	private ComplexTCE fLast;
+	private CloudTCE fLast;
 
 	private IProcess[] fProcesses;
+
+	private int[] fNodeMap;
+
+	private int[] fContiguousMap;
 
 	private HashMap<Integer, List<INodeMetric<Double>>> fMap = new HashMap<Integer, List<INodeMetric<Double>>>();
 
 	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids, int root) {
+		this(graph, ids, null, root);
+	}
+
+	public SimulationTaskBuilder(IndexedNeighborGraph graph, int[] ids,
+			int[] nodeMap, int root) {
 		fSims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		fGraph = graph;
+		fNodeMap = nodeMap;
 		fIds = ids;
 		fRoot = root;
 	}
 
 	public void createProcesses(double[] lIs, double[] dIs,
 			YaoChurnConfigurator conf) {
-		fProcesses = conf.createProcesses(lIs, dIs, dIs.length);
+		if (fNodeMap == null) {
+			fProcesses = conf.createProcesses(lIs, dIs, dIs.length);
+			return;
+		}
+		
+		// Since some nodes got mapped into others, we need
+		// to somehow make the id range contiguous again.
+		// The next loop maps the IDs in fNodeMap (which are the 
+		// actual processes to simulate) into a continuous ID range.
+		DenseIDMapper mapper = new DenseIDMapper();
+		for (int i = 0; i < fNodeMap.length; i++) {
+			mapper.addMapping(fNodeMap[i]);
+			System.err.println("Node " + i + " mapped to id "
+					+ mapper.map(fNodeMap[i]));
+		}
+
+		double[] mappedLi = new double[mapper.size()];
+		double[] mappedDi = new double[mapper.size()];
+
+		// The LI/DI assignments are in the unmapped ID space,
+		// so we map these as well.
+		for (int i = 0; i < mappedDi.length; i++) {
+			mappedLi[i] = lIs[mapper.reverseMap(i)];
+			mappedDi[i] = dIs[mapper.reverseMap(i)];
+		}
+
+		// Finally, constructs the transitive map, which contains
+		// fIdMap but using the now contiguous IDs. This maps from 
+		// graph ID space => process ID space => contiguous ID space.
+		fContiguousMap = new int[fGraph.size()];
+		for (int i = 0; i < fContiguousMap.length; i++) {
+			fContiguousMap[i] = mapper.map(fNodeMap[i]);
+		}
+
+		fProcesses = conf.createProcesses(mappedLi, mappedDi, mappedLi.length);
 	}
 
 	public SimulationTaskBuilder addConnectivitySimulation(int source,
 			int[] fixedNodes, ActivationSampler sampler) {
-		final ComplexTCE tce = new ComplexTCE(fGraph, source, fixedNodes,
+
+		if (fNodeMap == null) {
+			throw new UnsupportedOperationException(
+					"Can't use node mapping with ComplexTCE.");
+		}
+		final CloudTCE tce = new CloudTCE(fGraph, source, fixedNodes,
 				sampler);
 		fLast = tce;
 		addSim(fLast);
@@ -60,7 +110,7 @@ public class SimulationTaskBuilder {
 
 			@Override
 			public Double getMetric(int i) {
-				return tce.reachTime(i);
+				return tce.endToEndDelay(i);
 			}
 		});
 
@@ -72,7 +122,7 @@ public class SimulationTaskBuilder {
 
 			@Override
 			public Double getMetric(int i) {
-				return tce.perceivedDelay(i);
+				return tce.receiverDelay(i);
 			}
 		});
 
@@ -83,7 +133,7 @@ public class SimulationTaskBuilder {
 			final int repeats, IMetricAccumulator<Double> ed,
 			IMetricAccumulator<Double> rd, IProgressTracker tracker) {
 		final MultiTCE multi = new MultiTCE(fGraph, source, repeats, ed, rd,
-				tracker);
+				tracker, fContiguousMap);
 		addSim(multi);
 		addMetric(source, ed);
 		addMetric(source, rd);

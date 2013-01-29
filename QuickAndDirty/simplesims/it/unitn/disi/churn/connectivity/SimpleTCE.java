@@ -3,6 +3,7 @@ package it.unitn.disi.churn.connectivity;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IEventObserver;
+import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
@@ -10,26 +11,27 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import java.util.Arrays;
 
 /**
- * Fast, single-source temporal connectivity experiment. 
+ * Fast, single-source temporal connectivity experiment.
  * 
  * @author giuliano
  */
 public class SimpleTCE implements IEventObserver {
+
+	private static final long serialVersionUID = 1L;
 
 	private int fSource;
 
 	private int fReachedCount;
 
 	private double[] fReached;
-
+	
 	private boolean[] fDone;
 
 	private BFSQueue fQueue;
 
 	protected IndexedNeighborGraph fGraph;
 
-	public SimpleTCE(IndexedNeighborGraph graph,
-			int source) {
+	public SimpleTCE(IndexedNeighborGraph graph, int source) {
 		fGraph = graph;
 		fSource = source;
 
@@ -56,12 +58,18 @@ public class SimpleTCE implements IEventObserver {
 		recomputeReachabilities(process, engine);
 	}
 
+	public boolean isReached(int node) {
+		return !Double.isNaN(fReached[node]);
+	}
+
 	private void recomputeReachabilities(RenewalProcess process,
 			ISimulationEngine engine) {
 
+		INetwork network = engine.network();
+
 		// Source being reached for the first time?
 		if (!isReached(fSource)) {
-			if (process.id() == fSource && process.isUp()) {
+			if (isSource(process, network) && process.isUp()) {
 				sourceReached(process, engine);
 			}
 			// Source not reached yet, just return.
@@ -73,14 +81,15 @@ public class SimpleTCE implements IEventObserver {
 		for (int i = 0; i < fDone.length; i++) {
 			// We start DFSs from all nodes that have
 			// unvisited neighbors.
-			if (!fDone[i] && isReached(i) && isUp(i, engine.network())) {
+			if (!fDone[i] && isReached(i) && isUp(i, network)) {
 				fQueue.addLast(i);
 				BFSExplore(engine);
 			}
 		}
 	}
 
-	protected void sourceReached(RenewalProcess process, ISimulationEngine engine) {
+	protected void sourceReached(RenewalProcess process,
+			ISimulationEngine engine) {
 		reached(fSource, fSource, engine);
 	}
 
@@ -104,18 +113,65 @@ public class SimpleTCE implements IEventObserver {
 			fQueue.removeFirst();
 		}
 	}
+	
+	public double endToEndDelay(int i) {
+		return fReached[i] - fReached[fSource];
+	}
 
+	// -------------------------------------------------------------------------
+	// Hook methods to override specific experiment behavior.
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Called when a node is reached for the first time; i.e.
+	 * {@link #isReached(int)} is <code>false</code> at the time this method is
+	 * called.
+	 * 
+	 * @param source
+	 *            the source from which this node is being reached.
+	 * @param node
+	 *            the node that's being reached (in the graph).
+	 * @param engine
+	 *            the current {@link ISimulationEngine}
+	 */
 	protected void reached(int source, int node, ISimulationEngine engine) {
 		fReached[node] = engine.clock().time();
 		fReachedCount++;
 	}
 
+	/**
+	 * Tells whether some node is up or not.
+	 * 
+	 * @param node
+	 *            id of the node to be tested.
+	 * @param network
+	 *            underlying {@link INetwork}.
+	 * @return <code>true</code> if node is up, or false otherwise.
+	 */
 	protected boolean isUp(int node, INetwork network) {
-		return network.process(node).isUp();
+		return map(node, network).isUp();
 	}
 
-	boolean isReached(int node) {
-		return !Double.isNaN(fReached[node]);
+	/**
+	 * Tells whether the current process is the source or not. 
+	 * 
+	 * @param process
+	 * @param network
+	 * @return
+	 */
+	protected boolean isSource(IProcess process, INetwork network) {
+		return process.id() == map(fSource, network).id();
+	}
+
+	/**
+	 * Allows ids to be flexibly mapped into processes. Mapping does not have to
+	 * be one-to-one. The default implementation simply returns the process
+	 * satisfying {@link IProcess#id()} == id.
+	 * 
+	 * @return an {@link IProcess} for the corresponding id.
+	 */
+	protected IProcess map(int id, INetwork network) {
+		return network.process(id);
 	}
 
 	@Override
@@ -123,10 +179,4 @@ public class SimpleTCE implements IEventObserver {
 		return fReachedCount == fReached.length;
 	}
 
-	public double reachTime(int i) {
-		return fReached[i] - fReached[fSource];
-	}
-
 }
-
-

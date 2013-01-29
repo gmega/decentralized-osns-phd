@@ -43,7 +43,7 @@ public class SimpleRDTCE extends SimpleTCE {
 		snapshotUptimes(engine);
 	}
 
-	public double perceivedDelay(int i) {
+	public double receiverDelay(int i) {
 		return fUptimeReached[i] - fUptimeSnapshot[i];
 	}
 

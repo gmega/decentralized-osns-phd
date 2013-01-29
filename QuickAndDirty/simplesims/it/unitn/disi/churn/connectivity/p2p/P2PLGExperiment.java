@@ -15,7 +15,6 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.unitsim.ListGraphGenerator;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.InputStream;

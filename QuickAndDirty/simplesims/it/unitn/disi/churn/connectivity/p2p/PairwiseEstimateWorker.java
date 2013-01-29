@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.intersync.BMEdgeDelayEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;

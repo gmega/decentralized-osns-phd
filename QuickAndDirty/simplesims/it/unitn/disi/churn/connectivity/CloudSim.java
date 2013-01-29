@@ -12,7 +12,7 @@ import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
 import java.util.Arrays;
 
 /**
- * {@link CloudSim} is a simpler {@link ComplexTCE} which
+ * {@link CloudSim} is a simpler {@link CloudTCE} which
  * assumes that there is a server separating source and destination. Designed to
  * be stacked with {@link TemporalConnectivityExperiment} over a single
  * {@link EDSimulationEngine}.

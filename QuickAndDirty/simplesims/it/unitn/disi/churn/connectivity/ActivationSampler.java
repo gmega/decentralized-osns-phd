@@ -25,7 +25,7 @@ public class ActivationSampler {
 		fGraph = graph;
 	}
 
-	public void reached(int u, ComplexTCE estimator) {
+	public void reached(int u, CloudTCE estimator) {
 		INetwork bcs = fEngine.network();
 		for (int i = 0; i < fGraph.degree(u); i++) {
 			int neighbor = fGraph.getNeighbor(u, i);

@@ -12,13 +12,13 @@ import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.logging.IProgressTracker;
-import it.unitn.disi.utils.logging.Progress;
-import it.unitn.disi.utils.logging.ProgressTracker;
 
 @Binding
 public class MultiTCE implements IEventObserver {
 
-	private final LinkedList<SimpleTCE> fActive = new LinkedList<SimpleTCE>();
+	private static final long serialVersionUID = 1L;
+
+	private final LinkedList<SimpleRDTCE> fActive = new LinkedList<SimpleRDTCE>();
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -27,25 +27,29 @@ public class MultiTCE implements IEventObserver {
 	private final int fTotal;
 
 	private final IMetricAccumulator<Double> fEd;
-	
+
 	private final IMetricAccumulator<Double> fRd;
 
 	private final IProgressTracker fTracker;
+
+	private final int[] fNodeMap;
 
 	private int fComplete;
 
 	private int fMaxActive;
 
 	public MultiTCE(IndexedNeighborGraph graph, int source, int samples) {
-		this(graph, source, samples, null, null, IProgressTracker.NULL_TRACKER);
+		this(graph, source, samples, null, null, IProgressTracker.NULL_TRACKER,
+				null);
 	}
 
 	public MultiTCE(IndexedNeighborGraph graph, int source, int samples,
 			IMetricAccumulator<Double> ed, IMetricAccumulator<Double> rd,
-			IProgressTracker tracker) {
+			IProgressTracker tracker, int[] nodeMap) {
 		fTotal = samples;
 		fGraph = graph;
 		fSource = source;
+		fNodeMap = nodeMap;
 		fEd = ed;
 		fRd = rd;
 		fTracker = tracker;
@@ -55,14 +59,16 @@ public class MultiTCE implements IEventObserver {
 	@Override
 	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
+
 		if (isSourceLogin(schedulable) && (fActive.size() + fComplete < fTotal)) {
-			fActive.add(new SimpleTCE(fGraph, fSource));
+			fActive.add(fNodeMap == null ? new SimpleRDTCE(fGraph, fSource)
+					: new NodeMappedTCE(fGraph, fSource, fNodeMap));
 		}
 
 		fMaxActive = Math.max(fActive.size(), fMaxActive);
-		Iterator<SimpleTCE> it = fActive.iterator();
+		Iterator<SimpleRDTCE> it = fActive.iterator();
 		while (it.hasNext()) {
-			SimpleTCE tce = it.next();
+			SimpleRDTCE tce = it.next();
 			tce.eventPerformed(engine, schedulable, nextShift);
 			if (tce.isDone()) {
 				it.remove();
@@ -81,7 +87,7 @@ public class MultiTCE implements IEventObserver {
 		}
 	}
 
-	private void add(final SimpleTCE tce) {
+	private void add(final SimpleRDTCE tce) {
 		fEd.add(new INodeMetric<Double>() {
 
 			@Override
@@ -91,10 +97,10 @@ public class MultiTCE implements IEventObserver {
 
 			@Override
 			public Double getMetric(int i) {
-				return tce.reachTime(i);
+				return tce.endToEndDelay(i);
 			}
 		});
-		
+
 		fRd.add(new INodeMetric<Double>() {
 
 			@Override
@@ -104,7 +110,7 @@ public class MultiTCE implements IEventObserver {
 
 			@Override
 			public Double getMetric(int i) {
-				return tce.reachTime(i);
+				return tce.receiverDelay(i);
 			}
 		});
 	}

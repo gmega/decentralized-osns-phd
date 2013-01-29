@@ -16,6 +16,7 @@ import it.unitn.disi.simulator.measure.AvgEvaluator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
 
@@ -281,16 +282,17 @@ public class TEExperimentHelper {
 	@SuppressWarnings("unchecked")
 	public List<INodeMetric<Double>> bruteForceSimulateMulti(
 			IndexedNeighborGraph graph, int root, int source, double[] li,
-			double[] di, int[] ids) throws Exception {
+			double[] di, int[] ids, int[] idMap) throws Exception {
 
 		IProgressTracker tracker = Progress.newTracker("root: " + root
 				+ ", size: " + li.length, fRepetitions);
 
-		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids, root);
+		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids,
+				idMap, root);
+		stb.createProcesses(li, di, fYaoConf);
 		stb.addMultiConnectivitySimulation(source, fRepetitions,
 				new AvgAccumulation("ed", graph.size()), new AvgAccumulation(
 						"rd", graph.size()), tracker);
-		stb.createProcesses(li, di, fYaoConf);
 		SimulationTask task = stb.simulationTask(fBurnin);
 
 		task.call();
@@ -368,28 +370,31 @@ public class TEExperimentHelper {
 	 * @return a {@link Pair} containing the top-k estimate and the top-k
 	 *         subgraph.
 	 */
-	public Pair<IndexedNeighborGraph, Double> topKEstimate(String taskString,
-			IndexedNeighborGraph graph,
+	public Triplet<IndexedNeighborGraph, PathEntry[], Double> topKEstimate(
+			String taskString, IndexedNeighborGraph graph,
 			F2<IndexedNeighborGraph, double[][], ITopKEstimator> estimator,
-			int source, int target, double[][] w, double[] lIs, double[] dIs,
-			int k, int[] ids) throws Exception {
+			int root, int source, int target, double[][] w, double[] lIs,
+			double[] dIs, int k, int[] ids) throws Exception {
 
 		ITopKEstimator tpk = estimator.call(graph, w);
-		return topKEstimate(taskString, graph, source, target, lIs, dIs, k,
-				ids, tpk);
+		return topKEstimate(taskString, graph, root, source, target, lIs, dIs,
+				k, ids, tpk);
 	}
 
-	public Pair<IndexedNeighborGraph, Double> topKEstimate(String taskString,
-			IndexedNeighborGraph graph, int source, int target, double[] lIs,
-			double[] dIs, int k, int[] ids, ITopKEstimator tpk)
-			throws Exception {
-		System.out.println("Source: " + ids[source] + " Target: " + ids[target]
-				+ ".");
+	public Triplet<IndexedNeighborGraph, PathEntry[], Double> topKEstimate(
+			String taskString, IndexedNeighborGraph graph, int root,
+			int source, int target, double[] lIs, double[] dIs, int k,
+			int[] ids, ITopKEstimator tpk) throws Exception {
 
 		// 1. computes the top-k shortest paths between u and w.
-		int[] vertexes = vertexesOf(tpk.topKShortest(source, target, k));
+		ArrayList<? extends PathEntry> paths = tpk.topKShortest(source, target,
+				k);
+		int[] vertexes = vertexesOf(paths);
 		LightweightStaticGraph kPathGraph = LightweightStaticGraph.subgraph(
 				(LightweightStaticGraph) graph, vertexes);
+
+		System.err.println("source " + ids[source] + ", target " + ids[target]
+				+ ", size " + vertexes.length);
 
 		// 2. runs a connectivity simulation on the subgraph
 		// composed by the top-k shortest paths.
@@ -404,11 +409,11 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		INodeMetric<Double> estimate = Utils.lookup(
-				bruteForceSimulate(taskString, kPathGraph, remappedSource,
-						remappedSource, liSub, diSub, ids, null, false, false,
-						false, false), "ed", Double.class);
+				bruteForceSimulateMulti(kPathGraph, root, remappedSource,
+						liSub, diSub, ids, null), "ed", Double.class);
 
-		return new Pair<IndexedNeighborGraph, Double>(kPathGraph,
+		return new Triplet<IndexedNeighborGraph, PathEntry[], Double>(
+				kPathGraph, paths.toArray(new PathEntry[paths.size()]),
 				estimate.getMetric(remappedTarget));
 	}
 

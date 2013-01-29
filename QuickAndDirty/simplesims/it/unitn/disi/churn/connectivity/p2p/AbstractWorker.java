@@ -50,6 +50,8 @@ public abstract class AbstractWorker implements ITransformer {
 	private TEExperimentHelper fHelper;
 
 	private ExperimentReader fExperimentReader;
+	
+	private IGraphProvider fProvider;
 
 	// -------------------------------------------------------------------------
 
@@ -97,7 +99,10 @@ public abstract class AbstractWorker implements ITransformer {
 	// -------------------------------------------------------------------------
 
 	protected IGraphProvider provider() throws Exception {
-		return fGraphConfig.graphProvider();
+		if (fProvider == null) {
+			fProvider = fGraphConfig.graphProvider(); 
+		}
+		return fProvider;
 	}
 
 	// -------------------------------------------------------------------------

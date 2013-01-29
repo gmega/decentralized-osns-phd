@@ -9,10 +9,12 @@ import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.analysis.PathEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableReader;
 import it.unitn.disi.utils.tabular.TableWriter;
@@ -110,17 +112,18 @@ public class P2PRandomPairsExperiment implements IMultiTransformer {
 
 			LightweightStaticGraph ing = (LightweightStaticGraph) loader
 					.subgraph(hoods[id].root);
-			Pair<IndexedNeighborGraph, Double> result = fHelper.topKEstimate(
-					"", ing, TEExperimentHelper.EDGE_DISJOINT, next.a, next.b,
-					hoods[id].weights, hoods[id].assignment.li,
-					hoods[id].assignment.di, fK, hoods[id].ids);
+			Triplet<IndexedNeighborGraph, PathEntry[], Double> result = fHelper
+					.topKEstimate("", ing, TEExperimentHelper.EDGE_DISJOINT,
+							hoods[id].root, next.a, next.b, hoods[id].weights,
+							hoods[id].assignment.li, hoods[id].assignment.di,
+							fK, hoods[id].ids);
 
 			writer.set("id", hoods[id].root);
 			writer.set("source", next.a);
 			writer.set("destination", next.b);
 			writer.set("vertex", ing.size());
 			writer.set("edge", ing.edgeCount());
-			writer.set("kestimate", result.b / fRepetitions);
+			writer.set("kestimate", result.c / fRepetitions);
 			writer.set("kvertex", result.a.size());
 			writer.set("kedge", ((LightweightStaticGraph) result.a).edgeCount());
 			writer.emmitRow();
