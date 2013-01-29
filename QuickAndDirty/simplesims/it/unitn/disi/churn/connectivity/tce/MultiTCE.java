@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -73,6 +73,7 @@ public class MultiTCE implements IEventObserver {
 			if (tce.isDone()) {
 				it.remove();
 				fComplete++;
+				System.err.println("Complete " + fComplete + ".");
 				fTracker.tick();
 				if (fComplete % 1000 == 0) {
 					System.err.println("Active: " + fActive.size() + ", Max: "

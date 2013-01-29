@@ -18,10 +18,10 @@ public class StreamServer implements StreamServerMBean {
 
 	@XStreamOmitField
 	private ISimulation fParent;
-	
+
 	@XStreamOmitField
 	private StreamServerImpl fServerImpl;
-	
+
 	@XStreamOmitField
 	private Thread fServerThread;
 
@@ -35,8 +35,8 @@ public class StreamServer implements StreamServerMBean {
 		checkNotRunning();
 		fServerImpl = new StreamServerImpl(fPort, checkOutputFolder());
 		fServerThread = new Thread(fServerImpl, "Stream Server Loop");
-		fServerThread.start();
 		fRunning = true;
+		fServerThread.start();
 		fParent.attributeListUpdated(this);
 	}
 
@@ -45,17 +45,17 @@ public class StreamServer implements StreamServerMBean {
 		if (!output.exists()) {
 			output.mkdir();
 		}
-		
+
 		return output;
 	}
 
 	@Override
 	public void stop() {
-		
-		if(!isRunning()) {
+
+		if (!isRunning()) {
 			return;
 		}
-		
+
 		fServerThread.interrupt();
 		fServerImpl.stop();
 		try {
@@ -63,10 +63,8 @@ public class StreamServer implements StreamServerMBean {
 		} catch (InterruptedException e) {
 			// Swallows.
 		}
-		
-		synchronized(this) {
-			fServerImpl = null;
-			fServerThread = null;
+
+		synchronized (this) {
 			fRunning = false;
 			fParent.attributeListUpdated(this);
 		}
@@ -74,7 +72,7 @@ public class StreamServer implements StreamServerMBean {
 
 	@Override
 	public synchronized boolean isRunning() {
-		return fServerImpl != null;
+		return fServerThread != null && fServerThread.isAlive();
 	}
 
 	@Override
@@ -83,7 +81,7 @@ public class StreamServer implements StreamServerMBean {
 	}
 
 	@Override
-	public synchronized  void setPort(int port) {
+	public synchronized void setPort(int port) {
 		checkNotRunning();
 		fPort = port;
 		fParent.attributeListUpdated(this);

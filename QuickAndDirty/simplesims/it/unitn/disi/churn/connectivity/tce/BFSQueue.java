@@ -1,6 +1,10 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
-class BFSQueue {
+import java.io.Serializable;
+
+class BFSQueue implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 
 	private int fRear = -1;
 

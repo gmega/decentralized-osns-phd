@@ -15,9 +15,9 @@ import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
 import gnu.trove.list.array.TIntArrayList;
+import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.ExperimentReader.Experiment;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;

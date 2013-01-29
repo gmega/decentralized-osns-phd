@@ -26,7 +26,7 @@ public class TableReader {
 	private final ArrayList<String> fHeader;
 
 	private final List<String> fROHeader;
-	
+
 	private String fUnparsedCurrent;
 
 	private String[] fCurrent;
@@ -85,7 +85,7 @@ public class TableReader {
 			throw new ParseException("Table width changed.");
 		}
 	}
-	
+
 	public String currentLine() {
 		return fUnparsedCurrent;
 	}
@@ -119,14 +119,20 @@ public class TableReader {
 
 		// Reads the first line.
 		ArrayList<String> header = new ArrayList<String>();
-		String[] headerParts = readLine();
+		String[] headerParts = fNext.split(FS);
 
 		for (int i = 0; i < headerParts.length; i++) {
-			if (isInt(headerParts[i])) {
-				return defaultHeader(headerParts.length);
+			String part = headerParts[i].trim();
+			if (isInt(part)) {
+				ArrayList<String> defaultHeader = defaultHeader(headerParts.length);
+				fCurrent = defaultHeader.toArray(new String[defaultHeader
+						.size()]);
+				return defaultHeader;
 			}
-			header.add(headerParts[i]);
+			header.add(part);
 		}
+		
+		fCurrent = readLine();
 		return header;
 	}
 

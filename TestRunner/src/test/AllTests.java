@@ -3,7 +3,7 @@ package test;
 import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
-import it.unitn.disi.churn.connectivity.TestTCExperiment;
+import it.unitn.disi.churn.connectivity.tce.TestTCExperiment;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelectorTest;
 import it.unitn.disi.churn.diffusion.TestLiveGraphTransformer;
 import it.unitn.disi.churn.diffusion.graph.BranchingGeneratorTest;

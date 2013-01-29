@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
 import java.util.Arrays;
 
@@ -14,6 +14,8 @@ import it.unitn.disi.simulator.core.RenewalProcess;
  * @author giuliano
  */
 public class SimpleRDTCE extends SimpleTCE {
+
+	private static final long serialVersionUID = 1L;
 
 	private double[] fUptimeSnapshot;
 

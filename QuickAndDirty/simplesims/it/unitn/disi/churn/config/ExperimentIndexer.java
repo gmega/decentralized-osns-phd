@@ -17,21 +17,23 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class ExperimentIndexer implements ITransformer {
 
-	@Attribute("file")
 	private String fFile;
+
+	public ExperimentIndexer(@Attribute("file") String file) {
+		fFile = file;
+	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-		final RandomAccessFile raf = new RandomAccessFile(
-				new File(fFile), "r");
-		
+		final RandomAccessFile raf = new RandomAccessFile(new File(fFile), "r");
+
 		TrackingReader tracker = new TrackingReader(raf);
 		TableReader reader = new TableReader(tracker);
 		TableWriter writer = new TableWriter(oup, "id", "offset", "row");
-		
+
 		String root = "";
 		int row = 1;
-		while(reader.hasNext()) {
+		while (reader.hasNext()) {
 			reader.next();
 			row++;
 			String cRoot = reader.get("id");
@@ -41,22 +43,22 @@ public class ExperimentIndexer implements ITransformer {
 				writer.set("row", row);
 				writer.emmitRow();
 				root = cRoot;
-			}	
+			}
 		}
 	}
 
 	static class TrackingReader implements ILineReader {
-		
+
 		public long currentLineOffset;
-		
+
 		private long fBufferedLineOffset;
-		
+
 		private RandomAccessFile fFile;
-		
+
 		public TrackingReader(RandomAccessFile file) {
 			fFile = file;
 		}
-		
+
 		@Override
 		public void close() throws IOException {
 		}
@@ -71,7 +73,7 @@ public class ExperimentIndexer implements ITransformer {
 		@Override
 		public void flushBuffers() throws IOException {
 			// TODO Auto-generated method stub
-			
+
 		}
 	}
 }

@@ -77,6 +77,8 @@ public class TimerOffsetEstimator implements Runnable {
 	@Binding
 	private class Estimate implements IEventObserver {
 
+		private static final long serialVersionUID = 1L;
+		
 		private boolean fDone = false;
 
 		@Override

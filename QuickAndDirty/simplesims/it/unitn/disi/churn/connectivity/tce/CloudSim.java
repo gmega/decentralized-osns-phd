@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
@@ -21,6 +21,8 @@ import java.util.Arrays;
  */
 @Binding
 public class CloudSim implements IEventObserver {
+
+	private static final long serialVersionUID = 1L;
 
 	private final int fSource;
 

@@ -128,10 +128,9 @@ public class LineGraphExperiment implements ITransformer {
 		executor.start("simulate", fRepetitions);
 
 		for (int j = 0; j < fRepetitions; j++) {
-			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph,
-					ids, 0);
-			builder.addConnectivitySimulation(0, new int[] {}, null);
-			builder.createProcesses(lis, dis, fYaoConf);
+			SimulationTaskBuilder builder = new SimulationTaskBuilder(graph, 0,
+					lis, dis, fYaoConf);
+			builder.addConnectivitySimulation(0, "ed", "rd");
 			executor.submit(builder.simulationTask(fBurnin));
 		}
 

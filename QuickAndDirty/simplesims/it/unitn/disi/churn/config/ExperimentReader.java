@@ -3,16 +3,16 @@ package it.unitn.disi.churn.config;
 import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.config.IndexedReader.IndexEntry;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.rmi.RemoteException;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import peersim.config.Attribute;
@@ -70,7 +70,7 @@ public class ExperimentReader {
 			throws Exception {
 		if (fChurn) {
 			checkConfig();
-			return readChurn(row, provider);
+			return readChurnByRow(row, provider);
 		}
 
 		return readStatic(row);
@@ -88,15 +88,23 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	private Experiment readChurn(Integer row, IGraphProvider provider)
+	private Experiment readChurnByRow(Integer row, IGraphProvider provider)
 			throws Exception {
 		seekSourceRow(row);
 		int root = Integer.parseInt(fSourceReader.get(fIdField));
 
+		return readChurn(provider, fSourceReader, root);
+	}
+
+	// -------------------------------------------------------------------------
+
+	public Experiment readChurn(IGraphProvider provider,
+			TableReader sourceReader, int root) throws IOException,
+			RemoteException {
 		Pair<Assignment, IndexEntry> assignment = readLIDI(root,
 				provider.verticesOf(root));
 
-		return new Experiment(root, fSourceReader, assignment.a.li,
+		return new Experiment(root, sourceReader, assignment.a.li,
 				assignment.a.di, assignment.b);
 	}
 
@@ -163,44 +171,44 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	public static class Experiment implements Serializable {
+	public Iterator<Experiment> iterator(final IGraphProvider provider)
+			throws IOException {
 
-		private static final long serialVersionUID = 1L;
+		final FileInputStream stream = new FileInputStream(new File(fSources));
 
-		public final int root;
-
-		public final Map<String, String> attributes;
-
-		public final double[] lis;
-		public final double[] dis;
-
-		public final IndexEntry entry;
-
-		public Experiment(int root, TableReader source, double[] lis,
-				double[] dis, IndexEntry entry) {
-			this.root = root;
-
-			HashMap<String, String> attributes = new HashMap<String, String>();
-			for (String key : source.columns()) {
-				attributes.put(key, source.get(key));
-			}
-			this.attributes = Collections.unmodifiableMap(attributes);
-
-			this.lis = lis;
-			this.dis = dis;
-			this.entry = entry;
+		TableReader tmp = null;
+		try {
+			tmp = new TableReader(stream);
+		} catch (IOException ex) {
+			stream.close();
+			throw ex;
 		}
 
-		public String toString() {
-			StringBuffer info = new StringBuffer();
-			info.append("root: ");
-			info.append(root);
-			if (lis != null) {
-				info.append(", size: ");
-				info.append(lis.length);
+		final TableReader reader = tmp;
+
+		return new Iterator<Experiment>() {
+
+			@Override
+			public boolean hasNext() {
+				return reader.hasNext();
 			}
-			return info.toString();
-		}
+
+			@Override
+			public Experiment next() {
+				try {
+					reader.next();
+					return readChurn(provider, reader,
+							Integer.parseInt(reader.get(fIdField)));
+				} catch (Exception ex) {
+					throw MiscUtils.nestRuntimeException(ex);
+				}
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+
+		};
 	}
-
 }

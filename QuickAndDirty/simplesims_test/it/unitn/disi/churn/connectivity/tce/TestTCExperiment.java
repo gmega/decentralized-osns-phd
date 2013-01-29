@@ -1,5 +1,7 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
+import it.unitn.disi.churn.connectivity.tce.BFSQueue;
+import it.unitn.disi.churn.connectivity.tce.CloudTCE;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
@@ -86,24 +88,24 @@ public class TestTCExperiment {
 			processes[i] = createProcess(i, State.up, intervals);
 		}
 
-		ComplexTCE tce = new ComplexTCE(
+		CloudTCE tce = new CloudTCE(
 				graph, 0);
 
 		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		sims.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, tce));
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0);
+		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0, 0);
 		bcs.setEventObservers(sims);
 		bcs.run();
 
-		Assert.assertEquals(0.0, tce.reachTime(0));
-		Assert.assertEquals(0.8, tce.reachTime(1));
-		Assert.assertTrue(Math.abs(1.8 - tce.reachTime(2)) < 1e-5);
-		Assert.assertEquals(2.9, tce.reachTime(3));
-		Assert.assertEquals(3.8, tce.reachTime(4));
-		Assert.assertTrue(Math.abs(4.8 - tce.reachTime(5)) < 1e-5);
-		Assert.assertTrue(Math.abs(5.8 - tce.reachTime(6)) < 1e-5);
+		Assert.assertEquals(0.0, tce.endToEndDelay(0));
+		Assert.assertEquals(0.8, tce.endToEndDelay(1));
+		Assert.assertTrue(Math.abs(1.8 - tce.endToEndDelay(2)) < 1e-5);
+		Assert.assertEquals(2.9, tce.endToEndDelay(3));
+		Assert.assertEquals(3.8, tce.endToEndDelay(4));
+		Assert.assertTrue(Math.abs(4.8 - tce.endToEndDelay(5)) < 1e-5);
+		Assert.assertTrue(Math.abs(5.8 - tce.endToEndDelay(6)) < 1e-5);
 	}
 
 	private void addIntervals(int id, Multimap<Integer, Double> intervals,

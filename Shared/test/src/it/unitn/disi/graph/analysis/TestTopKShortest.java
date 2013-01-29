@@ -153,6 +153,14 @@ public class TestTopKShortest {
 		for (int i = 0; i < 100; i++) {
 			int source = r.nextInt(lsg.size());
 			int destination = r.nextInt(lsg.size());
+			
+			if (destination == source) {
+				if (destination == (lsg.size() - 1)) {
+					destination--;
+				} else {
+					destination++;
+				}
+			}
 
 			ArrayList<PathEntry> paths = tpk.topKShortest(source, destination,
 					K);

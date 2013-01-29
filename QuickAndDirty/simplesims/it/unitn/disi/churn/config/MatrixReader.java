@@ -11,6 +11,8 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 	private String fIndex2Key;
 
 	private String fAttributeKey;
+	
+	private int fLastRead;
 
 	public MatrixReader(InputStream stream, String id, String index1,
 			String index2, String attributeKey) throws IOException {
@@ -28,6 +30,8 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 		for (int i = 0; i < w.length; i++) {
 			Arrays.fill(w[i], Double.MAX_VALUE);
 		}
+		
+		fLastRead = 0;
 
 		while (!rootChanged()) {
 			int source = idOf(Integer.parseInt(get(fIndex1Key)), ids);
@@ -37,10 +41,15 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 				throw new IllegalArgumentException(Double.toString(weight));
 			}
 			w[source][target] = weight;
+			fLastRead++;
 			advance();
 		}
 
 		return w;
+	}
+	
+	public int lastRead() {
+		return fLastRead;
 	}
 
 }

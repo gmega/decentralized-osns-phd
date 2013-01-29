@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.diffusion.experiments.config;
 
-import it.unitn.disi.churn.config.ExperimentReader.Experiment;
+import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;

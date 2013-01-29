@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.connectivity;
 
+import it.unitn.disi.churn.connectivity.tce.CloudSim;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.DunnTopK;
@@ -166,23 +167,31 @@ public class TEExperimentHelper {
 	 * 
 	 * @param taskStr
 	 *            a title for the progress tracker for this task.
+	 * 
 	 * @param graph
-	 *            the graph over which to estimate the propagation delay.
+	 *            the graph over which to estimate delays.
+	 * 
 	 * @param sourceStart
 	 *            source interval start.
+	 * 
 	 * @param sourceEnd
 	 *            source interval end.
+	 * 
 	 * @param lIs
 	 *            the li (session length) availability parameter for each
 	 *            vertex.
+	 * 
 	 * @param dIs
 	 *            the di (inter-session length) availability parameter for each
 	 *            vertex.
+	 * 
 	 * @param ids
 	 *            the original ids of the vertices (for printing activations).
+	 * 
 	 * @param sampleActivations
 	 *            whether to sample edge activation or not (makes simulation
 	 *            even slower).
+	 * 
 	 * @return a {@link SimulationResults} array, where each entry corresponds
 	 *         to a source (the {@link Integer}, together with the corresponding
 	 *         propagation delay estimates from that source to all other
@@ -192,33 +201,38 @@ public class TEExperimentHelper {
 	public List<? extends INodeMetric<?>>[] bruteForceSimulate(String taskStr,
 			final IndexedNeighborGraph graph, final int sourceStart,
 			final int sourceEnd, final double[] lIs, final double[] dIs,
-			final int root, final int[] ids, final int[] cloudNodes,
-			final boolean sampleActivations, final boolean cloudSim,
-			final boolean monitorComponents, boolean adaptive) throws Exception {
+			final int root, final int[] ids, final int[] fixedNodes,
+			final boolean cloudSim, final boolean monitorComponents,
+			boolean adaptive) throws Exception {
 
 		int sources = sourceEnd - sourceStart + 1;
 
 		fExecutor.start(taskStr, fRepetitions);
 
+		// Decoupled submission thread.
 		Thread submitter = new Thread(new Runnable() {
 
 			public void run() {
 				for (int j = 0; j < fRepetitions && !Thread.interrupted(); j++) {
 					SimulationTaskBuilder builder = new SimulationTaskBuilder(
-							graph, ids, root);
+							graph, root, lIs, dIs, fYaoConf);
 					// Stacks sources.
 					for (int i = sourceStart; i <= sourceEnd; i++) {
-						builder.addConnectivitySimulation(i, cloudNodes, null);
+						if (fixedNodes == null) {
+							builder.addConnectivitySimulation(i, "ed", "rd");
+						} else {
+							builder.addConnectivitySimulation(i, fixedNodes,
+									null, "ed", "rd");
+						}
+
 						if (monitorComponents) {
-							builder.andComponentTracker();
+							builder.andComponentTracker(i);
 						}
 
 						if (cloudSim) {
 							builder.addCloudSimulation(i);
 						}
 					}
-
-					builder.createProcesses(lIs, dIs, fYaoConf);
 
 					try {
 						fExecutor.submit(builder.simulationTask(fBurnin));
@@ -242,6 +256,8 @@ public class TEExperimentHelper {
 
 		for (int i = 0; i < fRepetitions; i++) {
 			Object taskResult = fExecutor.consume();
+			System.err.println("Complete " + i + ".");
+
 			if (taskResult instanceof Throwable) {
 				Throwable ex = (Throwable) taskResult;
 				ex.printStackTrace();
@@ -287,9 +303,8 @@ public class TEExperimentHelper {
 		IProgressTracker tracker = Progress.newTracker("root: " + root
 				+ ", size: " + li.length, fRepetitions);
 
-		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, ids,
-				idMap, root);
-		stb.createProcesses(li, di, fYaoConf);
+		SimulationTaskBuilder stb = new SimulationTaskBuilder(graph, root, li,
+				di, fYaoConf, idMap);
 		stb.addMultiConnectivitySimulation(source, fRepetitions,
 				new AvgAccumulation("ed", graph.size()), new AvgAccumulation(
 						"rd", graph.size()), tracker);
@@ -332,12 +347,10 @@ public class TEExperimentHelper {
 	 */
 	public List<? extends INodeMetric<?>> bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int root, int source, double[] lIs,
-			double[] dIs, int[] ids, int[] cloudNodes,
-			boolean sampleActivations, boolean cloudSim,
+			double[] dIs, int[] ids, int[] cloudNodes, boolean cloudSim,
 			boolean monitorComponents, boolean adaptive) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				root, ids, cloudNodes, sampleActivations, cloudSim,
-				monitorComponents, adaptive)[0];
+				root, ids, cloudNodes, cloudSim, monitorComponents, adaptive)[0];
 	}
 
 	/**

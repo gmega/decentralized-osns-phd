@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
@@ -6,7 +6,6 @@ import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
@@ -22,6 +21,8 @@ import java.util.Comparator;
 
 public class ComponentTracker implements IEventObserver {
 
+	private static final long serialVersionUID = 1L;
+	
 	private final IndexedNeighborGraph fGraph;
 
 	private final LiveTransformer fTransformer;

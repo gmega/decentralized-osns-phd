@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.Binding;

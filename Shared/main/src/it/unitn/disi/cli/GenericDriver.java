@@ -14,6 +14,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.net.JarURLConnection;
 import java.net.URL;
@@ -49,6 +50,14 @@ import peersim.config.ObjectCreator;
  */
 public class GenericDriver {
 
+	protected static final long KILL_FILE_POLL = 10000;
+
+	private static final int E_ABORT = -1;
+
+	private static final int E_TIMEOUT = -2;
+
+	private static final int E_KILLFILE = -3;
+
 	@Option(name = "-i", usage = "colon (:) separated list of input files (stdin if ommitted)", required = false)
 	private String fInputs;
 
@@ -75,6 +84,9 @@ public class GenericDriver {
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "prints this help message", required = false)
 	private boolean fHelpOnly;
+
+	@Option(name = "-k", aliases = { "--killfile" }, usage = "uses a kill file", required = false)
+	private boolean fUseKillFile;
 
 	@Argument
 	private List<String> fArguments = new ArrayList<String>();
@@ -124,6 +136,10 @@ public class GenericDriver {
 				startTimer(fWallClock);
 			}
 
+			if (fUseKillFile) {
+				startKillfileMon();
+			}
+
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
 			} else if (processor instanceof IMultiTransformer) {
@@ -146,13 +162,40 @@ public class GenericDriver {
 		}
 	}
 
+	private void startKillfileMon() {
+		// XXX NOT PORTABLE
+		final String pid = ManagementFactory.getRuntimeMXBean().getName()
+				.split("@")[0];
+		final File killFile = new File("/tmp", pid);
+		Thread killMonitor = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						Thread.sleep(KILL_FILE_POLL);
+						if (killFile.exists()) {
+							System.err.println("-- Kill file found. Aborting.");
+							System.exit(E_KILLFILE);
+						}
+					} catch (InterruptedException e) {
+						break;
+					}
+				}
+			}
+		}, "Kill file monitor");
+
+		System.err.println("-- Kill file polling at: "
+				+ killFile.getAbsolutePath() + ".");
+		killMonitor.start();
+	}
+
 	private void startTimer(double wallclock) {
 		TimerTask shutdown = new TimerTask() {
 			@Override
 			public void run() {
 				System.err
 						.println("Wallclock timer ellapsed. Shutting down...");
-				System.exit(-2);
+				System.exit(E_TIMEOUT);
 			}
 		};
 
@@ -364,7 +407,8 @@ public class GenericDriver {
 		} catch (Exception ex) {
 			System.err.println("Abnormal termination: exception thrown.");
 			ex.printStackTrace();
-			System.exit(-1);
+			System.exit(E_ABORT);
 		}
 	}
+
 }
