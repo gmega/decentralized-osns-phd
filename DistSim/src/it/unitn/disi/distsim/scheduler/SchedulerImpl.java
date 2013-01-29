@@ -43,13 +43,13 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	private volatile TableWriter fWriter;
 
 	private volatile int fRemaining;
-	
+
 	private volatile int fActive;
 
-	public SchedulerImpl(ISchedule schedule, TableWriter writeLog) throws IOException {
-		this(schedule, writeLog, Logger.getLogger(SchedulerImpl.class
-				.getName() + ".assignment"), Logger
-				.getLogger(SchedulerImpl.class));
+	public SchedulerImpl(ISchedule schedule, TableWriter writeLog)
+			throws IOException {
+		this(schedule, writeLog, Logger.getLogger(SchedulerImpl.class.getName()
+				+ ".assignment"), Logger.getLogger(SchedulerImpl.class));
 	}
 
 	public SchedulerImpl(ISchedule schedule, TableWriter writeLog,
@@ -204,7 +204,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	private int id(Pair<Integer, Integer> pair) {
 		return pair.a;
 	}
-	
+
 	@Override
 	public int remaining() throws RemoteException {
 		return fRemaining;
@@ -222,16 +222,21 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 
 			ExperimentEntry entry = fExperiments[idx];
 
-			fAssignment.info("Worker " + entry.worker.id + " done with job "
-					+ entry.id + ".");
+			if (entry.worker == null) {
+				fAssignment.error("Undead worker reporting completion of task "
+						+ entry.id + ". Task will be marked as complete.");
+			} else {
+				fAssignment.info("Worker " + entry.worker.id
+						+ " done with job " + entry.id + ".");
+			}
 
 			fWriter.set("experiment", entry.id);
 			fWriter.set("status", ExperimentState.done);
 			fWriter.emmitRow();
 			fWriter.flush();
 
-			fExperiments[idx].done = true;
-			fExperiments[idx].worker = null;
+			entry.done = true;
+			entry.worker = null;
 			fRemaining--;
 			fActive--;
 
@@ -240,11 +245,11 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 			fExperiments.notifyAll();
 		}
 	}
-	
+
 	public int activeWorkers() {
 		return fWorkers.size();
 	}
-	
+
 	public int activeJobs() {
 		return fActive;
 	}

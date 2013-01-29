@@ -256,8 +256,6 @@ public class TEExperimentHelper {
 
 		for (int i = 0; i < fRepetitions; i++) {
 			Object taskResult = fExecutor.consume();
-			System.err.println("Complete " + i + ".");
-
 			if (taskResult instanceof Throwable) {
 				Throwable ex = (Throwable) taskResult;
 				ex.printStackTrace();
