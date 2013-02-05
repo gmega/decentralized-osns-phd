@@ -30,7 +30,7 @@ import peersim.config.ObjectCreator;
  * @author giuliano
  */
 @AutoConfig
-public class LineGraphExperiment implements ITransformer {
+public class LineGraphAverages implements ITransformer {
 
 	@Attribute("repetitions")
 	private int fRepetitions;
@@ -49,7 +49,7 @@ public class LineGraphExperiment implements ITransformer {
 
 	private YaoChurnConfigurator fYaoConf;
 
-	public LineGraphExperiment(@Attribute(Attribute.AUTO) IResolver resolver) {
+	public LineGraphAverages(@Attribute(Attribute.AUTO) IResolver resolver) {
 		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
 				resolver);
 	}

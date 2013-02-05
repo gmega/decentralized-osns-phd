@@ -18,5 +18,7 @@
 	<classpathentry kind="lib" path="/Utilities/lib/Lambda.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/DistSim"/>
+	<classpathentry kind="lib" path="/Utilities/lib/JMarkovPack.jar" sourcepath="/home/giuliano/Software/jMarkov2_0a/JMarkov/lib/mtjsrc.zip"/>
+	<classpathentry kind="lib" path="/Utilities/lib/mtj.jar" sourcepath="/home/giuliano/Software/mtj-0.9.14/src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

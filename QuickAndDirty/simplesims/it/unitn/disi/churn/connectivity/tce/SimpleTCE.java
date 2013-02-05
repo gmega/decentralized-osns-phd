@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
@@ -15,6 +16,7 @@ import java.util.Arrays;
  * 
  * @author giuliano
  */
+@Binding
 public class SimpleTCE implements IEventObserver {
 
 	private static final long serialVersionUID = 1L;
@@ -137,6 +139,10 @@ public class SimpleTCE implements IEventObserver {
 	protected void reached(int source, int node, ISimulationEngine engine) {
 		fReached[node] = engine.clock().time();
 		fReachedCount++;
+		
+		if (isDone()) {
+			engine.unbound(this);
+		}
 	}
 
 	/**

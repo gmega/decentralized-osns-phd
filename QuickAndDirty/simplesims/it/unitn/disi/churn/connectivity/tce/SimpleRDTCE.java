@@ -3,6 +3,7 @@ package it.unitn.disi.churn.connectivity.tce;
 import java.util.Arrays;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
@@ -13,6 +14,7 @@ import it.unitn.disi.simulator.core.RenewalProcess;
  * 
  * @author giuliano
  */
+@Binding
 public class SimpleRDTCE extends SimpleTCE {
 
 	private static final long serialVersionUID = 1L;
