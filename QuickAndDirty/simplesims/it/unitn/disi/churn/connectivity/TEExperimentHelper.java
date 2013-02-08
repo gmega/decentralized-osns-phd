@@ -400,6 +400,11 @@ public class TEExperimentHelper {
 		// 1. computes the top-k shortest paths between u and w.
 		ArrayList<? extends PathEntry> paths = tpk.topKShortest(source, target,
 				k);
+
+		for (int i = 0; i < paths.size(); i++) {
+			System.err.println(Arrays.toString(paths.get(i).path));
+		}
+
 		int[] vertexes = vertexesOf(paths);
 		LightweightStaticGraph kPathGraph = LightweightStaticGraph.subgraph(
 				(LightweightStaticGraph) graph, vertexes);
@@ -420,8 +425,8 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		INodeMetric<Double> estimate = Utils.lookup(
-				bruteForceSimulateMulti(kPathGraph, root, remappedSource,
-						liSub, diSub, ids, null), "ed", Double.class);
+				bruteForceSimulate("", kPathGraph, root, remappedSource,
+						liSub, diSub, ids, null, false, false, false), "ed", Double.class);
 
 		return new Triplet<IndexedNeighborGraph, PathEntry[], Double>(
 				kPathGraph, paths.toArray(new PathEntry[paths.size()]),

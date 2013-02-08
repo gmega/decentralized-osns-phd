@@ -61,8 +61,8 @@ public class MultiTCE implements IEventObserver {
 			Schedulable schedulable, double nextShift) {
 
 		if (isSourceLogin(schedulable) && (fActive.size() + fComplete < fTotal)) {
-			fActive.add(fNodeMap == null ? new SimpleRDTCE(fGraph, fSource)
-					: new NodeMappedTCE(fGraph, fSource, fNodeMap));
+			fActive.add(fNodeMap == null ? new SimpleRDTCE(fGraph, fSource,
+					false) : new NodeMappedTCE(fGraph, fSource, fNodeMap));
 		}
 
 		fMaxActive = Math.max(fActive.size(), fMaxActive);
@@ -73,7 +73,6 @@ public class MultiTCE implements IEventObserver {
 			if (tce.isDone()) {
 				it.remove();
 				fComplete++;
-				System.err.println("Complete " + fComplete + ".");
 				fTracker.tick();
 				if (fComplete % 1000 == 0) {
 					System.err.println("Active: " + fActive.size() + ", Max: "

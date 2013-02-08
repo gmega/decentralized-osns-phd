@@ -1,5 +1,16 @@
 package it.unitn.disi.churn.intersync.markov;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.Random;
+
+import jphase.DenseContPhaseVar;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
 import it.unitn.disi.churn.connectivity.SimulationTaskBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
@@ -10,27 +21,13 @@ import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.unitsim.ListGraphGenerator;
-import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import java.util.List;
-import java.util.Random;
-
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.config.IResolver;
-import peersim.config.ObjectCreator;
-
-/**
- * Experiment for verifying that the Markov model holds in line graphs.
- * 
- * @author giuliano
- */
 @AutoConfig
-public class LineGraphAverages implements ITransformer {
+public class LineGraphDistributionExperiment implements ITransformer {
+
+	private static final int AVG = 0;
+	private static final int MAX = 1;
 
 	@Attribute("repetitions")
 	private int fRepetitions;
@@ -38,30 +35,37 @@ public class LineGraphAverages implements ITransformer {
 	@Attribute("n")
 	private int fN;
 
-	@Attribute("experiments")
-	private int fExperiments;
-
 	@Attribute("burnin")
 	private double fBurnin;
 
 	@Attribute("cores")
 	private int fCores;
 
+	@Attribute("pdfonly")
+	private boolean fPDFOnly;
+
+	@Attribute(value = "printdist", defaultValue = "false")
+	private boolean fPrintDistribution;
+
+	@Attribute("experiments")
+	private int fExperiments;
+
 	private YaoChurnConfigurator fYaoConf;
 
-	public LineGraphAverages(@Attribute(Attribute.AUTO) IResolver resolver) {
+	public LineGraphDistributionExperiment(
+			@Attribute(Attribute.AUTO) IResolver resolver) {
 		fYaoConf = ObjectCreator.createInstance(YaoChurnConfigurator.class, "",
 				resolver);
 	}
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
-
-		TableWriter writer = new TableWriter(new PrefixedWriter("RES:", oup),
-				"node", "estimate", "simulation");
 		TaskExecutor taskExecutor = new TaskExecutor(fCores);
 		ListGraphGenerator lgg = new ListGraphGenerator();
 		IndexedNeighborGraph graph = lgg.subgraph(fN);
+
+		TableWriter writer = new TableWriter(oup, "ed", "esum", "phase",
+				"jphase");
 
 		for (int i = 0; i < fExperiments; i++) {
 			runExperiment(taskExecutor, graph, writer);
@@ -71,7 +75,7 @@ public class LineGraphAverages implements ITransformer {
 	}
 
 	private void runExperiment(TaskExecutor executor,
-			IndexedNeighborGraph graph, TableWriter out) throws Exception {
+			IndexedNeighborGraph graph, TableWriter writer) throws Exception {
 		double[] li = new double[graph.size()];
 		double[] di = new double[graph.size()];
 		IAverageGenerator gen = fYaoConf.averageGenerator(new Random());
@@ -79,19 +83,44 @@ public class LineGraphAverages implements ITransformer {
 		for (int i = 0; i < graph.size(); i++) {
 			li[i] = gen.nextLI();
 			di[i] = gen.nextDI();
-			System.out.println("S:" + i + " " + li[i] + " " + di[i]);
 		}
 
-		double[] simulation = simulate(graph, li, di, executor);
-		double[] estimation = estimate(graph, li, di);
+		double[] result = fPDFOnly ? null : simulate(graph, li, di, executor);
+		double[] estimate = estimate(graph, li, di);
+		PhaseTypeDistribution pdt = phasePDF(li, di);
 
-		for (int i = 0; i < simulation.length; i++) {
-			out.set("node", i);
-			out.set("estimate", estimation[i]);
-			out.set("simulation", simulation[i] / fRepetitions);
-			out.emmitRow();
+		DenseContPhaseVar jPhasePDF = pdt.getJPhaseDistribution();
+
+		writer.set("ed", result[AVG]);
+		writer.set("esum", estimate[estimate.length - 1]);
+		writer.set("phase", pdt.expectation());
+		writer.set("jphase", pdt.getJPhaseDistribution().moment(1));
+		writer.emmitRow();
+
+		if (fPrintDistribution) {
+			printDistribution(result[MAX], jPhasePDF);
 		}
+	}
 
+	private void printDistribution(double d, DenseContPhaseVar pdf) {
+		System.out.println("PDF:x y");
+		for (double x = 0.0; x < d; x += 0.1) {
+			System.out.println("PDF:" + x + " " + pdf.pdf(x));
+		}
+	}
+
+	private PhaseTypeDistribution phasePDF(double[] li, double[] di) {
+		PhaseTypeDistribution pathDelay = null;
+		for (int i = 0; i < (li.length - 1); i++) {
+			PhaseTypeDistribution edgeDelay = new PhaseTypeDistribution(
+					MarkovDelayModel.genMatrix(1.0 / li[i], 1.0 / li[i + 1],
+							2.0 / di[i], 2.0 / di[i + 1]),
+					MarkovDelayModel.alpha(1.0 / li[i], 1.0 / li[i + 1],
+							2.0 / di[i], 2.0 / di[i + 1]));
+			pathDelay = pathDelay == null ? edgeDelay : pathDelay
+					.sum(edgeDelay);
+		}
+		return pathDelay;
 	}
 
 	private double[] estimate(IndexedNeighborGraph graph, double[] li,
@@ -111,7 +140,6 @@ public class LineGraphAverages implements ITransformer {
 		double firstHitting = ((du + lu) * (du + dv + lv))
 				/ (du * dv * (du + lu + dv + lv));
 		double stableState = (lv) / (lv + dv);
-
 		return stableState * firstHitting;
 	}
 
@@ -123,8 +151,6 @@ public class LineGraphAverages implements ITransformer {
 			ids[i] = i;
 		}
 
-		double[] ttc = new double[graph.size()];
-
 		executor.start("simulate", fRepetitions);
 
 		for (int j = 0; j < fRepetitions; j++) {
@@ -134,15 +160,25 @@ public class LineGraphAverages implements ITransformer {
 			executor.submit(builder.simulationTask(fBurnin));
 		}
 
+		double edsum = 0;
+		double max = Double.MIN_VALUE;
+		System.out.println("SP:point");
 		for (int j = 0; j < fRepetitions; j++) {
 			SimulationTask task = (SimulationTask) executor.consume();
 			List<? extends INodeMetric<?>> result = task.metric(0);
+
 			INodeMetric<Double> ed = Utils.lookup(result, "ed", Double.class);
-			for (int i = 0; i < ttc.length; i++) {
-				ttc[i] += ed.getMetric(i);
+			double edpoint = ed.getMetric(graph.size() - 1);
+
+			if (fPrintDistribution) {
+				System.out.println("SP:" + edpoint);
 			}
+
+			max = Math.max(edpoint, max);
+			edsum += edpoint;
 		}
 
-		return ttc;
+		return new double[] { (edsum / fRepetitions), max };
 	}
+
 }

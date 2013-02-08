@@ -2,8 +2,13 @@ package it.unitn.disi.churn.connectivity.tce;
 
 import java.io.Serializable;
 
+/**
+ * Simple and fast implementation for a circular queue with bounded size.
+ * 
+ * @author giuliano
+ */
 class BFSQueue implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	private int fRear = -1;

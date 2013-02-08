@@ -1,7 +1,6 @@
 package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
@@ -16,7 +15,6 @@ import java.util.Arrays;
  * 
  * @author giuliano
  */
-@Binding
 public class SimpleTCE implements IEventObserver {
 
 	private static final long serialVersionUID = 1L;
@@ -26,7 +24,7 @@ public class SimpleTCE implements IEventObserver {
 	private int fReachedCount;
 
 	private double[] fReached;
-	
+
 	private boolean[] fDone;
 
 	private BFSQueue fQueue;
@@ -81,7 +79,7 @@ public class SimpleTCE implements IEventObserver {
 		}
 
 		for (int i = 0; i < fDone.length; i++) {
-			// We start DFSs from all nodes that have
+			// We start graph searches from all nodes that have
 			// unvisited neighbors.
 			if (!fDone[i] && isReached(i) && isUp(i, network)) {
 				fQueue.addLast(i);
@@ -115,7 +113,7 @@ public class SimpleTCE implements IEventObserver {
 			fQueue.removeFirst();
 		}
 	}
-	
+
 	public double endToEndDelay(int i) {
 		return fReached[i] - fReached[fSource];
 	}
@@ -123,6 +121,11 @@ public class SimpleTCE implements IEventObserver {
 	// -------------------------------------------------------------------------
 	// Hook methods to override specific experiment behavior.
 	// -------------------------------------------------------------------------
+
+	@Override
+	public boolean isDone() {
+		return fReachedCount == fReached.length;
+	}
 
 	/**
 	 * Called when a node is reached for the first time; i.e.
@@ -141,7 +144,7 @@ public class SimpleTCE implements IEventObserver {
 		fReachedCount++;
 		
 		if (isDone()) {
-			engine.unbound(this);
+			done(engine);
 		}
 	}
 
@@ -159,7 +162,7 @@ public class SimpleTCE implements IEventObserver {
 	}
 
 	/**
-	 * Tells whether the current process is the source or not. 
+	 * Tells whether the current process is the source or not.
 	 * 
 	 * @param process
 	 * @param network
@@ -180,9 +183,12 @@ public class SimpleTCE implements IEventObserver {
 		return network.process(id);
 	}
 
-	@Override
-	public boolean isDone() {
-		return fReachedCount == fReached.length;
+	/**
+	 * Called when the {@link SimpleTCE} switches into 'done' state (i.e. all
+	 * nodes have been reached). This is guaranteed to be called only once.
+	 */
+	protected void done(ISimulationEngine engine) {
+		// default impl. does nothing.
 	}
 
 }

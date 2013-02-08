@@ -25,7 +25,7 @@ import peersim.util.IncrementalStats;
  * @author giuliano
  */
 @AutoConfig
-public class MarkovEdgeDelayValidation implements Runnable {
+public class MarkovEdgeDelayExperiment implements Runnable {
 
 	@Attribute("experiments")
 	private int fExperiments;

@@ -1,78 +1,144 @@
 package it.unitn.disi.churn.intersync.markov;
 
+import it.unitn.disi.math.MatrixUtils;
+import jphase.DenseContPhaseVar;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.DenseVector;
 import no.uib.cipr.matrix.Matrices;
 
 public class PhaseTypeDistribution {
 
-	private final double[][] fMatrix;
+	private final DenseMatrix fMatrix;
 
-	private final double[] fAlpha;
+	private final DenseVector fAlpha;
 
 	public PhaseTypeDistribution(double[][] matrix, double[] alpha) {
+		this(new DenseMatrix(matrix), new DenseVector(alpha));
+	}
+
+	public PhaseTypeDistribution(DenseMatrix matrix, DenseVector alpha) {
 		fMatrix = matrix;
 		fAlpha = alpha;
 	}
 
 	public PhaseTypeDistribution sum(PhaseTypeDistribution other) {
-		final double[][] T = fMatrix;
-		final double[][] S = other.fMatrix;
+		final DenseMatrix T = fMatrix;
+		final DenseMatrix S = other.fMatrix;
 
-		final double[] alpha = fAlpha;
-		final double[] beta = other.fAlpha;
+		final DenseVector alpha = fAlpha;
+		final DenseVector beta = other.fAlpha;
 
-		int dim = S.length + T.length - 1;
+		int dim = S.numRows() + T.numRows() - 1;
 
-		double[][] L = new double[dim][dim];
+		DenseMatrix L = new DenseMatrix(dim, dim);
 
 		// Copies transitions among transients.
-		transfer(T, L, 0, 0, T.length - 1, T.length - 1);
+		transfer(T, L, 0, 0, T.numRows() - 1, T.numRows() - 1);
 		// Matrix S gets copied whole because the new "shared absorbing state"
 		// is the one from S.
-		transfer(S, L, (T.length - 1), (T.length - 1), (S.length - 1), S.length);
+		transfer(S, L, (T.numRows() - 1), (T.numRows() - 1), (S.numRows() - 1),
+				S.numRows());
 
 		// Links to absorbing state in T get rewired into S.
-		populate(L, 0, (T.length - 1), (T.length - 1), S.length, new ITransfer() {
-			@Override
-			public double value(int i, int j) {
-				return T[i][T[i].length - 1] * beta[j];
-			}
-		});
+		populate(L, 0, (T.numRows() - 1), (T.numRows() - 1), S.numRows(),
+				new ITransfer() {
+					@Override
+					public double value(int i, int j) {
+						return T.get(i, T.numColumns() - 1) * beta.get(j);
+					}
+				});
 
-		double[] gamma = new double[alpha.length + beta.length - 1];
-		for (int i = 0; i < (alpha.length - 1); i++) {
-			gamma[i] = alpha[i];
+		DenseVector gamma = new DenseVector(alpha.size() + beta.size() - 1);
+		for (int i = 0; i < (alpha.size() - 1); i++) {
+			gamma.set(i, alpha.get(i));
 		}
 
-		for (int i = 0; i < (beta.length - 1); i++) {
-			gamma[i + alpha.length - 1] = beta[i] * alpha[alpha.length - 1];
+		for (int i = 0; i < (beta.size() - 1); i++) {
+			gamma.set(i + alpha.size() - 1,
+					beta.get(i) * alpha.get(alpha.size() - 1));
 		}
-		
+
 		double sum = 0.0;
-		for (int i = 0; i < gamma.length; i++) {
-			sum += gamma[i];
+		for (int i = 0; i < gamma.size(); i++) {
+			sum += gamma.get(i);
 		}
-		gamma[gamma.length - 1] = 1 - sum;
-	
+		gamma.set(gamma.size() - 1, 1 - sum);
+
 		return new PhaseTypeDistribution(L, gamma);
 	}
 
-	public double expectation() {
-		DenseMatrix S = new DenseMatrix(fMatrix.length - 1, fMatrix.length - 1);
-		for (int i = 0; i < (fMatrix.length - 1); i++) {
-			for (int j = 0; j < (fMatrix.length - 1); j++) {
-				S.set(i, j, fMatrix[i][j]);
+	public PhaseTypeDistribution min(PhaseTypeDistribution other) {
+
+		// New matrix is the tensor sum of the two previous matrices.
+		DenseMatrix innerS = MatrixUtils.kroneckerSum(getS(), other.getS());
+
+		// Same for the new alpha vector (which we call gamma...).
+		DenseVector innerGamma = MatrixUtils.kronecker(getAlpha(),
+				other.getAlpha());
+
+		DenseMatrix S = new DenseMatrix(innerS.numRows() + 1,
+				innerS.numColumns() + 1);
+
+		for (int i = 0; i < innerS.numColumns(); i++) {
+			double rowSum = 0;
+			for (int j = 0; j < innerS.numRows(); j++) {
+				double value = innerS.get(i, j);
+				S.set(i, j, value);
+				rowSum += value;
+			}
+
+			// S is a generator matrix so rows sum to zero.
+			S.set(i, S.numColumns() - 1, -rowSum);
+		}
+
+		DenseVector gamma = new DenseVector(innerGamma.size() + 1);
+		double sum = 0;
+		for (int i = 0; i < innerGamma.size(); i++) {
+			double value = innerGamma.get(i);
+			gamma.set(i, value);
+			sum += value;
+		}
+		gamma.set(gamma.size() - 1, 1.0 - sum);
+
+		return new PhaseTypeDistribution(S, gamma);
+	}
+
+	public DenseContPhaseVar getJPhaseDistribution() {
+		return new DenseContPhaseVar(getAlpha(), getS());
+	}
+
+	private DenseVector getAlpha() {
+		DenseVector alpha = new DenseVector(fAlpha.size() - 1);
+		for (int i = 0; i < (fAlpha.size() - 1); i++) {
+			alpha.set(i, fAlpha.get(i));
+		}
+
+		return alpha;
+	}
+
+	private DenseMatrix getS() {
+		DenseMatrix S = new DenseMatrix(fMatrix.numRows() - 1,
+				fMatrix.numColumns() - 1);
+		for (int i = 0; i < (fMatrix.numRows() - 1); i++) {
+			for (int j = 0; j < (fMatrix.numColumns() - 1); j++) {
+				S.set(i, j, fMatrix.get(i, j));
 			}
 		}
+
+		return S;
+	}
+
+	public double expectation() {
+		DenseMatrix S = getS();
 
 		DenseMatrix I = Matrices.identity(S.numColumns());
 		DenseMatrix SI = I.copy();
 		S.solve(I, SI);
 
 		// 1 x (m - 1)
-		DenseMatrix alpha = new DenseMatrix(1, fAlpha.length - 1);
-		for (int i = 0; i < (fAlpha.length - 1); i++) {
-			alpha.set(0, i, -fAlpha[i]);
+		DenseMatrix alpha = new DenseMatrix(1, fAlpha.size() - 1);
+		for (int i = 0; i < (fAlpha.size() - 1); i++) {
+			alpha.set(0, i, -fAlpha.get(i));
 		}
 
 		// (m - 1) x 1
@@ -89,25 +155,24 @@ public class PhaseTypeDistribution {
 		return value.get(0, 0);
 	}
 
-	private void transfer(final double[][] source, final double[][] target,
+	private void transfer(final DenseMatrix source, final DenseMatrix target,
 			int rowOff, int colOff, int rowSize, int colSize) {
 		populate(target, rowOff, colOff, rowSize, colSize, new ITransfer() {
 
 			@Override
 			public double value(int i, int j) {
-				return source[i][j];
+				return source.get(i, j);
 			}
 
 		});
 	}
 
-	private void populate(double[][] target, int rowOff, int colOff, int rowSize,
-			int colSize, ITransfer elements) {
+	private void populate(DenseMatrix target, int rowOff, int colOff,
+			int rowSize, int colSize, ITransfer elements) {
 
 		for (int i = 0; i < rowSize; i++) {
 			for (int j = 0; j < colSize; j++) {
-				target[i + rowOff][j + colOff] = elements.value(i, j);
-				//System.err.println(i + "," + j + ":" + target[i + rowOff][j + colOff]);
+				target.set(i + rowOff, j + colOff, elements.value(i, j));
 			}
 		}
 

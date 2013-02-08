@@ -15,7 +15,7 @@ import it.unitn.disi.simulator.core.RenewalProcess;
  * @author giuliano
  */
 @Binding
-public class SimpleRDTCE extends SimpleTCE {
+public class SimpleRDTCE extends BindingSimpleTCE {
 
 	private static final long serialVersionUID = 1L;
 
@@ -24,7 +24,11 @@ public class SimpleRDTCE extends SimpleTCE {
 	private double[] fUptimeReached;
 
 	public SimpleRDTCE(IndexedNeighborGraph graph, int source) {
-		super(graph, source);
+		this(graph, source, true);
+	}
+
+	public SimpleRDTCE(IndexedNeighborGraph graph, int source, boolean binding) {
+		super(graph, source, binding);
 
 		fUptimeReached = new double[fGraph.size()];
 		fUptimeSnapshot = new double[fGraph.size()];
