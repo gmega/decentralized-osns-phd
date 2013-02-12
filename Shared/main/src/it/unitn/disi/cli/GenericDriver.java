@@ -102,6 +102,7 @@ public class GenericDriver {
 	public void _main(String[] args) throws Exception {
 		CmdLineParser parser = new CmdLineParser(this);
 
+		System.err.println(System.getProperty("java.rmi.server.hostname"));
 		try {
 			parser.parseArgument(args);
 

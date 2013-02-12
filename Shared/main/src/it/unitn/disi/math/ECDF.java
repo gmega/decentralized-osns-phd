@@ -1,4 +1,4 @@
-package it.unitn.disi.statistics;
+package it.unitn.disi.math;
 
 import java.io.BufferedReader;
 import java.io.File;

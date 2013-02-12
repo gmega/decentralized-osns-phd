@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
 	<classpathentry kind="lib" path="lib/trove-3.0.0rc2.jar"/>
 	<classpathentry kind="lib" path="lib/JMarkovPack.jar"/>
+	<classpathentry kind="lib" path="lib/mtj.jar" sourcepath="/home/giuliano/Software/mtj-0.9.14/src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

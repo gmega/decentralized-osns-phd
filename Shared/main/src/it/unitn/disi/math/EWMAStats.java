@@ -1,4 +1,4 @@
-package it.unitn.disi.statistics;
+package it.unitn.disi.math;
 
 /**
  * Implements an <a href=

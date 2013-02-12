@@ -71,6 +71,10 @@ public class DunnTopK implements ITopKEstimator {
 		return paths;
 	}
 
+	public double weight(int i, int j) {
+		return fWeights[i][j];
+	}
+
 	private PathEntry nextPath(int source, int target) {
 		GraphAlgorithms.dijkstra(fGraph, fFilter, source, fWeights, fMinDists,
 				fPrevious);
