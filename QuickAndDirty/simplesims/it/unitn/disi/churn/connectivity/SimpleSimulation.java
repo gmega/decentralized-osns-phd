@@ -108,7 +108,7 @@ public class SimpleSimulation implements Runnable {
 
 		List<? extends INodeMetric<?>> metrics = helper
 				.bruteForceSimulateMulti(graph, 0, 0, assignment.li,
-						assignment.di, ids, null);
+						assignment.di, null);
 		/*
 		 * bruteForceSimulate( "simulate", graph, 0, 0, assignment.li,
 		 * assignment.di, ids, new int[] {}, false, false, false);

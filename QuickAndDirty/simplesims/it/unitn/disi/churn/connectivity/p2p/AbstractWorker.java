@@ -39,7 +39,7 @@ public abstract class AbstractWorker implements ITransformer {
 	 * What burnin value to use.
 	 */
 	@Attribute("burnin")
-	private double fBurnin;
+	protected double fBurnin;
 
 	private SchedulerClient fClient;
 

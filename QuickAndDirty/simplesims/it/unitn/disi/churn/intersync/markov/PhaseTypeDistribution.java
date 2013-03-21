@@ -67,7 +67,22 @@ public class PhaseTypeDistribution {
 		return new PhaseTypeDistribution(L, gamma);
 	}
 
-	public PhaseTypeDistribution min(PhaseTypeDistribution other) {
+	public int size() {
+		return fMatrix.numColumns();
+	}
+
+	public PhaseTypeDistribution min(PhaseTypeDistribution other, long maxSize) {
+
+		// Projected size of the matrix after the Kronecker product.
+		long projected = fMatrix.numColumns()
+				* ((long) other.fMatrix.numColumns()) * fMatrix.numRows()
+				* other.fMatrix.numRows();
+
+		System.err.println(projected + ", " + maxSize);
+
+		if ((projected * 2) > maxSize) {
+			return null;
+		}
 
 		// New matrix is the tensor sum of the two previous matrices.
 		DenseMatrix innerS = MatrixUtils.kroneckerSum(getS(), other.getS());

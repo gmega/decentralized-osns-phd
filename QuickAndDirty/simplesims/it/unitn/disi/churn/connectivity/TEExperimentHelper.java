@@ -201,9 +201,8 @@ public class TEExperimentHelper {
 	public List<? extends INodeMetric<?>>[] bruteForceSimulate(String taskStr,
 			final IndexedNeighborGraph graph, final int sourceStart,
 			final int sourceEnd, final double[] lIs, final double[] dIs,
-			final int root, final int[] ids, final int[] fixedNodes,
-			final boolean cloudSim, final boolean monitorComponents,
-			boolean adaptive) throws Exception {
+			final int root, final int[] fixedNodes, final boolean cloudSim,
+			final boolean monitorComponents, boolean adaptive) throws Exception {
 
 		int sources = sourceEnd - sourceStart + 1;
 
@@ -296,7 +295,7 @@ public class TEExperimentHelper {
 	@SuppressWarnings("unchecked")
 	public List<INodeMetric<Double>> bruteForceSimulateMulti(
 			IndexedNeighborGraph graph, int root, int source, double[] li,
-			double[] di, int[] ids, int[] idMap) throws Exception {
+			double[] di, int[] idMap) throws Exception {
 
 		IProgressTracker tracker = Progress.newTracker("root: " + root
 				+ ", size: " + li.length, fRepetitions);
@@ -345,10 +344,10 @@ public class TEExperimentHelper {
 	 */
 	public List<? extends INodeMetric<?>> bruteForceSimulate(String taskStr,
 			IndexedNeighborGraph graph, int root, int source, double[] lIs,
-			double[] dIs, int[] ids, int[] cloudNodes, boolean cloudSim,
+			double[] dIs, int[] cloudNodes, boolean cloudSim,
 			boolean monitorComponents, boolean adaptive) throws Exception {
 		return bruteForceSimulate(taskStr, graph, source, source, lIs, dIs,
-				root, ids, cloudNodes, cloudSim, monitorComponents, adaptive)[0];
+				root, cloudNodes, cloudSim, monitorComponents, adaptive)[0];
 	}
 
 	/**
@@ -401,6 +400,21 @@ public class TEExperimentHelper {
 		ArrayList<? extends PathEntry> paths = tpk.topKShortest(source, target,
 				k);
 
+		for (PathEntry entry : paths) {
+			StringBuffer buffer = new StringBuffer("TPK:[ ");
+			for (int i = 0; i < entry.path.length; i++) {
+				buffer.append("(");
+				buffer.append(entry.path[i]);
+				buffer.append(", ");
+				buffer.append(lIs[entry.path[i]]);
+				buffer.append(", ");
+				buffer.append(dIs[entry.path[i]]);
+				buffer.append("), ");
+			}
+			buffer.append("]");
+			System.out.println(buffer);
+		}
+
 		for (int i = 0; i < paths.size(); i++) {
 			System.err.println(Arrays.toString(paths.get(i).path));
 		}
@@ -425,8 +439,8 @@ public class TEExperimentHelper {
 		int remappedTarget = indexOf(target, vertexes);
 
 		INodeMetric<Double> estimate = Utils.lookup(
-				bruteForceSimulate("", kPathGraph, root, remappedSource,
-						liSub, diSub, ids, null, false, false, false), "ed", Double.class);
+				bruteForceSimulateMulti(kPathGraph, root, remappedSource,
+						liSub, diSub, null), "ed", Double.class);
 
 		return new Triplet<IndexedNeighborGraph, PathEntry[], Double>(
 				kPathGraph, paths.toArray(new PathEntry[paths.size()]),

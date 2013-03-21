@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.diffusion;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
@@ -31,21 +32,21 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	private int fCoreSize = -1;
 
-	private boolean[] fConnectedCore;
+	private BitSet fConnectedCore;
 
-	private boolean[] fCoreBuffer;
+	private BitSet fCoreBuffer;
 
 	public CoreTracker(HFloodSM source, int pid) {
 		fSource = source;
 		fPid = pid;
 
-		fConnectedCore = new boolean[fSource.graph().size()];
-		fCoreBuffer = new boolean[fSource.graph().size()];
+		fConnectedCore = new BitSet();
+		fCoreBuffer = new BitSet();
 	}
 
 	@Override
-	public void eventPerformed(ISimulationEngine state, Schedulable schedulable,
-			double nextShift) {
+	public void eventPerformed(ISimulationEngine state,
+			Schedulable schedulable, double nextShift) {
 		INetwork network = state.network();
 
 		// If source has already been reached, we are in maintenance mode.
@@ -53,12 +54,12 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 			recomputeCore(network);
 			updateCore(network);
 		}
+
 		// Otherwise it's our first time seeing the source as reached.
 		else if (fInitial && fSource.isReached()) {
 			fInitial = false;
 			fCoreSize = recomputeCore(network);
-			System.arraycopy(fCoreBuffer, 0, fConnectedCore, 0,
-					fCoreBuffer.length);
+			fConnectedCore.or(fCoreBuffer);
 		}
 	}
 
@@ -67,7 +68,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 	 */
 	private int recomputeCore(final INetwork network) {
 		IndexedNeighborGraph graph = fSource.graph();
-		Arrays.fill(fCoreBuffer, false);
+		fCoreBuffer.clear();
 
 		// Special case: if the source is down, means the connected core
 		// has size zero.
@@ -85,14 +86,16 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 	}
 
 	private void updateCore(INetwork network) {
-		for (int i = 0; i < fConnectedCore.length; i++) {
+		for (int i = fConnectedCore.nextSetBit(0); i >= 0; i = fConnectedCore
+				.nextSetBit(i + 1)) {
 			// Node was reachable from the source, but is no longer.
-			if (fConnectedCore[i] && !fCoreBuffer[i]) {
-				HFloodSM protocol = (HFloodSM) network.process(i).getProtocol(fPid);
+			if (fConnectedCore.get(i) && !fCoreBuffer.get(i)) {
+				HFloodSM protocol = (HFloodSM) network.process(i).getProtocol(
+						fPid);
 				// If node wasn't reached by the dissemination protocol, it
 				// gets sawed off of the core.
 				if (!protocol.isReached()) {
-					fConnectedCore[i] = false;
+					fConnectedCore.set(i, false);
 					fCoreSize--;
 					System.err.println("Core shrunk to " + fCoreSize);
 				}
@@ -101,7 +104,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 	}
 
 	public boolean isPartOfConnectedCore(int id) {
-		return fConnectedCore[id];
+		return fConnectedCore.get(id);
 	}
 
 	public int coreSize() {
@@ -120,7 +123,7 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	@Override
 	public Boolean getMetric(int i) {
-		return fConnectedCore[i];
+		return fConnectedCore.get(i);
 	}
 
 }

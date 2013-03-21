@@ -204,8 +204,9 @@ public class DiffusionExperimentWorker extends Worker {
 			System.out.println("ID:" + ids[i] + " " + i);
 		}
 
-		return new ExperimentData(experiment, graph, source, ids, cloudNodes(
-				experiment, ids, fFixedMap), churnSeeds);
+		return new ExperimentData(experiment, graph, source, ids,
+				fYaoChurn != null ? cloudNodes(experiment, ids, fFixedMap)
+						: null, churnSeeds);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -235,8 +236,8 @@ public class DiffusionExperimentWorker extends Worker {
 		// Static experiment.
 		if (exp.experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
-			elements = builder.build(fPeriod, exp.experiment, source,
-					fSelector, graph, diffusion);
+			elements = builder.build(fPeriod, exp.experiment,
+					exp.experiment.root, source, fSelector, graph, diffusion);
 		}
 
 		// Experiments with churn.
@@ -485,6 +486,12 @@ public class DiffusionExperimentWorker extends Worker {
 	@Override
 	protected boolean isPreciseEnough(Object aggregate) {
 		return false;
+	}
+
+	@Override
+	protected boolean quiet(int id, Serializable data) {
+		// Static simulations are quiet.
+		return fYaoChurn == null;
 	}
 
 }

@@ -1,4 +1,4 @@
-package it.unitn.disi.churn.connectivity;
+package it.unitn.disi.churn.intersync.markov;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +11,7 @@ import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.config.IndexedReader;
 import it.unitn.disi.churn.config.MatrixReader;
+import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.churn.diffusion.graph.BranchingGraphGenerator;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
@@ -81,31 +82,34 @@ public class UnfoldExperiment implements Runnable {
 
 		fWeightReader = IndexedReader.createReader(new File(weightIndex),
 				new File(weights));
+
 	}
 
 	@Override
 	public void run() {
-		TEExperimentHelper helper = new TEExperimentHelper(fYaoConfig, fCores,
-				fRepeats, fBurnin);
+		ExoticSimHelper helper = new ExoticSimHelper(fRepeats, fBurnin,
+				fYaoConfig, new TEExperimentHelper(fYaoConfig, fCores,
+						fRepeats, fBurnin));
 		try {
 			run0(helper);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		} finally {
 			try {
-				helper.shutdown(true);
+				helper.getDelegate().shutdown(true);
 			} catch (InterruptedException e) {
 				// Swallows.
 			}
 		}
 	}
 
-	private void run0(TEExperimentHelper helper) throws Exception {
+	private void run0(ExoticSimHelper helper) throws Exception {
 		IScheduleIterator it = fSchedule.iterator();
 		Integer id;
 
 		TableWriter writer = new TableWriter(System.out, "id", "source",
-				"target", "paths", "delay");
+				"target", "delay");
+		
 		while ((id = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(id, fProvider);
 			IndexedNeighborGraph original = fProvider.subgraph(experiment.root);
@@ -117,66 +121,17 @@ public class UnfoldExperiment implements Runnable {
 			Integer target = MiscUtils.indexOf(ids,
 					Integer.parseInt(experiment.attributes.get("target")));
 
-			// Unfolds the top-k graph.
-			ITopKEstimator estimator = TEExperimentHelper.EDGE_DISJOINT.call(
-					original, weights);
-
-			ArrayList<? extends PathEntry> paths = estimator.topKShortest(
-					source, target, fK);
-
-			Pair<IndexedNeighborGraph, int[]> result = BranchingGraphGenerator
-					.branchingGraph(paths.toArray(new PathEntry[paths.size()]));
-
-			int[] map = result.b;
-			IndexedNeighborGraph unfolded = result.a;
-
-			System.err.println("Unfolded graph " + experiment.root + ". Size: "
-					+ original.size() + " => " + unfolded.size() + ".");
-
-			Pair<Integer, int[]> idxMap = fCoupled ? indexMap(map) : null;
-
-			// Fullsims it:
-			List<INodeMetric<Double>> metrics = helper
-					.bruteForceSimulateMulti(unfolded, 0, 0,
-							remap(map, experiment.lis),
-							remap(map, experiment.dis), ids,
-							fCoupled ? idxMap.b : null);
-
-			INodeMetric<Double> metric = metrics.get(0);
+			double delay = helper.unfoldedGraphSimulation(original,
+					TEExperimentHelper.EDGE_DISJOINT, source, target, weights,
+					experiment.lis, experiment.dis, fK, fCoupled);
 
 			writer.set("id", experiment.root);
 			writer.set("source", ids[source]);
 			writer.set("target", ids[target]);
-			writer.set("paths", paths.size());
-			writer.set("split", idxMap.a);
-			writer.set("delay", metric.getMetric(1));
+			writer.set("delay", delay);
 
 			writer.emmitRow();
 		}
-	}
-
-	/**
-	 * Index map returns and array with node mappings. If map[i] = j, this means
-	 * that nodes i and j are actually the same.
-	 * 
-	 * @param map
-	 * @return
-	 */
-	private Pair<Integer, int[]> indexMap(final int[] map) {
-		int[] idxMap = new int[map.length];
-		int remapped = 0;
-		for (int i = 0; i < map.length; i++) {
-			// Returns the *first index* of map[i].
-			int idx = MiscUtils.indexOf(map, map[i]);
-			idxMap[i] = idx;
-			if (idx != i) {
-				System.err.println("Remapped vertex " + i + " to " + idx + ".");
-				remapped++;
-			}
-
-		}
-
-		return new Pair<Integer, int[]>(remapped, idxMap);
 	}
 
 	private double[][] readWeights(Integer id, int[] ids,
@@ -193,14 +148,6 @@ public class UnfoldExperiment implements Runnable {
 			throw new IllegalStateException();
 		}
 		return weights;
-	}
-
-	private double[] remap(int[] map, double[] attribute) {
-		double[] mapped = new double[map.length];
-		for (int i = 0; i < mapped.length; i++) {
-			mapped[i] = attribute[map[i]];
-		}
-		return mapped;
 	}
 
 }

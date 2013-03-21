@@ -102,8 +102,8 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 					System.err.println("Burnin sim (normal) - " + row);
 
 					metric = simHelper().bruteForceSimulate(e.toString(),
-							graph, e.root, source, e.lis, e.dis, ids,
-							cloudNodes, fCloudSims, fMonitorClusters, false);
+							graph, e.root, source, e.lis, e.dis, cloudNodes,
+							fCloudSims, fMonitorClusters, false);
 					System.err.println("PERF: O "
 							+ (System.nanoTime() - startTime));
 
@@ -115,8 +115,8 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 
 					startTime = System.nanoTime();
 					metric = simHelper().bruteForceSimulate(e.toString(),
-							graph, e.root, source, e.lis, e.dis, ids,
-							cloudNodes, fCloudSims, fMonitorClusters, true);
+							graph, e.root, source, e.lis, e.dis, cloudNodes,
+							fCloudSims, fMonitorClusters, true);
 					System.err.println("PERF: OA "
 							+ (System.nanoTime() - startTime));
 
@@ -127,7 +127,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 					System.err.println("Fast sim - " + row);
 					startTime = System.nanoTime();
 					metric = simHelper().bruteForceSimulateMulti(graph, e.root,
-							source, e.lis, e.dis, ids, null);
+							source, e.lis, e.dis, null);
 					System.err.println("PERF: N "
 							+ (System.nanoTime() - startTime));
 

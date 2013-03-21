@@ -43,10 +43,6 @@ public class CloudTCE extends SimpleRDTCE {
 		if (fSampler != null) {
 			fSampler.reached(node, this);
 		}
-
-		if (isDone()) {
-			engine.unbound(this);
-		}
 	}
 
 	protected boolean isUp(int node, INetwork network) {

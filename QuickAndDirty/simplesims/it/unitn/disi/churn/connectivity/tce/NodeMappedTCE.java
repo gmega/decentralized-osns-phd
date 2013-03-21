@@ -17,7 +17,7 @@ public class NodeMappedTCE extends SimpleRDTCE {
 	private final int[] fNodeMap;
 
 	public NodeMappedTCE(IndexedNeighborGraph graph, int source, int[] nodeMap) {
-		super(graph, source);
+		super(graph, source, false);
 		fNodeMap = nodeMap;
 	}
 

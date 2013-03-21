@@ -52,7 +52,7 @@ public class P2PEgonetShortestPath implements ITransformer {
 			throws Exception {
 
 		MatrixReader reader = new MatrixReader(new FileInputStream(
-				fPairwiseEstimates), "id", "source", "target", "ttc");
+				fPairwiseEstimates), "id", "source", "target", "delay");
 
 		IGraphProvider provider = fConfig.graphProvider();
 

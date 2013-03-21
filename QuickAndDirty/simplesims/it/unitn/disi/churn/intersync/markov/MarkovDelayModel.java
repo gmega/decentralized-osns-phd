@@ -1,10 +1,6 @@
 package it.unitn.disi.churn.intersync.markov;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import jphase.ContPhaseVar;
-import jphase.DenseContPhaseVar;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.DunnTopK;
@@ -31,28 +27,38 @@ public class MarkovDelayModel {
 	 */
 	private final DunnTopK fEstimator;
 
+	private final long fMaxSize;
+
 	public MarkovDelayModel(IndexedNeighborGraph graph, double[] lambdaUp,
-			double[] lambdaDown, int k) {
+			double[] lambdaDown) {
 		this(graph, estimateWeights(graph, lambdaUp, lambdaDown), lambdaUp,
-				lambdaDown);
+				lambdaDown, Long.MAX_VALUE);
+	}
+	
+	public MarkovDelayModel(IndexedNeighborGraph graph, double[] lambdaUp,
+			double[] lambdaDown, long maxSize) {
+		this(graph, estimateWeights(graph, lambdaUp, lambdaDown), lambdaUp,
+				lambdaDown, maxSize);
 	}
 
 	public MarkovDelayModel(IndexedNeighborGraph graph, double[][] weights,
-			double[] lambdaUp, double[] lambdaDown) {
+			double[] lambdaUp, double[] lambdaDown, long maxSize) {
 		// Ideally we should copy these...
 		fMu = lambdaUp;
 		fGamma = lambdaDown;
+		fMaxSize = count(maxSize);
 
 		fEstimator = new DunnTopK(graph, weights, Mode.VertexDisjoint);
 	}
-
+	
 	public double estimateDelay(int i, int j, int k) {
 		ArrayList<PathEntry> paths = fEstimator.topKShortest(i, j, k);
 		ArrayList<PhaseTypeDistribution> pathDelays = phaseVars(paths);
 		return minimum(pathDelays).expectation();
 	}
 
-	private ArrayList<PhaseTypeDistribution> phaseVars(ArrayList<PathEntry> paths) {
+	private ArrayList<PhaseTypeDistribution> phaseVars(
+			ArrayList<PathEntry> paths) {
 		ArrayList<PhaseTypeDistribution> delays = new ArrayList<PhaseTypeDistribution>();
 		for (PathEntry entry : paths) {
 			PhaseTypeDistribution phaseVar = phaseVar(entry.path);
@@ -74,28 +80,38 @@ public class MarkovDelayModel {
 
 			pathDelay = pathDelay == null ? edgeDelay : pathDelay
 					.sum(edgeDelay);
-			
+
 		}
 
 		return pathDelay;
 	}
 
-	private PhaseTypeDistribution minimum(ArrayList<PhaseTypeDistribution> pathDelays) {
+	private PhaseTypeDistribution minimum(
+			ArrayList<PhaseTypeDistribution> pathDelays) {
 		PhaseTypeDistribution minimum = pathDelays.get(0);
 		for (int i = 1; i < pathDelays.size(); i++) {
-			minimum = minimum.min(pathDelays.get(i));
+			try {
+				PhaseTypeDistribution next = minimum.min(pathDelays.get(i),
+						fMaxSize);
+				if (next != null) {
+					minimum = next;
+				}
+			} catch (OutOfMemoryError error) {
+				System.err.println("Allocation too large.");
+			}
 		}
 		return minimum;
 	}
 
+	public static long count(long maxSize) {
+		return maxSize/(Double.SIZE/Byte.SIZE);
+	}
+
 	public static double[][] genMatrix(double mu_u, double mu_v,
 			double gamma_u, double gamma_v) {
-		return new double[][] { 
-				{ -(gamma_u + gamma_v),	gamma_v, 			gamma_u,			0 },
-				{ mu_v, 				-(gamma_u + mu_v), 	0, 					gamma_u },
-				{ mu_u, 				0, 					-(mu_u + gamma_v), 	gamma_v }, 
-				{ 0,					0,					0,					0 } 
-			};
+		return new double[][] { { -(gamma_u + gamma_v), gamma_v, gamma_u, 0 },
+				{ mu_v, -(gamma_u + mu_v), 0, gamma_u },
+				{ mu_u, 0, -(mu_u + gamma_v), gamma_v }, { 0, 0, 0, 0 } };
 	}
 
 	public static double[] alpha(double mu_u, double mu_v, double gamma_u,

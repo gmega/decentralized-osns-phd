@@ -62,7 +62,7 @@ public class PhaseTypeExperiment implements Runnable {
 		PhaseTypeDistribution d1 = distribution(0);
 		PhaseTypeDistribution d2 = distribution(1);
 
-		PhaseTypeDistribution min = d1.min(d2);
+		PhaseTypeDistribution min = d1.min(d2, 1000);
 
 		sample(d1, d2, min, writer);
 	}

@@ -1,85 +1,129 @@
 package it.unitn.disi.churn.diffusion;
 
-import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
 import it.unitn.disi.simulator.core.INetwork;
 
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Random;
+import java.util.Collections;
+import java.util.Comparator;
 
-public class ComponentSelector implements IPeerSelector {
+/**
+ * Port of the P2P'11 ComponentSelector. This is a simple implementation, which
+ * will not work if:
+ * <ol>
+ * <li>there is churn;</li>
+ * <li>the source is not the node at the center of the egonet.</li>
+ * </ol>
+ * 
+ * @author giuliano
+ */
+public class ComponentSelector implements IPeerSelector{
 
-	private TarjanState fState = new TarjanState();
+	private static final BitSet ALL_DONE = null;
 
-	private BiasedCentralitySelector fAnticentrality;
+	private IPeerSelector fDelegate;
 
-	private BitSet fAllForbidden = new BitSet();
+	private IndexedNeighborGraph fCached;
 
-	private BitSet fComponent = new BitSet();
+	private ArrayList<BitSet> fMembership;
 
-	public ComponentSelector(Random rnd) {
-		fAnticentrality = new BiasedCentralitySelector(rnd, true);
+	private BitSet fForbidden = new BitSet();
+	
+	public ComponentSelector(IPeerSelector delegate) {
+		fDelegate = delegate;
 	}
 
 	@Override
 	public int selectPeer(int selecting, IndexedNeighborGraph graph,
 			BitSet forbidden, INetwork sim) {
-		// Gets the subgraph composed by the nodes reachable from the selecting
-		// node, minus the selecting node itself, and the nodes already reached
-		// by the message.
-		int[] excluded = collectExcluded(forbidden, selecting);
-		LightweightStaticGraph subgraph = LightweightStaticGraph.subgraph(
-				(LightweightStaticGraph) graph, excluded);
 
-		// Computes components.
-		GraphAlgorithms.tarjan(fState, subgraph);
-
-		// Selects the largest component.
-		TIntArrayList biggest = fState.components.get(0);
-		for (TIntArrayList candidate : fState.components) {
-			if (candidate.size() > biggest.size()) {
-				biggest = candidate;
-			}
+		if (isNew(graph)) {
+			fMembership = recomputeComponents(selecting, graph);
+			fForbidden.clear();
+			fCached = graph;
 		}
 
-		// Now, forbids access to all nodes that are not in the selected
-		// component.
-		toBitSet(biggest, fComponent, excluded);
-		allowOnly(fComponent, graph);
+		BitSet component = nextComponent();
+
+		if (component == ALL_DONE) {
+			return fDelegate.selectPeer(selecting, graph, forbidden, sim);
+		}
+
+		// Forbids everybody except those in the current component.
+		fForbidden.set(0, graph.size(), true);
+		fForbidden.xor(component);
+		
+		// Nodes forbidden upfront by the client remain forbidden.
+		fForbidden.or(forbidden);
 
 		// Picks a node in using anticentrality.
-		return fAnticentrality.selectPeer(selecting, graph, fAllForbidden, sim);
+		return fDelegate.selectPeer(selecting, graph, fForbidden, sim);
 
 	}
 
-	private void toBitSet(TIntArrayList biggest, BitSet set, int [] excluded) {
-		for (int i = 0; i < biggest.size(); i++) {
-			set.set(excluded[biggest.get(i)]);
+	private ArrayList<BitSet> recomputeComponents(final int root,
+			IndexedNeighborGraph graph) {
+		
+		if (graph.directed()) {
+			throw new IllegalArgumentException(
+					"ComponentSelector does not work "
+							+ "on directed graphs.");
 		}
-	}
 
-	private void allowOnly(BitSet biggest, IndexedNeighborGraph graph) {
-		fAllForbidden.clear();
-		for (int i = 0; i < graph.size(); i++) {
-			if (!biggest.get(i)) {
-				fAllForbidden.set(i);
+		// Edges in and out of the root are forbidden.
+		IEdgeFilter sourceExclude = new IEdgeFilter() {
+			@Override
+			public boolean isForbidden(int i, int j) {
+				return i == root || j == root;
 			}
+		};
+
+		// Nodes already known to be part of a component.
+		BitSet explored = new BitSet();
+
+		ArrayList<BitSet> membership = new ArrayList<BitSet>();
+		for (int i = 0; i < graph.size(); i++) {
+			// The root is out.
+			if (i == root) {
+				continue;
+			}
+
+			// Node already part of a component, skip it.
+			if (explored.get(i)) {
+				continue;
+			}
+
+			// New component.
+			BitSet reachable = new BitSet();
+			GraphAlgorithms.dfs(graph, i, reachable, sourceExclude);
+			membership.add(reachable);
+			explored.or(reachable);
 		}
+
+		// Sorts by size.
+		Collections.sort(membership, new Comparator<BitSet>() {
+			@Override
+			public int compare(BitSet o1, BitSet o2) {
+				return o1.cardinality() - o2.cardinality();
+			}
+		});
+		
+		return membership;
+	}
+	
+	private BitSet nextComponent() {
+		if (fMembership.size() > 0) {
+			return fMembership.remove(fMembership.size() - 1);
+		}
+		
+		return ALL_DONE;
 	}
 
-	private int[] collectExcluded(BitSet forbidden, int selecting) {
-		TIntArrayList excluded = new TIntArrayList();
-		excluded.add(selecting);
-
-		for (int i = forbidden.nextSetBit(0); i >= 0; i = forbidden
-				.nextSetBit(i)) {
-			excluded.add(i);
-		}
-
-		return excluded.toArray();
+	private boolean isNew(IndexedNeighborGraph graph) {
+		return graph != fCached;
 	}
 
 }
