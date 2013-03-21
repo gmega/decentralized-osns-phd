@@ -1,6 +1,6 @@
 package it.unitn.disi.unitsim;
 
-import it.unitn.disi.statistics.EWMAStats;
+import it.unitn.disi.math.EWMAStats;
 import it.unitn.disi.unitsim.cd.ICDUnitExperiment;
 import it.unitn.disi.utils.logging.StructuredLog;
 import it.unitn.disi.utils.logging.TabularLogManager;
