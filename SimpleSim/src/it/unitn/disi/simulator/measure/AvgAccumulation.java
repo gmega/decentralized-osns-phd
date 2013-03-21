@@ -1,6 +1,6 @@
 package it.unitn.disi.simulator.measure;
 
-import it.unitn.disi.statistics.StatUtils;
+import it.unitn.disi.math.StatUtils;
 import peersim.util.IncrementalStats;
 
 public class AvgAccumulation implements IMetricAccumulator<Double> {

@@ -82,11 +82,15 @@ public class TaskExecutor {
 				});
 	}
 
-	public synchronized void start(String task, int taskBlock) {
+	public void start(String task, int taskBlock) {
+		start(task, taskBlock, false);
+	}
+
+	public synchronized void start(String task, int taskBlock, boolean quiet) {
 		fTasks = taskBlock;
 		fConsumed = taskBlock;
 		fBlockSize = taskBlock;
-		fTracker = Progress.synchronizedTracker(Progress.newTracker(task,
+		fTracker = quiet ? Progress.nullTracker() : Progress.synchronizedTracker(Progress.newTracker(task,
 				taskBlock));
 		fTracker.startTask();
 	}

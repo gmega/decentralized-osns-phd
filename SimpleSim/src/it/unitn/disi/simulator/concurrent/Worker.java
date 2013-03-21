@@ -117,7 +117,7 @@ public abstract class Worker implements Runnable, Application {
 
 		final int iterations = fRepeat - fState.iteration;
 
-		fExecutor.start(label(id, data), iterations);
+		fExecutor.start(label(id, data), iterations, quiet(id, data));
 
 		Thread submitter = new Thread(new Runnable() {
 			@Override
@@ -184,16 +184,6 @@ public abstract class Worker implements Runnable, Application {
 		}
 
 		return null;
-	}
-
-	protected String label(int id, Object data) {
-		StringBuffer lab = new StringBuffer();
-		lab.append("Task: ");
-		lab.append(id);
-		lab.append(", ");
-		lab.append(data.toString());
-
-		return lab.toString();
 	}
 
 	private void startTask(int id, Object data) {
@@ -285,6 +275,9 @@ public abstract class Worker implements Runnable, Application {
 	 * @return
 	 */
 	protected abstract Serializable resultAggregate(int id, Object data);
+	
+	protected abstract void aggregate(Object aggregate, int i,
+			SimulationTask task);
 
 	/**
 	 * @param aggregate
@@ -293,9 +286,40 @@ public abstract class Worker implements Runnable, Application {
 	 */
 	protected abstract boolean isPreciseEnough(Object aggregate);
 
-	protected abstract void aggregate(Object aggregate, int i,
-			SimulationTask task);
-
 	protected abstract void outputResults(Object results);
+
+	/**
+	 * Provides a label to the current task, to be displayed by the progress
+	 * tracker.
+	 * 
+	 * @param id
+	 *            scheduler id of the task.
+	 * @param data
+	 *            object returned by {@link #load(Integer)}.
+	 * @return a string label to be printed on screen.
+	 */
+	protected String label(int id, Object data) {
+		StringBuffer lab = new StringBuffer();
+		lab.append("Task: ");
+		lab.append(id);
+		lab.append(", ");
+		lab.append(data.toString());
+
+		return lab.toString();
+	}
+
+	/**
+	 * Controls whether a task requires progress tracking or not.
+	 * 
+	 * @param id
+	 *            scheduler id of the task.
+	 * @param data
+	 *            object returned by {@link #load(Integer)}.
+	 * @return <code>true</code> if progress tracking is required, o
+	 *         <code>false</code> otherwise.
+	 */
+	protected boolean quiet(int id, Serializable data) {
+		return false;
+	}
 
 }

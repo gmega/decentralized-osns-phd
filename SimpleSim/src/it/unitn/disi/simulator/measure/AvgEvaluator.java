@@ -3,7 +3,7 @@ package it.unitn.disi.simulator.measure;
 import java.io.Serializable;
 
 import peersim.util.IncrementalStats;
-import it.unitn.disi.statistics.StatUtils;
+import it.unitn.disi.math.StatUtils;
 
 /**
  * {@link AvgEvaluator} applies standard statistical techniques to evaluate the

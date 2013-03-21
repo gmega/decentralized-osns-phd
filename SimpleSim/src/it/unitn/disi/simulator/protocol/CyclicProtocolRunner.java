@@ -46,7 +46,6 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 
 		if (done == network.size()) {
 			fDone = true;
-			System.err.println("END TIME: " + engine.clock().rawTime());
 			engine.unbound(this);
 		}
 	}
