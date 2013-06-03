@@ -53,6 +53,27 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
+	EDSimulationEngine(IProcess[] processes, Descriptor[] descriptors,
+			int extraPermits, double burnin) {
+
+		this(processes, burnin, extraPermits);
+		setEventObservers(descriptors);
+		setStopPermits(fBindingObservers.size() + extraPermits);
+	}
+
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Convenience constructor. Same as:
+	 * 
+	 * EDSimulationEngine(processes, burnin, 1);
+	 * 
+	 * @deprecated this method is now deprecated. Use {@link EngineBuilder}
+	 *             instead.
+	 * 
+	 * @see #EDSimulationEngine(IProcess[], double, int)
+	 */
+	@Deprecated
 	public EDSimulationEngine(IProcess[] processes, double burnin) {
 		this(processes, burnin, 1);
 	}
@@ -61,6 +82,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	/**
 	 * Constructs a new event-drive simulation engine.
+	 * 
+	 * @deprecated this method is deprecated. Used {@link EngineBuilder}
+	 *             instead.
 	 * 
 	 * @param processes
 	 *            the {@link IProcess}es that compose this system.
@@ -72,6 +96,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 *            corresponds to the number of times that {@link #stop()} has to
 	 *            be called before the simulation stops.
 	 */
+	@Deprecated
 	public EDSimulationEngine(IProcess[] processes, double burnin,
 			int stopPermits) {
 		fProcesses = processes;
@@ -91,27 +116,45 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
+	/**
+	 * @deprecated use {@link EngineBuilder} instead.
+	 * 
+	 * @param observers
+	 */
+	@Deprecated
 	public void setEventObservers(
 			List<Pair<Integer, ? extends IEventObserver>> observers) {
 		checkNotRunning();
-		// Allocates event observer arrays.
-		fObservers = new IEventObserver[maxType(observers) + 1][];
-		for (int i = 0; i < fObservers.length; i++) {
-			fObservers[i] = new IEventObserver[count(observers, i)];
+
+		Descriptor[] descriptors = new Descriptor[observers.size()];
+		int i = 0;
+		for (Pair<Integer, ? extends IEventObserver> pair : observers) {
+			boolean binding = pair.b.getClass().getAnnotation(Binding.class) != null;
+			descriptors[i] = new Descriptor(pair.b, pair.a, binding, true);
+			i++;
+		}
+
+		setEventObservers(descriptors);
+
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void setEventObservers(Descriptor... descriptors) {
+		fObservers = new IEventObserver[maxType(descriptors) + 1][];
+		for (int i = 0; i < descriptors.length; i++) {
+			fObservers[i] = new IEventObserver[count(descriptors, i)];
 			int k = 0;
-			for (int j = 0; j < observers.size(); j++) {
-				Pair<Integer, ? extends IEventObserver> delegate = observers
-						.get(j);
-				if (delegate.a == i) {
-					fObservers[i][k++] = delegate.b;
-					if (delegate.b.getClass().getAnnotation(Binding.class) != null) {
-						fBindingObservers.add(delegate.b);
+			for (int j = 0; j < descriptors.length; j++) {
+				Descriptor descriptor = descriptors[j];
+				if (descriptor.type == i && descriptor.listening) {
+					fObservers[i][k++] = descriptor.observer;
+					if (descriptor.binding) {
+						fBindingObservers.add(descriptor.observer);
 					}
 				}
 			}
 		}
-
-		fStopPermits += fBindingObservers.size();
 	}
 
 	// -------------------------------------------------------------------------
@@ -358,6 +401,16 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	// -------------------------------------------------------------------------
 
 	private void updateProcessCount(Schedulable p) {
+		/**
+		 * XXX I ran the microbenchmark from:
+		 * 
+		 * http://www.theeggeadventure.com/wikimedia/index.php/
+		 * InstanceOf_Performance
+		 * 
+		 * on a 1.7 JVM under Linux 3.2.0-31-generic (Ubuntu), 64 bits. Found
+		 * that instanceof performance, with the server VM, is almost as fast as
+		 * a type comparison. So I keep instanceof for being more flexible.
+		 */
 		if (!(p instanceof IProcess)) {
 			return;
 		}
@@ -372,11 +425,10 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
-	private int count(List<Pair<Integer, ? extends IEventObserver>> delegates,
-			int type) {
+	private int count(Descriptor[] descriptors, int type) {
 		int count = 0;
-		for (Pair<Integer, ? extends IEventObserver> pair : delegates) {
-			if (pair.a == type) {
+		for (Descriptor descriptor : descriptors) {
+			if (descriptor.type == type && descriptor.listening) {
 				count++;
 			}
 		}
@@ -385,11 +437,11 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
-	private int maxType(List<Pair<Integer, ? extends IEventObserver>> delegates) {
+	private int maxType(Descriptor[] descriptors) {
 		int mx = -1;
-		for (Pair<Integer, ? extends IEventObserver> pair : delegates) {
-			if (pair.a > mx) {
-				mx = pair.a;
+		for (Descriptor descriptor : descriptors) {
+			if (descriptor.type > mx && descriptor.listening) {
+				mx = descriptor.type;
 			}
 		}
 
@@ -484,4 +536,20 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	}
 
 	// -------------------------------------------------------------------------
+
+	public static class Descriptor {
+
+		public final boolean binding;
+		public final boolean listening;
+		public final int type;
+		public final IEventObserver observer;
+
+		public Descriptor(IEventObserver observer, int type, boolean binding,
+				boolean listening) {
+			this.binding = binding;
+			this.type = type;
+			this.observer = observer;
+			this.listening = listening;
+		}
+	}
 }

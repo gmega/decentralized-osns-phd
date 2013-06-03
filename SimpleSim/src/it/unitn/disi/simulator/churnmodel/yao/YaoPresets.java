@@ -26,9 +26,6 @@ public class YaoPresets {
 	// Preset average generators.
 	// ------------------------------------------------------------------------
 
-	private static final IDistribution fUniform = new UniformDistribution(
-			new Random());
-
 	private static final NamedF1<IDistribution, IAverageGenerator> YAO_GENERATOR = new NamedF1<IDistribution, IAverageGenerator>(
 			"yao", null) {
 		{
@@ -56,7 +53,7 @@ public class YaoPresets {
 	private static final NamedF1<IDistribution, IDistributionGenerator> VERY_HEAVY_TAILED = new NamedF1<IDistribution, IDistributionGenerator>(
 			"VH", null) {
 		{
-			ret(new DualPareto(1.5, 1.5, 2.0, 2.0, 0, 0, "VH", fUniform));
+			ret(new DualPareto(1.5, 1.5, 2.0, 2.0, 0, 0, "VH", a));
 		}
 	};
 
@@ -68,12 +65,12 @@ public class YaoPresets {
 
 				@Override
 				public IDistribution uptimeDistribution(double li) {
-					return new Exponential(1.0 / li, fUniform);
+					return new Exponential(1.0 / li, a);
 				}
 
 				@Override
 				public IDistribution downtimeDistribution(double di) {
-					return new GeneralizedPareto(3.0, 2.0 * di, 0.0, fUniform);
+					return new GeneralizedPareto(3.0, 2.0 * di, 0.0, a);
 				}
 
 				@Override
@@ -93,12 +90,12 @@ public class YaoPresets {
 
 				@Override
 				public IDistribution uptimeDistribution(double li) {
-					return new Exponential(1.0 / li, fUniform);
+					return new Exponential(1.0 / li, a);
 				}
 
 				@Override
 				public IDistribution downtimeDistribution(double di) {
-					return new Exponential(2.0 / di, fUniform);
+					return new Exponential(1.0 / di, a);
 				}
 
 				@Override

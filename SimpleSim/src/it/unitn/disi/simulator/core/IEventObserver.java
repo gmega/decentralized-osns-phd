@@ -18,8 +18,10 @@ public interface IEventObserver extends Serializable {
 	 * 
 	 * @param engine
 	 *            a reference to the simulation engine.
+	 *            
 	 * @param schedulable
 	 *            the {@link Schedulable} that got scheduled.
+	 *            
 	 * @param nextShift
 	 *            the next time instant, in raw time, at which this
 	 *            {@link Schedulable} will be scheduled. If this is not known,
