@@ -16,7 +16,7 @@ public class EngineBuilder {
 	private List<Descriptor> fObservers;
 
 	private List<IProcess> fProcesses;
-
+	
 	private int fExtraPermits;
 
 	private double fBurnin;
@@ -59,6 +59,12 @@ public class EngineBuilder {
 		fObservers.add(new Descriptor(observer, type, binding, listening));
 	}
 
+	public void addProcess(IProcess... processes) {
+		for (IProcess process : processes) {
+			fProcesses.add(process);
+		}
+	}
+
 	/**
 	 * @param burnin
 	 *            the burning period for this simulation, during which no
@@ -85,7 +91,7 @@ public class EngineBuilder {
 
 	/**
 	 * Constructs an {@link EDSimulationEngine}, based on the parameters set on
-	 * the builder. This method can only be called once. 
+	 * the builder. This method can only be called once.
 	 * 
 	 * @return a new {@link EDSimulationEngine}.
 	 */
