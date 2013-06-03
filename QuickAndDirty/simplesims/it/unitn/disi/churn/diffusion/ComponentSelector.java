@@ -47,11 +47,10 @@ public class ComponentSelector implements IPeerSelector{
 		}
 
 		BitSet component = nextComponent();
-
 		if (component == ALL_DONE) {
 			return fDelegate.selectPeer(selecting, graph, forbidden, sim);
 		}
-
+		
 		// Forbids everybody except those in the current component.
 		fForbidden.set(0, graph.size(), true);
 		fForbidden.xor(component);

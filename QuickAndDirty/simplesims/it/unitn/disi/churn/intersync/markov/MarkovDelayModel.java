@@ -2,6 +2,11 @@ package it.unitn.disi.churn.intersync.markov;
 
 import java.util.ArrayList;
 
+import peersim.util.IncrementalStats;
+
+import jphase.DenseContPhaseVar;
+import jphase.generator.NeutsContPHGenerator;
+
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.DunnTopK;
 import it.unitn.disi.graph.analysis.DunnTopK.Mode;
@@ -52,9 +57,40 @@ public class MarkovDelayModel {
 	}
 	
 	public double estimateDelay(int i, int j, int k) {
+		return minimum(topkPhaseVars(i, j, k)).expectation();
+	}
+
+	
+	public IncrementalStats estimateDelayMC(int i, int j, int k, int n) {
+		ArrayList<NeutsContPHGenerator> vars = generators(topkPhaseVars(i, j, k));
+		
+		IncrementalStats stats = new IncrementalStats();
+		for (int l = 0; l < n; l++) {
+			// Samples.
+			double sample = Double.POSITIVE_INFINITY;
+			for (int m = 0; m < vars.size(); m++) {
+				sample = Math.min(sample, vars.get(m).getRandom());
+			}
+			stats.add(sample);
+		}
+		
+		return stats;
+	}
+	
+	private ArrayList<NeutsContPHGenerator> generators(
+			ArrayList<PhaseTypeDistribution> topkPhaseVars) {
+		ArrayList<NeutsContPHGenerator> jPhase = new ArrayList<NeutsContPHGenerator>();
+		for (int i = 0; i < topkPhaseVars.size(); i++) {
+			jPhase.add(new NeutsContPHGenerator(topkPhaseVars.get(i)
+					.getJPhaseDistribution()));
+		}
+		return jPhase;
+	}
+
+	private ArrayList<PhaseTypeDistribution> topkPhaseVars(int i, int j, int k) {
 		ArrayList<PathEntry> paths = fEstimator.topKShortest(i, j, k);
 		ArrayList<PhaseTypeDistribution> pathDelays = phaseVars(paths);
-		return minimum(pathDelays).expectation();
+		return pathDelays;
 	}
 
 	private ArrayList<PhaseTypeDistribution> phaseVars(

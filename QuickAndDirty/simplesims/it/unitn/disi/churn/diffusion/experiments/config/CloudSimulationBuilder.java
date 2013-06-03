@@ -3,6 +3,7 @@ package it.unitn.disi.churn.diffusion.experiments.config;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
 import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
+import it.unitn.disi.churn.diffusion.CoreTracker;
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
@@ -98,7 +99,7 @@ public class CloudSimulationBuilder {
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			final int source, int messages, int quenchDesync,
 			boolean dissemination, boolean cloudAssist, boolean baseline,
-			IProcess[] processes) {
+			boolean trackCores, IProcess[] processes) {
 
 		int permits = 0;
 		permits += dissemination ? 1 : 0;
@@ -135,6 +136,15 @@ public class CloudSimulationBuilder {
 
 			addWickAndAnchor(source, messages, "", prots, processes, engine,
 					cloud, observers, metrics);
+
+			if (trackCores) {
+				CoreTracker tracker = new CoreTracker(prots[source], fGraph,
+						source, pid);
+				observers.add(new Pair<Integer, IEventObserver>(
+						IProcess.PROCESS_SCHEDULABLE_TYPE, tracker));
+				metrics.add(tracker);
+			}
+
 			pid++;
 		}
 
@@ -228,9 +238,9 @@ public class CloudSimulationBuilder {
 	private double maxQuenchAge() {
 		if (!fRandomize) {
 			return fPeriod;
-		} 
-		
-		return (fFixedFraction*fPeriod) + 2*(1 - fFixedFraction)*fPeriod;
+		}
+
+		return (fFixedFraction * fPeriod) + 2 * (1 - fFixedFraction) * fPeriod;
 	}
 
 	private CloudAccessor[] create(EDSimulationEngine engine,

@@ -18,10 +18,12 @@ import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.diffusion.CoreTracker;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
@@ -79,11 +81,14 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "quench_desync", defaultValue = "1")
 	private int fQuenchDesync;
 
+	@Attribute(value = "track.cores", defaultValue = "false")
+	private boolean fTrackCores;
+
 	@Attribute(value = "cloudassisted", defaultValue = "false")
 	private boolean fCloudAssisted;
 
-	@Attribute(value = "fast", defaultValue = "false")
-	private boolean f;
+	@Attribute(value = "summary", defaultValue = "false")
+	private boolean fSummary;
 
 	@Attribute(value = "randomized", defaultValue = "false")
 	private boolean fRandomized;
@@ -99,6 +104,11 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private IGraphProvider fProvider;
 
+	private BitSet fFixedMap;
+
+	// -------------------------------------------------------------------------
+	// Reflex that writers have an inflexible API.
+
 	private TableWriter fLatencyWriter;
 
 	private TableWriter fP2PCostWriter;
@@ -109,7 +119,11 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private TableWriter fBaselineCStatWriter;
 
-	private BitSet fFixedMap;
+	private TableWriter fSummaryWriter;
+
+	private TableWriter fCoreTracker;
+
+	// -------------------------------------------------------------------------
 
 	public DiffusionExperimentWorker(
 			@Attribute(Attribute.AUTO) IResolver resolver,
@@ -150,11 +164,21 @@ public class DiffusionExperimentWorker extends Worker {
 				System.out), "id", "source", "target", "b.totup", "b.totnup",
 				"b.totime", "b.updup", "b.updnup", "b.updtime");
 
+		fSummaryWriter = new TableWriter(
+				new PrefixedWriter("SUM:", System.out), "id", "rdavg", "rdsum",
+				"size");
+
+		fCoreTracker = fTrackCores ? new TableWriter(new PrefixedWriter("COR:",
+				System.out), "id", "source", "rdavg", "rdsum", "edavg",
+				"edsum", "size", "coresize") : null;
+
 		System.err.println("-- Simulation seeds are "
 				+ (fFixSeed ? "fixed" : "variable") + ".");
 		fFixedMap = fixedNodeMap();
 		System.err.println("There are " + fFixedMap.cardinality()
 				+ " fixed nodes.");
+
+		System.err.println("-- Selector is (" + fSelector + ").");
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
@@ -200,10 +224,6 @@ public class DiffusionExperimentWorker extends Worker {
 		int source = Integer.parseInt(experiment.attributes.get("node"));
 		int[] ids = fProvider.verticesOf(experiment.root);
 
-		for (int i = 0; i < ids.length; i++) {
-			System.out.println("ID:" + ids[i] + " " + i);
-		}
-
 		return new ExperimentData(experiment, graph, source, ids,
 				fYaoChurn != null ? cloudNodes(experiment, ids, fFixedMap)
 						: null, churnSeeds);
@@ -237,7 +257,8 @@ public class DiffusionExperimentWorker extends Worker {
 		if (exp.experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
 			elements = builder.build(fPeriod, exp.experiment,
-					exp.experiment.root, source, fSelector, graph, diffusion);
+					MiscUtils.indexOf(exp.ids, exp.experiment.root), source,
+					fSelector, graph, diffusion);
 		}
 
 		// Experiments with churn.
@@ -257,7 +278,7 @@ public class DiffusionExperimentWorker extends Worker {
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
 					fLoginGrace, fFixedFraction, fRandomized).build(source,
 					fMessages, fQuenchDesync, fP2PSims, fCloudAssisted,
-					fBaseline, processes);
+					fBaseline, fTrackCores, processes);
 		}
 
 		return new SimulationTask(
@@ -333,13 +354,44 @@ public class DiffusionExperimentWorker extends Worker {
 		@SuppressWarnings("unchecked")
 		Pair<ExperimentData, MetricsCollector> pair = (Pair<ExperimentData, MetricsCollector>) aggregate;
 		pair.b.add(metrics);
+
+		// Core tracking is done per sample.
+		if (fTrackCores) {
+			int size = exp.graph.size();
+
+			CoreTracker tracker = (CoreTracker) Utils.lookup(metrics,
+					"coremembership", Boolean.class);
+
+			double edsum = sum(Utils.lookup(metrics, "ed", Double.class), size,
+					tracker);
+			double rdsum = sum(Utils.lookup(metrics, "rd", Double.class), size,
+					tracker);
+
+			fCoreTracker.set("id", exp.experiment.root);
+			fCoreTracker.set("source", exp.source);
+			fCoreTracker.set("rdavg", rdsum / size);
+			fCoreTracker.set("rdsum", rdsum);
+			fCoreTracker.set("edavg", edsum / size);
+			fCoreTracker.set("edsum", edsum);
+			fCoreTracker.set("size", size);
+			fCoreTracker.set("coresize", tracker.coreSize());
+			fCoreTracker.emmitRow();
+		}
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	protected void outputResults(Object resultObj) {
-		@SuppressWarnings("unchecked")
 		Pair<ExperimentData, MetricsCollector> result = (Pair<ExperimentData, MetricsCollector>) resultObj;
+		if (fSummary) {
+			outputSummarized(result);
+		} else {
+			outputRegular(result);
+		}
 
+	}
+
+	private void outputRegular(Pair<ExperimentData, MetricsCollector> result) {
 		printLatencies("", fLatencyWriter, result.a, result.b);
 		printP2PCosts(fP2PCostWriter, result.a, result.b);
 
@@ -351,6 +403,39 @@ public class DiffusionExperimentWorker extends Worker {
 						result.b);
 			}
 		}
+	}
+
+	private void outputSummarized(Pair<ExperimentData, MetricsCollector> result) {
+		MetricsCollector metrics = result.b;
+		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric("rd");
+
+		int size = result.a.graph.size();
+		double sum = sum(rd, size);
+
+		fSummaryWriter.set("id", result.a.experiment.root);
+		fSummaryWriter.set("rdsum", sum);
+		fSummaryWriter.set("size", size);
+		fSummaryWriter.set("rdavg", sum / size);
+
+		fSummaryWriter.emmitRow();
+	}
+
+	private double sum(INodeMetric<Double> rd, int size) {
+		double sum = 0;
+		for (int i = 0; i < size; i++) {
+			sum += rd.getMetric(i);
+		}
+		return sum;
+	}
+
+	private double sum(INodeMetric<Double> rd, int size, CoreTracker tracker) {
+		double sum = 0;
+		for (int i = 0; i < size; i++) {
+			if (tracker.isPartOfConnectedCore(i)) {
+				sum += rd.getMetric(i);
+			}
+		}
+		return sum;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -1,12 +1,10 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.Arrays;
 import java.util.BitSet;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.analysis.GraphAlgorithms;
 import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.Schedulable;
@@ -23,12 +21,17 @@ import it.unitn.disi.simulator.measure.INodeMetric;
  * @author giuliano
  */
 public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
+	private static final long serialVersionUID = 1L;
 
 	private boolean fInitial = true;
 
-	private final HFloodSM fSource;
+	private final DisseminationServiceImpl fSource;
+
+	private final IndexedNeighborGraph fGraph;
 
 	private final int fPid;
+
+	private final int fSourceId;
 
 	private int fCoreSize = -1;
 
@@ -36,9 +39,12 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 
 	private BitSet fCoreBuffer;
 
-	public CoreTracker(HFloodSM source, int pid) {
+	public CoreTracker(DisseminationServiceImpl source,
+			IndexedNeighborGraph graph, int sourceId, int pid) {
 		fSource = source;
 		fPid = pid;
+		fSourceId = sourceId;
+		fGraph = graph;
 
 		fConnectedCore = new BitSet();
 		fCoreBuffer = new BitSet();
@@ -67,16 +73,16 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 	 * Computes the set of nodes reachable from the source.
 	 */
 	private int recomputeCore(final INetwork network) {
-		IndexedNeighborGraph graph = fSource.graph();
+		IndexedNeighborGraph graph = fGraph;
 		fCoreBuffer.clear();
 
 		// Special case: if the source is down, means the connected core
 		// has size zero.
-		if (!network.process(fSource.id()).isUp()) {
+		if (!network.process(fSourceId).isUp()) {
 			return 0;
 		}
 
-		return GraphAlgorithms.dfs(graph, fSource.id(), fCoreBuffer,
+		return GraphAlgorithms.dfs(graph, fSourceId, fCoreBuffer,
 				new IEdgeFilter() {
 					@Override
 					public boolean isForbidden(int i, int j) {
@@ -90,14 +96,13 @@ public class CoreTracker implements IEventObserver, INodeMetric<Boolean> {
 				.nextSetBit(i + 1)) {
 			// Node was reachable from the source, but is no longer.
 			if (fConnectedCore.get(i) && !fCoreBuffer.get(i)) {
-				HFloodSM protocol = (HFloodSM) network.process(i).getProtocol(
-						fPid);
+				DisseminationServiceImpl protocol = (DisseminationServiceImpl) network
+						.process(i).getProtocol(fPid);
 				// If node wasn't reached by the dissemination protocol, it
 				// gets sawed off of the core.
 				if (!protocol.isReached()) {
 					fConnectedCore.set(i, false);
 					fCoreSize--;
-					System.err.println("Core shrunk to " + fCoreSize);
 				}
 			}
 		}

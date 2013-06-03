@@ -42,25 +42,34 @@ public class TopKGraphAverages extends AbstractWorker {
 	@Attribute("weight-index")
 	private String fWeightIdx;
 
-	@Attribute(value = "maxsize")
-	private long fMaxSize;
-
 	@Attribute("k")
 	private int fK;
 
-	@Attribute(value = "simulate", defaultValue = "true")
-	private boolean fSimulate;
+	@Attribute(value = "maxsize", defaultValue = "9223372036854775807")
+	private long fMaxSize;
 
-	@Attribute(value = "independent", defaultValue = "false")
+	@Attribute(value = "sim.unfolded", defaultValue = "false")
+	private boolean fSimulateUnfolded;
+
+	@Attribute(value = "sim.independent", defaultValue = "false")
 	private boolean fSimulateIndependent;
+
+	@Attribute(value = "sim.montecarlo", defaultValue = "false")
+	private boolean fMonteCarlo;
+
+	@Attribute(value = "sim.fulltopk", defaultValue = "false")
+	private boolean fSimulateTopkGroundTruth;
+
+	@Attribute(value = "sim.full", defaultValue = "false")
+	private boolean fSimulateDelayGroundTruth;
 
 	@Attribute(value = "scheduler.type", defaultValue = "default")
 	private String fIterator;
 
 	private IResolver fResolver;
 
-	public TopKGraphAverages(@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute("mode") String mode) throws IOException {
+	public TopKGraphAverages(@Attribute(Attribute.AUTO) IResolver resolver)
+			throws IOException {
 		super(resolver, "id");
 		fResolver = resolver;
 	}
@@ -74,7 +83,8 @@ public class TopKGraphAverages extends AbstractWorker {
 				"source", "target", "delay");
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
-				"id", "source", "target", "mdelay", "sdelay", "ipdelay");
+				"id", "source", "target", "gdelay", "fdelay", "mdelay", "sdelay",
+				"ipdelay");
 
 		ExoticSimHelper helper = new ExoticSimHelper(fRepeat, fBurnin,
 				fYaoConfig, simHelper());
@@ -104,13 +114,27 @@ public class TopKGraphAverages extends AbstractWorker {
 			wReader.streamRepositioned();
 			double[][] w = wReader.read(ids);
 
+			double fullSimDelay = -1;
+			double topkFullSimDelay = -1;
 			double simDelay = -1;
 			double indDelay = -1;
 
-			if (fSimulate) {
+			if (fSimulateUnfolded) {
 				simDelay = helper.unfoldedGraphSimulation(graph,
 						TEExperimentHelper.VERTEX_DISJOINT, rSource, rTarget,
 						w, exp.lis, exp.dis, fK, true);
+			}
+
+			if (fSimulateDelayGroundTruth) {
+				fullSimDelay = Utils.lookup(simHelper().bruteForceSimulate("full", graph,
+						exp.root, rSource, exp.lis, exp.dis, new int[] {},
+						false, false, true), "ed", Double.class).getMetric(target);
+			}
+
+			if (fSimulateTopkGroundTruth) {
+				topkFullSimDelay = simHelper().topKEstimate("Topk", graph,
+						TEExperimentHelper.VERTEX_DISJOINT, exp.root, rSource,
+						rTarget, w, exp.lis, exp.dis, fK, ids).c;
 			}
 
 			if (fSimulateIndependent) {
@@ -121,11 +145,16 @@ public class TopKGraphAverages extends AbstractWorker {
 
 			MarkovDelayModel mdm = new MarkovDelayModel(graph,
 					lambdaUp(exp.lis), lambdaDown(exp.dis), fMaxSize);
-			double modelDelay = mdm.estimateDelay(rSource, rTarget, fK);
+
+			double modelDelay = fMonteCarlo ? mdm.estimateDelayMC(rSource,
+					rTarget, fK, fRepeat).getAverage() : mdm.estimateDelay(
+					rSource, rTarget, fK);
 
 			writer.set("id", exp.root);
 			writer.set("source", source);
 			writer.set("target", target);
+			writer.set("gdelay", fullSimDelay);
+			writer.set("fdelay", topkFullSimDelay);
 			writer.set("sdelay", simDelay);
 			writer.set("mdelay", modelDelay);
 			writer.set("ipdelay", indDelay);

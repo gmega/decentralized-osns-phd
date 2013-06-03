@@ -96,8 +96,8 @@ public class SamplingExperiment implements ITransformer {
 	private void simSamples(EDSimulationEngine engine) {
 		System.err.println("No burn-in.");
 		final IncrementalStats stats = new IncrementalStats();
-		EdgeDelaySampler sexp = new EdgeDelaySampler(engine, repetitions,
-				cloud, new IValueObserver() {
+		EdgeDelaySampler sexp = new EdgeDelaySampler(repetitions, cloud,
+				new IValueObserver() {
 					@Override
 					public void observe(double value, ISimulationEngine engine) {
 						stats.add(value);
@@ -120,7 +120,7 @@ public class SamplingExperiment implements ITransformer {
 		};
 
 		for (int i = 0; i < repetitions; i++) {
-			EdgeDelaySampler sexp = new EdgeDelaySampler(engine, 1, cloud, obs);
+			EdgeDelaySampler sexp = new EdgeDelaySampler(1, cloud, obs);
 			runSim(burnin, sexp);
 		}
 	}
@@ -130,8 +130,8 @@ public class SamplingExperiment implements ITransformer {
 		final TDoubleArrayList p2All = new TDoubleArrayList();
 
 		System.err.print("Generating...");
-		EdgeDelaySampler sexp = new EdgeDelaySampler(engine, repetitions,
-				cloud, IValueObserver.NULL_OBSERVER) {
+		EdgeDelaySampler sexp = new EdgeDelaySampler(repetitions, cloud,
+				IValueObserver.NULL_OBSERVER) {
 			@Override
 			protected void register(double p2Login, TDoubleArrayList p1Logins,
 					ISimulationEngine engine) {

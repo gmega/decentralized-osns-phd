@@ -30,23 +30,21 @@ public class EdgeDelaySampler implements IEventObserver {
 
 	private final boolean fCloud;
 
-	public EdgeDelaySampler(EDSimulationEngine engine, int samples,
-			boolean cloud, IValueObserver observer) {
+	public EdgeDelaySampler(int samples, boolean cloud, IValueObserver observer) {
 		fSamples = samples;
 		fPendingUps = new TDoubleArrayList();
 		fObserver = observer;
 		fCloud = cloud;
-		fParent = engine;
 	}
 
 	@Override
-	public void eventPerformed(ISimulationEngine state,
+	public void eventPerformed(ISimulationEngine engine,
 			Schedulable schedulable, double nextShift) {
 
 		IProcess process = (IProcess) schedulable;
-		INetwork p = state.network();
+		INetwork p = engine.network();
 
-		double time = state.clock().time();
+		double time = engine.clock().time();
 
 		// We saw a login event for P1.
 		if (process.id() == p.process(0).id() && process.isUp()) {
@@ -55,12 +53,12 @@ public class EdgeDelaySampler implements IEventObserver {
 
 		// P1 and P2 are synchronized.
 		if (senderUp(p) && p.process(1).isUp()) {
-			register(time, fPendingUps, state);
+			register(time, fPendingUps, engine);
 			fPendingUps.resetQuick();
 		}
 
 		if (isDone()) {
-			fParent.unbound(this);
+			engine.unbound(this);
 		}
 	}
 

@@ -400,20 +400,20 @@ public class TEExperimentHelper {
 		ArrayList<? extends PathEntry> paths = tpk.topKShortest(source, target,
 				k);
 
-		for (PathEntry entry : paths) {
-			StringBuffer buffer = new StringBuffer("TPK:[ ");
-			for (int i = 0; i < entry.path.length; i++) {
-				buffer.append("(");
-				buffer.append(entry.path[i]);
-				buffer.append(", ");
-				buffer.append(lIs[entry.path[i]]);
-				buffer.append(", ");
-				buffer.append(dIs[entry.path[i]]);
-				buffer.append("), ");
-			}
-			buffer.append("]");
-			System.out.println(buffer);
-		}
+//		for (PathEntry entry : paths) {
+//			StringBuffer buffer = new StringBuffer("TPK:[ ");
+//			for (int i = 0; i < entry.path.length; i++) {
+//				buffer.append("(");
+//				buffer.append(entry.path[i]);
+//				buffer.append(", ");
+//				buffer.append(lIs[entry.path[i]]);
+//				buffer.append(", ");
+//				buffer.append(dIs[entry.path[i]]);
+//				buffer.append("), ");
+//			}
+//			buffer.append("]");
+//			System.out.println(buffer);
+//		}
 
 		for (int i = 0; i < paths.size(); i++) {
 			System.err.println(Arrays.toString(paths.get(i).path));
