@@ -292,21 +292,22 @@ public class GraphAlgorithms {
 	 *            filtering is desided, use {@link #NULL_FILTER}.
 	 */
 	public static int dfs(IndexedNeighborGraph graph, int source,
-			boolean[] reachable, IEdgeFilter filter) {
-		Arrays.fill(reachable, false);
-		reachable[source] = true;
+			BitSet reachable, IEdgeFilter filter) {
+		reachable.clear();
+		reachable.set(source, true);
 		return recDFS(graph, source, reachable, filter) + 1;
 	}
 
 	// --------------------------------------------------------------------------
 
 	private static int recDFS(IndexedNeighborGraph graph, int source,
-			boolean[] reachable, IEdgeFilter filter) {
+			BitSet reachable, IEdgeFilter filter) {
 		int reached = 0;
 		for (int i = 0; i < graph.degree(source); i++) {
 			int neighbor = graph.getNeighbor(source, i);
-			if (!reachable[neighbor] && !filter.isForbidden(source, neighbor)) {
-				reachable[neighbor] = true;
+			if (!reachable.get(neighbor)
+					&& !filter.isForbidden(source, neighbor)) {
+				reachable.set(neighbor, true);
 				reached = reached + recDFS(graph, neighbor, reachable, filter)
 						+ 1;
 			}

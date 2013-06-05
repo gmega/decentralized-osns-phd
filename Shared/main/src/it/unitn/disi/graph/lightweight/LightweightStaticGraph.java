@@ -79,7 +79,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 	// --------------------------------------------------------------------------
 
 	public static LightweightStaticGraph subgraph(
-			LightweightStaticGraph source, int[] vertices) {
+			LightweightStaticGraph source, int...vertices) {
 		LSGCreateSubgraph subgraph = new LSGCreateSubgraph(vertices);
 		return subgraph.transform(source);
 	}

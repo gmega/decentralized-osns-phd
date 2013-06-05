@@ -88,6 +88,21 @@ public class LSGTransformsTest {
 			Assert.assertTrue(generatedSet.containsAll(referenceSet));
 		}
 	}
+	
+	@Test
+	public void testTrivialSubgraph() throws Exception {
+		LightweightStaticGraph graph = LightweightStaticGraph.fromAdjacency(
+				new int[][]{
+						{1},
+						{0}
+				});
+		
+		LightweightStaticGraph single = LightweightStaticGraph.subgraph(graph, 1);
+		Assert.assertEquals(1, single.size());
+		Assert.assertEquals(0, single.edgeCount());
+		Assert.assertEquals(0, single.fastGetNeighbours(0).length);
+	}
+
 
 	@Test
 	public void testSubgraph() throws Exception {

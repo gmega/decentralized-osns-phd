@@ -22,13 +22,17 @@ public class LSGCreateSubgraph extends LSGTransformer {
 		LightweightStaticGraph graph = sourceGraph();
 		for (int vertex : fVertices) {
 			int source = fMapper.map(vertex);
+			action.addVertex(source);
+			
 			int degree = graph.degree(vertex);
 			for (int i = 0; i < degree; i++) {
 				int neighbor = graph.getNeighbor(vertex, i);
 				if (!fMapper.isMapped(neighbor)) {
 					continue;
 				}
-				action.edge(source, fMapper.map(neighbor));
+				int mappedNeighbor = fMapper.map(neighbor);
+				action.addVertex(mappedNeighbor);
+				action.edge(source, mappedNeighbor);
 			}
 		}
 	}

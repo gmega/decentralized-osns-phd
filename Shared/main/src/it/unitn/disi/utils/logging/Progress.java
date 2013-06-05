@@ -3,6 +3,7 @@ package it.unitn.disi.utils.logging;
 import org.apache.log4j.Logger;
 
 public class Progress {
+
 	public static IProgressTracker newTracker(String title, int totalTicks) {
 		return new TextProgressTracker(title, totalTicks) {
 			@Override
@@ -52,5 +53,9 @@ public class Progress {
 			}
 			
 		};
+	}
+	
+	public static IProgressTracker nullTracker() {
+		return IProgressTracker.NULL_TRACKER;
 	}
 }

@@ -26,7 +26,7 @@ public abstract class LSGCreator {
 	}
 
 	public LightweightStaticGraph create() {
-		
+
 		// Phase 1 - compute memory requirements.
 		fLogger.info("1: Computing required storage.");
 		CountAction ca = new CountAction();
@@ -95,6 +95,23 @@ public abstract class LSGCreator {
 	}
 
 	public interface Action {
+		/**
+		 * Declares the existence of a vertex.
+		 * 
+		 * @param id
+		 *            the identifier of the new vertex.
+		 */
+		public void addVertex(int id);
+
+		/**
+		 * Creates a directed edge between vertices. This function will incur a
+		 * call to {@link #addVertex(int)} for each non-existing vertex.
+		 * 
+		 * @param source
+		 *            the source vertex.
+		 * @param target
+		 *            the target vertex.
+		 */
 		public void edge(int source, int target);
 	}
 
@@ -108,15 +125,19 @@ public abstract class LSGCreator {
 
 		@Override
 		public void edge(int source, int target) {
-			int sourceCount = 0;
-			fMaxId = Math.max(source, fMaxId);
-			fMaxId = Math.max(target, fMaxId);
+			addVertex(source);
+			addVertex(target);
+			int sourceCount = fSizes.get(source);
+			fCells++;
+			fSizes.set(source, sourceCount + 1);
+		}
+
+		@Override
+		public void addVertex(int id) {
+			fMaxId = Math.max(id, fMaxId);
 			if (fSizes.size() <= fMaxId) {
 				MiscUtils.grow(fSizes, fMaxId + 1, 0);
 			}
-			sourceCount = fSizes.get(source);
-			fCells++;
-			fSizes.set(source, sourceCount + 1);
 		}
 
 		public int cells() {
@@ -150,6 +171,10 @@ public abstract class LSGCreator {
 		@Override
 		public void edge(int source, int target) {
 			fAdjacency[source][fCounters[source]++] = target;
+		}
+
+		@Override
+		public void addVertex(int id) {
 		}
 	}
 }

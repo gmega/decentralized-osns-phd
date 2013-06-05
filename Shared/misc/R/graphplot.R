@@ -18,7 +18,8 @@ plot_neighborhood <- function(g, root_id) {
 #
 multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col, 
 		pos = NULL, names = NULL, xlim=NULL, quantiles, quantilep=0.95, 
-		round_dec=2, legend.cex=1, marker.col="darkgray", complete_lines = FALSE, ...) {
+		round_dec=2, legend.cex=1, legend.ncol = 1, 
+		marker.col="darkgray", complete_lines = FALSE, ...) {
 	
 	qs <- c()
 	qs[1:length(datasets)] <- 0
@@ -84,7 +85,8 @@ multicdf <- function(datasets, freqsets = NULL, lwd, lty, cdf_fun=ecdf, col,
       ypos <- pos[2]
     }
 	
-		legend(x=xpos, y=ypos, names, lwd=lwd, lty=lty, col=col, bg="white", cex=legend.cex)
+		legend(x=xpos, y=ypos, names, lwd=lwd, lty=lty, 
+		  col=col, bg="white", cex=legend.cex, ncol=legend.ncol)
 	}
 	
 	return(qs)

@@ -13,7 +13,7 @@ import peersim.graph.Graph;
 
 /**
  * Answers three simple questions about a graph: whether it is simple, and
- * whether it is directed.
+ * whether it is directed, and how many edges/vertices it has.
  * 
  * @author giuliano
  */

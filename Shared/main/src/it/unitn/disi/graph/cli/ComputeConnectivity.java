@@ -38,7 +38,7 @@ public class ComputeConnectivity extends GraphAnalyzer {
 				
 				state.ensureSize(egonet.size());
 				writer.set("id", i);
-				writer.set("components", GraphAlgorithms.tarjan(state, graph));
+				writer.set("components", GraphAlgorithms.tarjan(state, egonet));
 				writer.set("degree", egonet.size());
 				writer.emmitRow();
 			}

@@ -19,47 +19,50 @@ import peersim.config.AutoConfig;
  */
 @AutoConfig
 public class Simplify extends GraphAnalyzer {
-	
+
 	public Simplify(@Attribute("decoder") String decoder) {
 		super(decoder);
 	}
-	
+
 	@Override
 	protected void transform(LightweightStaticGraph graph, OutputStream oup)
 			throws IOException {
 		byte[] buf = new byte[4];
-		IProgressTracker tracker = Progress.newTracker("simplifying", graph.size());
+		IProgressTracker tracker = Progress.newTracker("simplifying",
+				graph.size());
 		tracker.startTask();
-		boolean [] seen = new boolean[graph.size()];
+
+		long dups = 0;
+		long edges = 0;
+		boolean[] seen = new boolean[graph.size()];
 		for (int i = 0; i < graph.size(); i++) {
-			/** Ad-hoc optimization based on the assumption that
-			 * low degree nodes are abundant.
-			 */
-			if (graph.degree(i) < 2) {
-				continue;
-			}
-			
 			// Scouts for duplicate edges and self-loops.
 			seen[i] = true;
-			int [] neighbors = graph.fastGetNeighbours(i);
+			int[] neighbors = graph.fastGetNeighbours(i);
 			for (int j = 0; j < neighbors.length; j++) {
 				int neighbor = neighbors[j];
 				if (!seen[neighbor]) {
 					oup.write(CodecUtils.encode(i, buf));
 					oup.write(CodecUtils.encode(neighbor, buf));
-					seen[j] = true;
+					seen[neighbor] = true;
+				} else {
+					dups++;
 				}
+				edges++;
 			}
-			
+
 			// Clears the set.
 			seen[i] = false;
 			for (int j = 0; j < neighbors.length; j++) {
 				seen[neighbors[j]] = false;
 			}
-			
+
 			tracker.tick();
 		}
-		
+
 		tracker.done();
+
+		System.err.println("Eliminated " + dups + " edges out of " + edges
+				+ ".");
 	}
 }
