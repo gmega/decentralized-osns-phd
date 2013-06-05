@@ -256,7 +256,7 @@ public class CloudAccessor implements IEventObserver, IMessageObserver {
 				return;
 			}
 
-			if (!fSim.network().process(fId).isUp()) {
+			if (!process().isUp()) {
 				throw new IllegalStateException(
 						"A node that is down cannot access the cloud.");
 			}

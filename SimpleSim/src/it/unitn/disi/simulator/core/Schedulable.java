@@ -12,7 +12,7 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 		Serializable {
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private final ArrayList<IEventObserver> fObservers;
 
 	public Schedulable() {
@@ -29,7 +29,7 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 	public abstract boolean isExpired();
 
 	/**
-	 * Method called by the scheduler when this object gets scheduled.
+	 * Method called by the scheduler when this schedulable gets scheduled.
 	 * Schedulables that need to be rescheduled should update their scheduling
 	 * time during the execution of this method.
 	 * 
@@ -55,11 +55,12 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 
 	/**
 	 * Subscribes an observer to the state changes of this process. <BR>
-	 * <BR>
-	 * The main caveat of installing an observer directly into an
-	 * {@link Schedulable} is that its {@link IEventObserver#isBinding()} method
-	 * <b>will not</b> be honored. {@link IEventObserver}s installed in
-	 * {@link Schedulable}s are, therefore, always non-binding.
+	 * Subscribing an observer directly to a process is useful for observers
+	 * that are not interested in state changes from all processes, for
+	 * efficiency reasons. <BR>
+	 * Process-specific observers can also be binding, as long as they are
+	 * registered as non-listening (see
+	 * {@link EngineBuilder#addObserver(IEventObserver, int, boolean, boolean)}.
 	 */
 	public void addObserver(IEventObserver observer) {
 		fObservers.add(observer);
@@ -72,7 +73,7 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 	}
 
 	@Override
-	public final int compareTo(Schedulable other) {
+	public int compareTo(Schedulable other) {
 		return (int) Math.signum(this.time() - other.time());
 	}
 }

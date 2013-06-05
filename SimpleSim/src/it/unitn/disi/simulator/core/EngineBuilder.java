@@ -16,12 +16,12 @@ public class EngineBuilder {
 	private List<Descriptor> fObservers;
 
 	private List<IProcess> fProcesses;
-	
+
 	private int fExtraPermits;
 
 	private double fBurnin;
 
-	private boolean fUsed;
+	private EDSimulationEngine fInstance;
 
 	/**
 	 * Creates a new {@link EngineBuilder}. A builder can only build a single
@@ -96,7 +96,7 @@ public class EngineBuilder {
 	 * @return a new {@link EDSimulationEngine}.
 	 */
 	public EDSimulationEngine engine() {
-		if (fUsed) {
+		if (fInstance != null) {
 			throw new IllegalStateException(
 					"This builder can only build one engine.");
 		}
@@ -106,12 +106,26 @@ public class EngineBuilder {
 			processes[i] = fProcesses.get(i);
 		}
 
-		fUsed = true;
-
-		return new EDSimulationEngine(
+		fInstance = new EDSimulationEngine(
 				fProcesses.toArray(new IProcess[fProcesses.size()]),
 				fObservers.toArray(new Descriptor[fObservers.size()]),
 				fExtraPermits, fBurnin);
+
+		return fInstance;
+	}
+
+	/**
+	 * @return a references to a (possibly yet unbuilt)
+	 *         {@link ISimulationEngine}. This will resolve to <code>null</code>
+	 *         until {@link #engine()} is called.
+	 */
+	public IReference<ISimulationEngine> reference() {
+		return new IReference<ISimulationEngine>() {
+			@Override
+			public ISimulationEngine get() {
+				return fInstance;
+			}
+		};
 	}
 
 	private int countBinding(List<Descriptor> observers) {

@@ -9,6 +9,10 @@ import java.lang.annotation.RetentionPolicy;
  * calls {@link EDSimulationEngine#unbound(IEventObserver)}.
  * 
  * @author giuliano
+ * 
+ * @deprecated this is a complicated, inflexible, and unnecessary mechanism. Use
+ *             {@link EngineBuilder#addObserver(IEventObserver, int, boolean, boolean)}
+ *             instead, setting the 'binding' parameter to true.
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Binding {
