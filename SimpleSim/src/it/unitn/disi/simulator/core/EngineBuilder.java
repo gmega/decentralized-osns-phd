@@ -17,7 +17,11 @@ public class EngineBuilder {
 
 	private List<IProcess> fProcesses;
 
+	private List<Schedulable> fPreschedulables;
+
 	private int fExtraPermits;
+
+	private int fBinding;
 
 	private double fBurnin;
 
@@ -30,6 +34,7 @@ public class EngineBuilder {
 	public EngineBuilder() {
 		fObservers = new ArrayList<Descriptor>();
 		fProcesses = new ArrayList<IProcess>();
+		fPreschedulables = new ArrayList<Schedulable>();
 	}
 
 	/**
@@ -57,11 +62,18 @@ public class EngineBuilder {
 	public void addObserver(IEventObserver observer, int type, boolean binding,
 			boolean listening) {
 		fObservers.add(new Descriptor(observer, type, binding, listening));
+		fBinding += binding ? 1 : 0;
 	}
 
 	public void addProcess(IProcess... processes) {
 		for (IProcess process : processes) {
 			fProcesses.add(process);
+		}
+	}
+
+	public void preschedule(Schedulable... schedulables) {
+		for (Schedulable schedulable : schedulables) {
+			fPreschedulables.add(schedulable);
 		}
 	}
 
@@ -86,7 +98,7 @@ public class EngineBuilder {
 	 * @return an estimate of the number of permits this engine has.
 	 */
 	public int permits() {
-		return countBinding(fObservers) + fExtraPermits;
+		return fBinding + fExtraPermits;
 	}
 
 	/**
@@ -99,6 +111,12 @@ public class EngineBuilder {
 		if (fInstance != null) {
 			throw new IllegalStateException(
 					"This builder can only build one engine.");
+		}
+
+		// Guard against it as it's hardly the case that this would be intended.
+		if (permits() == 0) {
+			throw new IllegalStateException("The configured engine has no "
+					+ "permits.");
 		}
 
 		IProcess[] processes = new IProcess[fProcesses.size()];
@@ -126,17 +144,6 @@ public class EngineBuilder {
 				return fInstance;
 			}
 		};
-	}
-
-	private int countBinding(List<Descriptor> observers) {
-		int count = 0;
-		for (Descriptor descriptor : observers) {
-			if (descriptor.binding) {
-				count++;
-			}
-		}
-
-		return count;
 	}
 
 	// -------------------------------------------------------------------------

@@ -142,7 +142,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private void setEventObservers(Descriptor... descriptors) {
 		fObservers = new IEventObserver[maxType(descriptors) + 1][];
-		for (int i = 0; i < descriptors.length; i++) {
+		for (int i = 0; i < fObservers.length; i++) {
 			fObservers[i] = new IEventObserver[count(descriptors, i)];
 			int k = 0;
 			for (int j = 0; j < descriptors.length; j++) {

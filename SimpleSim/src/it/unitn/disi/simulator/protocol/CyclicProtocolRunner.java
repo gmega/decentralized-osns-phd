@@ -1,6 +1,5 @@
 package it.unitn.disi.simulator.protocol;
 
-import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
@@ -8,7 +7,6 @@ import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
 
-@Binding
 public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		IEventObserver {
 
@@ -45,6 +43,7 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		}
 
 		if (done == network.size()) {
+			System.err.println("Push protocol runner is done.");
 			fDone = true;
 			engine.unbound(this);
 		}

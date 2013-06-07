@@ -6,7 +6,6 @@ import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.IBroadcastObserver
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
-import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
@@ -23,7 +22,6 @@ import it.unitn.disi.simulator.measure.INodeMetric;
  * receiver delay, which it exports by means of the {@link INodeMetric}
  * interface.
  */
-@Binding
 public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	private static final long serialVersionUID = 1L;
@@ -260,8 +258,6 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		// We're no longer binding.
 		if (fMessages == 0) {
 			engine.unbound(this);
-			engine.stop();
-
 			fAll.stopTrackingSession(engine.clock().rawTime());
 		}
 	}

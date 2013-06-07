@@ -2,15 +2,18 @@ package it.unitn.disi.churn.diffusion;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Random;
 
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
+import it.unitn.disi.simulator.protocol.PeriodicAction;
 
 /**
  * {@link DisseminationServiceImpl} knows how to disseminate messages. Ideally
@@ -44,25 +47,37 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private State fState;
 
+	private IndexedNeighborGraph fGraph;
+
 	private BroadcastTracker fCollector = new BroadcastTracker();
 
 	private HFloodSM[] fPushProtocols = new HFloodSM[2];
+
+	private final Antientropy fAntientropy;
 
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
 
 	private ArrayList<IBroadcastObserver> fBcastObservers = new ArrayList<IBroadcastObserver>();
 
-	public DisseminationServiceImpl(int pid, IndexedNeighborGraph graph,
-			IPeerSelector selector, IProcess process,
-			ILiveTransformer transformer,
+	public DisseminationServiceImpl(int pid, Random rnd,
+			IndexedNeighborGraph graph, IPeerSelector selector,
+			IProcess process, ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			boolean oneShot, int quenchDesync, double maxQuenchAge) {
+			IReference<ISimulationEngine> engine, boolean oneShot,
+			int quenchDesync, double maxQuenchAge, double pushTimeout,
+			double antientropyCycle, double antientropyDelay,
+			int antientropyPrio) {
 
 		fPushProtocols[UPDATE] = new HFloodUP(graph, selector, process,
-				transformer, this);
+				transformer, this, pushTimeout);
 
 		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, selector, process,
-				transformer, this);
+				transformer, this, pushTimeout);
+
+		fAntientropy = new Antientropy(engine, rnd, process.id(),
+				antientropyPrio, antientropyCycle, antientropyDelay);
+
+		fGraph = graph;
 
 		fRunner = runner;
 		fPid = pid;
@@ -71,6 +86,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		fMaxQuenchAge = maxQuenchAge;
 		fQuenchDesync = quenchDesync;
 		fQuenchRound = 0;
+	}
+
+	public PeriodicAction antientropy() {
+		return fAntientropy;
 	}
 
 	public void post(IMessage genericMessage, ISimulationEngine engine) {
@@ -137,12 +156,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				fPushProtocols[NO_UPDATE].stop();
 			}
 			fPushProtocols[NO_UPDATE].nextCycle(engine, process);
-
 			fQuenchRound = fQuenchDesync;
 		}
 
 		fQuenchRound--;
-
 		// If dissemination is done, we're done.
 		if (fPushProtocols[UPDATE].getState() == State.DONE) {
 			fState = fOneShot ? State.DONE : State.IDLE;
@@ -203,8 +220,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		public HFloodNUP(IndexedNeighborGraph graph, IPeerSelector selector,
 				IProcess process, ILiveTransformer transformer,
-				IProtocolReference<HFloodSM> reference) {
-			super(graph, selector, process, transformer, reference);
+				IProtocolReference<HFloodSM> reference, double timeout) {
+			super(graph, selector, process, transformer, reference, timeout);
 		}
 
 		@Override
@@ -236,8 +253,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		public HFloodUP(IndexedNeighborGraph graph, IPeerSelector selector,
 				IProcess process, ILiveTransformer transformer,
-				IProtocolReference<HFloodSM> reference) {
-			super(graph, selector, process, transformer, reference);
+				IProtocolReference<HFloodSM> reference, double timeout) {
+			super(graph, selector, process, transformer, reference, timeout);
 		}
 
 		public void rearm() {
@@ -259,41 +276,55 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		}
 	}
 
-	//
-	// class Antientropy implements ICyclicProtocol {
-	//
-	// private final IndexedNeighborGraph fGraph;
-	//
-	// private final IPeerSelector fSelector;
-	//
-	// private State fState;
-	//
-	// private int fQueryCount;
-	//
-	// public Antientropy(IPeerSelector selector, IndexedNeighborGraph graph) {
-	// fGraph = graph;
-	// fSelector = selector;
-	// fState = State.WAITING;
-	// }
-	//
-	// @Override
-	// public void nextCycle(ISimulationEngine sim, IProcess process) {
-	// int peer = fSelector.selectPeer(process.id(), fGraph, EMPTY_BITSET,
-	// sim.network());
-	// if (peer < 0) {
-	//
-	// }
-	//
-	// fQueryCount++;
-	//
-	// }
-	//
-	// @Override
-	// public State getState() {
-	// return State.ACTIVE;
-	// }
-	//
-	// }
+	private static final BitSet EMPTY = new BitSet();
+
+	class Antientropy extends PeriodicAction {
+
+		private static final long serialVersionUID = -7825255354837349538L;
+
+		private final IPeerSelector fSelector;
+
+		private final double fPeriod;
+
+		public Antientropy(IReference<ISimulationEngine> engine, Random rnd,
+				int id, int prio, double period, double initialDelay) {
+			super(engine, prio, id, initialDelay);
+			fPeriod = period;
+			fSelector = new RandomSelector(rnd);
+		}
+
+		@Override
+		protected double performAction(ISimulationEngine engine) {
+			INetwork network = engine.network();
+			IProcess peer = selectPeer(network);
+			if (peer != null) {
+				DisseminationServiceImpl pair = (DisseminationServiceImpl) peer
+						.getProtocol(fPid);
+
+				pair.fPushProtocols[UPDATE].pullSend(engine, fProcess.id());
+				pair.fPushProtocols[NO_UPDATE].pullSend(engine, fProcess.id());
+			}
+
+			return engine.clock().rawTime() + fPeriod;
+		}
+
+		private IProcess selectPeer(INetwork network) {
+			int neighbor = fSelector.selectPeer(fProcess.id(), fGraph, EMPTY,
+					network);
+
+			if (neighbor == IPeerSelector.NO_LIVE_PEER) {
+				return null;
+			}
+
+			// This can't be a return code as there are no forbidden peers.
+			if (neighbor == IPeerSelector.NO_PEER) {
+				throw new IllegalStateException();
+			}
+
+			return network.process(neighbor);
+		}
+
+	}
 
 	class BroadcastTracker {
 

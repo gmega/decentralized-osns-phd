@@ -15,11 +15,11 @@ import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
@@ -35,6 +35,10 @@ import java.util.Random;
 
 public class CloudSimulationBuilder {
 
+	public static final int AE_PRIORITY = 0;
+
+	public static final int CA_PRIORITY = 2;
+
 	public static final int ACCESSES = 0;
 
 	public static final int PRODUCTIVE = 0;
@@ -43,7 +47,7 @@ public class CloudSimulationBuilder {
 
 	private final double fBurnin;
 
-	private final double fPeriod;
+	private final double fDelta;
 
 	private final IndexedNeighborGraph fGraph;
 
@@ -84,7 +88,7 @@ public class CloudSimulationBuilder {
 			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
 			Random random, double nupOnly, double loginGrace,
 			double fixedFraction, boolean randomize) {
-		fPeriod = period;
+		fDelta = period;
 		fGraph = graph;
 		fRandom = random;
 		fBurnin = burnin;
@@ -98,84 +102,69 @@ public class CloudSimulationBuilder {
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			final int source, int messages, int quenchDesync,
+			double pushTimeout, double antientropyPeriod,
 			boolean dissemination, boolean cloudAssist, boolean baseline,
 			boolean trackCores, IProcess[] processes) {
 
-		int permits = 0;
-		permits += dissemination ? 1 : 0;
-		permits += baseline ? 1 : 0;
-		permits += fNUPAnchor > 0 ? 1 : 0;
-
-		EDSimulationEngine engine = new EDSimulationEngine(processes, fBurnin);
-
-		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
-
 		DisseminationServiceImpl[] prots;
 		SimpleCloudImpl cloud = null;
 
-		int pid = 0;
-		if (dissemination) {
-			PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = new PausingCyclicProtocolRunner<DisseminationServiceImpl>(
-					engine, SECOND, 1, pid);
+		// Builder for engine.
+		EngineBuilder builder = new EngineBuilder();
+		builder.addProcess(processes);
+		builder.setBurnin(fBurnin);
 
-			observers.add(new Pair<Integer, IEventObserver>(1, runner));
-			observers
-					.add(new Pair<Integer, IEventObserver>(
-							IProcess.PROCESS_SCHEDULABLE_TYPE, runner
-									.networkObserver()));
+		IReference<ISimulationEngine> reference = builder.reference();
+
+		int pid = 0;
+		// 1. Config for dissemination service.
+		if (dissemination) {
+			// 1a. Pausing runner that runs the push protocols.
+			PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = new PausingCyclicProtocolRunner<DisseminationServiceImpl>(
+					reference, SECOND, 1, pid);
+			builder.addObserver(runner, 1, true, true);
+			builder.addObserver(runner.networkObserver(),
+					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
 
 			prots = create(processes, runner, pid, messages, quenchDesync,
-					metrics);
+					pushTimeout, antientropyPeriod, metrics, builder);
 
+			// 1b. Cloud-assistance, if enabled.
 			if (cloudAssist) {
 				cloud = new SimpleCloudImpl(source);
-				create(engine, processes, prots, cloud, source);
+				create(reference, processes, prots, cloud, source);
 			}
 
-			addWickAndAnchor(source, messages, "", prots, processes, engine,
-					cloud, observers, metrics);
+			// 1c. Add dissemination wick (guy that posts update after some 
+			//     period of time ellapses).
+			addWickAndAnchor(source, messages, "", prots, processes, builder,
+					cloud, metrics);
 
+			// 1d. Add CoreTracker if required -- tracks initial connected core,
+			//     which we need for the two-phase sims.
 			if (trackCores) {
 				CoreTracker tracker = new CoreTracker(prots[source], fGraph,
 						source, pid);
-				observers.add(new Pair<Integer, IEventObserver>(
-						IProcess.PROCESS_SCHEDULABLE_TYPE, tracker));
+				builder.addObserver(tracker, IProcess.PROCESS_SCHEDULABLE_TYPE,
+						false, true);
 				metrics.add(tracker);
 			}
 
-			pid++;
+			pid += 1;
 		}
-
-		if (cloudAssist && baseline) {
-			// Note we don't register a runner for the baseline, as it's not
-			// supposed to actually run.
-			DisseminationServiceImpl[] baselineProts = create(processes, null,
-					pid, messages, quenchDesync, metrics);
-			cloud = new SimpleCloudImpl(source);
-			create(engine, processes, baselineProts, cloud, source);
-
-			addWickAndAnchor(source, messages, "b", baselineProts, processes,
-					engine, cloud, observers, metrics);
-		}
-
-		engine.setEventObservers(observers);
-		engine.setStopPermits(permits);
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
-				engine, metrics);
+				builder.engine(), metrics);
 	}
 
 	private void addWickAndAnchor(final int source, int messages,
 			String prefix, final DisseminationServiceImpl[] prots,
-			IProcess[] processes, EDSimulationEngine engine,
-			SimpleCloudImpl cloud,
-			List<Pair<Integer, ? extends IEventObserver>> observers,
+			IProcess[] processes, EngineBuilder builder, SimpleCloudImpl cloud,
 			List<INodeMetric<? extends Object>> metrics) {
 
 		if (fNUPAnchor > 0) {
-			engine.schedule(new Anchor());
+			builder.preschedule(new Anchor());
 		}
 
 		DiffusionWick wick = new DiffusionWick(prefix, source, messages,
@@ -191,11 +180,10 @@ public class CloudSimulationBuilder {
 		// If the source is a fixed node, we need to add a synthetic login to
 		// fire the wick.
 		if (processes[source] instanceof FixedProcess) {
-			engine.schedule(new OneShotProcess(processes[source]));
+			builder.preschedule(new OneShotProcess(processes[source]));
 		}
 
-		observers.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, wick));
+		builder.addObserver(wick, IProcess.PROCESS_SCHEDULABLE_TYPE, true, true);
 
 		metrics.add(wick.ed());
 		metrics.add(wick.rd());
@@ -213,17 +201,26 @@ public class CloudSimulationBuilder {
 
 	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int pid, int messages, int quenchDesync,
-			List<INodeMetric<? extends Object>> metrics) {
+			int pid, int messages, int quenchDesync, double pushTimeout,
+			double antientropyPeriod,
+			List<INodeMetric<? extends Object>> metrics, EngineBuilder builder) {
+
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
 		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size());
+
 		for (int i = 0; i < protocols.length; i++) {
-			protocols[i] = new DisseminationServiceImpl(pid, fGraph,
+			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
 					peerSelector(), processes[i], new CachingTransformer(
-							new LiveTransformer()), runner, messages == 1,
-					quenchDesync, maxQuenchAge());
+							new LiveTransformer()), runner,
+					builder.reference(), messages == 1, quenchDesync,
+					maxQuenchAge(), pushTimeout, antientropyPeriod, fBurnin,
+					AE_PRIORITY);
+
 			processes[i].addProtocol(protocols[i]);
+
+			processes[i].addObserver(protocols[i].antientropy());
+
 			protocols[i].addMessageObserver(mstats);
 			protocols[i].addBroadcastObserver(mstats);
 		}
@@ -237,13 +234,12 @@ public class CloudSimulationBuilder {
 
 	private double maxQuenchAge() {
 		if (!fRandomize) {
-			return fPeriod;
+			return fDelta;
 		}
-
-		return (fFixedFraction * fPeriod) + 2 * (1 - fFixedFraction) * fPeriod;
+		return (fFixedFraction * fDelta) + 2 * (1 - fFixedFraction) * fDelta;
 	}
 
-	private CloudAccessor[] create(EDSimulationEngine engine,
+	private CloudAccessor[] create(IReference<ISimulationEngine> reference,
 			IProcess[] process, DisseminationServiceImpl[] dissemination,
 			ICloud cloud, int source) {
 		CloudAccessor[] accessors = new CloudAccessor[process.length];
@@ -251,9 +247,9 @@ public class CloudSimulationBuilder {
 			if (i == source) {
 				continue;
 			}
-			accessors[i] = new CloudAccessor(engine, dissemination[i], cloud,
-					fPeriod, fBurnin, fLoginGrace, fFixedFraction, i,
-					fRandomize ? fRandom : null);
+			accessors[i] = new CloudAccessor(reference, dissemination[i],
+					cloud, fDelta, fBurnin, fLoginGrace, fFixedFraction, i,
+					CA_PRIORITY, fRandomize ? fRandom : null);
 			process[i].addObserver(accessors[i]);
 			dissemination[i].addMessageObserver(accessors[i]);
 		}
@@ -274,7 +270,6 @@ public class CloudSimulationBuilder {
 		}
 	}
 
-	@Binding
 	private class Anchor extends Schedulable {
 
 		private static final long serialVersionUID = 6287804680484080985L;

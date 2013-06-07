@@ -1,10 +1,10 @@
 package it.unitn.disi.simulator.protocol;
 
-import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
+import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
@@ -21,16 +21,15 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol.State;
  * 
  * @param <K>
  */
-@Binding
 public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 		CyclicProtocolRunner<K> {
 
 	private static final long serialVersionUID = 2331151499227503459L;
-	
+
 	private PausingSchedulable fSchedulable;
 
-	public PausingCyclicProtocolRunner(ISimulationEngine engine, double period,
-			int type, int pid) {
+	public PausingCyclicProtocolRunner(IReference<ISimulationEngine> engine,
+			double period, int type, int pid) {
 		super(pid);
 		fSchedulable = new PausingSchedulable(engine, period, type);
 	}
@@ -108,10 +107,10 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 
 		private boolean fPaused = true;
 
-		private ISimulationEngine fEngine;
+		private IReference<ISimulationEngine> fEngine;
 
-		public PausingSchedulable(ISimulationEngine engine, double period,
-				int type) {
+		public PausingSchedulable(IReference<ISimulationEngine> engine,
+				double period, int type) {
 			super(period, type);
 			fEngine = engine;
 		}
@@ -132,11 +131,11 @@ public class PausingCyclicProtocolRunner<K extends ICyclicProtocol> extends
 			fPaused = false;
 
 			// Fix to roundoff error when the division is exact.
-			IClockData clock = fEngine.clock();
+			IClockData clock = fEngine.get().clock();
 			double currentTime = clock.rawTime();
 			setTime(Math.max(currentTime, Math.ceil(clock.rawTime() / fPeriod)
 					* fPeriod));
-			fEngine.schedule(this);
+			fEngine.get().schedule(this);
 		}
 
 		public String toString() {

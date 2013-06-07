@@ -13,7 +13,9 @@ import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.INodeMetric;
@@ -36,6 +38,8 @@ public class StaticSimulationBuilder {
 			double period, Experiment experiment, int root, int source,
 			String peerSelector, IndexedNeighborGraph graph, Random random) {
 
+		EngineBuilder builder = new EngineBuilder();
+		
 		IProcess processes[] = new IProcess[graph.size()];
 		for (int i = 0; i < processes.length; i++) {
 			processes[i] = new FixedProcess(i, State.up);
@@ -44,25 +48,22 @@ public class StaticSimulationBuilder {
 		fProtocols = protocols(graph, random, peerSelector, root,
 				new CachingTransformer(new LiveTransformer()), processes);
 
-		List<Pair<Integer, ? extends IEventObserver>> observers = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
-
 		CyclicProtocolRunner<HFloodSM> cpr = new CyclicProtocolRunner<HFloodSM>(
 				HFLOOD_PID);
 
 		// Cyclic protocol observer.
-		observers.add(new Pair<Integer, IEventObserver>(1, cpr));
+		builder.addObserver(cpr, 1, true, true);
+		builder.preschedule(new CyclicSchedulable(period, 1));
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0.0, 0);
-		bcs.setEventObservers(observers);
-		bcs.schedule(new CyclicSchedulable(period, 1));
-
-		fProtocols[0].markReached(bcs);
+		EDSimulationEngine engine = builder.engine();
+		
+		fProtocols[0].markReached(engine.clock());
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(SMMetrics.rdMetric(source, fProtocols));
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
-				bcs, metrics);
+				engine, metrics);
 	}
 
 	protected HFloodSM[] protocols(IndexedNeighborGraph graph, Random r,

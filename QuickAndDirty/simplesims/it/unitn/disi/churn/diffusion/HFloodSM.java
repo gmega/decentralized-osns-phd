@@ -34,6 +34,8 @@ public class HFloodSM implements ICyclicProtocol {
 
 	private final IProcess fProcess;
 
+	private final double fTimeout;
+
 	// -------------------------------------------------------------------------
 	// Protocol state.
 	// -------------------------------------------------------------------------
@@ -45,6 +47,8 @@ public class HFloodSM implements ICyclicProtocol {
 
 	private State fState = State.IDLE;
 
+	private double fLastRound;
+
 	// -------------------------------------------------------------------------
 	// Delay metrics.
 	// -------------------------------------------------------------------------
@@ -55,6 +59,13 @@ public class HFloodSM implements ICyclicProtocol {
 	public HFloodSM(IndexedNeighborGraph graph, IPeerSelector selector,
 			IProcess process, ILiveTransformer transformer,
 			IProtocolReference<HFloodSM> reference) {
+		this(graph, selector, process, transformer, reference,
+				Double.POSITIVE_INFINITY);
+	}
+
+	public HFloodSM(IndexedNeighborGraph graph, IPeerSelector selector,
+			IProcess process, ILiveTransformer transformer,
+			IProtocolReference<HFloodSM> reference, double timeout) {
 		fGraph = graph;
 		fHistory = new BitSet();
 		fMappedHistory = new BitSet();
@@ -62,6 +73,7 @@ public class HFloodSM implements ICyclicProtocol {
 		fTransformer = transformer;
 		fProcess = process;
 		fReference = reference;
+		fTimeout = timeout;
 
 		setMessage(null, null);
 	}
@@ -108,6 +120,8 @@ public class HFloodSM implements ICyclicProtocol {
 			fEndToEndDelay = clock.time();
 			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(id());
+			// Register time when we first activate.
+			fLastRound = clock.rawTime();
 			changeState(State.ACTIVE);
 		} else {
 			duplicateReceived(clock);
@@ -134,13 +148,18 @@ public class HFloodSM implements ICyclicProtocol {
 	}
 
 	@Override
-	public void nextCycle(ISimulationEngine state, IProcess process) {
-
-		INetwork network = state.network();
+	public void nextCycle(ISimulationEngine engine, IProcess process) {
+		INetwork network = engine.network();
 
 		// Are we done, down, or not reached yet?
 		if (fState == State.DONE || !network.process(id()).isUp()
 				|| !fHistory.get(id())) {
+			return;
+		}
+
+		if (timedOut(engine)) {
+			System.err.println("Node " + fProcess.id() + " timed out.");
+			changeState(State.DONE);
 			return;
 		}
 
@@ -155,6 +174,56 @@ public class HFloodSM implements ICyclicProtocol {
 
 		// Otherwise we're active.
 		changeState(State.ACTIVE);
+
+		// Updates last active round.
+		fLastRound = engine.clock().rawTime();
+
+		doSend(engine, network, neighborId);
+	}
+
+	private boolean timedOut(ISimulationEngine engine) {
+		return (engine.clock().rawTime() - fLastRound) > fTimeout;
+	}
+
+	/**
+	 * Allows implementation of pull protocols without having to properly
+	 * refactor the code. :-)
+	 * 
+	 * This method is called by Antientropy, and essentially forces this
+	 * protocol to send the update (if this node has it) to the calling
+	 * neighbor, but by performing some sanity checks.
+	 * 
+	 * TODO to make this right, we need to separate message storage (who has and
+	 * who doesn't have the message) from protocol instances, and we need a
+	 * proper storage/protocol API.
+	 * 
+	 * @param engine
+	 *            current simulation engine.
+	 * 
+	 * @param pulling
+	 *            id of the pulling node.
+	 * 
+	 * @return <code>true</code> if this node had something to send back, or
+	 *         <code>false</code> otherwise.
+	 */
+	public boolean pullSend(ISimulationEngine engine, int pulling) {
+		INetwork network = engine.network();
+
+		if (!network.process(id()).isUp()) {
+			throw new IllegalStateException("Can't pull from dead neighbor.");
+		}
+
+		if (!fHistory.get(id())) {
+			return false;
+		}
+
+		doSend(engine, network, pulling);
+
+		return true;
+	}
+
+	private void doSend(ISimulationEngine state, INetwork network,
+			int neighborId) {
 
 		// Sends the message and gets the feedback.
 		HFloodSM neighbor = fReference.get(this, network, neighborId);

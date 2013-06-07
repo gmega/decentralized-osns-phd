@@ -45,20 +45,48 @@ import it.unitn.disi.utils.tabular.TableWriter;
 @AutoConfig
 public class DiffusionExperimentWorker extends Worker {
 
-	@Attribute("period")
+	// Cycle of push protocol.
+	@Attribute("push_cycle_length")
 	private double fPeriod;
 
-	@Attribute("selector")
+	// Selector of push protocol.
+	@Attribute("push_selector")
 	private String fSelector;
 
+	// Timeout (period without contacts before giving up) of push protocol.
+	@Attribute(value = "push_timeout")
+	private double fPushTimeout;
+
+	// Cycle of antientropy.
+	@Attribute(value = "antientropy_cycle_length")
+	private double fAECycleLength;
+
+	// "Grace period" for expired PeriodicActions.
+	@Attribute(value = "login_grace", defaultValue = "0")
+	private double fLoginGrace;
+	
+	@Attribute(value = "latency_bound")
+	private double fDelta;
+	
+	// Fixed fraction of HYBRID's timer.
+	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
+	private double fFixedFraction;
+
+	// Slowdown factor for push of QUENCH messages respectively to
+	// updates.
+	@Attribute(value = "quench_desync", defaultValue = "1")
+	private int fQuenchDesync;
+
+	// Burn-in period between when NUP messages start to be fired and
+	// when we allow the update to be posted.
+	@Attribute(value = "nup_burnin", defaultValue = "-1")
+	private double fNUPBurnin;
+	
 	@Attribute(value = "fixedseeds", defaultValue = "false")
 	private boolean fFixSeed;
 
 	@Attribute(value = "nup_anchor", defaultValue = "-1")
 	private double fNUPAnchor;
-
-	@Attribute(value = "nup_burnin", defaultValue = "-1")
-	private double fNUPBurnin;
 
 	@Attribute(value = "fixed_node_map", defaultValue = "none")
 	private String fFixedMapFile;
@@ -69,17 +97,8 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "baseline", defaultValue = "false")
 	private boolean fBaseline;
 
-	@Attribute(value = "access_delay")
-	private double fDelay;
-
-	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
-	private double fFixedFraction;
-
 	@Attribute(value = "messages", defaultValue = "1")
 	private int fMessages;
-
-	@Attribute(value = "quench_desync", defaultValue = "1")
-	private int fQuenchDesync;
 
 	@Attribute(value = "track.cores", defaultValue = "false")
 	private boolean fTrackCores;
@@ -92,9 +111,6 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@Attribute(value = "randomized", defaultValue = "false")
 	private boolean fRandomized;
-
-	@Attribute(value = "login_grace", defaultValue = "0.00138888888")
-	private double fLoginGrace;
 
 	private volatile int fSeedUniquefier;
 
@@ -190,10 +206,9 @@ public class DiffusionExperimentWorker extends Worker {
 
 			if (fRandomized) {
 				System.err.println("-- Periods are randomized  ["
-						+ (fDelay * fFixedFraction) + "/"
-						+ (fDelay * (1.0 - fFixedFraction)) + "]");
+						+ (fPeriod * fFixedFraction) + ", " + fPeriod + "]");
 			} else {
-				System.err.println("-- Periods are fixed:" + fDelay);
+				System.err.println("-- Periods are fixed:" + fPeriod);
 			}
 		}
 
@@ -274,11 +289,12 @@ public class DiffusionExperimentWorker extends Worker {
 						State.up);
 			}
 
-			elements = new CloudSimulationBuilder(fBurnin, fDelay, fNUPBurnin,
+			elements = new CloudSimulationBuilder(fBurnin, fDelta, fNUPBurnin,
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
-					fLoginGrace, fFixedFraction, fRandomized).build(source,
-					fMessages, fQuenchDesync, fP2PSims, fCloudAssisted,
-					fBaseline, fTrackCores, processes);
+					fLoginGrace, fFixedFraction, fRandomized)
+					.build(source, fMessages, fQuenchDesync, fPushTimeout,
+							fAECycleLength, fP2PSims, fCloudAssisted,
+							fBaseline, fTrackCores, processes);
 		}
 
 		return new SimulationTask(
