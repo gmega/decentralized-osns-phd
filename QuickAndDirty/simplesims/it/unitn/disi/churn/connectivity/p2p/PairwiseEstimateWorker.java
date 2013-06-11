@@ -112,8 +112,7 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 		} else {
 			return new F0<IValueObserver>() {
 				{
-					ret(new IncrementalStatsAdapter(new IncrementalStats(),
-							null));
+					ret(new IncrementalStatsAdapter(new IncrementalStats()));
 				}
 			};
 		}

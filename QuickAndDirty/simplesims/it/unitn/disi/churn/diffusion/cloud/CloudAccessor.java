@@ -3,6 +3,7 @@ package it.unitn.disi.churn.diffusion.cloud;
 import java.util.Arrays;
 import java.util.Random;
 
+import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
@@ -125,16 +126,16 @@ public class CloudAccessor extends PeriodicAction implements IMessageObserver {
 	}
 
 	@Override
-	public void messageReceived(IProcess process, HFloodMMsg message,
-			IClockData clock, boolean duplicate) {
+	public void messageReceived(int sender, int receiver, HFloodMMsg message,
+			IClockData clock, int flags) {
 
-		// Duplicates are not important.
-		if (duplicate) {
+		// Duplicates and Antientropy control messages are not important.
+		if (message == null || (flags & HFloodSM.DUPLICATE) != 0) {
 			return;
 		}
 
 		// Sanity check.
-		if (process.state() == State.down) {
+		if (clock.engine().network().process(receiver).state() == State.down) {
 			throw new IllegalStateException(
 					"Can't receive message while offline");
 		}

@@ -53,7 +53,7 @@ public class EdgeDelaySampler implements IEventObserver {
 
 		// P1 and P2 are synchronized.
 		if (senderUp(p) && p.process(1).isUp()) {
-			register(time, fPendingUps, engine);
+			register(time, fPendingUps);
 			fPendingUps.resetQuick();
 		}
 
@@ -62,10 +62,9 @@ public class EdgeDelaySampler implements IEventObserver {
 		}
 	}
 
-	protected void register(double p2Login, TDoubleArrayList p1Logins,
-			ISimulationEngine engine) {
+	protected void register(double p2Login, TDoubleArrayList p1Logins) {
 		for (int i = 0; i < p1Logins.size() && fSamples > 0; i++, fSamples--) {
-			fObserver.observe(p2Login - p1Logins.get(i), engine);
+			fObserver.observe(p2Login - p1Logins.get(i));
 		}
 	}
 

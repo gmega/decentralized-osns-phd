@@ -99,7 +99,7 @@ public class SamplingExperiment implements ITransformer {
 		EdgeDelaySampler sexp = new EdgeDelaySampler(repetitions, cloud,
 				new IValueObserver() {
 					@Override
-					public void observe(double value, ISimulationEngine engine) {
+					public void observe(double value) {
 						stats.add(value);
 						System.out.println(stats.getAverage());
 					}
@@ -113,7 +113,7 @@ public class SamplingExperiment implements ITransformer {
 		final IncrementalStats stats = new IncrementalStats();
 		IValueObserver obs = new IValueObserver() {
 			@Override
-			public void observe(double value, ISimulationEngine engine) {
+			public void observe(double value) {
 				stats.add(value);
 				System.out.println(stats.getAverage());
 			}
@@ -133,9 +133,8 @@ public class SamplingExperiment implements ITransformer {
 		EdgeDelaySampler sexp = new EdgeDelaySampler(repetitions, cloud,
 				IValueObserver.NULL_OBSERVER) {
 			@Override
-			protected void register(double p2Login, TDoubleArrayList p1Logins,
-					ISimulationEngine engine) {
-				super.register(p2Login, p1Logins, engine);
+			protected void register(double p2Login, TDoubleArrayList p1Logins) {
+				super.register(p2Login, p1Logins);
 				p1All.addAll(p1Logins);
 				p2All.add(p2Login);
 			}

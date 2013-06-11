@@ -97,7 +97,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		if (message.isNUP()) {
 			fPushProtocols[NO_UPDATE].setMessage(message, null);
-			fPushProtocols[NO_UPDATE].markReached(engine.clock());
+			fPushProtocols[NO_UPDATE].markReached(fProcess.id(),
+					engine.clock(), 0);
 		}
 
 		else {
@@ -122,7 +123,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				}
 			}
 			// Marks the current as reached.
-			fPushProtocols[UPDATE].markReached(engine.clock());
+			fPushProtocols[UPDATE]
+					.markReached(fProcess.id(), engine.clock(), 0);
 		}
 
 		if (fRunner != null) {
@@ -209,10 +211,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		return fPushProtocols[UPDATE].isReached();
 	}
 
-	private void messageReceived(HFloodMMsg message, IClockData clock,
-			boolean duplicate) {
+	private void messageReceived(int sender, int receiver, HFloodMMsg message,
+			IClockData clock, int flags) {
 		for (IMessageObserver observer : fObservers) {
-			observer.messageReceived(fProcess, message, clock, duplicate);
+			observer.messageReceived(sender, receiver, message, clock, flags);
 		}
 	}
 
@@ -226,7 +228,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		@Override
 		protected BitSet sendMessage(HFloodSM sender, BitSet history,
-				IClockData clock) {
+				IClockData clock, int flags) {
 			HFloodMMsg message = (HFloodMMsg) sender.message();
 			if (!message.isNUP()) {
 				throw new IllegalStateException(message + " != "
@@ -235,7 +237,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 			// If we got here, tries to replace the message.
 			this.setMessage(message, history);
-			this.markReached(clock);
+			this.markReached(sender.id(), clock, flags);
+
 			return history;
 		}
 
@@ -262,10 +265,15 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		}
 
 		@Override
-		public void markReached(IClockData clock) {
+		public void markReached(int sender, IClockData clock, int flags) {
+
 			boolean duplicate = isReached();
-			super.markReached(clock);
-			messageReceived((HFloodMMsg) message(), clock, duplicate);
+
+			if (duplicate) {
+				flags |= DUPLICATE;
+			}
+
+			super.markReached(sender, clock, flags);
 
 			if (!duplicate) {
 				HFloodMMsg msg = (HFloodMMsg) message();
@@ -273,6 +281,12 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 					msg.getTracker().decrement(clock.engine());
 				}
 			}
+		}
+
+		@Override
+		protected void messageReceived(int sender, IClockData clock, int flags) {
+			DisseminationServiceImpl.this.messageReceived(sender,
+					fProcess.id(), (HFloodMMsg) message(), clock, flags);
 		}
 	}
 
@@ -297,12 +311,40 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		protected double performAction(ISimulationEngine engine) {
 			INetwork network = engine.network();
 			IProcess peer = selectPeer(network);
+
+			// This antientropy implementation is really a hack: what it does is
+			// to force a push protocol exchange, which in the end is okay if
+			// we're only disseminating one message.
 			if (peer != null) {
 				DisseminationServiceImpl pair = (DisseminationServiceImpl) peer
 						.getProtocol(fPid);
 
-				pair.fPushProtocols[UPDATE].pullSend(engine, fProcess.id());
-				pair.fPushProtocols[NO_UPDATE].pullSend(engine, fProcess.id());
+				// Forces two-way exchanges.
+				/**
+				 * XXX Message counts will be OVERESTIMATED if nodes are
+				 * disseminating updates frequently as the current counting
+				 * mechanism is not able to deal with aggregate messages. An
+				 * exchange involving a QUENCH and an UPDATE, therefore, will
+				 * count as two separate messages.
+				 */
+
+				// Registers Antientropy exchange.
+				messageReceived(fProcess.id(), pair.fProcess.id(), null,
+						engine.clock(), HFloodSM.ANTIENTROPY_PUSH
+								| HFloodSM.ANTIENTROPY_PULL);
+
+				// PUSH
+				fPushProtocols[UPDATE].antientropy(engine, peer.id(), false);
+				// PUSH
+				fPushProtocols[NO_UPDATE].antientropy(engine, peer.id(), false);
+
+				// PULL
+				pair.fPushProtocols[UPDATE].antientropy(engine, fProcess.id(),
+						true);
+				// PULL
+				pair.fPushProtocols[NO_UPDATE].antientropy(engine,
+						fProcess.id(), true);
+
 			}
 
 			return engine.clock().rawTime() + fPeriod;
@@ -346,7 +388,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			if (fIntendedDestinations < 0) {
 				throw new IllegalStateException();
 			}
-
+			// System.err.println(fIntendedDestinations);
 			if (fIntendedDestinations == 0) {
 				for (IBroadcastObserver observer : fBcastObservers) {
 					observer.broadcastDone(fMessage, engine);

@@ -171,8 +171,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	 * Runs the simulation until either: <li>
 	 * <ol>
 	 * <li>there are no more {@link Schedulable}s to schedule;</li>
-	 * <li>all <b>binding</b> {@link IEventObserver}s are <b>done</b>;</li>
-	 * <li>{@link #stop()} is called and {@link #stopPermits()} is zero.</li>
+	 * <li>the number of {@link #stopPermits()} drops to zero.</li>
 	 * </ol>
 	 * 
 	 * @see IEventObserver
@@ -186,9 +185,8 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			waitForClearance();
 			fRunning = true;
 			while (!fPaused && !fDone) {
-				if (!uncheckedStep()) {
+				if(!uncheckedStep()) {
 					fDone = true;
-					break;
 				}
 			}
 

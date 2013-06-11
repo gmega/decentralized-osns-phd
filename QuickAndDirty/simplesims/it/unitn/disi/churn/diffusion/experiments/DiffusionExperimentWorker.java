@@ -64,10 +64,10 @@ public class DiffusionExperimentWorker extends Worker {
 	// "Grace period" for expired PeriodicActions.
 	@Attribute(value = "login_grace", defaultValue = "0")
 	private double fLoginGrace;
-	
+
 	@Attribute(value = "latency_bound")
 	private double fDelta;
-	
+
 	// Fixed fraction of HYBRID's timer.
 	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
 	private double fFixedFraction;
@@ -81,7 +81,7 @@ public class DiffusionExperimentWorker extends Worker {
 	// when we allow the update to be posted.
 	@Attribute(value = "nup_burnin", defaultValue = "-1")
 	private double fNUPBurnin;
-	
+
 	@Attribute(value = "fixedseeds", defaultValue = "false")
 	private boolean fFixSeed;
 
@@ -164,7 +164,9 @@ public class DiffusionExperimentWorker extends Worker {
 				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
 
 		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
-				"id", "source", "target", "uprec", "nuprec", "msgtime");
+				"id", "source", "target", "hfuprec", "hfnuprec", "aeuprec",
+				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
+				"msgtime");
 
 		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
 				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
@@ -195,6 +197,10 @@ public class DiffusionExperimentWorker extends Worker {
 				+ " fixed nodes.");
 
 		System.err.println("-- Selector is (" + fSelector + ").");
+		System.err.println("Push protocol timeout is " + fPushTimeout + ".");
+		System.err.println("Antientropy is "
+				+ ((fAECycleLength < 0) ? "disabled " : ("enabled (period is "
+						+ fAECycleLength + ")")));
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
@@ -351,9 +357,21 @@ public class DiffusionExperimentWorker extends Worker {
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_upd.accrued"), 1));
 
-		collector.addAccumulator(new SumAccumulation("msg.up", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.up", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.nup", graph.size()));
+		
+		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup", graph.size()));
+		
+		collector.addAccumulator(new SumAccumulation("msg.ae.sent.up", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.sent.nup", graph.size()));
+		
+		collector.addAccumulator(new SumAccumulation("msg.ae.init", graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.respond", graph.size()));
+		
 		collector.addAccumulator(new SumAccumulation("msg.nup", graph.size()));
 		collector.addAccumulator(new SumAccumulation("msg.accrued", 1));
+		
 	}
 
 	private String prefix(String prefix, String string) {
@@ -457,8 +475,18 @@ public class DiffusionExperimentWorker extends Worker {
 	@SuppressWarnings("unchecked")
 	private void printP2PCosts(TableWriter writer, ExperimentData data,
 			MetricsCollector metrics) {
-		INodeMetric<Double> updates = metrics.getMetric("msg.up");
-		INodeMetric<Double> noUpdates = metrics.getMetric("msg.nup");
+		INodeMetric<Double> hfloodUpdates = metrics.getMetric("msg.hflood.up");
+		INodeMetric<Double> hfloodQuench = metrics.getMetric("msg.hflood.nup");
+
+		INodeMetric<Double> aeUpdatesRec = metrics.getMetric("msg.ae.rec.up");
+		INodeMetric<Double> aeQuenchRec = metrics.getMetric("msg.ae.rec.nup");
+
+		INodeMetric<Double> aeUpdatesSent = metrics.getMetric("msg.ae.sent.up");
+		INodeMetric<Double> aeQuenchSent = metrics.getMetric("msg.ae.sent.nup");
+
+		INodeMetric<Double> aeInitiated = metrics.getMetric("msg.ae.init");
+		INodeMetric<Double> aeReceived = metrics.getMetric("msg.ae.respond");
+
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
 
 		for (int i = 0; i < data.graph.size(); i++) {
@@ -466,8 +494,18 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set("source", data.source);
 			writer.set("target", data.ids[i]);
 
-			writer.set("uprec", updates.getMetric(i));
-			writer.set("nuprec", noUpdates.getMetric(i));
+			writer.set("hfuprec", hfloodUpdates.getMetric(i));
+			writer.set("hfnuprec", hfloodQuench.getMetric(i));
+
+			writer.set("aeuprec", aeUpdatesRec.getMetric(i));
+			writer.set("aenuprec", aeQuenchRec.getMetric(i));
+
+			writer.set("aeupsend", aeUpdatesSent.getMetric(i));
+			writer.set("aenupsend", aeQuenchSent.getMetric(i));
+
+			writer.set("aeinit", aeInitiated.getMetric(i));
+			writer.set("aerespond", aeReceived.getMetric(i));
+
 			writer.set("msgtime", time.getMetric(0));
 
 			writer.emmitRow();

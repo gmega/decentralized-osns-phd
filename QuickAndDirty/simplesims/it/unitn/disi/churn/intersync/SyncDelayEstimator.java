@@ -106,9 +106,9 @@ public class SyncDelayEstimator implements IEventObserver {
 		}
 
 		@Override
-		public void observe(double value, ISimulationEngine engine) {
+		public void observe(double value) {
 			fActualSamples[fIndex]++;
-			fDelegate.observe(value, engine);
+			fDelegate.observe(value);
 		}
 
 	}

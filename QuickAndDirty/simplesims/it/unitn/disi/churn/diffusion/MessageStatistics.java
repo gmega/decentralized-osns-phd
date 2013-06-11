@@ -1,91 +1,211 @@
 package it.unitn.disi.churn.diffusion;
 
 import java.nio.channels.IllegalSelectorException;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
 import it.unitn.disi.churn.diffusion.cloud.SessionStatistics;
 import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
 public class MessageStatistics extends SessionStatistics implements
 		IMessageObserver {
 
-	private final int[] fUpdatesReceived;
+	private static final int ANTIENTROPY = 0;
 
-	private final int[] fNUpsReceived;
-	
+	private static final int HFLOOD = 1;
+
+	private static final int SENT = 0;
+
+	private static final int RECEIVED = 1;
+
+	private final int[][][] fUpdates;
+
+	private final int[][][] fQuench;
+
+	private final int[][] fAEOverhead;
+
+	private final int fSize;
+
 	protected BitSet fSingle = new BitSet();
 
 	public MessageStatistics(Object id, int size) {
 		super(id);
 
-		fUpdatesReceived = new int[size];
-		fNUpsReceived = new int[size];
+		fUpdates = new int[2][2][size];
+		fQuench = new int[2][2][size];
+		fAEOverhead = new int[2][size];
+		fSize = size;
 	}
 
 	@Override
-	public void messageReceived(IProcess process, HFloodMMsg message,
-			IClockData clock, boolean duplicate) {
+	public void messageReceived(int sender, int receiver, HFloodMMsg message,
+			IClockData clock, int flags) {
 
 		// Doesn't count outside of sessions.
 		if (!isCounting()) {
 			return;
 		}
 
-		if (message.isNUP()) {
-			fNUpsReceived[process.id()]++;
+		if ((flags & HFloodSM.ANTIENTROPY_PULL) != 0
+				|| (flags & HFloodSM.ANTIENTROPY_PUSH) != 0) {
+			countAntientropy(sender, receiver, message, clock, flags);
 		} else {
-			if (!duplicate) {
-				if (fSingle.get(process.id())) {
+			count(HFLOOD, sender, receiver, message, clock, flags);
+		}
+	}
+
+	private void countAntientropy(int sender, int receiver, HFloodMMsg message,
+			IClockData clock, int flags) {
+
+		if (message == null) {
+			fAEOverhead[SENT][sender]++;
+			fAEOverhead[RECEIVED][receiver]++;
+			return;
+		}
+
+		// Antientropy generates no duplicates.
+		if ((flags & HFloodSM.DUPLICATE) != 0) {
+			return;
+		}
+
+		count(ANTIENTROPY, sender, receiver, message, clock, flags);
+	}
+
+	private void count(int protocol, int sender, int receiver,
+			HFloodMMsg message, IClockData clock, int flags) {
+
+		if (message.isNUP()) {
+			fQuench[SENT][protocol][sender]++;
+			fQuench[RECEIVED][protocol][receiver]++;
+		} else {
+			fUpdates[SENT][protocol][sender]++;
+			fUpdates[RECEIVED][protocol][receiver]++;
+
+			if ((flags & HFloodSM.DUPLICATE) == 0) {
+				if (fSingle.get(receiver)) {
+
+				}
+				fSingle.set(receiver);
+			} else {
+				if (!fSingle.get(receiver)) {
 					throw new IllegalStateException();
 				}
 			}
-			
-			fSingle.set(process.id());
-			fUpdatesReceived[process.id()]++;
 		}
 
 	}
-	
+
 	@Override
 	public void stopTrackingSession(double time) {
 		super.stopTrackingSession(time);
-		if (fSingle.cardinality() != fUpdatesReceived.length) {
+		if (fSingle.cardinality() != fSize) {
 			throw new IllegalSelectorException();
 		}
 	}
-	
-	public INodeMetric<Double> updates() {
-		return new INodeMetric<Double>() {
 
+	public List<INodeMetric<Double>> metrics() {
+
+		List<INodeMetric<Double>> metrics = new ArrayList<INodeMetric<Double>>();
+
+		metrics.add(new INodeMetric<Double>() {
 			@Override
 			public Object id() {
-				return fId + ".up";
+				return fId + ".hflood.up";
 			}
 
 			@Override
 			public Double getMetric(int i) {
-				return (double) fUpdatesReceived[i];
+				return (double) fUpdates[RECEIVED][HFLOOD][i];
 			}
+		});
 
-		};
-	}
-	
-	public INodeMetric<Double> noUpdates() {
-		return new INodeMetric<Double>() {
-
+		metrics.add(new INodeMetric<Double>() {
 			@Override
 			public Object id() {
-				return fId + ".nup";
+				return fId + ".hflood.nup";
 			}
 
 			@Override
 			public Double getMetric(int i) {
-				return (double) fNUpsReceived[i];
+				return (double) fQuench[RECEIVED][HFLOOD][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.sent.up";
 			}
 
-		};
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUpdates[SENT][ANTIENTROPY][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.sent.nup";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fQuench[SENT][ANTIENTROPY][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.rec.up";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUpdates[RECEIVED][ANTIENTROPY][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.rec.nup";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUpdates[RECEIVED][ANTIENTROPY][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.init";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fAEOverhead[SENT][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".ae.respond";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fAEOverhead[RECEIVED][i];
+			}
+		});
+
+		return metrics;
 	}
 
 }

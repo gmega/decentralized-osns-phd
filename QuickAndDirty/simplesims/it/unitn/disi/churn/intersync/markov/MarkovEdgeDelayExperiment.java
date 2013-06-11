@@ -61,8 +61,9 @@ public class MarkovEdgeDelayExperiment implements Runnable {
 			IncrementalStatsAdapter observer = new IncrementalStatsAdapter(
 					stats);
 			EdgeDelaySampler eds = new EdgeDelaySampler(fN, false, observer);
-			builder.addObserver(eds, IProcess.PROCESS_SCHEDULABLE_TYPE, true, true);
-			
+			builder.addObserver(eds, IProcess.PROCESS_SCHEDULABLE_TYPE, true,
+					true);
+
 			builder.engine().run();
 
 			System.out.println((stableState(lv, dv) * firstHittingTime(lu, lv,

@@ -22,6 +22,23 @@ import java.util.BitSet;
 public class HFloodSM implements ICyclicProtocol {
 
 	// -------------------------------------------------------------------------
+	// Flags describing a message received by the protocol when it calls the
+	// #messageReceived hook.
+	// -------------------------------------------------------------------------
+	/**
+	 * Toggled if the message is a duplicate
+	 */
+	public static final int DUPLICATE = 1;
+
+	public static final int ANTIENTROPY_PUSH = 2;
+
+	/**
+	 * Toggled if message received by a call to
+	 * {@link #antientropyRespond(ISimulationEngine, int)}.
+	 */
+	public static final int ANTIENTROPY_PULL = 4;
+
+	// -------------------------------------------------------------------------
 	// Protocol config.
 	// -------------------------------------------------------------------------
 	private final IndexedNeighborGraph fGraph;
@@ -115,16 +132,21 @@ public class HFloodSM implements ICyclicProtocol {
 	 * 
 	 * @param clock
 	 */
-	public void markReached(IClockData clock) {
-		if (!isReached() && fState != State.DONE) {
+	public void markReached(int sender, IClockData clock, int flags) {
+		if (fState == State.DONE) {
+			return;
+		}
+	
+		if (!isReached()) {
 			fEndToEndDelay = clock.time();
 			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(id());
 			// Register time when we first activate.
 			fLastRound = clock.rawTime();
 			changeState(State.ACTIVE);
+			messageReceived(sender, clock, flags);
 		} else {
-			duplicateReceived(clock);
+			messageReceived(sender, clock, flags | DUPLICATE);
 		}
 	}
 
@@ -158,7 +180,6 @@ public class HFloodSM implements ICyclicProtocol {
 		}
 
 		if (timedOut(engine)) {
-			System.err.println("Node " + fProcess.id() + " timed out.");
 			changeState(State.DONE);
 			return;
 		}
@@ -178,7 +199,7 @@ public class HFloodSM implements ICyclicProtocol {
 		// Updates last active round.
 		fLastRound = engine.clock().rawTime();
 
-		doSend(engine, network, neighborId);
+		doSend(engine, network, neighborId, 0);
 	}
 
 	private boolean timedOut(ISimulationEngine engine) {
@@ -186,48 +207,50 @@ public class HFloodSM implements ICyclicProtocol {
 	}
 
 	/**
-	 * Allows implementation of pull protocols without having to properly
-	 * refactor the code. :-)
+	 * Allows implementation of antientropy without having to properly refactor
+	 * the code. :-)
 	 * 
-	 * This method is called by Antientropy, and essentially forces this
-	 * protocol to send the update (if this node has it) to the calling
-	 * neighbor, but by performing some sanity checks.
+	 * This method essentially forces this protocol to send the update (if this
+	 * node has it) to a calling neighbor, but by performing some sanity checks.
 	 * 
 	 * TODO to make this right, we need to separate message storage (who has and
-	 * who doesn't have the message) from protocol instances, and we need a
-	 * proper storage/protocol API.
+	 * who doesn't have the message) from protocol instances, and we need proper
+	 * storage/protocol interfaces.
 	 * 
 	 * @param engine
 	 *            current simulation engine.
 	 * 
-	 * @param pulling
+	 * @param initiator
 	 *            id of the pulling node.
 	 * 
 	 * @return <code>true</code> if this node had something to send back, or
 	 *         <code>false</code> otherwise.
 	 */
-	public boolean pullSend(ISimulationEngine engine, int pulling) {
+	public boolean antientropy(ISimulationEngine engine, int initiator,
+			boolean pull) {
 		INetwork network = engine.network();
 
 		if (!network.process(id()).isUp()) {
 			throw new IllegalStateException("Can't pull from dead neighbor.");
 		}
 
+		int type = pull ? ANTIENTROPY_PULL : ANTIENTROPY_PUSH;
+
 		if (!fHistory.get(id())) {
 			return false;
 		}
 
-		doSend(engine, network, pulling);
+		doSend(engine, network, initiator, type);
 
 		return true;
 	}
 
 	private void doSend(ISimulationEngine state, INetwork network,
-			int neighborId) {
+			int neighborId, int flags) {
 
 		// Sends the message and gets the feedback.
 		HFloodSM neighbor = fReference.get(this, network, neighborId);
-		fHistory.or(neighbor.sendMessage(this, fHistory, state.clock()));
+		fHistory.or(neighbor.sendMessage(this, fHistory, state.clock(), flags));
 
 		checkDone();
 	}
@@ -282,13 +305,13 @@ public class HFloodSM implements ICyclicProtocol {
 		return fMappedHistory;
 	}
 
-	protected void duplicateReceived(IClockData clock) {
+	protected void messageReceived(int sender, IClockData clock, int flags) {
 		// To be overridden by subclasses.
 	}
 
 	protected BitSet sendMessage(HFloodSM sender, BitSet history,
-			IClockData clock) {
-		markReached(clock);
+			IClockData clock, int flags) {
+		markReached(sender.id(), clock, flags);
 		fHistory.or(history);
 		checkDone();
 		return fHistory;

@@ -57,7 +57,7 @@ public class StaticSimulationBuilder {
 
 		EDSimulationEngine engine = builder.engine();
 		
-		fProtocols[0].markReached(engine.clock());
+		fProtocols[0].markReached(0, engine.clock(), 0);
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(SMMetrics.rdMetric(source, fProtocols));

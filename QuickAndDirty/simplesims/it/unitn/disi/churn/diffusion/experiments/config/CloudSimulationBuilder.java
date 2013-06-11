@@ -219,15 +219,17 @@ public class CloudSimulationBuilder {
 
 			processes[i].addProtocol(protocols[i]);
 
-			processes[i].addObserver(protocols[i].antientropy());
+			// If the period is negative, disables antientropy.
+			if (antientropyPeriod > 0) {
+				processes[i].addObserver(protocols[i].antientropy());
+			}
 
 			protocols[i].addMessageObserver(mstats);
 			protocols[i].addBroadcastObserver(mstats);
 		}
 
 		metrics.add(mstats.accruedTime());
-		metrics.add(mstats.noUpdates());
-		metrics.add(mstats.updates());
+		metrics.addAll(mstats.metrics());
 
 		return protocols;
 	}

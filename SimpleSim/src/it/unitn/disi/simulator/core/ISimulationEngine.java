@@ -9,8 +9,14 @@ package it.unitn.disi.simulator.core;
  */
 public interface ISimulationEngine {
 
+	/** 
+	 * @see INetwork
+	 */
 	public INetwork network();
 
+	/**
+	 * @see IClockData
+	 */
 	public IClockData clock();
 
 	/**

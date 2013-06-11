@@ -176,7 +176,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 		@Override
 		public void post(ISimulationEngine engine) {
-			fSourceProtocol.markReached(engine.clock());
+			fSourceProtocol.markReached(fSource, engine.clock(), 0);
 		}
 
 	}
@@ -227,6 +227,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 	@Override
 	public void broadcastDone(HFloodMMsg message, ISimulationEngine engine) {
+		
 		HFloodSM source = getSM(fSource);
 		for (int i = 0; i < fFlood.length; i++) {
 			HFloodSM sm = getSM(i);

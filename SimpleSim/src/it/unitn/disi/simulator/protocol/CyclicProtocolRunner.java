@@ -43,7 +43,6 @@ public class CyclicProtocolRunner<K extends ICyclicProtocol> implements
 		}
 
 		if (done == network.size()) {
-			System.err.println("Push protocol runner is done.");
 			fDone = true;
 			engine.unbound(this);
 		}

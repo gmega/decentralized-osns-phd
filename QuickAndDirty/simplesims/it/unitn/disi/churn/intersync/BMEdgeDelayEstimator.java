@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.intersync;
 
 import peersim.util.IncrementalStats;
+import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.AvgEvaluator;
 import it.unitn.disi.simulator.measure.IValueObserver;
@@ -19,6 +20,8 @@ public class BMEdgeDelayEstimator implements IValueObserver {
 	private IncrementalStats fBatchMeans = new IncrementalStats();
 
 	private IncrementalStats fCurrentBatch = new IncrementalStats();
+	
+	private IReference<ISimulationEngine> fEngine;
 
 	private AvgEvaluator fEvaluator;
 
@@ -39,14 +42,14 @@ public class BMEdgeDelayEstimator implements IValueObserver {
 	}
 
 	@Override
-	public void observe(double value, ISimulationEngine engine) {
+	public void observe(double value) {
 		fCurrentBatch.add(value);
 
 		if (fCurrentBatch.getN() >= fBatchSize) {
 			startNextBatch();
 			if (isPrecise()) {
 				System.out.println("IT: " + (fBatchSize * fBatchMeans.getN()));
-				engine.stop();
+				fEngine.get().stop();
 			}
 		}
 	}
