@@ -22,7 +22,10 @@ public interface IClockData {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean isBurningIn();
-	
+
+	/**
+	 * @return the {@link ISimulationEngine} this {@link IClockData} belongs to.
+	 */
 	public ISimulationEngine engine();
 
 }

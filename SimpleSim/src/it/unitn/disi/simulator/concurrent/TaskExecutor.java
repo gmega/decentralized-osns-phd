@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
@@ -22,6 +23,8 @@ import org.apache.log4j.Logger;
 public class TaskExecutor {
 
 	private static final Logger fLogger = Logger.getLogger(TaskExecutor.class);
+
+	private final AtomicInteger fActiveTasks = new AtomicInteger();
 
 	private volatile CallbackThreadPoolExecutor<Object> fExecutor;
 
@@ -90,8 +93,8 @@ public class TaskExecutor {
 		fTasks = taskBlock;
 		fConsumed = taskBlock;
 		fBlockSize = taskBlock;
-		fTracker = quiet ? Progress.nullTracker() : Progress.synchronizedTracker(Progress.newTracker(task,
-				taskBlock));
+		fTracker = quiet ? Progress.nullTracker() : Progress
+				.synchronizedTracker(Progress.newTracker(task, taskBlock));
 		fTracker.startTask();
 	}
 
@@ -111,7 +114,7 @@ public class TaskExecutor {
 		sema.acquire();
 
 		synchronized (this) {
-			executor.submit(callable);
+			executor.submit(new TaskContainer(callable));
 		}
 	}
 
@@ -175,6 +178,25 @@ public class TaskExecutor {
 
 	}
 
+	/**
+	 * @return an approximate number of the active tasks in the system.
+	 */
+	public int activeTasks() {
+		return fActiveTasks.get();
+	}
+
+	private void signalActive() {
+		if (fActiveTasks.incrementAndGet() > fCores) {
+			fLogger.error("Active tasks exceeded available cores. This is a bug.");
+		}
+	}
+
+	private void signalDone() {
+		if (fActiveTasks.decrementAndGet() < 0) {
+			fLogger.error("Activation signal lost.");
+		}
+	}
+
 	private void semaphoreAndQueue() {
 		fReady = new LinkedBlockingQueue<Object>();
 		fSema = new Semaphore(fMaxQueuedTasks);
@@ -193,6 +215,34 @@ public class TaskExecutor {
 		if (wait) {
 			fExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 		}
+	}
+
+	/**
+	 * Instrumentation class which calls two hooks from inside of the executor's
+	 * worker thread assigned to this task, which in turn allows us to track how
+	 * many cores are active at a time for debugging and performance tuning
+	 * purposes.
+	 * 
+	 * @author giuliano
+	 */
+	private class TaskContainer implements Callable<Object> {
+
+		Callable<? extends Object> fTask;
+
+		public TaskContainer(Callable<? extends Object> task) {
+			fTask = task;
+		}
+
+		@Override
+		public Object call() throws Exception {
+			signalActive();
+			try {
+				return fTask.call();
+			} finally {
+				signalDone();
+			}
+		}
+
 	}
 
 }

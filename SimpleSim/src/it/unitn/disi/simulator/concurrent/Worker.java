@@ -67,7 +67,8 @@ public abstract class Worker implements Runnable, Application {
 	 */
 	private TaskExecutor fExecutor;
 
-	public Worker(@Attribute(Attribute.AUTO) IResolver resolver) {
+	public Worker(@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute(value = "debug", defaultValue = "false") boolean debug) {
 		fMutex = new ReentrantLock();
 
 		fControl = ObjectCreator.createInstance(ControlClient.class, "",
@@ -77,6 +78,11 @@ public abstract class Worker implements Runnable, Application {
 			fChkpClient = new CheckpointClient(fControl, this, 30 * ONE_MINUTE);
 			fCheckpoint = new Thread(fChkpClient,
 					"Application checkpoint thread");
+
+			if (debug) {
+				enableDebugging(resolver);
+			}
+
 		} catch (Exception ex) {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
@@ -212,6 +218,30 @@ public abstract class Worker implements Runnable, Application {
 		fMutex.unlock();
 	}
 
+	private void enableDebugging(IResolver resolver) {
+		fLogger.info("Debugging enabled.");
+
+		Thread activeTaskMonitor = new Thread("ATMon") {
+			@Override
+			public void run() {
+				try {
+					while (!Thread.interrupted()) {
+						synchronized (this) {
+							wait(10000);
+						}
+						fLogger.info("Active tasks: ["
+								+ fExecutor.activeTasks() + "]");
+					}
+				} catch (InterruptedException ex) {
+					// Done.
+				}
+			}
+		};
+
+		activeTaskMonitor.setDaemon(true);
+		activeTaskMonitor.start();
+	}
+
 	public void checkpointStart() {
 		fMutex.lock();
 	}
@@ -275,7 +305,7 @@ public abstract class Worker implements Runnable, Application {
 	 * @return
 	 */
 	protected abstract Serializable resultAggregate(int id, Object data);
-	
+
 	protected abstract void aggregate(Object aggregate, int i,
 			SimulationTask task);
 

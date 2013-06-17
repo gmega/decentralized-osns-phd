@@ -35,4 +35,9 @@ public interface INetwork {
 	 */
 	public double version();
 
+	/**
+	 * @return the {@link ISimulationEngine} this {@link INetwork} belongs to.
+	 */
+	public ISimulationEngine engine();
+
 }

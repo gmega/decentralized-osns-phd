@@ -9,7 +9,7 @@ package it.unitn.disi.simulator.core;
  */
 public interface ISimulationEngine {
 
-	/** 
+	/**
 	 * @see INetwork
 	 */
 	public INetwork network();
@@ -34,10 +34,15 @@ public interface ISimulationEngine {
 	public void unbound(IEventObserver observer);
 
 	/**
-	 * Stops the simulation cold. Useful when one participant detains enough
-	 * knowledge to decide it.
+	 * Decreases the number of stop permits in the current engine by one. When
+	 * the count reaches zero, the engine arrests.
 	 */
 	public void stop();
+
+	/**
+	 * @return the number of available stop permits in this engine.
+	 */
+	public int stopPermits();
 
 	/**
 	 * @return <code>true</code> if the simulation is done, or
