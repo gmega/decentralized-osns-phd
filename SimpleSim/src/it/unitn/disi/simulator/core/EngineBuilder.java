@@ -123,12 +123,16 @@ public class EngineBuilder {
 		for (int i = 0; i < processes.length; i++) {
 			processes[i] = fProcesses.get(i);
 		}
-
+		
 		fInstance = new EDSimulationEngine(
 				fProcesses.toArray(new IProcess[fProcesses.size()]),
 				fObservers.toArray(new Descriptor[fObservers.size()]),
 				fExtraPermits, fBurnin);
 
+		for(Schedulable schedulable : fPreschedulables) {
+			fInstance.schedule(schedulable);
+		}
+		
 		return fInstance;
 	}
 

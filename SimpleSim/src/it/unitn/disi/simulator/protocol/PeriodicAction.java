@@ -24,7 +24,7 @@ public abstract class PeriodicAction implements IEventObserver {
 
 	private static final long serialVersionUID = 7135912692487883268L;
 
-	private static final double TIEBREAK_DELTA = 1.0 / 3600000000.0;
+	public static final double TIEBREAK_DELTA = 1.0 / 3600000000.0;
 
 	private static final boolean DEBUG = false;
 
@@ -52,6 +52,7 @@ public abstract class PeriodicAction implements IEventObserver {
 
 		State pState = ((IProcess) schedulable).state();
 		IClockData clock = state.clock();
+		boolean abort = false;
 
 		// If our node is going down, we have nothing to do.
 		if (pState == State.down) {
@@ -73,12 +74,13 @@ public abstract class PeriodicAction implements IEventObserver {
 				fNextAccess = target;
 			} else {
 				printEvent("NUDGE_ABORT", clock.rawTime(), fNextAccess);
+				abort = true;
 			}
 		}
 
 		// Otherwise we schedule the access only if it is scheduled to happen
 		// during the current session.
-		if (shouldAccess()) {
+		if (shouldAccess() && !abort) {
 			scheduleAction(clock);
 		}
 	}
@@ -162,7 +164,7 @@ public abstract class PeriodicAction implements IEventObserver {
 		return fTieBreaker * TIEBREAK_DELTA;
 	}
 
-	private IProcess process() {
+	protected IProcess process() {
 		return fSim.get().network().process(fId);
 	}
 
