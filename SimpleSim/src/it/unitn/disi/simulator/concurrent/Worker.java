@@ -1,6 +1,7 @@
 package it.unitn.disi.simulator.concurrent;
 
 import java.io.Serializable;
+import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,16 +10,28 @@ import org.apache.log4j.Logger;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient.Application;
+import it.unitn.disi.distsim.scheduler.IWorker;
 import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.logging.ProgressTracker;
 import peersim.config.Attribute;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 
-public abstract class Worker implements Runnable, Application {
+public abstract class Worker implements Runnable, Application, IWorker {
+
+	public static final String PROP_TASK_DATA = "task.data";
+	
+	public static final String PROP_TASK_STATS = "task.stats";
+	
+	public static final String PROP_TASK_PROGRESS = "task.progress";
+
+	public static final String PROP_ACTIVE_TASKS = "task.active";
+
+	private static final int ACTIVE_POLLING_INTERVAL = 10000;
 
 	private static final int ONE_SECOND = 1000;
 
@@ -51,6 +64,12 @@ public abstract class Worker implements Runnable, Application {
 	private final Thread fCheckpoint;
 
 	private final ControlClient fControl;
+
+	private final Properties fStatus;
+	
+	private int fFailed;
+	
+	private int fCompleted;
 
 	/**
 	 * The iterator which will feed us experiments.
@@ -87,7 +106,9 @@ public abstract class Worker implements Runnable, Application {
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 
-		fClient = new SchedulerClient(fControl);
+		fClient = new SchedulerClient(fControl, this);
+
+		fStatus = new Properties();
 	}
 
 	@Override
@@ -125,6 +146,13 @@ public abstract class Worker implements Runnable, Application {
 
 		fExecutor.start(label(id, data), iterations, quiet(id, data));
 
+		// Publishes the current progress of this worker as a property that
+		// can be consumed by remote clients.
+		StatusTracker tracker = new StatusTracker(taskTitle(data),
+				iterations);
+		tracker.startTask();
+
+		// Thread that submits jobs.
 		Thread submitter = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -144,13 +172,21 @@ public abstract class Worker implements Runnable, Application {
 
 		submitter.start();
 
+		// Consumes results as they become available.
 		for (int i = 0; i < iterations; i++) {
 			SimulationTask task = getTask(fExecutor);
+			tracker.tick();
 			if (task == null) {
 				continue;
 			}
+
+			// Locks the aggregate state so that it cannot be checkpointed
+			// while we change it.
 			fMutex.lock();
 			aggregate(fState.aggregate, i, task);
+
+			// If the result aggregate is "precise" enough, stop running
+			// experiments.
 			if (isPreciseEnough(fState.aggregate)) {
 				submitter.interrupt();
 				fMutex.unlock();
@@ -164,9 +200,25 @@ public abstract class Worker implements Runnable, Application {
 			}
 			fState.iteration++;
 			fMutex.unlock();
+			
+			fCompleted++;
+			updateTaskStatistics();
 		}
 
+		tracker.done();
+
 		return fState.aggregate;
+	}
+
+	private void updateTaskStatistics() {
+		StringBuffer sbuffer = new StringBuffer();
+		sbuffer.append("[");
+		sbuffer.append("fail: ");
+		sbuffer.append(fFailed);
+		sbuffer.append(", complete: ");
+		sbuffer.append(fCompleted);
+		sbuffer.append("]");
+		updateStatus(PROP_TASK_STATS, sbuffer.toString());
 	}
 
 	private SimulationTask getTask(TaskExecutor executor) {
@@ -184,6 +236,8 @@ public abstract class Worker implements Runnable, Application {
 		if (value instanceof SimulationTaskException) {
 			SimulationTaskException ste = (SimulationTaskException) value;
 			ste.dumpProperties(System.err);
+			fFailed++;
+			updateTaskStatistics();
 		} else {
 			System.err.println("Can't handle return value - "
 					+ value.toString());
@@ -218,6 +272,15 @@ public abstract class Worker implements Runnable, Application {
 		fMutex.unlock();
 	}
 
+	private synchronized void updateStatus(String key, String value) {
+		System.err.println(key + " -> " + value);
+		fStatus.setProperty(key, value);
+	}
+
+	private synchronized Properties statusCopy() {
+		return (Properties) fStatus.clone();
+	}
+
 	private void enableDebugging(IResolver resolver) {
 		fLogger.info("Debugging enabled.");
 
@@ -227,10 +290,12 @@ public abstract class Worker implements Runnable, Application {
 				try {
 					while (!Thread.interrupted()) {
 						synchronized (this) {
-							wait(10000);
+							wait(ACTIVE_POLLING_INTERVAL);
 						}
-						fLogger.info("Active tasks: ["
-								+ fExecutor.activeTasks() + "]");
+
+						int tasks = fExecutor.activeTasks();
+						fLogger.info("Active tasks: [" + tasks + "]");
+						updateStatus(PROP_ACTIVE_TASKS, Integer.toString(tasks));
 					}
 				} catch (InterruptedException ex) {
 					// Done.
@@ -264,6 +329,44 @@ public abstract class Worker implements Runnable, Application {
 		public volatile int iteration;
 
 		public volatile Object aggregate;
+	}
+
+	private class StatusTracker extends ProgressTracker {
+
+		StatusTracker(String taskTitle, int totalTicks) {
+			super(taskTitle, totalTicks);
+		}
+
+		@Override
+		protected void reportProgress(double percentage) {
+			updateStatus(PROP_TASK_PROGRESS, percentage + "%");
+		}
+
+		@Override
+		protected void disposeWidget() {
+			updateStatus(PROP_TASK_PROGRESS, "[done]");
+		}
+
+		@Override
+		protected void displayWidget() {
+			updateStatus(PROP_TASK_DATA, title());
+			updateStatus(PROP_TASK_PROGRESS, "0%");
+		}
+
+	}
+
+	// -------------------------------------------------------------------------
+	// IWorker interface.
+	// -------------------------------------------------------------------------
+
+	@Override
+	public void echo() {
+
+	}
+
+	@Override
+	public synchronized Properties status() {
+		return statusCopy();
 	}
 
 	// -------------------------------------------------------------------------
@@ -317,6 +420,8 @@ public abstract class Worker implements Runnable, Application {
 	protected abstract boolean isPreciseEnough(Object aggregate);
 
 	protected abstract void outputResults(Object results);
+	
+	protected abstract String taskTitle(Serializable data);
 
 	/**
 	 * Provides a label to the current task, to be displayed by the progress

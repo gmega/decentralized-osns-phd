@@ -19,8 +19,11 @@ import java.util.Set;
  * <ol>
  * 
  * This is mainly to enable checkpointing: the engine can be paused until its
- * state gets dumped to disk, and then resumed.
- * 
+ * state gets dumped to disk, and then resumed.<BR>
+ * <BR>
+ * <b>Note:</b> the engine uses double precision numbers internally, so care
+ * must be exercised, e.g. in not to operating numbers of magnitudes that are
+ * too different.
  * 
  * @author giuliano
  */
@@ -185,7 +188,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			waitForClearance();
 			fRunning = true;
 			while (!fPaused && !fDone) {
-				if(!uncheckedStep()) {
+				if (!uncheckedStep()) {
 					fDone = true;
 				}
 			}

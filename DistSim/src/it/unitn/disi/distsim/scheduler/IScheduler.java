@@ -4,6 +4,7 @@ import it.unitn.disi.utils.collections.Pair;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public interface IScheduler extends Remote {
 	
@@ -44,5 +45,10 @@ public interface IScheduler extends Remote {
 	 *            ID of the experiment that has been run.
 	 */
 	public void experimentDone(Integer experimentId) throws RemoteException;
+	
+	/**
+	 * @return a list of registered {@link IWorker}s
+	 */
+	public List<IWorker> workerList() throws RemoteException;
 
 }

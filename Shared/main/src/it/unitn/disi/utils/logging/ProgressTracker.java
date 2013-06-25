@@ -12,7 +12,7 @@ public abstract class ProgressTracker implements IProgressTracker {
 	
 	private double fUntilUpdate;
 	
-    ProgressTracker(String taskTitle, int totalTicks) {
+    protected ProgressTracker(String taskTitle, int totalTicks) {
         fTotalTicks = totalTicks;
         fUpdateInterval = Math.max(1.0, totalTicks/100.0);
         fTaskTitle = taskTitle;

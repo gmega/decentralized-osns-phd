@@ -12,6 +12,7 @@ import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -277,6 +278,17 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	@Override
 	public double completion() throws RemoteException {
 		return ((double) remaining()) / ((double) total());
+	}
+
+	@Override
+	public List<IWorker> workerList() throws RemoteException {
+		// Snapshots our worker map.
+		List<IWorker> list = new ArrayList<IWorker>();
+		for (WorkerEntry entry : fWorkers.values()) {
+			list.add(entry.worker);
+		}
+		
+		return list;
 	}
 
 	class WorkerEntry {

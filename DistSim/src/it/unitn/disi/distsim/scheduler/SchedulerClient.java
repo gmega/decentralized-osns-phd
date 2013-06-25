@@ -11,24 +11,27 @@ import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
 
-public class SchedulerClient implements ISchedule, IWorker {
+public class SchedulerClient implements ISchedule {
 
 	private static final Logger fLogger = Logger
 			.getLogger(SchedulerClient.class);
 
 	private final ControlClient fClient;
 	
+	private final IWorker fWorker;
+
 	private int fWorkerId;
-	
+
 	private Integer fInitialSize;
 
-	public SchedulerClient(ControlClient client) {
+	public SchedulerClient(ControlClient client, IWorker worker) {
 		fClient = client;
+		fWorker = worker;
 	}
 
 	@Override
 	public IScheduleIterator iterator() {
-		IWorker us = publish(); 
+		IWorker us = publish();
 		IScheduler master = connect();
 		register(master, us);
 		return new DistributedIterator(master);
@@ -38,17 +41,17 @@ public class SchedulerClient implements ISchedule, IWorker {
 		try {
 			fLogger.info("Registering worker reference with master.");
 			fInitialSize = master.remaining();
-			fWorkerId = master.registerWorker(this);
+			fWorkerId = master.registerWorker(fWorker);
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to register reference.");
 			throw MiscUtils.nestRuntimeException(ex);
 		}
 	}
-	
+
 	private IWorker publish() {
 		try {
 			fLogger.info("Publishing RMI reference.");
-			return (IWorker) UnicastRemoteObject.exportObject(this, 0);
+			return (IWorker) UnicastRemoteObject.exportObject(fWorker, 0);
 		} catch (RemoteException ex) {
 			fLogger.error("Failed to publish object.");
 			throw MiscUtils.nestRuntimeException(ex);
@@ -62,17 +65,12 @@ public class SchedulerClient implements ISchedule, IWorker {
 			fLogger.error("Failed to resolve registry at supplied address/port. "
 					+ "Is the master instance running? Is the queue id right?");
 			throw MiscUtils.nestRuntimeException(ex);
-		} 
+		}
 	}
 
 	@Override
 	public int size() {
 		return fInitialSize;
-	}
-
-	@Override
-	public void echo() throws RemoteException {
-		// Does nothing.
 	}
 
 	class DistributedIterator implements IScheduleIterator {
