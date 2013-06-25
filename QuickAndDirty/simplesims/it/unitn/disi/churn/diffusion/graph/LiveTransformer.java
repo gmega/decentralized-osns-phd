@@ -5,6 +5,7 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.SparseIDMapper;
 import it.unitn.disi.utils.collections.Triplet;
@@ -100,6 +101,10 @@ public class LiveTransformer implements ILiveTransformer {
 		public int live() {
 			checkVersion();
 			return fNetwork.live();
+		}
+		
+		public ISimulationEngine engine() {
+			throw new UnsupportedOperationException();
 		}
 
 		private void checkVersion() {

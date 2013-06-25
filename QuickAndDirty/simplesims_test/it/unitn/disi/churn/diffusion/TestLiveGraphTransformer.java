@@ -6,6 +6,7 @@ import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.utils.AbstractIDMapper;
@@ -114,6 +115,11 @@ public class TestLiveGraphTransformer {
 			@Override
 			public double version() {
 				return 0;
+			}
+			
+			@Override
+			public ISimulationEngine engine() {
+				return null;
 			}
 		};
 	}

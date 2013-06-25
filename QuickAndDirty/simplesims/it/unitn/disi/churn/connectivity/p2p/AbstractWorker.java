@@ -1,10 +1,13 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
+import java.util.Properties;
+
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.control.ControlClient;
+import it.unitn.disi.distsim.scheduler.IWorker;
 import it.unitn.disi.distsim.scheduler.SchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
@@ -21,7 +24,7 @@ import peersim.config.ObjectCreator;
  * 
  * @author giuliano
  */
-public abstract class AbstractWorker implements ITransformer {
+public abstract class AbstractWorker implements ITransformer, IWorker {
 
 	/**
 	 * How many repetitions to run.
@@ -50,7 +53,7 @@ public abstract class AbstractWorker implements ITransformer {
 	private TEExperimentHelper fHelper;
 
 	private ExperimentReader fExperimentReader;
-	
+
 	private IGraphProvider fProvider;
 
 	// -------------------------------------------------------------------------
@@ -73,7 +76,7 @@ public abstract class AbstractWorker implements ITransformer {
 		ControlClient cclient = ObjectCreator.createInstance(
 				ControlClient.class, "", resolver);
 
-		fClient = new SchedulerClient(cclient);
+		fClient = new SchedulerClient(cclient, this);
 
 		fExperimentReader = new ExperimentReader(idField);
 		ObjectCreator.fieldInject(ExperimentReader.class, fExperimentReader,
@@ -100,7 +103,7 @@ public abstract class AbstractWorker implements ITransformer {
 
 	protected IGraphProvider provider() throws Exception {
 		if (fProvider == null) {
-			fProvider = fGraphConfig.graphProvider(); 
+			fProvider = fGraphConfig.graphProvider();
 		}
 		return fProvider;
 	}
@@ -118,6 +121,18 @@ public abstract class AbstractWorker implements ITransformer {
 			return;
 		}
 		fHelper.shutdown(false);
+	}
+
+	// -------------------------------------------------------------------------
+
+	public void echo() {
+
+	}
+
+	// -------------------------------------------------------------------------
+	
+	public Properties status() {
+		return new Properties();
 	}
 
 	// -------------------------------------------------------------------------

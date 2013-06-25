@@ -3,12 +3,12 @@ package it.unitn.disi.churn.diffusion.cloud;
 import java.util.Arrays;
 import java.util.Random;
 
+import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
@@ -93,7 +93,7 @@ public class CloudAccessor extends PeriodicAction implements IMessageObserver {
 		// Fetch updates.
 		HFloodMMsg[] updates = fCloud
 				.fetchUpdates(id(), -1, fLastHeard, engine);
-		// System.err.println("Cloud access.");
+
 		if (DEBUG) {
 			printEvent(
 					"CLOUD_ACCESS",
@@ -114,6 +114,12 @@ public class CloudAccessor extends PeriodicAction implements IMessageObserver {
 				fDisseminationService.post(update, engine);
 			}
 		}
+
+		// We accessed the cloud, so we supress antientropy for the duration
+		// of this session.
+		// XXX sigh, so much for a dissemination service interface...
+		((DisseminationServiceImpl) fDisseminationService)
+				.suppressAntientropy();
 
 		return updateTimer(clock.rawTime());
 	}

@@ -11,9 +11,11 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.protocol.PeriodicAction;
+import it.unitn.disi.utils.ResettableCounter;
 
 /**
  * {@link DisseminationServiceImpl} knows how to disseminate messages. Ideally
@@ -43,6 +45,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private final int fQuenchDesync;
 
+	private boolean fAE;
+
 	private int fQuenchRound;
 
 	private State fState;
@@ -65,8 +69,9 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			IReference<ISimulationEngine> engine, boolean oneShot,
 			int quenchDesync, double maxQuenchAge, double pushTimeout,
-			double antientropyCycle, double antientropyDelay,
-			int antientropyPrio) {
+			double antientropyShortCycle, double antientropyLongCycle,
+			double antientropyDelay, int antientropyShortRounds,
+			int antientropyPrio, boolean aeBlacklist) {
 
 		fPushProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this, pushTimeout);
@@ -75,7 +80,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				transformer, this, pushTimeout);
 
 		fAntientropy = new Antientropy(engine, rnd, process.id(),
-				antientropyPrio, antientropyCycle, antientropyDelay);
+				antientropyPrio, antientropyShortCycle, antientropyLongCycle,
+				antientropyShortRounds, antientropyDelay, aeBlacklist);
 
 		fGraph = graph;
 
@@ -86,6 +92,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		fMaxQuenchAge = maxQuenchAge;
 		fQuenchDesync = quenchDesync;
 		fQuenchRound = 0;
+
 	}
 
 	public PeriodicAction antientropy() {
@@ -181,6 +188,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		}
 	}
 
+	public void suppressAntientropy() {
+		fAntientropy.suppress();
+	}
+
 	private boolean shouldStopQuench(ISimulationEngine engine) {
 		IMessage msg = fPushProtocols[NO_UPDATE].message();
 		if (msg == null) {
@@ -269,10 +280,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 			boolean duplicate = isReached();
 
-			if (duplicate) {
-				flags |= DUPLICATE;
-			}
-
 			super.markReached(sender, clock, flags);
 
 			if (!duplicate) {
@@ -290,25 +297,69 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		}
 	}
 
-	private static final BitSet EMPTY = new BitSet();
-
 	class Antientropy extends PeriodicAction {
 
 		private static final long serialVersionUID = -7825255354837349538L;
 
 		private final IPeerSelector fSelector;
 
-		private final double fPeriod;
+		private final double fShortPeriod;
+
+		private final double fLongPeriod;
+
+		private final BitSet fSessionBlacklist;
+
+		private final boolean fBlackList;
+
+		private boolean fSuppressed;
+
+		private ResettableCounter fShortRounds;
 
 		public Antientropy(IReference<ISimulationEngine> engine, Random rnd,
-				int id, int prio, double period, double initialDelay) {
+				int id, int prio, double shortPeriod, double longPeriod,
+				int shortRounds, double initialDelay, boolean blacklist) {
+
 			super(engine, prio, id, initialDelay);
-			fPeriod = period;
+
+			fShortPeriod = shortPeriod;
+			fLongPeriod = longPeriod;
+			fShortRounds = new ResettableCounter(shortRounds);
+
 			fSelector = new RandomSelector(rnd);
+			fSessionBlacklist = new BitSet();
+			fBlackList = blacklist;
+		}
+
+		@Override
+		public void eventPerformed(ISimulationEngine state,
+				Schedulable schedulable, double nextShift) {
+
+			// Clear all per-session state.
+			fSessionBlacklist.clear();
+			fShortRounds.reset();
+			fSuppressed = false;
+
+			super.eventPerformed(state, schedulable, nextShift);
+		}
+
+		public void suppress() {
+			fSuppressed = true;
 		}
 
 		@Override
 		protected double performAction(ISimulationEngine engine) {
+			// XXX this is not the most efficient way of implementing
+			// suppression (though it is probably the simplest), as the periodic
+			// action will be needlessly rescheduled.
+			if (!fSuppressed) {
+				doExchange(engine);
+			}
+
+			return engine.clock().rawTime()
+					+ ((fShortRounds.get() > 0) ? fShortPeriod : fLongPeriod);
+		}
+
+		private void doExchange(ISimulationEngine engine) {
 			INetwork network = engine.network();
 			IProcess peer = selectPeer(network);
 
@@ -327,7 +378,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				 * exchange involving a QUENCH and an UPDATE, therefore, will
 				 * count as two separate messages.
 				 */
-
+				fAE = true;
 				// Registers Antientropy exchange.
 				messageReceived(fProcess.id(), pair.fProcess.id(), null,
 						engine.clock(), HFloodSM.ANTIENTROPY_PUSH
@@ -345,22 +396,23 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				pair.fPushProtocols[NO_UPDATE].antientropy(engine,
 						fProcess.id(), true);
 
+				fAE = false;
 			}
 
-			return engine.clock().rawTime() + fPeriod;
+			// Short rounds count even if we cannot select a peer.
+			fShortRounds.decrement();
 		}
 
 		private IProcess selectPeer(INetwork network) {
-			int neighbor = fSelector.selectPeer(fProcess.id(), fGraph, EMPTY,
-					network);
+			int neighbor = fSelector.selectPeer(fProcess.id(), fGraph,
+					fSessionBlacklist, network);
 
-			if (neighbor == IPeerSelector.NO_LIVE_PEER) {
+			if (neighbor < 0) {
 				return null;
 			}
 
-			// This can't be a return code as there are no forbidden peers.
-			if (neighbor == IPeerSelector.NO_PEER) {
-				throw new IllegalStateException();
+			if (fBlackList) {
+				fSessionBlacklist.set(neighbor);
 			}
 
 			return network.process(neighbor);

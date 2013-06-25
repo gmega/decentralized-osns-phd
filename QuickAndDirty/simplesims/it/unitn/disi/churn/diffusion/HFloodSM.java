@@ -136,7 +136,7 @@ public class HFloodSM implements ICyclicProtocol {
 		if (fState == State.DONE) {
 			return;
 		}
-	
+
 		if (!isReached()) {
 			fEndToEndDelay = clock.time();
 			fRawReceiverDelay = fProcess.uptime(clock);
@@ -146,8 +146,15 @@ public class HFloodSM implements ICyclicProtocol {
 			changeState(State.ACTIVE);
 			messageReceived(sender, clock, flags);
 		} else {
-			messageReceived(sender, clock, flags | DUPLICATE);
+			if (!isAntientropy(flags)) {
+				messageReceived(sender, clock, flags | DUPLICATE);
+			}
 		}
+	}
+
+	private boolean isAntientropy(int flags) {
+		return (flags & ANTIENTROPY_PULL) != 0
+				|| (flags & ANTIENTROPY_PUSH) != 0;
 	}
 
 	public IndexedNeighborGraph graph() {

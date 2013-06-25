@@ -60,7 +60,7 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	public ExperimentReader(String idField) {
+	public ExperimentReader(@Attribute("id") String idField) {
 		fIdField = idField;
 	}
 

@@ -93,7 +93,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 				printCloud(e.root, ids, cloudNodes);
 
 				int source = MiscUtils.indexOf(ids,
-						Integer.parseInt(e.attributes.get("source")));
+						Integer.parseInt(source(e)));
 
 				long startTime = System.nanoTime();
 				List<? extends INodeMetric<?>> metric;
@@ -138,6 +138,16 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 		} finally {
 			shutdown();
 		}
+	}
+	
+	// -------------------------------------------------------------------------
+
+	private String source(Experiment e) {
+		String source = e.attributes.get("source");
+		if (source == null) {
+			source = e.attributes.get("node");
+		}
+		return source;
 	}
 
 	// -------------------------------------------------------------------------

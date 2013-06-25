@@ -13,6 +13,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
+import peersim.util.IncrementalStats;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.Experiment;
@@ -33,6 +34,7 @@ import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.simulator.measure.IncrementalStatsAccumulator;
 import it.unitn.disi.simulator.measure.MetricsCollector;
 import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.simulator.measure.SumAccumulation;
@@ -57,9 +59,21 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "push_timeout")
 	private double fPushTimeout;
 
-	// Cycle of antientropy.
-	@Attribute(value = "antientropy_cycle_length")
-	private double fAECycleLength;
+	// Short cycle of antientropy.
+	@Attribute(value = "antientropy_shortcycle")
+	private double fAEShortCycle;
+
+	// Short cycle of antientropy.
+	@Attribute(value = "antientropy_longcycle")
+	private double fAELongCycle;
+
+	@Attribute(value = "antientropy_shortcount")
+	private int fAEShortCycles;
+
+	// If set to true, causes Antientropy to blacklist nodes for selection
+	// within a single session.
+	@Attribute(value = "antientropy_blacklist")
+	private boolean fBlacklistingAE;
 
 	// "Grace period" for expired PeriodicActions.
 	@Attribute(value = "login_grace", defaultValue = "0")
@@ -143,9 +157,10 @@ public class DiffusionExperimentWorker extends Worker {
 
 	public DiffusionExperimentWorker(
 			@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute(value = "churn", defaultValue = "false") boolean churn)
+			@Attribute(value = "churn", defaultValue = "false") boolean churn,
+			@Attribute(value = "debug", defaultValue = "false") boolean debug)
 			throws Exception {
-		super(resolver);
+		super(resolver, debug);
 
 		fProvider = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver).graphProvider();
@@ -166,7 +181,8 @@ public class DiffusionExperimentWorker extends Worker {
 		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
 				"id", "source", "target", "hfuprec", "hfnuprec", "aeuprec",
 				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"msgtime");
+				"aebdwavg", "aebdwmax", "aebdwvar", "hfbdwavg", "hfbdwmax",
+				"hfbdwvar", "msgtime");
 
 		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
 				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
@@ -198,26 +214,48 @@ public class DiffusionExperimentWorker extends Worker {
 
 		System.err.println("-- Selector is (" + fSelector + ").");
 		System.err.println("Push protocol timeout is " + fPushTimeout + ".");
-		System.err.println("Antientropy is "
-				+ ((fAECycleLength < 0) ? "disabled " : ("enabled (period is "
-						+ fAECycleLength + ")")));
+		System.err.println(antientropy());
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
 			System.err.println("-- Quench runs every " + fQuenchDesync
 					+ " rounds.");
+
 			if (fBaseline) {
 				System.err.println("-- Baseline cloud sims are on.");
 			}
 
 			if (fRandomized) {
 				System.err.println("-- Periods are randomized  ["
-						+ (fPeriod * fFixedFraction) + ", " + fPeriod + "]");
+						+ (fDelta * fFixedFraction) + ", " + fDelta + "]");
 			} else {
 				System.err.println("-- Periods are fixed:" + fPeriod);
 			}
 		}
 
+	}
+
+	private String antientropy() {
+		StringBuffer sbuffer = new StringBuffer("Antientropy ");
+
+		if (fAEShortCycle < 0) {
+			sbuffer.append("disabled.");
+			return sbuffer.toString();
+		}
+
+		sbuffer.append("enabled: (");
+		sbuffer.append(fAEShortCycle);
+		sbuffer.append(", ");
+		sbuffer.append(fAELongCycle);
+		sbuffer.append(", ");
+		sbuffer.append(fAEShortCycles);
+		sbuffer.append(")");
+
+		if (fBlacklistingAE) {
+			sbuffer.append(", blacklisting.");
+		}
+
+		return sbuffer.toString();
 	}
 
 	private BitSet fixedNodeMap() throws Exception {
@@ -297,10 +335,10 @@ public class DiffusionExperimentWorker extends Worker {
 
 			elements = new CloudSimulationBuilder(fBurnin, fDelta, fNUPBurnin,
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
-					fLoginGrace, fFixedFraction, fRandomized)
-					.build(source, fMessages, fQuenchDesync, fPushTimeout,
-							fAECycleLength, fP2PSims, fCloudAssisted,
-							fBaseline, fTrackCores, processes);
+					fLoginGrace, fFixedFraction, fRandomized).build(source,
+					fMessages, fQuenchDesync, fPushTimeout, fAEShortCycle,
+					fAELongCycle, fAEShortCycles, fP2PSims, fCloudAssisted,
+					fBaseline, fTrackCores, fBlacklistingAE, processes);
 		}
 
 		return new SimulationTask(
@@ -357,21 +395,35 @@ public class DiffusionExperimentWorker extends Worker {
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_upd.accrued"), 1));
 
-		collector.addAccumulator(new SumAccumulation("msg.hflood.up", graph.size()));
-		collector.addAccumulator(new SumAccumulation("msg.hflood.nup", graph.size()));
-		
-		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph.size()));
-		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup", graph.size()));
-		
-		collector.addAccumulator(new SumAccumulation("msg.ae.sent.up", graph.size()));
-		collector.addAccumulator(new SumAccumulation("msg.ae.sent.nup", graph.size()));
-		
-		collector.addAccumulator(new SumAccumulation("msg.ae.init", graph.size()));
-		collector.addAccumulator(new SumAccumulation("msg.ae.respond", graph.size()));
-		
+		collector.addAccumulator(new SumAccumulation("msg.hflood.up", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.nup", graph
+				.size()));
+
+		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup", graph
+				.size()));
+
+		collector.addAccumulator(new SumAccumulation("msg.ae.sent.up", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.sent.nup", graph
+				.size()));
+
+		collector.addAccumulator(new SumAccumulation("msg.ae.init", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.ae.respond", graph
+				.size()));
+
 		collector.addAccumulator(new SumAccumulation("msg.nup", graph.size()));
 		collector.addAccumulator(new SumAccumulation("msg.accrued", 1));
-		
+
+		collector.addAccumulator(new IncrementalStatsAccumulator("msg.bdw.ae",
+				graph.size()));
+
+		collector.addAccumulator(new IncrementalStatsAccumulator("msg.bdw.hf",
+				graph.size()));
+
 	}
 
 	private String prefix(String prefix, String string) {
@@ -423,6 +475,19 @@ public class DiffusionExperimentWorker extends Worker {
 			outputRegular(result);
 		}
 
+	}
+	
+	@Override
+	protected String taskTitle(Serializable s) {
+		ExperimentData data = (ExperimentData) s;
+		StringBuffer sbuffer = new StringBuffer("[");
+		sbuffer.append("id: ");
+		sbuffer.append(data.experiment.root);
+		sbuffer.append(", size: ");
+		sbuffer.append(data.graph.size());
+		sbuffer.append("]");
+		
+		return sbuffer.toString();
 	}
 
 	private void outputRegular(Pair<ExperimentData, MetricsCollector> result) {
@@ -487,6 +552,9 @@ public class DiffusionExperimentWorker extends Worker {
 		INodeMetric<Double> aeInitiated = metrics.getMetric("msg.ae.init");
 		INodeMetric<Double> aeReceived = metrics.getMetric("msg.ae.respond");
 
+		INodeMetric<IncrementalStats> aeBdw = metrics.getMetric("msg.bdw.ae");	
+		INodeMetric<IncrementalStats> hfBdw = metrics.getMetric("msg.bdw.hf");
+
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
 
 		for (int i = 0; i < data.graph.size(); i++) {
@@ -505,6 +573,18 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set("aeinit", aeInitiated.getMetric(i));
 			writer.set("aerespond", aeReceived.getMetric(i));
+
+			IncrementalStats stats = aeBdw.getMetric(i);
+
+			writer.set("aebdwmax", stats.getMax());
+			writer.set("aebdwvar", stats.getVar());
+			writer.set("aebdwavg", stats.getAverage());
+
+			stats = hfBdw.getMetric(i);
+
+			writer.set("hfbdwmax", stats.getMax());
+			writer.set("hfbdwvar", stats.getVar());
+			writer.set("hfbdwavg", stats.getAverage());
 
 			writer.set("msgtime", time.getMetric(0));
 

@@ -10,7 +10,7 @@ import it.unitn.disi.churn.connectivity.tce.SimpleRDTCE;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
@@ -27,15 +27,13 @@ import java.util.List;
 
 public class SimulationTaskBuilder {
 
-	private final ArrayList<Pair<Integer, ? extends IEventObserver>> fSims;
+	private final EngineBuilder fBuilder;
 
 	private final IndexedNeighborGraph fGraph;
 
 	private final int fRoot;
 
 	private CloudTCE fLast;
-
-	private IProcess[] fProcesses;
 
 	private int[] fContiguousMap;
 
@@ -48,12 +46,12 @@ public class SimulationTaskBuilder {
 
 	public SimulationTaskBuilder(IndexedNeighborGraph graph, int root,
 			double[] li, double[] di, YaoChurnConfigurator conf, int[] nodeMap) {
-		fSims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
+		fBuilder = new EngineBuilder();
 		fGraph = graph;
 		fRoot = root;
 
-		fProcesses = nodeMap == null ? conf.createProcesses(li, di,
-				graph.size()) : createLinkedProcesses(li, di, conf, nodeMap);
+		fBuilder.addProcess(nodeMap == null ? conf.createProcesses(li, di,
+				graph.size()) : createLinkedProcesses(li, di, conf, nodeMap));
 	}
 
 	public SimulationTaskBuilder addConnectivitySimulation(int source,
@@ -61,7 +59,7 @@ public class SimulationTaskBuilder {
 		SimpleRDTCE tce = fContiguousMap == null ? new SimpleRDTCE(fGraph,
 				source) : new NodeMappedTCE(fGraph, source, fContiguousMap);
 		addTCEMetrics(source, tce, ed, rd);
-		addSim(tce);
+		addSim(tce, true);
 		return this;
 	}
 
@@ -76,7 +74,7 @@ public class SimulationTaskBuilder {
 		CloudTCE tce = new CloudTCE(fGraph, source, fixedNodes, sampler);
 		fLast = tce;
 		addTCEMetrics(source, tce, ed, rd);
-		addSim(fLast);
+		addSim(fLast, true);
 		return this;
 	}
 
@@ -85,7 +83,7 @@ public class SimulationTaskBuilder {
 			IMetricAccumulator<Double> rd, IProgressTracker tracker) {
 		final MultiTCE multi = new MultiTCE(fGraph, source, repeats, ed, rd,
 				tracker, fContiguousMap);
-		addSim(multi);
+		addSim(multi, true);
 		addMetric(source, ed);
 		addMetric(source, rd);
 		return this;
@@ -93,7 +91,7 @@ public class SimulationTaskBuilder {
 
 	public void addCloudSimulation(int source) {
 		final CloudSim sim = new CloudSim(source, fGraph.size());
-		addSim(sim);
+		addSim(sim, true);
 		addMetric(source, new INodeMetric<Double>() {
 			@Override
 			public Object id() {
@@ -112,7 +110,7 @@ public class SimulationTaskBuilder {
 			throw new IllegalStateException();
 		}
 		addSim(new ComponentTracker(fLast, fGraph, System.out, fRoot, source,
-				fLast.source()));
+				fLast.source()), false);
 	}
 
 	public SimulationTask simulationTask(double burnIn) {
@@ -136,14 +134,11 @@ public class SimulationTaskBuilder {
 						return o1.a - o2.a;
 					}
 				});
+		
+		fBuilder.setBurnin(burnIn);
 
-		// Creates engine with zero permits so it arrests when all binding
-		// observers are unbound.
-		EDSimulationEngine engine = new EDSimulationEngine(fProcesses, burnIn,
-				0);
-		engine.setEventObservers(fSims);
-
-		return new SimulationTask(fGraph.size(), engine, null, metrics);
+		return new SimulationTask(fGraph.size(), fBuilder.engine(), null,
+				metrics);
 	}
 
 	private void addTCEMetrics(int source, final SimpleRDTCE tce,
@@ -209,9 +204,9 @@ public class SimulationTaskBuilder {
 		return conf.createProcesses(mappedLi, mappedDi, mappedLi.length);
 	}
 
-	private void addSim(IEventObserver observer) {
-		fSims.add(new Pair<Integer, IEventObserver>(
-				IProcess.PROCESS_SCHEDULABLE_TYPE, observer));
+	private void addSim(IEventObserver observer, boolean binding) {
+		fBuilder.addObserver(observer, IProcess.PROCESS_SCHEDULABLE_TYPE,
+				binding, true);
 	}
 
 	private void addMetric(int source, INodeMetric<Double> metric) {

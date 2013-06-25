@@ -102,9 +102,10 @@ public class CloudSimulationBuilder {
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			final int source, int messages, int quenchDesync,
-			double pushTimeout, double antientropyPeriod,
+			double pushTimeout, double antientropyShortCycle,
+			double antientropyLongCycle, int shortCycles,
 			boolean dissemination, boolean cloudAssist, boolean baseline,
-			boolean trackCores, IProcess[] processes) {
+			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -119,40 +120,49 @@ public class CloudSimulationBuilder {
 
 		int pid = 0;
 		// 1. Config for dissemination service.
+		// 1a. Pausing runner that runs the push protocols.
+		PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = null;
+		
+		// If dissemination is disabled, don't register a runner for the push
+		// protocols.
 		if (dissemination) {
-			// 1a. Pausing runner that runs the push protocols.
-			PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = new PausingCyclicProtocolRunner<DisseminationServiceImpl>(
+			runner = new PausingCyclicProtocolRunner<DisseminationServiceImpl>(
 					reference, SECOND, 1, pid);
 			builder.addObserver(runner, 1, true, true);
 			builder.addObserver(runner.networkObserver(),
 					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
-
-			prots = create(processes, runner, pid, messages, quenchDesync,
-					pushTimeout, antientropyPeriod, metrics, builder);
-
-			// 1b. Cloud-assistance, if enabled.
-			if (cloudAssist) {
-				cloud = new SimpleCloudImpl(source);
-				create(reference, processes, prots, cloud, source);
-			}
-
-			// 1c. Add dissemination wick (guy that posts update after some 
-			//     period of time ellapses).
-			addWickAndAnchor(source, messages, "", prots, processes, builder,
-					cloud, metrics);
-
-			// 1d. Add CoreTracker if required -- tracks initial connected core,
-			//     which we need for the two-phase sims.
-			if (trackCores) {
-				CoreTracker tracker = new CoreTracker(prots[source], fGraph,
-						source, pid);
-				builder.addObserver(tracker, IProcess.PROCESS_SCHEDULABLE_TYPE,
-						false, true);
-				metrics.add(tracker);
-			}
-
-			pid += 1;
 		}
+
+		prots = create(processes, runner, pid, messages, quenchDesync,
+				pushTimeout, 
+				// Antientropy cycle length is negative if no dissemination. 
+				// This causes antientropy to be disabled.
+				dissemination ? antientropyShortCycle : -1,
+				antientropyLongCycle, shortCycles, aeBlacklist, metrics,
+				builder);
+
+		// 1b. Cloud-assistance, if enabled.
+		if (cloudAssist) {
+			cloud = new SimpleCloudImpl(source);
+			create(reference, processes, prots, cloud, source);
+		}
+
+		// 1c. Add dissemination wick (guy that posts update after some
+		// period of time ellapses).
+		addWickAndAnchor(source, messages, "", prots, processes, builder,
+				cloud, metrics);
+
+		// 1d. Add CoreTracker if required -- tracks initial connected core,
+		// which we need for the two-phase sims.
+		if (trackCores) {
+			CoreTracker tracker = new CoreTracker(prots[source], fGraph,
+					source, pid);
+			builder.addObserver(tracker, IProcess.PROCESS_SCHEDULABLE_TYPE,
+					false, true);
+			metrics.add(tracker);
+		}
+
+		pid += 1;
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
 				builder.engine(), metrics);
@@ -202,7 +212,8 @@ public class CloudSimulationBuilder {
 	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			int pid, int messages, int quenchDesync, double pushTimeout,
-			double antientropyPeriod,
+			double antientropyShortCycle, double antientropyLongCycle,
+			int shortCycles, boolean aeBlacklist,
 			List<INodeMetric<? extends Object>> metrics, EngineBuilder builder) {
 
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
@@ -210,17 +221,19 @@ public class CloudSimulationBuilder {
 		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size());
 
 		for (int i = 0; i < protocols.length; i++) {
+
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
 					peerSelector(), processes[i], new CachingTransformer(
 							new LiveTransformer()), runner,
 					builder.reference(), messages == 1, quenchDesync,
-					maxQuenchAge(), pushTimeout, antientropyPeriod, fBurnin,
-					AE_PRIORITY);
+					maxQuenchAge(), pushTimeout, antientropyShortCycle,
+					antientropyLongCycle, fBurnin, shortCycles, AE_PRIORITY,
+					aeBlacklist);
 
 			processes[i].addProtocol(protocols[i]);
 
 			// If the period is negative, disables antientropy.
-			if (antientropyPeriod > 0) {
+			if (antientropyShortCycle > 0) {
 				processes[i].addObserver(protocols[i].antientropy());
 			}
 

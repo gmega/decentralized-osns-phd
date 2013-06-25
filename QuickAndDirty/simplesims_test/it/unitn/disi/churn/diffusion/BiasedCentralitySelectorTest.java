@@ -5,6 +5,7 @@ import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.utils.IMultiCounter;
 import it.unitn.disi.utils.SparseMultiCounter;
@@ -83,6 +84,11 @@ public class BiasedCentralitySelectorTest {
 			@Override
 			public double version() {
 				return 0;
+			}
+
+			@Override
+			public ISimulationEngine engine() {
+				return null;
 			}
 		};
 	}
