@@ -26,7 +26,7 @@ import java.io.Serializable;
  * statistics.
  */
 public class IncrementalStats implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	// ===================== fields ========================================
@@ -82,6 +82,41 @@ public class IncrementalStats implements Serializable {
 	 */
 	public final void add(double item) {
 		add(item, 1);
+	}
+
+	// --------------------------------------------------------------------
+
+	/**
+	 * Adds all items accounted for in another instance of
+	 * {@link IncrementalStats}.
+	 * 
+	 * @param item
+	 *            the items to be added.
+	 */
+	public void add(IncrementalStats item) {
+
+		if (this.min > item.min) {
+			this.min = item.min;
+			this.countmin = item.countmin;
+		}
+
+		else if (this.min == item.min) {
+			this.countmin += item.countmin;
+		}
+
+		if (this.max < item.max) {
+			this.max = item.max;
+			this.countmax = item.countmax;
+		}
+
+		else if (this.max == item.max) {
+			this.countmax += item.countmax;
+		}
+
+		sum += item.sum;
+		sqrsum += item.sqrsum;
+		n += item.n;
+
 	}
 
 	// --------------------------------------------------------------------
