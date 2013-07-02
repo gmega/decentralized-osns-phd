@@ -143,6 +143,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	public synchronized void stop() {
 		fMaster.shutdown();
 		fMaster = null;
+		fControl.remove("queue");		
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fControl.id()
 						+ "] stopped.", "isRunning", "boolean", false, true));

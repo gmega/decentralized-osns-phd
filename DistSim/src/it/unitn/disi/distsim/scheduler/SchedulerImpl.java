@@ -137,6 +137,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	public Pair<Integer, Integer> acquireExperiment(int workerId)
 			throws RemoteException {
 		Pair<Integer, Integer> acquired = null;
+		
 		synchronized (fExperiments) {
 			while ((acquired = tryAcquire(workerId)) == null && fRemaining > 0) {
 				try {
