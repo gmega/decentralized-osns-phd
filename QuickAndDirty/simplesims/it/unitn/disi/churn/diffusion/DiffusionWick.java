@@ -107,7 +107,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 
 		if (fFirst) {
 			fFirst = false;
-			fAll.startTrackingSession(clock.rawTime());
+			fAll.startTrackingSession(clock);
 		}
 
 		IProcess process = (IProcess) schedulable;
@@ -119,7 +119,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			}
 
 			fDisseminating = true;
-			fUpdate.startTrackingSession(clock.rawTime());
+			fUpdate.startTrackingSession(clock);
 			System.err.println("Wick fired (" + fMessages + ").");
 			fPoster.post(engine);
 			fSnapshot = uptimeSnapshot(engine.network(), engine.clock());
@@ -249,7 +249,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 			}
 		}
 
-		fUpdate.stopTrackingSession(engine.clock().rawTime());
+		fUpdate.stopTrackingSession(engine.clock());
 
 		fDisseminating = false;
 		Arrays.fill(fSnapshot, Double.MIN_VALUE);
@@ -259,7 +259,7 @@ public class DiffusionWick implements IEventObserver, IBroadcastObserver {
 		// We're no longer binding.
 		if (fMessages == 0) {
 			engine.unbound(this);
-			fAll.stopTrackingSession(engine.clock().rawTime());
+			fAll.stopTrackingSession(engine.clock());
 		}
 	}
 

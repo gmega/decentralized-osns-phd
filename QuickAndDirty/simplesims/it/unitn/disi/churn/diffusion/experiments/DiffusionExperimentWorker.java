@@ -13,7 +13,7 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
-import peersim.util.IncrementalStats;
+import peersim.extras.am.util.IncrementalStatsFreq;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.Experiment;
@@ -34,7 +34,7 @@ import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.simulator.measure.IncrementalStatsAccumulator;
+import it.unitn.disi.simulator.measure.IncrementalStatsFreqAccumulator;
 import it.unitn.disi.simulator.measure.MetricsCollector;
 import it.unitn.disi.simulator.measure.AvgAccumulation;
 import it.unitn.disi.simulator.measure.SumAccumulation;
@@ -143,6 +143,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private TableWriter fP2PCostWriter;
 
+	private TableWriter fBdwDistributionWriter;
+
 	private TableWriter fBaselineLatencyWriter;
 
 	private TableWriter fCloudStatWriter;
@@ -179,10 +181,14 @@ public class DiffusionExperimentWorker extends Worker {
 				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
 
 		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
-				"id", "source", "target", "hfuprec", "hfnuprec", "aeuprec",
-				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"aebdwavg", "aebdwmax", "aebdwvar", "hfbdwavg", "hfbdwmax",
-				"hfbdwvar", "msgtime");
+				"id", "source", "target", "hfuprec", "hfnuprec", "hfupsent",
+				"hfnupsent", "aeuprec", "aenuprec", "aeupsend", "aenupsend",
+				"aeinit", "aerespond", "aebdwavg", "aebdwmax", "aebdwvar",
+				"hfbdwavg", "hfbdwmax", "hfbdwvar", "msgtime", "uptime");
+
+		fBdwDistributionWriter = new TableWriter(new PrefixedWriter("BDW:",
+				System.out), "id", "source", "target", "bdw", "ae", "hf",
+				"uptime");
 
 		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
 				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
@@ -395,9 +401,14 @@ public class DiffusionExperimentWorker extends Worker {
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_upd.accrued"), 1));
 
-		collector.addAccumulator(new SumAccumulation("msg.hflood.up", graph
+		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.up", graph
 				.size()));
-		collector.addAccumulator(new SumAccumulation("msg.hflood.nup", graph
+		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.nup", graph
+				.size()));
+		
+		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.up", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.nup", graph
 				.size()));
 
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph
@@ -417,12 +428,14 @@ public class DiffusionExperimentWorker extends Worker {
 
 		collector.addAccumulator(new SumAccumulation("msg.nup", graph.size()));
 		collector.addAccumulator(new SumAccumulation("msg.accrued", 1));
+		collector
+				.addAccumulator(new SumAccumulation("msg.uptime", graph.size()));
 
-		collector.addAccumulator(new IncrementalStatsAccumulator("msg.bdw.ae",
-				graph.size()));
+		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
+				"msg.bdw.ae", graph.size()));
 
-		collector.addAccumulator(new IncrementalStatsAccumulator("msg.bdw.hf",
-				graph.size()));
+		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
+				"msg.bdw.hf", graph.size()));
 
 	}
 
@@ -476,7 +489,7 @@ public class DiffusionExperimentWorker extends Worker {
 		}
 
 	}
-	
+
 	@Override
 	protected String taskTitle(Serializable s) {
 		ExperimentData data = (ExperimentData) s;
@@ -486,7 +499,7 @@ public class DiffusionExperimentWorker extends Worker {
 		sbuffer.append(", size: ");
 		sbuffer.append(data.graph.size());
 		sbuffer.append("]");
-		
+
 		return sbuffer.toString();
 	}
 
@@ -540,8 +553,15 @@ public class DiffusionExperimentWorker extends Worker {
 	@SuppressWarnings("unchecked")
 	private void printP2PCosts(TableWriter writer, ExperimentData data,
 			MetricsCollector metrics) {
-		INodeMetric<Double> hfloodUpdates = metrics.getMetric("msg.hflood.up");
-		INodeMetric<Double> hfloodQuench = metrics.getMetric("msg.hflood.nup");
+		INodeMetric<Double> hfloodUpdatesRecv = metrics
+				.getMetric("msg.hflood.rec.up");
+		INodeMetric<Double> hfloodQuenchRecv = metrics
+				.getMetric("msg.hflood.rec.nup");
+
+		INodeMetric<Double> hfloodUpdatesSent = metrics
+				.getMetric("msg.hflood.sent.up");
+		INodeMetric<Double> hfloodQuenchSent = metrics
+				.getMetric("msg.hflood.sent.nup");
 
 		INodeMetric<Double> aeUpdatesRec = metrics.getMetric("msg.ae.rec.up");
 		INodeMetric<Double> aeQuenchRec = metrics.getMetric("msg.ae.rec.nup");
@@ -552,18 +572,24 @@ public class DiffusionExperimentWorker extends Worker {
 		INodeMetric<Double> aeInitiated = metrics.getMetric("msg.ae.init");
 		INodeMetric<Double> aeReceived = metrics.getMetric("msg.ae.respond");
 
-		INodeMetric<IncrementalStats> aeBdw = metrics.getMetric("msg.bdw.ae");	
-		INodeMetric<IncrementalStats> hfBdw = metrics.getMetric("msg.bdw.hf");
+		INodeMetric<IncrementalStatsFreq> aeBdw = metrics
+				.getMetric("msg.bdw.ae");
+		INodeMetric<IncrementalStatsFreq> hfBdw = metrics
+				.getMetric("msg.bdw.hf");
 
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
+		INodeMetric<Double> uptime = metrics.getMetric("msg.uptime");
 
 		for (int i = 0; i < data.graph.size(); i++) {
 			writer.set("id", data.experiment.root);
 			writer.set("source", data.source);
 			writer.set("target", data.ids[i]);
 
-			writer.set("hfuprec", hfloodUpdates.getMetric(i));
-			writer.set("hfnuprec", hfloodQuench.getMetric(i));
+			writer.set("hfuprec", hfloodUpdatesRecv.getMetric(i));
+			writer.set("hfnuprec", hfloodQuenchRecv.getMetric(i));
+
+			writer.set("hfupsent", hfloodUpdatesSent.getMetric(i));
+			writer.set("hfnupsent", hfloodQuenchSent.getMetric(i));
 
 			writer.set("aeuprec", aeUpdatesRec.getMetric(i));
 			writer.set("aenuprec", aeQuenchRec.getMetric(i));
@@ -574,21 +600,41 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set("aeinit", aeInitiated.getMetric(i));
 			writer.set("aerespond", aeReceived.getMetric(i));
 
-			IncrementalStats stats = aeBdw.getMetric(i);
+			IncrementalStatsFreq aeStats = aeBdw.getMetric(i);
+			IncrementalStatsFreq hfStats = hfBdw.getMetric(i);
 
-			writer.set("aebdwmax", stats.getMax());
-			writer.set("aebdwvar", stats.getVar());
-			writer.set("aebdwavg", stats.getAverage());
+			writer.set("aebdwmax", aeStats.getMax());
+			writer.set("aebdwvar", aeStats.getVar());
+			writer.set("aebdwavg", aeStats.getAverage());
 
-			stats = hfBdw.getMetric(i);
-
-			writer.set("hfbdwmax", stats.getMax());
-			writer.set("hfbdwvar", stats.getVar());
-			writer.set("hfbdwavg", stats.getAverage());
+			writer.set("hfbdwmax", hfStats.getMax());
+			writer.set("hfbdwvar", hfStats.getVar());
+			writer.set("hfbdwavg", hfStats.getAverage());
 
 			writer.set("msgtime", time.getMetric(0));
+			writer.set("uptime", uptime.getMetric(i));
 
 			writer.emmitRow();
+
+			// -----------------------------------------------------------------
+
+			for (int j = 0; j < Math.max(aeStats.getMax(), hfStats.getMax()); j++) {
+				int aef = aeStats.getFreq(j);
+				int hwf = hfStats.getFreq(j);
+
+				if (aef == 0 && hwf == 0 && j != 0) {
+					continue;
+				}
+
+				fBdwDistributionWriter.set("id", data.experiment.root);
+				fBdwDistributionWriter.set("source", data.source);
+				fBdwDistributionWriter.set("target", data.ids[i]);
+				fBdwDistributionWriter.set("bdw", j);
+				fBdwDistributionWriter.set("ae", aef);
+				fBdwDistributionWriter.set("hf", hwf);
+				fBdwDistributionWriter.set("uptime", uptime.getMetric(i));
+				fBdwDistributionWriter.emmitRow();
+			}
 		}
 	}
 

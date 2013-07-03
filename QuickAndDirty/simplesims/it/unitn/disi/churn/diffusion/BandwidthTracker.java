@@ -1,6 +1,7 @@
 package it.unitn.disi.churn.diffusion;
 
-import gnu.trove.list.array.TDoubleArrayList;
+import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.IProcess;
 
 /**
  * {@link BandwidthTracker} bins continuous time into intervals of fixed length,
@@ -10,11 +11,9 @@ import gnu.trove.list.array.TDoubleArrayList;
  */
 public abstract class BandwidthTracker<T> implements Cloneable {
 
-	private final TDoubleArrayList fDebug;
-
 	private final double fBinWidth;
 
-	private double fBinStart;
+	private double fRawTime;
 
 	private double fBase;
 
@@ -43,10 +42,8 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 			throw new IllegalArgumentException("Bin width must be positive.");
 		}
 
-		fDebug = debug ? new TDoubleArrayList() : null;
 		fBinWidth = binWidth;
-		fBase = fBinStart = base < 0 ? Double.NEGATIVE_INFINITY : binBoundary(
-				base, binWidth);
+		fBase = fRawTime = base < 0 ? Double.NEGATIVE_INFINITY : base;
 	}
 
 	// -------------------------------------------------------------------------
@@ -61,54 +58,65 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Moves time to the provided instant. This will cause bin statistics to be
-	 * collected and, optionally, all bins between the current one and the one
-	 * delimited by the new time instant to be registered as zeros.
+	 * Moves time to the provided instant, possibly changing the current time
+	 * bin.
 	 * 
 	 * @param rawTime
 	 *            the new time instant.
 	 * 
-	 * @param countGaps
-	 *            whether or not to count bins in between as zeros.
 	 */
-	public BandwidthTracker<T> at(double rawTime, boolean countGaps) {
-		if (rawTime < fBinStart) {
-			throw new IllegalStateException("Time can't flow backwards.");
+	public BandwidthTracker<T> at(double rawTime) {
+		ensureForwardFlow(rawTime);
+
+		if (rawTime >= nextBinBoundary(fRawTime, fBinWidth)) {
+			newBin(rawTime);
 		}
 
-		if (!withinBinBoundaries(rawTime)) {
-			newBin(rawTime, countGaps);
-		}
-		
 		return this;
 	}
 
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Signals the end of the timeline.
+	 * Signals the end of the timeline at the time instant registered by the
+	 * last call to {@link #at(double)}.<BR>
+	 * <BR>
+	 * <b>Handling of the last bin:</b> the last bin in the sequence always
+	 * counts as a full bin. So, for example, if we have a bin width of 1
+	 * second, and messages are received at instants 1, 2.5, and 3.5, and then
+	 * {@link #end()} is called, we count the last bin, i.e. bin [3, 4), as
+	 * having only one message.
 	 * 
-	 * @param time
-	 *            the instant at which the timeline ends.
-	 *            
-	 * @param countGaps
-	 *            whether to count the bins between the last one and the end of
-	 *            the timeline as zeros.
+	 * More surprisingly, however, if messages are received at instants 1, 2,
+	 * and 3, and then the client calls: <BR>
+	 * 
+	 * <code>
+	 * 	at(4.0).end();
+	 * </code>
+	 * 
+	 * we count the last bin, i.e. [4, 5) in this case, to be counted as having
+	 * zero messages. This might introduce one zero more than expected.
+	 * 
 	 */
-	public void end(double time, boolean countGaps) {
-		collectBinStatistics(time, true, countGaps);
-		check(time);
-		fBinStart = Double.NEGATIVE_INFINITY;
+	public void end() {
+		lastCount();
+		addCount(0, zeroBucketCount(fRawTime - fBase));
+		fRawTime = Double.NEGATIVE_INFINITY;
 	}
 
 	// -------------------------------------------------------------------------
 
 	/**
-	 * @return the current bin, or {@link Double#NEGATIVE_INFINITY} if the
-	 *         current bin has not been defined yet.
+	 * Signals the end of the timeline at the current uptime of a process.
+	 * 
+	 * @param process
+	 * @param clock
 	 */
-	public double currentBin() {
-		return fBinStart;
+	public void end(IProcess process, IClockData clock) {
+		ensureForwardFlow(clock.rawTime());
+		lastCount();
+		addCount(0, zeroBucketCount(process.uptime(clock)));
+		fRawTime = Double.NEGATIVE_INFINITY;
 	}
 
 	// -------------------------------------------------------------------------
@@ -142,75 +150,59 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	// -------------------------------------------------------------------------
 
-	private void check(double time) {
-		int expected = checkedCast(Math.ceil((time - fBase) / fBinWidth));
-		if (expected != fObservations) {
-			dumpDebugData(time);
-			throw new IllegalStateException("Internal check failed.");
+	private int zeroBucketCount(double time) {
+		int count = checkedCast(Math.ceil(time / fBinWidth)) - fObservations;
+
+		if (count < 0) {
+			throw new IllegalStateException();
 		}
+
+		return Math.max(0, count);
 	}
-	
+
 	// -------------------------------------------------------------------------
 
-	private void dumpDebugData(double time) {
-		if (fDebug != null) {
-			for (int i = 0; i < fDebug.size(); i++) {
-				System.out.println("OFF:" + fDebug.get(i));
-			}
-			System.out.println("OFF:" + time);
+	private void lastCount() {
+		if (fCount > 0) {
+			addCount(fCount, 1);
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 
-	private void newBin(double rawTime, boolean countGaps) {
+	private void ensureForwardFlow(double rawTime) throws IllegalStateException {
+		if (rawTime < fRawTime) {
+			throw new IllegalStateException("Time can't flow backwards.");
+		}
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void newBin(double rawTime) {
 		if (!firstBin()) {
-			collectBinStatistics(rawTime, false, countGaps);
+			addCount(fCount, 1);
 		} else {
 			fBase = rawTime;
 		}
-
-		fBinStart = binBoundary(rawTime, fBinWidth);
+		fRawTime = rawTime;
 		fCount = 0;
 	}
 
 	// -------------------------------------------------------------------------
 
 	private boolean firstBin() {
-		return fBinStart == Double.NEGATIVE_INFINITY;
+		return fRawTime == Double.NEGATIVE_INFINITY;
 	}
-	
+
 	// -------------------------------------------------------------------------
-
-	private void collectBinStatistics(double rawTime, boolean includeCurrent,
-			boolean includeZeros) {
-
-		if (fDebug != null) {
-			fDebug.add(rawTime);
-		}
-
-		addCount(fCount, 1);
-
-		if (!includeZeros) {
-			return;
-		}
-
-		int k = checkedCast(Math.floor((rawTime - fBinStart) / fBinWidth));
-		// Truncation includes the current bin in the calculation as well.
-		if (!includeCurrent) {
-			k--;
-		}
-
-		if (k > 0) {
-			addCount(0, k);
-		}
-	}
 
 	private void addCount(int value, int n) {
 		fObservations += n;
 		fTotalCount += value;
 		add(value, n);
 	}
+
+	// -------------------------------------------------------------------------
 
 	private int checkedCast(double round) {
 		if (round > Integer.MAX_VALUE) {
@@ -219,13 +211,13 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 		return (int) round;
 	}
 
-	private boolean withinBinBoundaries(double rawTime) {
-		return rawTime < (fBinStart + fBinWidth);
+	// -------------------------------------------------------------------------
+
+	private double nextBinBoundary(double time, double width) {
+		return (Math.floor(time / width) + 1) * width;
 	}
 
-	private double binBoundary(double time, double width) {
-		return Math.floor(time / width) * width;
-	}
+	// -------------------------------------------------------------------------
 
 	public abstract T getStats();
 

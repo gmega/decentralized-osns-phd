@@ -45,8 +45,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private final int fQuenchDesync;
 
-	private boolean fAE;
-
 	private int fQuenchRound;
 
 	private State fState;
@@ -378,7 +376,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				 * exchange involving a QUENCH and an UPDATE, therefore, will
 				 * count as two separate messages.
 				 */
-				fAE = true;
 				// Registers Antientropy exchange.
 				messageReceived(fProcess.id(), pair.fProcess.id(), null,
 						engine.clock(), HFloodSM.ANTIENTROPY_PUSH
@@ -395,8 +392,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				// PULL
 				pair.fPushProtocols[NO_UPDATE].antientropy(engine,
 						fProcess.id(), true);
-
-				fAE = false;
 			}
 
 			// Short rounds count even if we cannot select a peer.

@@ -2,6 +2,7 @@ package it.unitn.disi.churn.diffusion.cloud;
 
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.IBroadcastObserver;
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
@@ -17,22 +18,26 @@ public class SessionStatistics implements IBroadcastObserver {
 		fId = id;
 	}
 
-	public void startTrackingSession(double time) {
+	public void startTrackingSession(IClockData clock) {
 		if (isCounting()) {
 			throw new IllegalStateException(
 					"Nested sessions are not supported.");
 		}
-		fLastSession = time;
+		fLastSession = clock.rawTime();
 	}
 
-	public void stopTrackingSession(double time) {
+	public void stopTrackingSession(IClockData clock) {
 		if (!isCounting()) {
 			throw new IllegalStateException(
 					"Can't stop a tracking session when non was started.");
 		}
 
-		fAccruedTime += (time - fLastSession);
+		fAccruedTime += (clock.rawTime() - fLastSession);
 		fLastSession = -1;
+	}
+	
+	public double lastSessionStart() {
+		return fLastSession;
 	}
 
 	public boolean isCounting() {
@@ -57,11 +62,11 @@ public class SessionStatistics implements IBroadcastObserver {
 
 	@Override
 	public void broadcastStarted(HFloodMMsg message, ISimulationEngine engine) {
-		this.startTrackingSession(engine.clock().rawTime());
+		this.startTrackingSession(engine.clock());
 	}
 
 	@Override
 	public void broadcastDone(HFloodMMsg message, ISimulationEngine engine) {
-		this.stopTrackingSession(engine.clock().rawTime());
+		this.stopTrackingSession(engine.clock());
 	}
 }

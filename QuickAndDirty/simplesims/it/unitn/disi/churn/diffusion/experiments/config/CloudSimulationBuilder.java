@@ -8,6 +8,7 @@ import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
 import it.unitn.disi.churn.diffusion.RandomSelector;
+import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
@@ -122,7 +123,7 @@ public class CloudSimulationBuilder {
 		// 1. Config for dissemination service.
 		// 1a. Pausing runner that runs the push protocols.
 		PausingCyclicProtocolRunner<DisseminationServiceImpl> runner = null;
-		
+
 		// If dissemination is disabled, don't register a runner for the push
 		// protocols.
 		if (dissemination) {
@@ -133,9 +134,12 @@ public class CloudSimulationBuilder {
 					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
 		}
 
-		prots = create(processes, runner, pid, messages, quenchDesync,
-				pushTimeout, 
-				// Antientropy cycle length is negative if no dissemination. 
+		prots = create(processes, runner,
+				pid,
+				messages,
+				quenchDesync,
+				pushTimeout,
+				// Antientropy cycle length is negative if no dissemination.
 				// This causes antientropy to be disabled.
 				dissemination ? antientropyShortCycle : -1,
 				antientropyLongCycle, shortCycles, aeBlacklist, metrics,
@@ -218,7 +222,10 @@ public class CloudSimulationBuilder {
 
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
-		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size());
+		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size(),
+				true);
+		
+		UptimeTracker tracker = new UptimeTracker("msg", processes.length);
 
 		for (int i = 0; i < protocols.length; i++) {
 
@@ -239,9 +246,11 @@ public class CloudSimulationBuilder {
 
 			protocols[i].addMessageObserver(mstats);
 			protocols[i].addBroadcastObserver(mstats);
+			protocols[i].addBroadcastObserver(tracker);
 		}
 
 		metrics.add(mstats.accruedTime());
+		metrics.add(tracker.accruedUptime());
 		metrics.addAll(mstats.metrics());
 
 		return protocols;
