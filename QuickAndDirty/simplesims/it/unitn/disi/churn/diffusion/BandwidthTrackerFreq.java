@@ -5,7 +5,7 @@ import peersim.extras.am.util.IncrementalStatsFreq;
 public class BandwidthTrackerFreq extends
 		BandwidthTracker<IncrementalStatsFreq> {
 
-	private final IncrementalStatsFreq fStats;
+	private IncrementalStatsFreq fStats;
 
 	public BandwidthTrackerFreq(double binWidth) {
 		this(-1, binWidth, false);
@@ -35,6 +35,13 @@ public class BandwidthTrackerFreq extends
 	@Override
 	public IncrementalStatsFreq getStats() {
 		return fStats;
+	}
+
+	@Override
+	public BandwidthTrackerFreq clone() throws CloneNotSupportedException {
+		BandwidthTrackerFreq clone = (BandwidthTrackerFreq) super.clone();
+		clone.fStats = (IncrementalStatsFreq) fStats.clone();
+		return clone;
 	}
 
 }

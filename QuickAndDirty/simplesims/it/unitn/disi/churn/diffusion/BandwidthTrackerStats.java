@@ -31,7 +31,7 @@ public class BandwidthTrackerStats extends BandwidthTracker<IncrementalStats>
 	}
 
 	@Override
-	public Object clone() throws CloneNotSupportedException {
+	public BandwidthTrackerStats clone() throws CloneNotSupportedException {
 		BandwidthTrackerStats clone = (BandwidthTrackerStats) super.clone();
 		clone.fStats = new IncrementalStats();
 		clone.fStats.add(fStats);

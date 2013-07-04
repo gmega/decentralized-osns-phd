@@ -150,6 +150,14 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	// -------------------------------------------------------------------------
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public BandwidthTracker<T> clone() throws CloneNotSupportedException {
+		return (BandwidthTracker<T>) super.clone();
+	}
+
+	// -------------------------------------------------------------------------
+
 	private int zeroBucketCount(double time) {
 		int count = checkedCast(Math.ceil(time / fBinWidth)) - fObservations;
 
@@ -157,7 +165,7 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 			throw new IllegalStateException();
 		}
 
-		return Math.max(0, count);
+		return count;
 	}
 
 	// -------------------------------------------------------------------------
