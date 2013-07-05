@@ -176,19 +176,33 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	protected void initialize() throws Exception {
+
 		fLatencyWriter = new TableWriter(new PrefixedWriter("ES:", System.out),
 				"id", "source", "target", "edsumd", "edsum", "edsumu",
 				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
 
-		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
-				"id", "source", "target", "hfuprec", "hfnuprec", "hfupsent",
-				"hfnupsent", "aeuprec", "aenuprec", "aeupsend", "aenupsend",
-				"aeinit", "aerespond", "aebdwavg", "aebdwmax", "aebdwvar",
-				"hfbdwavg", "hfbdwmax", "hfbdwvar", "msgtime", "uptime");
+		fP2PCostWriter = new TableWriter(
+				new PrefixedWriter("PC:", System.out),
+				"id",
+				"source",
+				"target",
+
+				// Message counts.
+				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", 
+				"aeuprec", "aenuprec", "aeupsend", "aenupsend", "aeinit",
+				"aerespond", "msgtime",
+
+				// Bandwidth statistics.
+				"aebdwsum", "aebdwmax", "aebdwsqr",  
+				"hfbdwsum", "hfbdwmax", "hfbdwsqr", 
+				"totbdwsum", "totbdwmax", "totbdwsqr", 
+				
+				// Bin counts
+				"upbins", "totalbins");
 
 		fBdwDistributionWriter = new TableWriter(new PrefixedWriter("BDW:",
 				System.out), "id", "source", "target", "bdw", "ae", "hf",
-				"uptime");
+				"tot", "uptime");
 
 		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
 				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
@@ -403,13 +417,13 @@ public class DiffusionExperimentWorker extends Worker {
 
 		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.up", graph
 				.size()));
-		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.nup", graph
-				.size()));
-		
-		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.up", graph
-				.size()));
-		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.nup", graph
-				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.nup",
+				graph.size()));
+
+		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.up",
+				graph.size()));
+		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.nup",
+				graph.size()));
 
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph
 				.size()));
@@ -431,11 +445,21 @@ public class DiffusionExperimentWorker extends Worker {
 		collector
 				.addAccumulator(new SumAccumulation("msg.uptime", graph.size()));
 
+		collector.addAccumulator(new SumAccumulation("msg.bdw.ae.upbins", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.bdw.hf.upbins", graph
+				.size()));
+		collector.addAccumulator(new SumAccumulation("msg.bdw.tot.upbins",
+				graph.size()));
+
 		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
 				"msg.bdw.ae", graph.size()));
 
 		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
 				"msg.bdw.hf", graph.size()));
+
+		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
+				"msg.bdw.tot", graph.size()));
 
 	}
 
@@ -576,9 +600,18 @@ public class DiffusionExperimentWorker extends Worker {
 				.getMetric("msg.bdw.ae");
 		INodeMetric<IncrementalStatsFreq> hfBdw = metrics
 				.getMetric("msg.bdw.hf");
+		INodeMetric<IncrementalStatsFreq> totBdw = metrics
+				.getMetric("msg.bdw.tot");
 
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
 		INodeMetric<Double> uptime = metrics.getMetric("msg.uptime");
+
+		INodeMetric<Double> aeZeroUpbins = metrics
+				.getMetric("msg.bdw.ae.upbins");
+		INodeMetric<Double> hfZeroUpbins = metrics
+				.getMetric("msg.bdw.hf.upbins");
+		INodeMetric<Double> totZeroUpbins = metrics
+				.getMetric("msg.bdw.tot.upbins");
 
 		for (int i = 0; i < data.graph.size(); i++) {
 			writer.set("id", data.experiment.root);
@@ -602,14 +635,24 @@ public class DiffusionExperimentWorker extends Worker {
 
 			IncrementalStatsFreq aeStats = aeBdw.getMetric(i);
 			IncrementalStatsFreq hfStats = hfBdw.getMetric(i);
+			IncrementalStatsFreq totStats = totBdw.getMetric(i);
 
 			writer.set("aebdwmax", aeStats.getMax());
-			writer.set("aebdwvar", aeStats.getVar());
-			writer.set("aebdwavg", aeStats.getAverage());
+			writer.set("aebdwsqr", aeStats.getSqrSum());
+			writer.set("aebdwsum", aeStats.getSum());
 
 			writer.set("hfbdwmax", hfStats.getMax());
-			writer.set("hfbdwvar", hfStats.getVar());
-			writer.set("hfbdwavg", hfStats.getAverage());
+			writer.set("hfbdwsum", hfStats.getSum());
+			writer.set("hfbdwsqr", hfStats.getSqrSum());
+
+			writer.set("totbdwmax", totStats.getMax());
+			writer.set("totbdwsum", totStats.getSum());
+			writer.set("totbdwsqr", totStats.getSqrSum());
+			
+			writer.set("upbins", totStats.getN() - totStats.getFreq(0)
+					+ totZeroUpbins.getMetric(i).intValue());
+
+			writer.set("totalbins", aeStats.getN());
 
 			writer.set("msgtime", time.getMetric(0));
 			writer.set("uptime", uptime.getMetric(i));
@@ -621,6 +664,7 @@ public class DiffusionExperimentWorker extends Worker {
 			for (int j = 0; j < Math.max(aeStats.getMax(), hfStats.getMax()); j++) {
 				int aef = aeStats.getFreq(j);
 				int hwf = hfStats.getFreq(j);
+				int tot = totStats.getFreq(j);
 
 				if (aef == 0 && hwf == 0 && j != 0) {
 					continue;
@@ -632,9 +676,22 @@ public class DiffusionExperimentWorker extends Worker {
 				fBdwDistributionWriter.set("bdw", j);
 				fBdwDistributionWriter.set("ae", aef);
 				fBdwDistributionWriter.set("hf", hwf);
+				fBdwDistributionWriter.set("tot", tot);
 				fBdwDistributionWriter.set("uptime", uptime.getMetric(i));
 				fBdwDistributionWriter.emmitRow();
 			}
+
+			fBdwDistributionWriter.set("id", data.experiment.root);
+			fBdwDistributionWriter.set("source", data.source);
+			fBdwDistributionWriter.set("target", data.ids[i]);
+			fBdwDistributionWriter.set("bdw", -1);
+			fBdwDistributionWriter.set("ae", aeZeroUpbins.getMetric(i));
+			fBdwDistributionWriter.set("hf", hfZeroUpbins.getMetric(i));
+			fBdwDistributionWriter.set("tot", totZeroUpbins.getMetric(i));
+
+			fBdwDistributionWriter.set("uptime", uptime.getMetric(i));
+			fBdwDistributionWriter.emmitRow();
+
 		}
 	}
 

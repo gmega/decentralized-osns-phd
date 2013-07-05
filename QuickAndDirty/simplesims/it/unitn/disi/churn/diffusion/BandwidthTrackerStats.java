@@ -8,15 +8,15 @@ public class BandwidthTrackerStats extends BandwidthTracker<IncrementalStats>
 	private IncrementalStats fStats;
 
 	public BandwidthTrackerStats(double binWidth) {
-		this(-1, binWidth, false);
+		this(-1, binWidth);
 	}
 
 	public BandwidthTrackerStats(double base, double binWidth) {
-		this(base, binWidth, false);
+		this(base, 0.0, binWidth);
 	}
 
-	public BandwidthTrackerStats(double base, double binWidth, boolean debug) {
-		super(base, binWidth, debug);
+	public BandwidthTrackerStats(double base, double uptimeBase, double binWidth) {
+		super(base, uptimeBase, binWidth);
 		fStats = new IncrementalStats();
 	}
 

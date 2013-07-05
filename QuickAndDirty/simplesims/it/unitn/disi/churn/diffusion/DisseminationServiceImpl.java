@@ -157,6 +157,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
+
 		fPushProtocols[UPDATE].nextCycle(engine, process);
 		if (fQuenchRound == 0) {
 			if (shouldStopQuench(engine)) {
@@ -378,6 +379,12 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				 */
 				// Registers Antientropy exchange.
 				messageReceived(fProcess.id(), pair.fProcess.id(), null,
+						engine.clock(), HFloodSM.ANTIENTROPY_PUSH
+								| HFloodSM.ANTIENTROPY_PULL);
+
+				// XXX this is totally not cool, and it's an abuse of
+				// messageReceived.
+				messageReceived(pair.fProcess.id(), fProcess.id(), null,
 						engine.clock(), HFloodSM.ANTIENTROPY_PUSH
 								| HFloodSM.ANTIENTROPY_PULL);
 

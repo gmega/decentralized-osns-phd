@@ -17,6 +17,8 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	private double fBase;
 
+	private double fUptimeBase;
+
 	private int fObservations;
 
 	private int fCount;
@@ -26,24 +28,26 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 	// -------------------------------------------------------------------------
 
 	public BandwidthTracker(double binWidth) {
-		this(-1, binWidth, false);
+		this(-1, binWidth);
 	}
-
+	
 	// -------------------------------------------------------------------------
-
+	
 	public BandwidthTracker(double base, double binWidth) {
-		this(base, binWidth, false);
+		this(base, 0.0, binWidth);
 	}
 
 	// -------------------------------------------------------------------------
 
-	public BandwidthTracker(double base, double binWidth, boolean debug) {
-		if (binWidth <= 0) {
-			throw new IllegalArgumentException("Bin width must be positive.");
+	public BandwidthTracker(double base, double uptimeBase, double binWidth) {
+		if (binWidth <= 0 || uptimeBase < 0) {
+			throw new IllegalArgumentException("Bin width must be positive"
+					+ ", and uptime base needs to be strictly positive.");
 		}
 
 		fBinWidth = binWidth;
 		fBase = fRawTime = base < 0 ? Double.NEGATIVE_INFINITY : base;
+		fUptimeBase = uptimeBase;
 	}
 
 	// -------------------------------------------------------------------------
@@ -100,7 +104,7 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 	 */
 	public void end() {
 		lastCount();
-		addCount(0, zeroBucketCount(fRawTime - fBase));
+		addCount(0, zeroBucketCount(fRawTime - fBase, true));
 		fRawTime = Double.NEGATIVE_INFINITY;
 	}
 
@@ -115,7 +119,7 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 	public void end(IProcess process, IClockData clock) {
 		ensureForwardFlow(clock.rawTime());
 		lastCount();
-		addCount(0, zeroBucketCount(process.uptime(clock)));
+		addCount(0, zeroBucketCount(process.uptime(clock) - fUptimeBase, true));
 		fRawTime = Double.NEGATIVE_INFINITY;
 	}
 
@@ -158,14 +162,19 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	// -------------------------------------------------------------------------
 
-	private int zeroBucketCount(double time) {
+	private int zeroBucketCount(double time, boolean slack) {
 		int count = checkedCast(Math.ceil(time / fBinWidth)) - fObservations;
 
 		if (count < 0) {
-			throw new IllegalStateException();
+			// slack is a hack until I figure out how to work this properly.
+			if (slack) {
+				System.out.println("SLCK:" + count);
+			} else {
+				throw new IllegalStateException(Integer.toString(count));	
+			}
 		}
 
-		return count;
+		return Math.max(0, count);
 	}
 
 	// -------------------------------------------------------------------------

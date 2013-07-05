@@ -8,15 +8,15 @@ public class BandwidthTrackerFreq extends
 	private IncrementalStatsFreq fStats;
 
 	public BandwidthTrackerFreq(double binWidth) {
-		this(-1, binWidth, false);
+		this(-1, binWidth);
 	}
 
 	public BandwidthTrackerFreq(double base, double binWidth) {
-		this(base, binWidth, false);
+		this(base, 0.0, binWidth);
 	}
-
-	public BandwidthTrackerFreq(double base, double binWidth, boolean debug) {
-		super(base, binWidth, debug);
+	
+	public BandwidthTrackerFreq(double base, double uptimeBase, double binWidth) {
+		super(base, uptimeBase, binWidth);
 		fStats = new IncrementalStatsFreq();
 	}
 

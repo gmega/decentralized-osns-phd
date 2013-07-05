@@ -5,6 +5,7 @@ import it.unitn.disi.churn.connectivity.tce.CloudTCE;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IEventObserver;
@@ -90,14 +91,16 @@ public class TestTCExperiment {
 
 		CloudTCE tce = new CloudTCE(
 				graph, 0);
+		
+		EngineBuilder builder = new EngineBuilder();
+		builder.addProcess(processes);
+		builder.addObserver(tce, IProcess.PROCESS_SCHEDULABLE_TYPE, true, true);
 
 		ArrayList<Pair<Integer, ? extends IEventObserver>> sims = new ArrayList<Pair<Integer, ? extends IEventObserver>>();
 		sims.add(new Pair<Integer, IEventObserver>(
 				IProcess.PROCESS_SCHEDULABLE_TYPE, tce));
 
-		EDSimulationEngine bcs = new EDSimulationEngine(processes, 0, 0);
-		bcs.setEventObservers(sims);
-		bcs.run();
+		builder.engine().run();
 
 		Assert.assertEquals(0.0, tce.endToEndDelay(0));
 		Assert.assertEquals(0.8, tce.endToEndDelay(1));

@@ -9,6 +9,8 @@ import peersim.extras.am.util.IncrementalStatsFreq;
 
 import it.unitn.disi.churn.diffusion.cloud.SessionStatistics;
 import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
 public class MessageStatistics extends SessionStatistics implements
@@ -22,6 +24,8 @@ public class MessageStatistics extends SessionStatistics implements
 
 	private static final int HFLOOD = 1;
 
+	private static final int COMBINED = 2;
+
 	private static final int SENT = 0;
 
 	private static final int RECEIVED = 1;
@@ -32,9 +36,9 @@ public class MessageStatistics extends SessionStatistics implements
 
 	private final int[][] fAEDigest;
 
-	private final BandwidthTracker<?>[] fAEBdwTracker;
+	private final int[][] fUptimeZeroBins;
 
-	private final BandwidthTracker<?>[] fHFBdwTracker;
+	private final BandwidthTracker<?>[][] fBdwTracker;
 
 	private boolean fInit;
 
@@ -52,14 +56,16 @@ public class MessageStatistics extends SessionStatistics implements
 		fAEDigest = new int[2][size];
 		fSize = size;
 
-		fAEBdwTracker = new BandwidthTracker[size];
-		fHFBdwTracker = new BandwidthTracker[size];
+		fBdwTracker = new BandwidthTracker[3][size];
+		fUptimeZeroBins = new int[3][size];
+
 		fTrackFrequencies = distributions;
 	}
 
-	private BandwidthTracker<?> tracker(double base, boolean distributions) {
-		return distributions ? new BandwidthTrackerFreq(base, SECOND, DEBUG)
-				: new BandwidthTrackerStats(base, SECOND, DEBUG);
+	private BandwidthTracker<?> tracker(double base, double uptimeBase,
+			boolean distributions) {
+		return distributions ? new BandwidthTrackerFreq(base, uptimeBase,
+				SECOND) : new BandwidthTrackerStats(base, uptimeBase, SECOND);
 	}
 
 	@Override
@@ -73,14 +79,19 @@ public class MessageStatistics extends SessionStatistics implements
 
 		if ((flags & HFloodSM.ANTIENTROPY_PULL) != 0
 				|| (flags & HFloodSM.ANTIENTROPY_PUSH) != 0) {
-			fAEBdwTracker[sender].at(clock.rawTime()).messageReceived();
-			fAEBdwTracker[receiver].at(clock.rawTime()).messageReceived();
+			fBdwTracker[ANTIENTROPY][sender].at(clock.rawTime())
+					.messageReceived();
+			fBdwTracker[ANTIENTROPY][receiver].at(clock.rawTime())
+					.messageReceived();
 			countAntientropy(sender, receiver, message, clock, flags);
 		} else {
-			fHFBdwTracker[sender].at(clock.rawTime()).messageReceived();
-			fHFBdwTracker[receiver].at(clock.rawTime()).messageReceived();
+			fBdwTracker[HFLOOD][sender].at(clock.rawTime()).messageReceived();
+			fBdwTracker[HFLOOD][receiver].at(clock.rawTime()).messageReceived();
 			count(HFLOOD, sender, receiver, message, clock, flags);
 		}
+
+		fBdwTracker[COMBINED][sender].at(clock.rawTime()).messageReceived();
+		fBdwTracker[COMBINED][receiver].at(clock.rawTime()).messageReceived();
 
 	}
 
@@ -133,18 +144,32 @@ public class MessageStatistics extends SessionStatistics implements
 
 		System.out.println("TRUN: " + clock.rawTime());
 
-		for (int i = 0; i < fAEBdwTracker.length; i++) {
-			fAEBdwTracker[i].at(clock.rawTime()).end();
-			fHFBdwTracker[i].at(clock.rawTime()).end();
+		INetwork network = clock.engine().network();
+
+		for (int i = 0; i < fBdwTracker[ANTIENTROPY].length; i++) {
+
+			fUptimeZeroBins[ANTIENTROPY][i] = uptimeZeroBins(clock,
+					network.process(i), fBdwTracker[ANTIENTROPY][i]);
+			fUptimeZeroBins[HFLOOD][i] = uptimeZeroBins(clock,
+					network.process(i), fBdwTracker[HFLOOD][i]);
+			fUptimeZeroBins[COMBINED][i] = uptimeZeroBins(clock,
+					network.process(i), fBdwTracker[COMBINED][i]);
+
+			fBdwTracker[ANTIENTROPY][i].at(clock.rawTime()).end();
+			fBdwTracker[HFLOOD][i].at(clock.rawTime()).end();
+			fBdwTracker[COMBINED][i].at(clock.rawTime()).end();
 
 			// Bunch of sanity checks.
-			int aeMsgs = fAEBdwTracker[i].messageCount();
-			int hfMsgs = fHFBdwTracker[i].messageCount();
+			int aeMsgs = fBdwTracker[ANTIENTROPY][i].messageCount();
+			int hfMsgs = fBdwTracker[HFLOOD][i].messageCount();
+			int alMsgs = fBdwTracker[COMBINED][i].messageCount();
 
-			int aeBuckets = ((IncrementalStatsFreq) fAEBdwTracker[i].getStats())
-					.getN();
-			int hfBuckets = ((IncrementalStatsFreq) fHFBdwTracker[i].getStats())
-					.getN();
+			int aeBuckets = ((IncrementalStatsFreq) fBdwTracker[ANTIENTROPY][i]
+					.getStats()).getN();
+			int hfBuckets = ((IncrementalStatsFreq) fBdwTracker[HFLOOD][i]
+					.getStats()).getN();
+			int alBuckets = ((IncrementalStatsFreq) fBdwTracker[COMBINED][i]
+					.getStats()).getN();
 
 			int eBuckets = (int) Math
 					.ceil((clock.rawTime() - lastSessionStart()) * 3600);
@@ -153,21 +178,30 @@ public class MessageStatistics extends SessionStatistics implements
 					+ fUpdates[RECEIVED][ANTIENTROPY][i]
 					+ fQuench[SENT][ANTIENTROPY][i]
 					+ fQuench[RECEIVED][ANTIENTROPY][i] + fAEDigest[SENT][i] + fAEDigest[RECEIVED][i])) {
-				throw new IllegalSelectorException();
+				throw new IllegalStateException();
 			}
 
 			if (hfMsgs != (fUpdates[SENT][HFLOOD][i]
 					+ fUpdates[RECEIVED][HFLOOD][i] + fQuench[SENT][HFLOOD][i] + fQuench[RECEIVED][HFLOOD][i])) {
-				throw new IllegalSelectorException();
+				throw new IllegalStateException();
 			}
 
-			if (Math.abs(aeBuckets - eBuckets) > 1) {
+			if (alMsgs != (hfMsgs + aeMsgs)) {
+				throw new IllegalStateException();
+			}
+
+			if (aeBuckets != eBuckets) {
 				throw new IllegalStateException(i + ": " + aeBuckets + " != "
 						+ eBuckets);
 			}
 
-			if (Math.abs(hfBuckets - eBuckets) > 1) {
+			if (hfBuckets != eBuckets) {
 				throw new IllegalStateException(i + ": " + hfBuckets + " != "
+						+ eBuckets);
+			}
+
+			if (alBuckets != eBuckets) {
+				throw new IllegalStateException(i + ": " + alBuckets + " != "
 						+ eBuckets);
 			}
 
@@ -176,18 +210,40 @@ public class MessageStatistics extends SessionStatistics implements
 		super.stopTrackingSession(clock);
 	}
 
+	private int uptimeZeroBins(IClockData clock, IProcess process,
+			BandwidthTracker<?> tracker) {
+		BandwidthTracker<IncrementalStatsFreq> clone = null;
+		try {
+			clone = (BandwidthTracker<IncrementalStatsFreq>) tracker.clone();
+		} catch (CloneNotSupportedException ex) {
+			throw new RuntimeException(ex);
+		}
+
+		clone.end(process, clock);
+
+		return clone.getStats().getFreq(0);
+	}
+
 	@Override
-	public void startTrackingSession(IClockData data) {
-		super.startTrackingSession(data);
+	public void startTrackingSession(IClockData clock) {
+		super.startTrackingSession(clock);
+
+		INetwork network = clock.engine().network();
 
 		if (fInit) {
 			return;
 		}
+
 		fInit = true;
 
-		for (int i = 0; i < fAEBdwTracker.length; i++) {
-			fAEBdwTracker[i] = tracker(data.rawTime(), fTrackFrequencies);
-			fHFBdwTracker[i] = tracker(data.rawTime(), fTrackFrequencies);
+		for (int i = 0; i < fBdwTracker[COMBINED].length; i++) {
+			IProcess process = network.process(i);
+			fBdwTracker[HFLOOD][i] = tracker(clock.rawTime(),
+					process.uptime(clock), fTrackFrequencies);
+			fBdwTracker[ANTIENTROPY][i] = tracker(clock.rawTime(),
+					process.uptime(clock), fTrackFrequencies);
+			fBdwTracker[COMBINED][i] = tracker(clock.rawTime(),
+					process.uptime(clock), fTrackFrequencies);
 		}
 	}
 
@@ -323,7 +379,8 @@ public class MessageStatistics extends SessionStatistics implements
 
 			@Override
 			public IncrementalStatsFreq getMetric(int i) {
-				return (IncrementalStatsFreq) fAEBdwTracker[i].getStats();
+				return (IncrementalStatsFreq) fBdwTracker[ANTIENTROPY][i]
+						.getStats();
 			}
 		});
 
@@ -335,7 +392,56 @@ public class MessageStatistics extends SessionStatistics implements
 
 			@Override
 			public IncrementalStatsFreq getMetric(int i) {
-				return (IncrementalStatsFreq) fHFBdwTracker[i].getStats();
+				return (IncrementalStatsFreq) fBdwTracker[HFLOOD][i].getStats();
+			}
+		});
+
+		metrics.add(new INodeMetric<IncrementalStatsFreq>() {
+			@Override
+			public Object id() {
+				return fId + ".bdw.tot";
+			}
+
+			@Override
+			public IncrementalStatsFreq getMetric(int i) {
+				return (IncrementalStatsFreq) fBdwTracker[COMBINED][i]
+						.getStats();
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".bdw.ae.upbins";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUptimeZeroBins[ANTIENTROPY][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".bdw.hf.upbins";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUptimeZeroBins[HFLOOD][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+			@Override
+			public Object id() {
+				return fId + ".bdw.tot.upbins";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fUptimeZeroBins[COMBINED][i];
 			}
 		});
 
