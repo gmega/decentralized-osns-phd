@@ -4,6 +4,8 @@ import it.unitn.disi.analysis.TestLatencyComputer;
 import it.unitn.disi.analysis.loadsim.ExperimentRunnerTest;
 import it.unitn.disi.analysis.loadsim.UnitExperimentTest;
 import it.unitn.disi.churn.connectivity.tce.TestTCExperiment;
+import it.unitn.disi.churn.diffusion.BandwidthTrackerStats;
+import it.unitn.disi.churn.diffusion.BandwidthTrackerTest;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelectorTest;
 import it.unitn.disi.churn.diffusion.TestLiveGraphTransformer;
 import it.unitn.disi.churn.diffusion.graph.BranchingGeneratorTest;
@@ -32,6 +34,7 @@ import it.unitn.disi.newscasting.experiments.schedulers.RandomSchedulerTest;
 import it.unitn.disi.newscasting.internal.demers.DemersTest;
 import it.unitn.disi.newscasting.internal.demers.RumorListTest;
 import it.unitn.disi.simulator.concurrent.TaskExecutorTest;
+import it.unitn.disi.simulator.protocol.PeriodicActionTest;
 import it.unitn.disi.sps.TestGraphWrapper;
 import it.unitn.disi.sps.newscast.TestPeerSelectors;
 import it.unitn.disi.sps.newscast.TestQueueManager;
@@ -109,7 +112,9 @@ import peersim.config.PluginContainerTest;
 	TestLiveGraphTransformer.class,
 	BiasedCentralitySelectorTest.class,
 	TaskExecutorTest.class,
-	BranchingGeneratorTest.class
+	BranchingGeneratorTest.class,
+	BandwidthTrackerTest.class,
+	PeriodicActionTest.class,
 })
 
 public class AllTests extends PeerSimTest {

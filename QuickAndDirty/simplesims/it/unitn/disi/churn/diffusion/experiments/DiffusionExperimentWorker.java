@@ -75,6 +75,11 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "antientropy_blacklist")
 	private boolean fBlacklistingAE;
 
+	// Causes all nodes with asymptotic availability falling below a threshold
+	// to be blacklisted a priori by antientropy.
+	@Attribute(value = "antientropy_availability_threshold")
+	private double fAEThreshold;
+
 	// "Grace period" for expired PeriodicActions.
 	@Attribute(value = "login_grace", defaultValue = "0")
 	private double fLoginGrace;
@@ -181,22 +186,20 @@ public class DiffusionExperimentWorker extends Worker {
 				"id", "source", "target", "edsumd", "edsum", "edsumu",
 				"rdsumd", "rdsum", "rdsumu", "size", "fixed", "exps", "msgs");
 
-		fP2PCostWriter = new TableWriter(
-				new PrefixedWriter("PC:", System.out),
+		fP2PCostWriter = new TableWriter(new PrefixedWriter("PC:", System.out),
 				"id",
 				"source",
 				"target",
 
 				// Message counts.
-				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", 
-				"aeuprec", "aenuprec", "aeupsend", "aenupsend", "aeinit",
-				"aerespond", "msgtime",
+				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "aeuprec",
+				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
+				"msgtime",
 
 				// Bandwidth statistics.
-				"aebdwsum", "aebdwmax", "aebdwsqr",  
-				"hfbdwsum", "hfbdwmax", "hfbdwsqr", 
-				"totbdwsum", "totbdwmax", "totbdwsqr", 
-				
+				"aebdwsum", "aebdwmax", "aebdwsqr", "hfbdwsum", "hfbdwmax",
+				"hfbdwsqr", "totbdwsum", "totbdwmax", "totbdwsqr",
+
 				// Bin counts
 				"upbins", "totalbins");
 
@@ -235,6 +238,8 @@ public class DiffusionExperimentWorker extends Worker {
 		System.err.println("-- Selector is (" + fSelector + ").");
 		System.err.println("Push protocol timeout is " + fPushTimeout + ".");
 		System.err.println(antientropy());
+		System.err.println("Antientropy availability threshold is "
+				+ fAEThreshold + ".");
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
@@ -357,8 +362,9 @@ public class DiffusionExperimentWorker extends Worker {
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
 					fLoginGrace, fFixedFraction, fRandomized).build(source,
 					fMessages, fQuenchDesync, fPushTimeout, fAEShortCycle,
-					fAELongCycle, fAEShortCycles, fP2PSims, fCloudAssisted,
-					fBaseline, fTrackCores, fBlacklistingAE, processes);
+					fAELongCycle, fAEThreshold, fAEShortCycles, fP2PSims,
+					fCloudAssisted, fBaseline, fTrackCores, fBlacklistingAE,
+					processes);
 		}
 
 		return new SimulationTask(
@@ -648,7 +654,7 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set("totbdwmax", totStats.getMax());
 			writer.set("totbdwsum", totStats.getSum());
 			writer.set("totbdwsqr", totStats.getSqrSum());
-			
+
 			writer.set("upbins", totStats.getN() - totStats.getFreq(0)
 					+ totZeroUpbins.getMetric(i).intValue());
 

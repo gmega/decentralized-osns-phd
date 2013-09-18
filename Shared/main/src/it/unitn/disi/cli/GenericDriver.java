@@ -1,16 +1,12 @@
 package it.unitn.disi.cli;
 
-import it.unitn.disi.utils.HashMapResolver;
-import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.exception.ParseException;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,15 +17,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
@@ -65,7 +57,7 @@ public class GenericDriver {
 	private String fOutputs;
 
 	@Option(name = "-p", usage = "colon (:) separated list of key=value pairs (transformer-specific)", required = false)
-	private String fParameters = "";
+	private String fParameters = null;
 
 	@Option(name = "-f", aliases = { "--file" }, usage = "file containing key=value pairs (transformer-specific)", required = false)
 	private File fPropertyFile;
@@ -75,6 +67,9 @@ public class GenericDriver {
 
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
 	private char fSplitChar = ':';
+	
+	@Option(name = "-c", aliases = {"--config"}, usage = "specifies a specific configuration to use.", required = false)
+	private String fConfig = ConfigurationProperties.ROOT_SECTION;
 
 	@Option(name = "-z", aliases = { "--zipped" }, usage = "allows usage of GZipped inputs", required = false)
 	private boolean fGZipped;
@@ -95,10 +90,6 @@ public class GenericDriver {
 
 	private OutputStream[] fOStreams;
 
-	/** Pattern for matching bash-style variables. */
-	private static final Pattern fVarPattern = Pattern
-			.compile("\\$\\{(.*?)\\}");
-
 	public void _main(String[] args) throws Exception {
 		CmdLineParser parser = new CmdLineParser(this);
 
@@ -111,11 +102,11 @@ public class GenericDriver {
 			}
 
 			String pClass;
-			Map<String, Object> props = parseProperties(fParameters,
+			IResolver props = parseProperties(fParameters,
 					fPropertyFile);
 
 			if (fArguments.isEmpty()) {
-				pClass = (String) props.get("processor");
+				pClass = (String) props.getString("", "processor");
 				if (pClass == null) {
 					throw new CmdLineException("No processing class given.");
 				}
@@ -128,7 +119,7 @@ public class GenericDriver {
 			fIStreams = openInputs(fInputs);
 			fOStreams = openOutputs(fOutputs);
 
-			Object processor = create(pClass, new HashMapResolver(props));
+			Object processor = create(pClass, props);
 
 			printVersionInformation(processor);
 
@@ -239,67 +230,30 @@ public class GenericDriver {
 		System.err.println();
 	}
 
-	private Map<String, Object> parseProperties(String params, File input)
+	private IResolver parseProperties(String params, File input)
 			throws IOException {
 
-		Map<String, Object> props = new HashMap<String, Object>();
+		ConfigurationProperties parser = new ConfigurationProperties();
 
-		// And props from file, if there's a file.
+		// Read property file, if present.
 		if (input != null) {
-			BufferedReader reader = null;
-			try {
-				reader = new BufferedReader(new FileReader(input));
-				String line;
-				while ((line = reader.readLine()) != null) {
-					if (line.startsWith("#")) {
-						continue;
-					}
-					parseAdd(line, props);
+			parser.load(input);
+		}
+
+		// Command line properties take precedence, if present.
+		if (params != null) {
+			String[] pairs = params.split(Character.toString(fSplitChar));
+			for (String pair : pairs) {
+				String [] kvPair = pair.split("="); 	
+				if (kvPair.length != 2) {
+					throw new ParseException("Malformed parameter " + pair + ".");
 				}
-			} finally {
-				MiscUtils.safeClose(reader, false);
+
+				parser.setProperty(kvPair[0], kvPair[1]);
 			}
 		}
 
-		// Command line properties take precedence.
-		String[] pairs = params.split(Character.toString(fSplitChar));
-		for (String pair : pairs) {
-			parseAdd(pair, props);
-		}
-
-		return props;
-	}
-
-	private void parseAdd(String pair, Map<String, Object> props) {
-		String[] kvPair = pair.split("=");
-		if (kvPair.length != 2) {
-			return;
-		}
-		props.put(kvPair[0].trim(), expand(kvPair[1].trim(), props));
-	}
-
-	private String expand(String string, Map<String, Object> props) {
-		Matcher matcher = fVarPattern.matcher(string);
-		StringBuffer moldable = new StringBuffer(string);
-		while (matcher.find()) {
-			String key = matcher.group(1);
-			String value;
-			// Lookup properties.
-			if (props.containsKey(key)) {
-				value = props.get(key).toString();
-			}
-			// Lookup system var.
-			else {
-				value = System.getenv(key);
-			}
-
-			if (value == null) {
-				throw new ParseException("Can't resolve variable " + key + ".");
-			}
-
-			moldable.replace(matcher.start(0), matcher.end(0), value);
-		}
-		return moldable.toString();
+		return parser.resolver(fConfig);
 	}
 
 	private OutputStream[] openOutputs(String outputString) throws IOException {

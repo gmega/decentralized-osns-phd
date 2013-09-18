@@ -22,6 +22,7 @@ import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.FixedProcess;
@@ -31,6 +32,7 @@ import it.unitn.disi.utils.collections.Pair;
 
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
@@ -104,9 +106,10 @@ public class CloudSimulationBuilder {
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
 			final int source, int messages, int quenchDesync,
 			double pushTimeout, double antientropyShortCycle,
-			double antientropyLongCycle, int shortCycles,
-			boolean dissemination, boolean cloudAssist, boolean baseline,
-			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
+			double antientropyLongCycle, double antientropyLAThreshold,
+			int shortCycles, boolean dissemination, boolean cloudAssist,
+			boolean baseline, boolean trackCores, boolean aeBlacklist,
+			IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -142,8 +145,8 @@ public class CloudSimulationBuilder {
 				// Antientropy cycle length is negative if no dissemination.
 				// This causes antientropy to be disabled.
 				dissemination ? antientropyShortCycle : -1,
-				antientropyLongCycle, shortCycles, aeBlacklist, metrics,
-				builder);
+				antientropyLongCycle, shortCycles, antientropyLAThreshold,
+				aeBlacklist, metrics, builder);
 
 		// 1b. Cloud-assistance, if enabled.
 		if (cloudAssist) {
@@ -217,25 +220,33 @@ public class CloudSimulationBuilder {
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			int pid, int messages, int quenchDesync, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
-			int shortCycles, boolean aeBlacklist,
-			List<INodeMetric<? extends Object>> metrics, EngineBuilder builder) {
+			int shortCycles, double antientropyLAThreshold,
+			boolean aeBlacklist, List<INodeMetric<? extends Object>> metrics,
+			EngineBuilder builder) {
 
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
 		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size(),
 				true);
-		
+
 		UptimeTracker tracker = new UptimeTracker("msg", processes.length);
 
 		for (int i = 0; i < protocols.length; i++) {
+
+			// Does not blacklist LA node neighbors to avoid getting into
+			// selection avoidance deadlocks.
+			boolean isLA = ((RenewalProcess) processes[i])
+					.asymptoticAvailability() < antientropyLAThreshold;
 
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
 					peerSelector(), processes[i], new CachingTransformer(
 							new LiveTransformer()), runner,
 					builder.reference(), messages == 1, quenchDesync,
 					maxQuenchAge(), pushTimeout, antientropyShortCycle,
-					antientropyLongCycle, fBurnin, shortCycles, AE_PRIORITY,
-					aeBlacklist);
+					antientropyLongCycle, fBurnin, isLA ? new BitSet()
+							: availabilityBlacklist(processes,
+									antientropyLAThreshold), shortCycles,
+					AE_PRIORITY, aeBlacklist);
 
 			processes[i].addProtocol(protocols[i]);
 
@@ -254,6 +265,16 @@ public class CloudSimulationBuilder {
 		metrics.addAll(mstats.metrics());
 
 		return protocols;
+	}
+
+	private BitSet availabilityBlacklist(IProcess[] process, double threshold) {
+		BitSet blacklist = new BitSet();
+		for (int i = 0; i < process.length; i++) {
+			RenewalProcess rp = (RenewalProcess) process[i];
+			blacklist.set(i, rp.asymptoticAvailability() < threshold);
+		}
+
+		return blacklist;
 	}
 
 	private double maxQuenchAge() {
@@ -292,7 +313,7 @@ public class CloudSimulationBuilder {
 		default:
 			throw new UnsupportedOperationException();
 		}
-	}
+	};
 
 	private class Anchor extends Schedulable {
 

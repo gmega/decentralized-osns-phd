@@ -9,5 +9,6 @@
 	<classpathentry kind="lib" path="/Utilities/lib/Lambda.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/DistSim"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/extras"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

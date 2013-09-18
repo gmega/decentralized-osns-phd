@@ -11,6 +11,7 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
@@ -49,6 +50,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private State fState;
 
+	private BitSet fStaticBlacklist;
+
 	private IndexedNeighborGraph fGraph;
 
 	private BroadcastTracker fCollector = new BroadcastTracker();
@@ -68,8 +71,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			IReference<ISimulationEngine> engine, boolean oneShot,
 			int quenchDesync, double maxQuenchAge, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
-			double antientropyDelay, int antientropyShortRounds,
-			int antientropyPrio, boolean aeBlacklist) {
+			double antientropyDelay, BitSet antientropyStaticblacklist,
+			int antientropyShortRounds, int antientropyPrio, boolean aeBlacklist) {
 
 		fPushProtocols[UPDATE] = new HFloodUP(graph, selector, process,
 				transformer, this, pushTimeout);
@@ -90,7 +93,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		fMaxQuenchAge = maxQuenchAge;
 		fQuenchDesync = quenchDesync;
 		fQuenchRound = 0;
-
+		fStaticBlacklist = antientropyStaticblacklist;
 	}
 
 	public PeriodicAction antientropy() {
@@ -308,7 +311,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		private final BitSet fSessionBlacklist;
 
-		private final boolean fBlackList;
+		private final boolean fBlacklistSessions;
 
 		private boolean fSuppressed;
 
@@ -316,7 +319,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		public Antientropy(IReference<ISimulationEngine> engine, Random rnd,
 				int id, int prio, double shortPeriod, double longPeriod,
-				int shortRounds, double initialDelay, boolean blacklist) {
+				int shortRounds, double initialDelay, boolean blacklistSessions) {
 
 			super(engine, prio, id, initialDelay);
 
@@ -326,7 +329,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 			fSelector = new RandomSelector(rnd);
 			fSessionBlacklist = new BitSet();
-			fBlackList = blacklist;
+			fBlacklistSessions = blacklistSessions;
 		}
 
 		@Override
@@ -335,6 +338,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 			// Clear all per-session state.
 			fSessionBlacklist.clear();
+			fSessionBlacklist.or(fStaticBlacklist);
 			fShortRounds.reset();
 			fSuppressed = false;
 
@@ -361,7 +365,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		private void doExchange(ISimulationEngine engine) {
 			INetwork network = engine.network();
 			IProcess peer = selectPeer(network);
-
+			
 			// This antientropy implementation is really a hack: what it does is
 			// to force a push protocol exchange, which in the end is okay if
 			// we're only disseminating one message.
@@ -413,7 +417,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				return null;
 			}
 
-			if (fBlackList) {
+			if (fBlacklistSessions) {
 				fSessionBlacklist.set(neighbor);
 			}
 

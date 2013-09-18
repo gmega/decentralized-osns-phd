@@ -11,6 +11,8 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
  */
 public class FixedProcess extends IProcess {
 
+	private static final long serialVersionUID = 1L;
+
 	private final State fState;
 
 	private final int fId;

@@ -200,11 +200,10 @@ public abstract class Worker implements Runnable, Application, IWorker {
 			}
 			fState.iteration++;
 			fMutex.unlock();
-			
-			fCompleted++;
 			updateTaskStatistics();
 		}
 
+		fCompleted++;
 		tracker.done();
 
 		return fState.aggregate;
@@ -263,6 +262,8 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		}
 
 		fMutex.unlock();
+		
+		updateTaskStatistics();
 	}
 
 	private void taskDone() {
@@ -273,7 +274,6 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	}
 
 	private synchronized void updateStatus(String key, String value) {
-		System.err.println(key + " -> " + value);
 		fStatus.setProperty(key, value);
 	}
 

@@ -122,6 +122,10 @@ public void add( int i, int k ) {
   freq[i]+=k;
 }
 
+public void add(IncrementalFreq other) {
+	
+}
+
 // --------------------------------------------------------------------
 
 /** Returns number of processed data items.

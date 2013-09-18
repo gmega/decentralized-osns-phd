@@ -160,6 +160,8 @@ public class MessageStatistics extends SessionStatistics implements
 			fBdwTracker[COMBINED][i].at(clock.rawTime()).end();
 
 			// Bunch of sanity checks.
+
+			// Message counts should match.
 			int aeMsgs = fBdwTracker[ANTIENTROPY][i].messageCount();
 			int hfMsgs = fBdwTracker[HFLOOD][i].messageCount();
 			int alMsgs = fBdwTracker[COMBINED][i].messageCount();
@@ -173,6 +175,21 @@ public class MessageStatistics extends SessionStatistics implements
 
 			int eBuckets = (int) Math
 					.ceil((clock.rawTime() - lastSessionStart()) * 3600);
+
+			int aeUpBuckets = aeBuckets
+					- ((IncrementalStatsFreq) fBdwTracker[ANTIENTROPY][i]
+							.getStats()).getFreq(0)
+					+ fUptimeZeroBins[ANTIENTROPY][i];
+			int hfUpBuckets = hfBuckets
+					- ((IncrementalStatsFreq) fBdwTracker[HFLOOD][i].getStats())
+							.getFreq(0) + fUptimeZeroBins[HFLOOD][i];
+			int alUpBuckets = alBuckets
+					- ((IncrementalStatsFreq) fBdwTracker[COMBINED][i]
+							.getStats()).getFreq(0)
+					+ fUptimeZeroBins[COMBINED][i];
+
+			int upBuckets = (int) Math
+					.ceil(network.process(i).uptime(clock) * 3600);
 
 			if (aeMsgs != (fUpdates[SENT][ANTIENTROPY][i]
 					+ fUpdates[RECEIVED][ANTIENTROPY][i]
@@ -190,24 +207,30 @@ public class MessageStatistics extends SessionStatistics implements
 				throw new IllegalStateException();
 			}
 
-			if (aeBuckets != eBuckets) {
-				throw new IllegalStateException(i + ": " + aeBuckets + " != "
-						+ eBuckets);
+			// Time buckets should match.
+			int downZeros = ((IncrementalStatsFreq) fBdwTracker[COMBINED][i]
+					.getStats()).getFreq(0);
+			if (fUptimeZeroBins[COMBINED][i] > downZeros) {
+				throw new IllegalStateException(fUptimeZeroBins[COMBINED][i]
+						+ " > " + downZeros);
 			}
 
-			if (hfBuckets != eBuckets) {
-				throw new IllegalStateException(i + ": " + hfBuckets + " != "
-						+ eBuckets);
-			}
-
-			if (alBuckets != eBuckets) {
-				throw new IllegalStateException(i + ": " + alBuckets + " != "
-						+ eBuckets);
-			}
-
+			checkDrift(aeBuckets, eBuckets, "ANTI");
+			checkDrift(hfBuckets, eBuckets, "HFLOOD");
+			checkDrift(alBuckets, eBuckets, "ALL");
+			
+			checkDrift(aeUpBuckets, upBuckets, "ANTI:ALL");
+			checkDrift(hfUpBuckets, upBuckets, "HFLOOD:ALL");
+			checkDrift(alUpBuckets, upBuckets, "ALL:ALL");
 		}
 
 		super.stopTrackingSession(clock);
+	}
+
+	private void checkDrift(int b1, int b2, String id) {
+		if (b1 != b2) {
+			System.out.println("DRIFT:" + b1 + ", " + b2 + " " + id);
+		}
 	}
 
 	private int uptimeZeroBins(IClockData clock, IProcess process,
