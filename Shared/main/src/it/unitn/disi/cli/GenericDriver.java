@@ -32,6 +32,7 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import peersim.config.IResolver;
+import peersim.config.MissingParameterException;
 import peersim.config.ObjectCreator;
 
 /**
@@ -106,8 +107,9 @@ public class GenericDriver {
 					fPropertyFile);
 
 			if (fArguments.isEmpty()) {
-				pClass = (String) props.getString("", "processor");
-				if (pClass == null) {
+				try {
+					pClass = (String) props.getString("", "processor");
+				} catch (MissingParameterException ex) {
 					throw new CmdLineException("No processing class given.");
 				}
 			} else {
