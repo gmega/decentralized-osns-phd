@@ -28,6 +28,8 @@ public class StreamServerImpl implements Runnable {
 
 	private volatile Thread fShutdownHook;
 
+	private ServerSocket fSocket;
+
 	public StreamServerImpl(int port, File output) {
 		fPort = port;
 		fOutput = output;
@@ -45,23 +47,41 @@ public class StreamServerImpl implements Runnable {
 				"Stream Flusher");
 		flusher.start();
 
-		ServerSocket socket = null;
 		try {
-			socket = new ServerSocket(fPort, MAX_BACKLOG);
-			fShutdownHook = new Thread(new Shutdown(socket,
-					Thread.currentThread(), flusher));
+			serverSocketCreate();
+			fShutdownHook = new Thread(new Shutdown(Thread.currentThread(),
+					flusher));
 			Runtime.getRuntime().addShutdownHook(fShutdownHook);
-			mainLoop(socket);
+			mainLoop();
 		} catch (Exception ex) {
 			if (!(ex instanceof SocketException) || !fShutdownSignalled) {
 				fLogger.error("Server terminating with error.", ex);
 			}
-			try {
-				socket.close();
-			} catch (IOException eex) {
-				fLogger.error("Error closing server socket.", eex);
-			}
+			serverSocketDestroy();
 		}
+	}
+
+	private ServerSocket serverSocketCreate() throws Exception {
+		fSocket = null;
+		fSocket = new ServerSocket(fPort, MAX_BACKLOG);
+		return fSocket;
+	}
+
+	private void serverSocketDestroy() {
+		try {
+			if (fSocket != null) {
+				fSocket.close();
+			}
+		} catch (IOException eex) {
+			fLogger.error("Error closing server socket.", eex);
+		}
+	}
+
+	public int getActualPort() {
+		if (fSocket != null) {
+			return fSocket.getLocalPort();
+		}
+		return fPort;
 	}
 
 	public void stop() {
@@ -69,13 +89,13 @@ public class StreamServerImpl implements Runnable {
 		fShutdownHook.run();
 	}
 
-	private void mainLoop(ServerSocket socket) throws IOException {
+	private void mainLoop() throws IOException {
 		fLogger.info("Entering server main loop (listen port is " + fPort
 				+ ").");
 		Socket endpoint = null;
 		try {
 			while (!Thread.interrupted()) {
-				endpoint = socket.accept();
+				endpoint = fSocket.accept();
 				fLogger.info("Accepted connection from "
 						+ endpoint.getRemoteSocketAddress() + ".");
 				ClientHandler handler = new ClientHandler(endpoint, fOutput,
@@ -123,14 +143,11 @@ public class StreamServerImpl implements Runnable {
 
 	class Shutdown implements Runnable {
 
-		private final ServerSocket fServerSocket;
-
 		private final Thread fMainThread;
 
 		private final Thread fFlusherThread;
 
-		public Shutdown(ServerSocket serverSocket, Thread main, Thread flusher) {
-			fServerSocket = serverSocket;
+		public Shutdown(Thread main, Thread flusher) {
 			fMainThread = main;
 			fFlusherThread = flusher;
 		}
@@ -145,7 +162,7 @@ public class StreamServerImpl implements Runnable {
 			// Interrupts main thread.
 			fMainThread.interrupt();
 			// Closes socket.
-			closeSocket();
+			serverSocketDestroy();
 
 			try {
 				fMainThread.join();
@@ -172,13 +189,6 @@ public class StreamServerImpl implements Runnable {
 			fLogger.info("Bye-bye.");
 		}
 
-		private void closeSocket() {
-			try {
-				fServerSocket.close();
-			} catch (Exception ex) {
-				fLogger.error("Error closing server socket.", ex);
-			}
-		}
 	}
 
 	class TimedFlusher implements Runnable {

@@ -10,4 +10,8 @@ public interface IWorker extends Remote {
 	
 	public Properties status() throws RemoteException;
 	
+	// public void subscribe(IStatusListener listener) throws RemoteException
+	
+	// public void unsubscribe(IStatusListener listener) throws RemoteException
+	
 }

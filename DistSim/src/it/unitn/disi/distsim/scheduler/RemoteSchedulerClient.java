@@ -11,10 +11,10 @@ import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.log4j.Logger;
 
-public class SchedulerClient implements ISchedule {
+public class RemoteSchedulerClient implements ISchedule, ISchedulerClient {
 
 	private static final Logger fLogger = Logger
-			.getLogger(SchedulerClient.class);
+			.getLogger(RemoteSchedulerClient.class);
 
 	private final ControlClient fClient;
 	
@@ -24,11 +24,14 @@ public class SchedulerClient implements ISchedule {
 
 	private Integer fInitialSize;
 
-	public SchedulerClient(ControlClient client, IWorker worker) {
+	public RemoteSchedulerClient(ControlClient client, IWorker worker) {
 		fClient = client;
 		fWorker = worker;
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.distsim.scheduler.ISchedulerClient#iterator()
+	 */
 	@Override
 	public IScheduleIterator iterator() {
 		IWorker us = publish();
@@ -68,6 +71,9 @@ public class SchedulerClient implements ISchedule {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see it.unitn.disi.distsim.scheduler.ISchedulerClient#size()
+	 */
 	@Override
 	public int size() {
 		return fInitialSize;

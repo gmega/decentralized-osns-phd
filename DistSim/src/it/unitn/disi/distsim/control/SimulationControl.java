@@ -144,6 +144,10 @@ public class SimulationControl implements SimulationControlMBean {
 		return buffer.toString();
 	}
 
+	public static String serviceName(String simid, String serviceid) {
+		return "simulations:type=" + simid + ",group=service,name=" + serviceid;
+	}
+
 	private void wipeTree(File root) {
 		for (File child : root.listFiles()) {
 			if (child.isFile()) {
@@ -309,8 +313,7 @@ class Simulation implements ISimulation {
 	}
 
 	private Service createService(String serviceid, ManagedService master) {
-		String oName = "simulations:type=" + fId + ",group=service,name="
-				+ serviceid;
+		String oName = SimulationControl.serviceName(fId, serviceid);
 		return new Service(oName, master);
 	}
 

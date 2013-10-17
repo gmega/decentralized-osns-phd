@@ -27,7 +27,7 @@ public class StreamServer implements StreamServerMBean {
 
 	public StreamServer(ISimulation parent) {
 		fParent = parent;
-		fPort = 50327;
+		fPort = 0;
 	}
 
 	@Override
@@ -77,7 +77,11 @@ public class StreamServer implements StreamServerMBean {
 
 	@Override
 	public synchronized int getPort() {
-		return fPort;
+		if (!fRunning) {
+			return fPort;
+		}
+		
+		return fServerImpl.getActualPort();
 	}
 
 	@Override
