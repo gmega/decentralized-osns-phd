@@ -100,6 +100,10 @@ public class StreamServerImpl implements Runnable {
 						+ endpoint.getRemoteSocketAddress() + ".");
 				ClientHandler handler = new ClientHandler(endpoint, fOutput,
 						this);
+
+				// Thread-per-connection without pooling scales enough to our
+				// use scenarios (few thousand clients which connect and then
+				// maintain their connections).
 				new Thread(handler).start();
 				synchronized (this) {
 					fActiveHandlers.add(handler);
@@ -114,7 +118,6 @@ public class StreamServerImpl implements Runnable {
 				fLogger.error("Error closing socket endpoint.", ex);
 			}
 		}
-
 	}
 
 	public synchronized void handlerDone(ClientHandler clientHandler) {
