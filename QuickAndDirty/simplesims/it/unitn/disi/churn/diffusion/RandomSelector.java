@@ -11,7 +11,7 @@ public class RandomSelector implements IPeerSelector {
 
 	private TIntArrayList fNeighbors = new TIntArrayList(1000);
 
-	private Random fRandom;
+	protected final Random fRandom;
 
 	public RandomSelector(Random random) {
 		fRandom = random;
@@ -24,7 +24,7 @@ public class RandomSelector implements IPeerSelector {
 		fNeighbors.resetQuick();
 		for (int i = 0; i < neighbors.degree(root); i++) {
 			int neighbor = neighbors.getNeighbor(root, i);
-			if (!forbidden.get(neighbor)) {
+			if (canSelect(forbidden, neighbor)) {
 				fNeighbors.add(neighbor);
 			}
 		}
@@ -42,6 +42,10 @@ public class RandomSelector implements IPeerSelector {
 		}
 
 		return NO_LIVE_PEER;
+	}
+
+	protected boolean canSelect(BitSet forbidden, int neighbor) {
+		return !forbidden.get(neighbor);
 	}
 
 }

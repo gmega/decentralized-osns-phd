@@ -73,7 +73,7 @@ public class ExperimentReader {
 			return readChurnByRow(row, provider);
 		}
 
-		return readStatic(row);
+		return readStaticByRow(row);
 	}
 
 	// -------------------------------------------------------------------------
@@ -110,11 +110,16 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	private Experiment readStatic(Integer row) throws Exception {
+	private Experiment readStaticByRow(Integer row) throws Exception {
 		seekSourceRow(row);
-		int root = Integer.parseInt(fSourceReader.get(fIdField));
+		return staticExperiment(fSourceReader);
+	}
 
-		return new Experiment(root, fSourceReader, null, null, null);
+	// -------------------------------------------------------------------------
+
+	private Experiment staticExperiment(TableReader sourceReader) {
+		int root = Integer.parseInt(sourceReader.get(fIdField));
+		return new Experiment(root, sourceReader, null, null, null);
 	}
 
 	// -------------------------------------------------------------------------
@@ -197,8 +202,9 @@ public class ExperimentReader {
 			public Experiment next() {
 				try {
 					reader.next();
-					return readChurn(provider, reader,
-							Integer.parseInt(reader.get(fIdField)));
+					return fChurn ? readChurn(provider, reader,
+							Integer.parseInt(reader.get(fIdField)))
+							: staticExperiment(reader);
 				} catch (Exception ex) {
 					throw MiscUtils.nestRuntimeException(ex);
 				}

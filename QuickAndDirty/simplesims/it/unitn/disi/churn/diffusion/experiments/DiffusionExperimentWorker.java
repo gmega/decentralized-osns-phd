@@ -91,6 +91,10 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
 	private double fFixedFraction;
 
+	// Fixed fraction of HYBRID's timer.
+	@Attribute(value = "bandwidth_target", defaultValue = "100")
+	private double fBdwTarget;
+
 	// Slowdown factor for push of QUENCH messages respectively to
 	// updates.
 	@Attribute(value = "quench_desync", defaultValue = "1")
@@ -141,6 +145,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private BitSet fFixedMap;
 
+	private final IResolver fResolver;
+
 	// -------------------------------------------------------------------------
 	// Reflex that writers have an inflexible API.
 
@@ -165,9 +171,10 @@ public class DiffusionExperimentWorker extends Worker {
 	public DiffusionExperimentWorker(
 			@Attribute(Attribute.AUTO) IResolver resolver,
 			@Attribute(value = "churn", defaultValue = "false") boolean churn,
-			@Attribute(value = "debug", defaultValue = "false") boolean debug)
+			@Attribute(value = "debug", defaultValue = "false") boolean debug,
+			@Attribute(value = "local_schedule", defaultValue = "false") boolean localSchedule)
 			throws Exception {
-		super(resolver, debug);
+		super(resolver, debug, localSchedule);
 
 		fProvider = ObjectCreator.createInstance(GraphConfigurator.class, "",
 				resolver).graphProvider();
@@ -178,6 +185,8 @@ public class DiffusionExperimentWorker extends Worker {
 		fReader = new ExperimentReader("id");
 		ObjectCreator
 				.fieldInject(ExperimentReader.class, fReader, "", resolver);
+
+		fResolver = resolver;
 	}
 
 	protected void initialize() throws Exception {
@@ -201,7 +210,7 @@ public class DiffusionExperimentWorker extends Worker {
 				"hfbdwsqr", "totbdwsum", "totbdwmax", "totbdwsqr",
 
 				// Bin counts
-				"upbins", "totalbins");
+				"uptime", "upbins", "totalbins");
 
 		fBdwDistributionWriter = new TableWriter(new PrefixedWriter("BDW:",
 				System.out), "id", "source", "target", "bdw", "ae", "hf",
@@ -240,6 +249,11 @@ public class DiffusionExperimentWorker extends Worker {
 		System.err.println(antientropy());
 		System.err.println("Antientropy availability threshold is "
 				+ fAEThreshold + ".");
+
+		if (fNUPAnchor > 0) {
+			System.err.println("-- NUP cost simulation. Anchor set at "
+					+ fNUPAnchor + ".");
+		}
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
@@ -360,11 +374,11 @@ public class DiffusionExperimentWorker extends Worker {
 
 			elements = new CloudSimulationBuilder(fBurnin, fDelta, fNUPBurnin,
 					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
-					fLoginGrace, fFixedFraction, fRandomized).build(source,
-					fMessages, fQuenchDesync, fPushTimeout, fAEShortCycle,
-					fAELongCycle, fAEThreshold, fAEShortCycles, fP2PSims,
-					fCloudAssisted, fBaseline, fTrackCores, fBlacklistingAE,
-					processes);
+					fLoginGrace, fFixedFraction, fBdwTarget, fRandomized,
+					exp.ids, fResolver).build(source, fMessages, fQuenchDesync,
+					fPushTimeout, fAEShortCycle, fAELongCycle, fAEThreshold,
+					fAEShortCycles, fP2PSims, fCloudAssisted, fBaseline,
+					fTrackCores, fBlacklistingAE, processes);
 		}
 
 		return new SimulationTask(
@@ -414,12 +428,14 @@ public class DiffusionExperimentWorker extends Worker {
 		collector.addAccumulator(new SumAccumulation(prefix(prefix,
 				"cloud_all.accrued"), 1));
 
-		collector.addAccumulator(new SumAccumulation(prefix(prefix,
-				"cloud_upd." + AccessType.nup), graph.size()));
-		collector.addAccumulator(new SumAccumulation(prefix(prefix,
-				"cloud_upd." + AccessType.productive), graph.size()));
-		collector.addAccumulator(new SumAccumulation(prefix(prefix,
-				"cloud_upd.accrued"), 1));
+		if (fNUPAnchor < 0) {
+			collector.addAccumulator(new SumAccumulation(prefix(prefix,
+					"cloud_upd." + AccessType.nup), graph.size()));
+			collector.addAccumulator(new SumAccumulation(prefix(prefix,
+					"cloud_upd." + AccessType.productive), graph.size()));
+			collector.addAccumulator(new SumAccumulation(prefix(prefix,
+					"cloud_upd.accrued"), 1));
+		}
 
 		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.up", graph
 				.size()));
@@ -504,6 +520,7 @@ public class DiffusionExperimentWorker extends Worker {
 			fCoreTracker.set("edsum", edsum);
 			fCoreTracker.set("size", size);
 			fCoreTracker.set("coresize", tracker.coreSize());
+
 			fCoreTracker.emmitRow();
 		}
 	}
@@ -534,7 +551,10 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	private void outputRegular(Pair<ExperimentData, MetricsCollector> result) {
-		printLatencies("", fLatencyWriter, result.a, result.b);
+		if (fNUPAnchor < 0) {
+			printLatencies("", fLatencyWriter, result.a, result.b);
+		}
+
 		printP2PCosts(fP2PCostWriter, result.a, result.b);
 
 		if (fCloudAssisted) {
@@ -728,9 +748,12 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set(prefix(prefix, "totnup"), totnup.getMetric(i));
 			writer.set(prefix(prefix, "totime"), totime.getMetric(0));
 
-			writer.set(prefix(prefix, "updup"), updup.getMetric(i));
-			writer.set(prefix(prefix, "updnup"), updnup.getMetric(i));
-			writer.set(prefix(prefix, "updtime"), updtime.getMetric(0));
+			writer.set(prefix(prefix, "updup"),
+					fNUPAnchor > 0 ? 0 : updup.getMetric(i));
+			writer.set(prefix(prefix, "updnup"),
+					fNUPAnchor > 0 ? 0 : updnup.getMetric(i));
+			writer.set(prefix(prefix, "updtime"),
+					fNUPAnchor > 0 ? 0 : updtime.getMetric(0));
 
 			writer.emmitRow();
 		}
@@ -748,12 +771,14 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set("id", data.experiment.root);
 			writer.set("source", data.source);
 			writer.set("target", data.ids[i]);
+
 			writer.set(prefix(prefix, "edsumd"), ed.lowerConfidenceLimit(i));
 			writer.set(prefix(prefix, "edsum"), ed.getMetric(i));
 			writer.set(prefix(prefix, "edsumu"), ed.upperConfidenceLimit(i));
 			writer.set(prefix(prefix, "rdsumd"), rd.lowerConfidenceLimit(i));
 			writer.set(prefix(prefix, "rdsum"), rd.getMetric(i));
 			writer.set(prefix(prefix, "rdsumu"), rd.upperConfidenceLimit(i));
+
 			writer.set("size", data.graph.size());
 			writer.set("fixed", fFixedMap.get(data.ids[i]));
 			writer.set("exps", fRepeat);

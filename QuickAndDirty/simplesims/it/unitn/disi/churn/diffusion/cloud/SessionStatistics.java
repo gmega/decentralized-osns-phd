@@ -6,7 +6,8 @@ import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
 
-public class SessionStatistics implements IBroadcastObserver {
+public class SessionStatistics implements IBroadcastObserver,
+		ITimeWindowTracker {
 
 	protected final Object fId;
 
@@ -35,7 +36,7 @@ public class SessionStatistics implements IBroadcastObserver {
 		fAccruedTime += (clock.rawTime() - fLastSession);
 		fLastSession = -1;
 	}
-	
+
 	public double lastSessionStart() {
 		return fLastSession;
 	}

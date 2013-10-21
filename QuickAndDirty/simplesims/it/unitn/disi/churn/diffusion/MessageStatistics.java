@@ -16,8 +16,6 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 public class MessageStatistics extends SessionStatistics implements
 		IMessageObserver {
 
-	private static final boolean DEBUG = false;
-
 	private static final double SECOND = 1.0 / 3600.0;
 
 	private static final int ANTIENTROPY = 0;
@@ -29,6 +27,8 @@ public class MessageStatistics extends SessionStatistics implements
 	private static final int SENT = 0;
 
 	private static final int RECEIVED = 1;
+	
+	private static final boolean CARDINALITY_CHECK = false;
 
 	private final int[][][] fUpdates;
 
@@ -122,14 +122,16 @@ public class MessageStatistics extends SessionStatistics implements
 			fUpdates[SENT][protocol][sender]++;
 			fUpdates[RECEIVED][protocol][receiver]++;
 
-			if ((flags & HFloodSM.DUPLICATE) == 0) {
-				if (fSingle.get(receiver)) {
-					throw new IllegalStateException();
-				}
-				fSingle.set(receiver);
-			} else {
-				if (!fSingle.get(receiver)) {
-					throw new IllegalStateException();
+			if (CARDINALITY_CHECK) {
+				if ((flags & HFloodSM.DUPLICATE) == 0) {
+					if (fSingle.get(receiver)) {
+						throw new IllegalStateException();
+					}
+					fSingle.set(receiver);
+				} else {
+					if (!fSingle.get(receiver)) {
+						throw new IllegalStateException();
+					}
 				}
 			}
 		}
@@ -138,8 +140,10 @@ public class MessageStatistics extends SessionStatistics implements
 
 	@Override
 	public void stopTrackingSession(IClockData clock) {
-		if (fSingle.cardinality() != fSize) {
-			throw new IllegalSelectorException();
+		if (CARDINALITY_CHECK) {
+			if (fSingle.cardinality() != fSize) {
+				throw new IllegalSelectorException();
+			}
 		}
 
 		System.out.println("TRUN: " + clock.rawTime());
@@ -189,7 +193,8 @@ public class MessageStatistics extends SessionStatistics implements
 					+ fUptimeZeroBins[COMBINED][i];
 
 			int upBuckets = (int) Math
-					.ceil(network.process(i).uptime(clock) * 3600);
+					.ceil((network.process(i).uptime(clock) - fBdwTracker[HFLOOD][i]
+							.uptimeBase()) * 3600);
 
 			if (aeMsgs != (fUpdates[SENT][ANTIENTROPY][i]
 					+ fUpdates[RECEIVED][ANTIENTROPY][i]
@@ -218,7 +223,7 @@ public class MessageStatistics extends SessionStatistics implements
 			checkDrift(aeBuckets, eBuckets, "ANTI");
 			checkDrift(hfBuckets, eBuckets, "HFLOOD");
 			checkDrift(alBuckets, eBuckets, "ALL");
-			
+
 			checkDrift(aeUpBuckets, upBuckets, "ANTI:ALL");
 			checkDrift(hfUpBuckets, upBuckets, "HFLOOD:ALL");
 			checkDrift(alUpBuckets, upBuckets, "ALL:ALL");

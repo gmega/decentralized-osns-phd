@@ -30,9 +30,9 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 	public BandwidthTracker(double binWidth) {
 		this(-1, binWidth);
 	}
-	
+
 	// -------------------------------------------------------------------------
-	
+
 	public BandwidthTracker(double base, double binWidth) {
 		this(base, 0.0, binWidth);
 	}
@@ -154,6 +154,16 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	// -------------------------------------------------------------------------
 
+	/**
+	 * @return the uptime value taken as the initial bucket for this
+	 *         {@link BandwidthTracker}.
+	 */
+	public double uptimeBase() {
+		return fUptimeBase;
+	}
+
+	// -------------------------------------------------------------------------
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public BandwidthTracker<T> clone() throws CloneNotSupportedException {
@@ -170,7 +180,7 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 			if (slack) {
 				System.out.println("SLCK:" + count);
 			} else {
-				throw new IllegalStateException(Integer.toString(count));	
+				throw new IllegalStateException(Integer.toString(count));
 			}
 		}
 
@@ -215,7 +225,7 @@ public abstract class BandwidthTracker<T> implements Cloneable {
 
 	private void addCount(int value, int n) {
 		fObservations += n;
-		fTotalCount += value;
+		fTotalCount += value * n;
 		add(value, n);
 	}
 

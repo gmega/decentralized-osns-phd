@@ -8,7 +8,7 @@ import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.scheduler.IWorker;
-import it.unitn.disi.distsim.scheduler.SchedulerClient;
+import it.unitn.disi.distsim.scheduler.RemoteSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
@@ -44,7 +44,7 @@ public abstract class AbstractWorker implements ITransformer, IWorker {
 	@Attribute("burnin")
 	protected double fBurnin;
 
-	private SchedulerClient fClient;
+	private RemoteSchedulerClient fClient;
 
 	protected GraphConfigurator fGraphConfig;
 
@@ -76,7 +76,7 @@ public abstract class AbstractWorker implements ITransformer, IWorker {
 		ControlClient cclient = ObjectCreator.createInstance(
 				ControlClient.class, "", resolver);
 
-		fClient = new SchedulerClient(cclient, this);
+		fClient = new RemoteSchedulerClient(cclient, this);
 
 		fExperimentReader = new ExperimentReader(idField);
 		ObjectCreator.fieldInject(ExperimentReader.class, fExperimentReader,

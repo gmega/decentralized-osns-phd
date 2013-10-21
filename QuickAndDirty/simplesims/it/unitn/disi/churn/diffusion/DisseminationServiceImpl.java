@@ -11,7 +11,6 @@ import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
-import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
@@ -365,11 +364,12 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		private void doExchange(ISimulationEngine engine) {
 			INetwork network = engine.network();
 			IProcess peer = selectPeer(network);
-			
+
 			// This antientropy implementation is really a hack: what it does is
 			// to force a push protocol exchange, which in the end is okay if
 			// we're only disseminating one message.
 			if (peer != null) {
+
 				DisseminationServiceImpl pair = (DisseminationServiceImpl) peer
 						.getProtocol(fPid);
 

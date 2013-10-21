@@ -3,6 +3,8 @@ package it.unitn.disi.churn.diffusion.experiments.config;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
 import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
+import it.unitn.disi.churn.diffusion.Anchor;
+import it.unitn.disi.churn.diffusion.BalancingSelector;
 import it.unitn.disi.churn.diffusion.CoreTracker;
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
@@ -11,6 +13,7 @@ import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
+import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
@@ -23,7 +26,6 @@ import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
-import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
@@ -36,6 +38,9 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
+import peersim.config.IResolver;
+import peersim.config.ObjectCreator;
+
 public class CloudSimulationBuilder {
 
 	public static final int AE_PRIORITY = 0;
@@ -47,6 +52,8 @@ public class CloudSimulationBuilder {
 	public static final int PRODUCTIVE = 0;
 
 	private static final double SECOND = 0.0002777777777777778D;
+
+	private static final int ANCHOR_TYPE = 5;
 
 	private final double fBurnin;
 
@@ -67,6 +74,14 @@ public class CloudSimulationBuilder {
 	private final double fLoginGrace;
 
 	private final double fFixedFraction;
+
+	private double fBdwThreshold;
+
+	private final IResolver fResolver;
+
+	private final int[] fIds;
+
+	private int[] fDegrees;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -90,17 +105,21 @@ public class CloudSimulationBuilder {
 	public CloudSimulationBuilder(double burnin, double period,
 			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
 			Random random, double nupOnly, double loginGrace,
-			double fixedFraction, boolean randomize) {
+			double fixedFraction, double bdwThreshold, boolean randomize,
+			int[] ids, IResolver resolver) {
 		fDelta = period;
 		fGraph = graph;
 		fRandom = random;
 		fBurnin = burnin;
 		fSelectorType = selectorType;
+		fBdwThreshold = bdwThreshold;
 		fNUPBurnin = nupBurnin;
 		fNUPAnchor = nupOnly;
 		fRandomize = randomize;
 		fLoginGrace = loginGrace;
 		fFixedFraction = fixedFraction;
+		fResolver = resolver;
+		fIds = ids;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -137,7 +156,7 @@ public class CloudSimulationBuilder {
 					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
 		}
 
-		prots = create(processes, runner,
+		prots = create(processes, runner, source,
 				pid,
 				messages,
 				quenchDesync,
@@ -154,10 +173,25 @@ public class CloudSimulationBuilder {
 			create(reference, processes, prots, cloud, source);
 		}
 
+		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size(),
+				true);
+		UptimeTracker upTracker = new UptimeTracker("msg", processes.length);
+
 		// 1c. Add dissemination wick (guy that posts update after some
-		// period of time ellapses).
-		addWickAndAnchor(source, messages, "", prots, processes, builder,
-				cloud, metrics);
+		// period of time ellapses), or an anchor for updateless sims. These
+		// essentially determine the measurement window for the sims (interval
+		// between events along which we measure stuff) and contain the
+		// mechanisms that stop the simulation once its done.
+		if (fNUPAnchor < 0) {
+			addWick(source, messages, "", prots, processes, builder, cloud,
+					metrics, mstats, upTracker);
+		} else {
+			addAnchor(prots, builder, cloud, metrics, mstats, upTracker);
+		}
+
+		metrics.add(mstats.accruedTime());
+		metrics.add(upTracker.accruedUptime());
+		metrics.addAll(mstats.metrics());
 
 		// 1d. Add CoreTracker if required -- tracks initial connected core,
 		// which we need for the two-phase sims.
@@ -175,22 +209,50 @@ public class CloudSimulationBuilder {
 				builder.engine(), metrics);
 	}
 
-	private void addWickAndAnchor(final int source, int messages,
-			String prefix, final DisseminationServiceImpl[] prots,
-			IProcess[] processes, EngineBuilder builder, SimpleCloudImpl cloud,
-			List<INodeMetric<? extends Object>> metrics) {
+	private void addAnchor(DisseminationServiceImpl[] protocols,
+			EngineBuilder builder, SimpleCloudImpl cloud,
+			List<INodeMetric<? extends Object>> metrics,
+			MessageStatistics mstats, final UptimeTracker tracker) {
+		Anchor anchor = new Anchor(ANCHOR_TYPE, protocols.length, fBurnin,
+				fNUPAnchor, cloud);
 
-		if (fNUPAnchor > 0) {
-			builder.preschedule(new Anchor());
+		metrics.add(anchor.statistics().accesses(AccessType.nup));
+		metrics.add(anchor.statistics().accesses(AccessType.productive));
+		metrics.add(anchor.statistics().accruedTime());
+
+		anchor.addMeasurementSessionObserver(mstats);
+		anchor.addMeasurementSessionObserver(new ITimeWindowTracker() {
+			@Override
+			public void startTrackingSession(IClockData clock) {
+				tracker.broadcastStarted(null, clock.engine());
+			}
+
+			@Override
+			public void stopTrackingSession(IClockData clock) {
+				tracker.broadcastDone(null, clock.engine());
+			}
+		});
+
+		builder.preschedule(anchor);
+
+		for (int i = 0; i < protocols.length; i++) {
+			protocols[i].addMessageObserver(mstats);
 		}
+	}
+
+	private void addWick(final int source, int messages, String prefix,
+			final DisseminationServiceImpl[] protocols, IProcess[] processes,
+			EngineBuilder builder, SimpleCloudImpl cloud,
+			List<INodeMetric<? extends Object>> metrics,
+			MessageStatistics mstats, UptimeTracker tracker) {
 
 		DiffusionWick wick = new DiffusionWick(prefix, source, messages,
-				fNUPBurnin, prots);
+				fNUPBurnin, protocols);
 		final PostMM poster = wick.new PostMM(cloud);
 		wick.setPoster(poster);
 
 		// Adds the diffusion wick as the global message tracker.
-		for (DisseminationServiceImpl protocol : prots) {
+		for (DisseminationServiceImpl protocol : protocols) {
 			protocol.addBroadcastObserver(wick);
 		}
 
@@ -214,22 +276,24 @@ public class CloudSimulationBuilder {
 			metrics.add(wick.updates().accesses(AccessType.nup));
 			metrics.add(wick.updates().accruedTime());
 		}
+
+		for (int i = 0; i < protocols.length; i++) {
+			protocols[i].addBroadcastObserver(tracker);
+			protocols[i].addBroadcastObserver(mstats);
+			protocols[i].addMessageObserver(mstats);
+		}
 	}
 
 	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int pid, int messages, int quenchDesync, double pushTimeout,
-			double antientropyShortCycle, double antientropyLongCycle,
-			int shortCycles, double antientropyLAThreshold,
-			boolean aeBlacklist, List<INodeMetric<? extends Object>> metrics,
-			EngineBuilder builder) {
+			int source, int pid, int messages, int quenchDesync,
+			double pushTimeout, double antientropyShortCycle,
+			double antientropyLongCycle, int shortCycles,
+			double antientropyLAThreshold, boolean aeBlacklist,
+			List<INodeMetric<? extends Object>> metrics, EngineBuilder builder) {
 
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
-		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size(),
-				true);
-
-		UptimeTracker tracker = new UptimeTracker("msg", processes.length);
 
 		for (int i = 0; i < protocols.length; i++) {
 
@@ -239,8 +303,8 @@ public class CloudSimulationBuilder {
 					.asymptoticAvailability() < antientropyLAThreshold;
 
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
-					peerSelector(), processes[i], new CachingTransformer(
-							new LiveTransformer()), runner,
+					peerSelector(source, processes), processes[i],
+					new CachingTransformer(new LiveTransformer()), runner,
 					builder.reference(), messages == 1, quenchDesync,
 					maxQuenchAge(), pushTimeout, antientropyShortCycle,
 					antientropyLongCycle, fBurnin, isLA ? new BitSet()
@@ -255,14 +319,7 @@ public class CloudSimulationBuilder {
 				processes[i].addObserver(protocols[i].antientropy());
 			}
 
-			protocols[i].addMessageObserver(mstats);
-			protocols[i].addBroadcastObserver(mstats);
-			protocols[i].addBroadcastObserver(tracker);
 		}
-
-		metrics.add(mstats.accruedTime());
-		metrics.add(tracker.accruedUptime());
-		metrics.addAll(mstats.metrics());
 
 		return protocols;
 	}
@@ -302,45 +359,87 @@ public class CloudSimulationBuilder {
 		return accessors;
 	}
 
-	protected IPeerSelector peerSelector() {
+	protected IPeerSelector peerSelector(int source, IProcess[] processes) {
 		switch (fSelectorType) {
+
 		case 'a':
 			return new BiasedCentralitySelector(fRandom, true);
+
 		case 'r':
 			return new RandomSelector(fRandom);
+
 		case 'c':
 			return new BiasedCentralitySelector(fRandom, false);
+
+		case 'b': {
+			BalancingSelector selector = new BalancingSelector(fRandom,
+					dynamicDegrees(source, processes), fBdwThreshold);
+			ObjectCreator.fieldInject(BalancingSelector.class, selector, "",
+					fResolver);
+			return selector;
+		}
+
+		case 's': {
+			BalancingSelector selector = new BalancingSelector(fRandom,
+					staticDegrees(), fBdwThreshold);
+			ObjectCreator.fieldInject(BalancingSelector.class, selector, "",
+					fResolver);
+			return selector;
+		}
+
 		default:
 			throw new UnsupportedOperationException();
 		}
+
 	};
 
-	private class Anchor extends Schedulable {
-
-		private static final long serialVersionUID = 6287804680484080985L;
-
-		@Override
-		public boolean isExpired() {
-			return true;
+	private int[] staticDegrees() {
+		if (fDegrees == null) {
+			fDegrees = new int[fGraph.size()];
+			for (int i = 0; i < fDegrees.length; i++) {
+				fDegrees[i] = 100 * fGraph.degree(i);
+			}
 		}
 
-		@Override
-		public void scheduled(ISimulationEngine engine) {
-			System.err.println("Anchor dropped at " + engine.clock().rawTime()
-					+ ".");
-			engine.stop();
+		return fDegrees;
+	}
+
+	private int[] dynamicDegrees(int source, IProcess[] processes) {
+		if (fDegrees == null) {
+			fDegrees = new int[fGraph.size()];
+			for (int i = 0; i < fDegrees.length; i++) {
+				int staticDegree = fGraph.degree(i);
+
+				// Dynamic degree.
+				double expected = 0.0;
+				for (int j = 0; j < staticDegree; j++) {
+					// This will cause a ClassCastException if user tries to
+					// compute dynamic degrees with a non-renewal-process.
+					RenewalProcess process = (RenewalProcess) processes[fGraph
+							.getNeighbor(i, j)];
+					expected += process.asymptoticAvailability();
+				}
+
+				fDegrees[i] = (int) Math.max(1, Math.round(expected));
+
+				StringBuffer sbuffer = new StringBuffer("DDGS:");
+				sbuffer.append(fIds[0]);
+				sbuffer.append(" ");
+				sbuffer.append(fIds[source]);
+				sbuffer.append(" ");
+				sbuffer.append(fIds[i]);
+				sbuffer.append(" ");
+				sbuffer.append(staticDegree);
+				sbuffer.append(" ");
+				sbuffer.append(expected);
+				sbuffer.append(" ");
+				sbuffer.append(fDegrees[i]);
+
+				System.out.println(sbuffer.toString());
+			}
 		}
 
-		@Override
-		public double time() {
-			return fBurnin + fBurnin + fNUPAnchor;
-		}
-
-		@Override
-		public int type() {
-			return 5;
-		}
-
+		return fDegrees;
 	}
 
 	class OneShotProcess extends IProcess {
