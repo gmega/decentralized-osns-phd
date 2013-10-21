@@ -10,8 +10,9 @@ import org.apache.log4j.Logger;
 import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient;
 import it.unitn.disi.distsim.dataserver.CheckpointClient.Application;
+import it.unitn.disi.distsim.scheduler.ISchedulerClient;
 import it.unitn.disi.distsim.scheduler.IWorker;
-import it.unitn.disi.distsim.scheduler.SchedulerClient;
+import it.unitn.disi.distsim.scheduler.RemoteSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
@@ -24,9 +25,9 @@ import peersim.config.ObjectCreator;
 public abstract class Worker implements Runnable, Application, IWorker {
 
 	public static final String PROP_TASK_DATA = "task.data";
-	
+
 	public static final String PROP_TASK_STATS = "task.stats";
-	
+
 	public static final String PROP_TASK_PROGRESS = "task.progress";
 
 	public static final String PROP_ACTIVE_TASKS = "task.active";
@@ -66,15 +67,15 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	private final ControlClient fControl;
 
 	private final Properties fStatus;
-	
+
 	private int fFailed;
-	
+
 	private int fCompleted;
 
 	/**
 	 * The iterator which will feed us experiments.
 	 */
-	private final SchedulerClient fClient;
+	private final ISchedulerClient fClient;
 
 	/**
 	 * Client to the checkpoint manager.
@@ -86,27 +87,46 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	 */
 	private TaskExecutor fExecutor;
 
-	public Worker(@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute(value = "debug", defaultValue = "false") boolean debug) {
+	public Worker(
+			@Attribute(Attribute.AUTO) IResolver resolver,
+			@Attribute(value = "debug", defaultValue = "false") boolean debug,
+			@Attribute(value = "local_schedule", defaultValue = "false") boolean localSchedule) {
 		fMutex = new ReentrantLock();
 
-		fControl = ObjectCreator.createInstance(ControlClient.class, "",
-				resolver);
+		// Worker with coordinator.
+		if (!localSchedule) {
+			fLogger.info("Worker requires task coordinator.");
+			fControl = ObjectCreator.createInstance(ControlClient.class, "",
+					resolver);
 
-		try {
-			fChkpClient = new CheckpointClient(fControl, this, 30 * ONE_MINUTE);
-			fCheckpoint = new Thread(fChkpClient,
-					"Application checkpoint thread");
+			try {
+				fChkpClient = new CheckpointClient(fControl, this,
+						30 * ONE_MINUTE);
+				fCheckpoint = new Thread(fChkpClient,
+						"Application checkpoint thread");
 
-			if (debug) {
-				enableDebugging(resolver);
+				if (debug) {
+					enableDebugging(resolver);
+				}
+
+			} catch (Exception ex) {
+				throw MiscUtils.nestRuntimeException(ex);
 			}
 
-		} catch (Exception ex) {
-			throw MiscUtils.nestRuntimeException(ex);
+			fClient = new RemoteSchedulerClient(fControl, this);
 		}
 
-		fClient = new SchedulerClient(fControl, this);
+		// Independent worker.
+		else {
+			fLogger.info("Worker doesn't require task coordinator.");
+			
+			fControl = null;
+			fCheckpoint = null;
+			fChkpClient = null;
+
+			fClient = ObjectCreator.createInstance(LocalScheduler.class, "",
+					resolver);
+		}
 
 		fStatus = new Properties();
 	}
@@ -117,18 +137,18 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		fLogger.info("Using " + fCores + " cores.");
 		try {
 			initialize();
-			fCheckpoint.start();
+			startCheckpointing();
 			this.run0();
 		} catch (Exception ex) {
 			fLogger.error("Error during worker execution.", ex);
 			// TODO add worker-master error reporting code here.
 		} finally {
-			fCheckpoint.interrupt();
+			stopCheckpointing();
 		}
 	}
 
 	private void run0() throws Exception {
-		IScheduleIterator schedule = fClient.iterator();
+		IScheduleIterator schedule = schedule();
 		Integer row;
 		while ((row = (Integer) schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Serializable experimentData = load(row);
@@ -136,6 +156,10 @@ public abstract class Worker implements Runnable, Application, IWorker {
 			outputResults(results);
 			taskDone();
 		}
+	}
+
+	private IScheduleIterator schedule() {
+		return fClient.iterator();
 	}
 
 	private Object runTasks(final int id, final Serializable data) {
@@ -148,8 +172,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 
 		// Publishes the current progress of this worker as a property that
 		// can be consumed by remote clients.
-		StatusTracker tracker = new StatusTracker(taskTitle(data),
-				iterations);
+		StatusTracker tracker = new StatusTracker(taskTitle(data), iterations);
 		tracker.startTask();
 
 		// Thread that submits jobs.
@@ -209,6 +232,18 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		return fState.aggregate;
 	}
 
+	private void stopCheckpointing() {
+		if (fCheckpoint != null) {
+			fCheckpoint.interrupt();
+		}
+	}
+
+	private void startCheckpointing() {
+		if (fCheckpoint != null) {
+			fCheckpoint.start();
+		}
+	}
+
 	private void updateTaskStatistics() {
 		StringBuffer sbuffer = new StringBuffer();
 		sbuffer.append("[");
@@ -248,7 +283,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	private void startTask(int id, Object data) {
 		fMutex.lock();
 
-		Object chkp = fChkpClient.workUnit(id, "");
+		Object chkp = fChkpClient != null ? fChkpClient.workUnit(id, "") : null;
 
 		if (chkp != null) {
 			fLogger.info("Retrieved checkpoint for task " + id + ".");
@@ -262,13 +297,15 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		}
 
 		fMutex.unlock();
-		
+
 		updateTaskStatistics();
 	}
 
 	private void taskDone() {
 		fMutex.lock();
-		fChkpClient.taskDone(fState.taskId);
+		if (fChkpClient != null) {
+			fChkpClient.taskDone(fState.taskId);
+		}
 		fState = null;
 		fMutex.unlock();
 	}
@@ -420,7 +457,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	protected abstract boolean isPreciseEnough(Object aggregate);
 
 	protected abstract void outputResults(Object results);
-	
+
 	protected abstract String taskTitle(Serializable data);
 
 	/**

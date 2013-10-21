@@ -7,6 +7,7 @@ import org.lambda.functions.implementations.F1;
 import it.unitn.disi.simulator.random.Exponential;
 import it.unitn.disi.simulator.random.GeneralizedPareto;
 import it.unitn.disi.simulator.random.IDistribution;
+import it.unitn.disi.simulator.random.LTExponential;
 import it.unitn.disi.simulator.random.UniformDistribution;
 
 @SuppressWarnings("unchecked")
@@ -107,8 +108,32 @@ public class YaoPresets {
 		}
 	};
 
+	private static final NamedF1<IDistribution, IDistributionGenerator> TRUNCATED_TE_SYSTEM = new NamedF1<IDistribution, IDistributionGenerator>(
+			"LTE", null) {
+		{
+			ret(new IDistributionGenerator() {
+
+				@Override
+				public IDistribution uptimeDistribution(double li) {
+					return new LTExponential(1.0 / li, 5.0 / 3600, a);
+				}
+
+				@Override
+				public IDistribution downtimeDistribution(double di) {
+					return new LTExponential(1.0 / di, 5.0 / 3600, a);
+				}
+
+				@Override
+				public String id() {
+					return "LTE";
+				}
+
+			});
+		}
+	};
+
 	private static final NamedF1<IDistribution, IDistributionGenerator>[] modes = new NamedF1[] {
-			HEAVY_TAILED, VERY_HEAVY_TAILED, EXPONENTIAL_SYSTEM, TE_SYSTEM };
+			HEAVY_TAILED, VERY_HEAVY_TAILED, EXPONENTIAL_SYSTEM, TE_SYSTEM, TRUNCATED_TE_SYSTEM };
 
 	public static IAverageGenerator averageGenerator(String id, Random r) {
 		for (NamedF1<IDistribution, IAverageGenerator> generator : generators) {

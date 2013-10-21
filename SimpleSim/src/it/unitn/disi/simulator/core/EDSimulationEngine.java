@@ -277,6 +277,17 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
+	@Override
+	public void stop(int drain) {
+		fStopPermits = Math.max(fStopPermits - drain, 0);
+
+		if (fStopPermits == 0) {
+			fDone = true;
+		}
+	}
+
+	// -------------------------------------------------------------------------
+
 	public int stopPermits() {
 		return fStopPermits;
 	}
@@ -371,19 +382,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
-	private void stop(int drain) {
-		fStopPermits = Math.max(fStopPermits - drain, 0);
-
-		if (fStopPermits == 0) {
-			fDone = true;
-		}
-	}
-
-	// -------------------------------------------------------------------------
-
 	private void notifyObservers(Schedulable p, double time) {
 		int type = p.type();
-		if (type >= fObservers.length) {
+		if (type < 0 || type >= fObservers.length) {
 			return;
 		}
 

@@ -34,8 +34,15 @@ public interface ISimulationEngine {
 	public void unbound(IEventObserver observer);
 
 	/**
-	 * Decreases the number of stop permits in the current engine by one. When
-	 * the count reaches zero, the engine arrests.
+	 * Decreases the number of stop permits in the current engine by the
+	 * specified ammount. When the count reaches zero, the engine arrests.
+	 */
+	public void stop(int permits);
+
+	/**
+	 * Same as <code>stop(1);</code>
+	 * 
+	 * @see #stop(int)
 	 */
 	public void stop();
 

@@ -1,6 +1,9 @@
 package it.unitn.disi.simulator.core;
 
 import it.unitn.disi.simulator.core.EDSimulationEngine.Descriptor;
+import it.unitn.disi.simulator.util.Anchor;
+import it.unitn.disi.simulator.util.TimedProgressTracker;
+import it.unitn.disi.utils.logging.IProgressTracker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +81,58 @@ public class EngineBuilder {
 	}
 
 	/**
+	 * Creates a fixed-length simulation which will stop the engine at the
+	 * predefined time instant.
+	 * 
+	 * @param type
+	 *            the channel to which direct the stop notification, with the
+	 *            associated {@link Anchor}, or -1 for no notification.
+	 * @param time
+	 *            the simulation time at which to stop the engine.
+	 * @param trackProgress
+	 *            whether to track simulation progress with an
+	 *            {@link IProgressTracker}.
+	 */
+	public void stopAt(int type, double time, boolean trackProgress) {
+		preschedule(new TimedProgressTracker(time, -1), // tracks progress
+				new Anchor(time, type)); // stops simulation cold
+	}
+
+	/**
+	 * Registers an {@link IEventObserver} which will be triggered when the
+	 * burnin period at the engine finishes.
+	 * 
+	 * @param observer
+	 *            the observer to be triggered.
+	 */
+	public void addBurninAction(final IEventObserver observer) {
+		preschedule(new Schedulable() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public int type() {
+				return -1;
+			}
+
+			@Override
+			public double time() {
+				return fBurnin;
+			}
+
+			@Override
+			public void scheduled(ISimulationEngine engine) {
+				observer.eventPerformed(engine, this, IEventObserver.EXPIRED);
+			}
+
+			@Override
+			public boolean isExpired() {
+				return true;
+			}
+		});
+	}
+
+	/**
 	 * @param burnin
 	 *            the burning period for this simulation, during which no
 	 *            observers will be notified of events by the engine.
@@ -123,16 +178,16 @@ public class EngineBuilder {
 		for (int i = 0; i < processes.length; i++) {
 			processes[i] = fProcesses.get(i);
 		}
-		
+
 		fInstance = new EDSimulationEngine(
 				fProcesses.toArray(new IProcess[fProcesses.size()]),
 				fObservers.toArray(new Descriptor[fObservers.size()]),
 				fExtraPermits, fBurnin);
 
-		for(Schedulable schedulable : fPreschedulables) {
+		for (Schedulable schedulable : fPreschedulables) {
 			fInstance.schedule(schedulable);
 		}
-		
+
 		return fInstance;
 	}
 
