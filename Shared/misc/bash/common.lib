@@ -128,8 +128,6 @@ function check_set {
     fi
 }
 
-err "Sourced common.lib."
-
 ############################################################### 
 #
 # Given two folders, creates a shadow copy (linked) from the

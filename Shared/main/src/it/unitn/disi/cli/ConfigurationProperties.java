@@ -52,6 +52,8 @@ public class ConfigurationProperties {
 
 	private String fSection = ROOT_SECTION;
 
+	private File fBase = new File(".");
+
 	public ConfigurationProperties() {
 		fProperties.put(ROOT_SECTION, new Properties());
 		fProperties.put(TOP_SECTION, new Properties());
@@ -65,6 +67,8 @@ public class ConfigurationProperties {
 		FileInputStream iStream = null;
 		try {
 			iStream = new FileInputStream(file);
+			// XXX Not really the best way to do this.
+			fBase = file.getAbsoluteFile().getParentFile();
 			load(iStream);
 		} finally {
 			if (iStream != null) {
@@ -81,10 +85,16 @@ public class ConfigurationProperties {
 	}
 
 	public IResolver resolver(String section) {
+		
+		Properties sectionProps = fProperties.get(section);
+		if (sectionProps == null) {
+			return null;
+		}
+		
 		final Properties merged = new Properties();
 
 		merged.putAll(fProperties.get(ROOT_SECTION));
-		merged.putAll(fProperties.get(section));
+		merged.putAll(sectionProps);
 		merged.putAll(fProperties.get(TOP_SECTION));
 
 		for (Object key : merged.keySet()) {
@@ -146,7 +156,7 @@ public class ConfigurationProperties {
 	}
 
 	private File file(String line) {
-		return new File(line.substring(1, line.length() - 1));
+		return new File(fBase, line.substring(1, line.length() - 1));
 	}
 
 	private void sectionStart(String rawline) {
