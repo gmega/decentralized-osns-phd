@@ -37,23 +37,13 @@ public class RenewalProcess extends IProcess implements Serializable {
 		fDown = down;
 		fState = initial;
 	}
+	
+	// -------------------------------------------------------------------------
 
-	/**
-	 * @return the asymptotic availability of this node, if defined.
-	 */
+	@Override
 	public double asymptoticAvailability() {
 		double up = fUp.expectation();
 		return up / (up + fDown.expectation());
-	}
-
-	/**
-	 * @param clock
-	 *            the simulation {@link IClockData}.
-	 *            
-	 * @return the empirical (simulated) availability for this node.
-	 */
-	public double empiricalAvailability(IClockData clock) {
-		return uptime(clock) / clock.rawTime();
 	}
 
 	// -------------------------------------------------------------------------

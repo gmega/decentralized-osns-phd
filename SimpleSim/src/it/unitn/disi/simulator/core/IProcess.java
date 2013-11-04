@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public abstract class IProcess extends Schedulable {
 
 	private static final long serialVersionUID = -6326282369880873309L;
-	
+
 	public static int PROCESS_SCHEDULABLE_TYPE = 0;
 
 	public static enum State {
@@ -26,6 +26,22 @@ public abstract class IProcess extends Schedulable {
 			}
 		}
 	}
+
+	/**
+	 * @param clock
+	 *            the simulation {@link IClockData}.
+	 * 
+	 * @return the empirical (simulated) availability for this node.
+	 */
+	public double empiricalAvailability(IClockData clock) {
+		return uptime(clock) / clock.rawTime();
+	}
+
+	/**
+	 * Returns the asymptotic availability of this {@link IProcess}, or
+	 * {@link Double#NaN} if it not known or undefined.
+	 */
+	public abstract double asymptoticAvailability();
 
 	/**
 	 * @return returns the actual uptime of the current node.

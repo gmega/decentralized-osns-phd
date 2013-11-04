@@ -35,6 +35,11 @@ public class FixedProcess extends IProcess {
 	}
 
 	@Override
+	public double asymptoticAvailability() {
+		return (fState == State.up) ? 1.0 : 0.0;
+	}
+
+	@Override
 	public boolean isUp() {
 		return fState == State.up;
 	}
