@@ -1,0 +1,4 @@
+<project name="graphlib" default="compile">
+	<property file="build.properties"/>
+	<import file="${common.dir}/build-commons/common.xml"/>
+</project>
