@@ -1,34 +1,4 @@
-<project name="Distributed Simulator" default="compile-distsim" basedir=".">
-
-	<property name="src" location="src" />
-	<property name="build" location="bin" />
-	<property name="config" location="config" />
-	<property name="lib.path" location="../Utilities/lib" />
-	<property name="output.lib.path" location="../Utilities/lib-gen" />
-
-	<path id="compile.path">
-		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
-		<pathelement location="${lib.path}/jep-2.4.1.jar" />
-		<pathelement location="${lib.path}/ext-1.1.1.jar" />
-		<pathelement location="${output.lib.path}/analyzer-j.jar" />
-	</path>
-
-	<target name="compile-distsim">
-		<!-- Create the build directory structure used by compile -->
-		<mkdir dir="${build}" />
-		<!-- Compile the java code from ${src} into ${build} -->
-		<javac srcdir="${src}" destdir="${build}" classpathref="compile.path" includeantruntime="true" />
-	</target>
-
-	<target name="build-distsim-jar" depends="compile-distsim">
-		<jar destfile="${output.lib.path}/distributed-sim.jar">
-			<fileset dir="${build}" />
-			<fileset dir="${config}" />
-			<manifest>
-				<attribute name="Built-By" value="Giuliano Mega" />
-				<attribute name="Class-Path" value="args4j-2.0.9.jar google-collect-1.0-rc3.jar ext-1.1.1.jar analyzer-j.jar peersim.jar peersim-extras.jar jep-2.4.1.jar" />
-			</manifest>
-		</jar>
-	</target>
-
+<project name="simcontrol" default="compile">
+	<property file="build.properties"/>
+	<import file="${common.dir}/build-commons/common.xml"/>
 </project>

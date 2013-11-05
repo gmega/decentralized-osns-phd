@@ -1,0 +1,25 @@
+<ivy-module version="1.0">
+
+    <info organisation="it.unitn.disi" 
+    	module="simcontrol"
+    	status="integration"/>
+    	    
+    <configurations>
+    	<conf name="core"/>
+    	<!--  TODO: define config for building scheduler standalone. -->
+    </configurations>
+    
+    <publications>
+    	<artifact name="simcontrol" type="jar" ext="jar"/>
+    </publications>
+    
+    <dependencies>
+        <dependency org="peersim" name="peersim" rev="1.0.5" conf="core->default"/>
+        <dependency org="it.unitn.disi" name="base-utils" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="graphlib" rev="latest.integration" conf="core"/>
+        <dependency org="com.thoughtworks.xstream" name="xstream" rev="1.4.5" conf="core->default"/>
+        <dependency org="log4j" name="log4j" rev="1.2.16" conf="core->default"/>
+        <dependency	org="args4j" name="args4j-tools" rev="2.0.25" conf="core->default"/>
+    </dependencies>
+    
+</ivy-module>
