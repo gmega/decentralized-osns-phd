@@ -13,5 +13,10 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Baseutilities"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/DistSim"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/extras"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Graphlib"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/PeersimUtils"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
