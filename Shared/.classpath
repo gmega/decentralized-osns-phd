@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="main/src"/>
-	<classpathentry kind="src" path="test/src"/>
-	<classpathentry kind="src" path="main/peersim"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="lib/google-collect-1.0-rc3.jar"/>
 	<classpathentry kind="lib" path="lib/args4j-2.0.9.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="lib/easymock-2.5.2.jar" sourcepath="/home/giuliano/Software/easymock-2.5.2/easymock-2.5.2-sources.jar"/>
 	<classpathentry kind="lib" path="test/resources"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/peersim"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
 	<classpathentry kind="lib" path="lib/trove-3.0.0rc2.jar"/>
-	<classpathentry kind="lib" path="lib/JMarkovPack.jar"/>
 	<classpathentry kind="lib" path="lib/mtj.jar" sourcepath="/home/giuliano/Software/mtj-0.9.14/src"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
+	<classpathentry kind="lib" path="lib/google-collect-1.0-rc3.jar" sourcepath="/home/giuliano/Software/guava-r05/guava-src-r05.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
