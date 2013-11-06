@@ -1,0 +1,26 @@
+<ivy-module version="1.0">
+
+    <info organisation="it.unitn.disi" 
+    	module="base-utils"
+    	status="integration"/>
+    	    
+    <configurations>
+    	<conf name="core"/>
+    	<!--  TODO: define config for building scheduler standalone. -->
+    </configurations>
+    
+    <publications>
+    	<artifact name="base-utils" type="jar" ext="jar"/>
+    </publications>
+    
+    <dependencies>
+        <dependency org="peersim" name="peersim" rev="1.0.5" conf="core->default"/>
+        <dependency	org="jmarkov" name="jmarkov" rev="2.0" conf="core->default"/>
+        <dependency org="trove"	name="trove" rev="3.0.3" conf="core->default"/>
+        <dependency org="log4j" name="log4j" rev="1.2.16" conf="core->default"/>
+        <dependency org="com.googlecode.matrix-toolkits-java" name="mtj" rev="1.0.1" conf="core->default"/>
+        <dependency	org="args4j" name="args4j-tools" rev="2.0.25" conf="core->default"/>
+        <dependency org="com.google.guava" name="guava" rev="15.0" conf="core->default"/>
+    </dependencies>
+    
+</ivy-module>
