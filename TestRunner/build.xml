@@ -17,10 +17,14 @@
 	
 	<target name="buildlist" depends="load-ivy"> 
 		<ivy:buildlist reference="build-path">
+			<!-- Base libraries -->
 			<fileset dir="${basedir}/../Baseutilities" includes="build.xml"/>
 			<fileset dir="${basedir}/../Graphlib" includes="build.xml"/>
 			<fileset dir="${basedir}/../DistSim" includes="build.xml"/>
 			<fileset dir="${basedir}/../SimpleSim" includes="build.xml"/>
+			
+			<!-- Simulations -->
+			<fileset dir="${basedir}/../QuickAndDirty" includes="build.xml"/>
 		</ivy:buildlist>
 	</target>
 

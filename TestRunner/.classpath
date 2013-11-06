@@ -2,8 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/OSN"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/peersim"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/QuickAndDirty"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Utilities"/>
 	<classpathentry kind="lib" path="/home/giuliano/Software/Eclipse/eclipse-3.6.1/plugins/org.junit_4.8.1.v4_8_1_v20100427-1100/junit.jar" sourcepath="/home/giuliano/Software/Eclipse/eclipse-3.6.1/plugins/org.junit.source_4.8.1.v4_8_1_v20100427-1100.jar">
@@ -15,8 +13,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/SimpleSim"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Baseutilities"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/DistSim"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/extras"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Graphlib"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/PeersimUtils"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
