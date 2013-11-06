@@ -1,0 +1,26 @@
+<ivy-module version="1.0">
+
+    <info organisation="it.unitn.disi" 
+    	module="edsim"
+    	status="integration"/>
+
+    <configurations>
+    	<conf name="core"/>
+    	<conf name="interfaces"/>
+    </configurations>
+    
+    <publications>
+    	<artifact name="edsim" type="jar"/>
+    </publications>
+    
+    <dependencies>
+        <dependency org="it.unitn.disi" name="base-utils" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="graphlib" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="simcontrol" rev="latest.integration" conf="core"/>
+        <dependency org="lambda" name="lambda" rev="1.0" conf="core->default"/>
+        <dependency org="peersim" name="peersim" rev="1.0.5" conf="core->default"/>
+		<dependency org="peersim" name="peersim-extras" rev="1.0.0" conf="core->default"/>
+        <dependency org="log4j" name="log4j" rev="1.2.16" conf="core->default"/>
+    </dependencies>
+    
+</ivy-module>

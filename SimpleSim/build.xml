@@ -1,40 +1,4 @@
-<project name="Simple Simulator" default="compile-simplesim" basedir=".">
-
-	<property name="build" location="bin" />
-	<property name="lib.path" location="../Utilities/lib" />
-	<property name="output.lib.path" location="../Utilities/lib-gen" />
-
-	<path id="compile.path">
-		<pathelement location="${lib.path}/peersim-1.0.5.jar" />
-		<pathelement location="${lib.path}/jep-2.4.1.jar" />
-		<pathelement location="${lib.path}/ext-1.1.1.jar" />
-		<pathelement location="${output.lib.path}/analyzer-j.jar" />
-	</path>
-
-	<target name="compile-simplesim">
-		<!-- Create the build directory structure used by compile -->
-		<mkdir dir="${build}" />
-		<!-- Compile the simple simulator into build. -->
-		<javac srcdir="./src" destdir="${build}" classpathref="compile.path" />
-	</target>
-
-	<target name="build-simplesim-jar" depends="compile-simplesim">
-		<exec executable="svnversion" outputproperty="svn.revision">
-			<arg value="." />
-		</exec>
-
-		<tstamp>
-			<format property="build.time" pattern="dd/MM/yyyy hh:mm aa" unit="hour" />
-		</tstamp>
-
-		<jar destfile="${output.lib.path}/edsim.jar">
-			<fileset dir="${build}" />
-			<manifest>
-				<attribute name="Built-By" value="Giuliano Mega" />
-				<attribute name="Revision" value="${svn.revision}" />
-				<attribute name="Date" value="${build.time}" />
-			</manifest>
-		</jar>
-	</target>
-
+<project name="edsim" default="compile">
+	<property file="build.properties"/>
+	<import file="${common.dir}/build-commons/common.xml"/>
 </project>
