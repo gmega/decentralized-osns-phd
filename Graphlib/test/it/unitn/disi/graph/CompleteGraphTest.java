@@ -1,5 +1,7 @@
 package it.unitn.disi.graph;
 
+import it.unitn.disi.graph.generators.CompleteGraph;
+
 import java.util.HashSet;
 import java.util.Set;
 

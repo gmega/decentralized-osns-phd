@@ -1,8 +1,9 @@
 package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
-import it.unitn.disi.graph.GraphWriter;
+import it.unitn.disi.graph.Edge;
 import it.unitn.disi.graph.SubgraphDecorator;
+import it.unitn.disi.graph.codecs.AdjListGraphEncoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -51,6 +52,8 @@ public class SnowballSample extends GraphAnalyzer {
 		
 		SubgraphDecorator decorator = new SubgraphDecorator(graph, false);
 		decorator.setVertexList(vertices);
-		GraphWriter.printAdjList(decorator, decorator, new OutputStreamWriter(stream));	
+		
+		AdjListGraphEncoder encoder = new AdjListGraphEncoder(stream);
+		encoder.encode(decorator, decorator);
 	}
 }

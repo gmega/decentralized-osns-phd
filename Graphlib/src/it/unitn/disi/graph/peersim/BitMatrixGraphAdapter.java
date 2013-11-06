@@ -1,5 +1,6 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.peersim;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.collections.FastGetBitset;
 import peersim.graph.BitMatrixGraph;
 

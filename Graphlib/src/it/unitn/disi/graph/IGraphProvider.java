@@ -1,6 +1,5 @@
-package it.unitn.disi.graph.large.catalog;
+package it.unitn.disi.graph;
 
-import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

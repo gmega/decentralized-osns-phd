@@ -1,10 +1,10 @@
 package it.unitn.disi.graph.server;
 
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.large.catalog.PartialLoader;
 
 import java.io.File;

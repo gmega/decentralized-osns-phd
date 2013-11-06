@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.peersim;
 
 /*
  * Copyright (c) 2003-2005 The BISON Project

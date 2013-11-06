@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.generators;
 
 import java.util.Collection;
 import java.util.Collections;

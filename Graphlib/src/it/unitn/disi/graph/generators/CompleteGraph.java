@@ -1,4 +1,6 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.generators;
+
+import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;

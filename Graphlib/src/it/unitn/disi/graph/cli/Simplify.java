@@ -1,68 +1,60 @@
 package it.unitn.disi.graph.cli;
 
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.Edge;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.utils.logging.CodecUtils;
-import it.unitn.disi.utils.logging.IProgressTracker;
-import it.unitn.disi.utils.logging.Progress;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
 /**
- * {@link Simplify} removes duplicate edges from the input graph. Loads the
- * graph into memory.
+ * Command-line utility for simplifying a large graph with very low memory
+ * footprint. Assumes binary format, and assumes that edge lists are sorted by
+ * source.
  * 
  * @author giuliano
  */
 @AutoConfig
-public class Simplify extends GraphAnalyzer {
+public class Simplify implements ITransformer {
 
-	public Simplify(@Attribute("decoder") String decoder) {
-		super(decoder);
-	}
+	@Attribute("directed")
+	private boolean fDirected;
 
-	@Override
-	protected void transform(LightweightStaticGraph graph, OutputStream oup)
-			throws IOException {
+	public void execute(InputStream is, OutputStream oup) throws IOException {
+		ByteGraphDecoder dec = new ByteGraphDecoder(is);
+		Set<Edge> edges = new HashSet<Edge>();
+
+		int current = -1;
+
 		byte[] buf = new byte[4];
-		IProgressTracker tracker = Progress.newTracker("simplifying",
-				graph.size());
-		tracker.startTask();
+		while (dec.hasNext()) {
+			Edge edge = new Edge(dec.getSource(), dec.next(), !fDirected);
 
-		long dups = 0;
-		long edges = 0;
-		boolean[] seen = new boolean[graph.size()];
-		for (int i = 0; i < graph.size(); i++) {
-			// Scouts for duplicate edges and self-loops.
-			seen[i] = true;
-			int[] neighbors = graph.fastGetNeighbours(i);
-			for (int j = 0; j < neighbors.length; j++) {
-				int neighbor = neighbors[j];
-				if (!seen[neighbor]) {
-					oup.write(CodecUtils.encode(i, buf));
-					oup.write(CodecUtils.encode(neighbor, buf));
-					seen[neighbor] = true;
-				} else {
-					dups++;
-				}
-				edges++;
+			/**
+			 * Source IDs must be ordered, otherwise we cannot do this without
+			 * loading the whole graph into memory.
+			 */
+			if (edge.source > current) {
+				current = edge.source;
+				edges.clear();
+			} else if (edge.source != current) {
+				throw new IllegalStateException("IDs are not ordered ("
+						+ edge.source + "," + current
+						+ "), cannot use reduced footprint mode.");
 			}
 
-			// Clears the set.
-			seen[i] = false;
-			for (int j = 0; j < neighbors.length; j++) {
-				seen[neighbors[j]] = false;
+			if (!edges.contains(edge)) {
+				edges.add(edge);
+				oup.write(CodecUtils.encode(edge.source, buf));
+				oup.write(CodecUtils.encode(edge.target, buf));
 			}
-
-			tracker.tick();
 		}
-
-		tracker.done();
-
-		System.err.println("Eliminated " + dups + " edges out of " + edges
-				+ ".");
 	}
 }

@@ -1,9 +1,10 @@
 package it.unitn.disi.graph.large.catalog;
 
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.NullGraph;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
+import it.unitn.disi.graph.generators.NullGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.DenseIDMapper;
 import it.unitn.disi.utils.IDMapper;

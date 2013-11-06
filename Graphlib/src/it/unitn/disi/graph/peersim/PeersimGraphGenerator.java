@@ -1,8 +1,8 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.peersim;
 
 import peersim.graph.Graph;
 
-public class GraphGenerator {
+public class PeersimGraphGenerator {
 	public static void wireFull(Graph g) {
 		for (int i = 0; i < g.size(); i++) {
 			for (int j = i; j < g.size(); j++) {

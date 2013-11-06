@@ -1,4 +1,4 @@
-package it.unitn.disi.graph;
+package it.unitn.disi.graph.peersim;
 
 import it.unitn.disi.graph.codecs.GraphDecoder;
 
