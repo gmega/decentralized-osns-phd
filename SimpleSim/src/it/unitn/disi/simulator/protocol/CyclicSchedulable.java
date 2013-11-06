@@ -7,6 +7,8 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class CyclicSchedulable extends Schedulable {
 
+	private static final long serialVersionUID = 1L;
+
 	protected final double fPeriod;
 
 	private double fTime = 0;
