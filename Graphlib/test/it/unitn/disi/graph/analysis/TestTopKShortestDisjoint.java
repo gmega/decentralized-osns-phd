@@ -1,15 +1,15 @@
 package it.unitn.disi.graph.analysis;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import junit.framework.Assert;
-
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.DunnTopK;
 import it.unitn.disi.graph.algorithms.DunnTopK.Mode;
 import it.unitn.disi.graph.algorithms.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 

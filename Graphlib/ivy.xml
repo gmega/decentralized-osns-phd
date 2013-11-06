@@ -3,19 +3,20 @@
     <info organisation="it.unitn.disi" 
     	module="graphlib"
     	status="integration"/>
-    
-    <publication>
-    	<artifact name="graphlib" type="jar"/>
-    </publication>
-    
+
     <configurations>
     	<conf name="core"/>
     </configurations>
     
+    <publications>
+    	<artifact name="graphlib" type="jar"/>
+    </publications>
+    
     <dependencies>
-        <dependency org="base-utils" name="base-utils" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="base-utils" rev="latest.integration" conf="core"/>
+        <dependency org="peersim" name="peersim" rev="1.0.5" conf="core->default"/>
+        <dependency org="trove"	name="trove" rev="3.0.3" conf="core->default"/>
         <dependency org="log4j" name="log4j" rev="1.2.16" conf="core->default"/>
-        <dependency org="trove"	name="trove" rev="1.0.2" conf="core->default/>"
         <dependency	org="args4j" name="args4j-tools" rev="2.0.25" conf="core->default"/>
         <dependency org="com.google.guava" name="guava" rev="15.0" conf="core->default"/>
     </dependencies>

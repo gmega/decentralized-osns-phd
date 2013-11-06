@@ -1,8 +1,8 @@
 package it.unitn.disi.graph.large.catalog;
 
-import java.util.List;
-
 import it.unitn.disi.utils.logging.IBinaryRecordType;
+
+import java.util.List;
 
 /**
  * {@link ICatalogRecordType}s are like {@link IBinaryRecordType}s, except that

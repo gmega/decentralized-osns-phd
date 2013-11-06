@@ -1,8 +1,8 @@
 package it.unitn.disi.graph.large.catalog;
 
-import peersim.graph.GraphAlgorithms;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.SubgraphDecorator;
+import peersim.graph.GraphAlgorithms;
 
 public class NeighborhoodClustering extends NeighborhoodMetricComputer<Double> {
 

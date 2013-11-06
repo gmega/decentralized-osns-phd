@@ -1,16 +1,16 @@
 package it.unitn.disi.graph.analysis;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.algorithms.LawlerTopK;
+import it.unitn.disi.graph.algorithms.LawlerTopK.PathEntry;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 import junit.framework.Assert;
-
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.algorithms.LawlerTopK;
-import it.unitn.disi.graph.algorithms.LawlerTopK.PathEntry;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 import org.junit.Test;
 

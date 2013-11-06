@@ -1,14 +1,14 @@
 package it.unitn.disi.graph.cli;
 
+import it.unitn.disi.graph.SubgraphDecorator;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 
 import peersim.config.Attribute;
-
-import it.unitn.disi.graph.SubgraphDecorator;
-import it.unitn.disi.graph.algorithms.GraphAlgorithms;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
 public class EgonetResilience extends GraphAnalyzer {
 	

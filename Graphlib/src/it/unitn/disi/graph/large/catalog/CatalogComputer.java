@@ -1,6 +1,7 @@
 package it.unitn.disi.graph.large.catalog;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
+
 import java.util.List;
 import java.util.NoSuchElementException;
 

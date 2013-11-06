@@ -1,10 +1,10 @@
 package it.unitn.disi.graph.algorithms;
 
-import java.util.ArrayList;
-import java.util.BitSet;
-
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.GraphAlgorithms.IEdgeFilter;
+
+import java.util.ArrayList;
+import java.util.BitSet;
 
 /**
  * Returns the top-k edge or vertex-disjoint least cost paths in a graph by

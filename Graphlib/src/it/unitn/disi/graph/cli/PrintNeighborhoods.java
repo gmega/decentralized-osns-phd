@@ -1,14 +1,5 @@
 package it.unitn.disi.graph.cli;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-
-import peersim.config.Attribute;
-
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
@@ -16,6 +7,14 @@ import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
 import it.unitn.disi.graph.large.catalog.PartialLoader;
 import it.unitn.disi.utils.tabular.TableReader;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import peersim.config.Attribute;
 
 public class PrintNeighborhoods implements ITransformer {
 

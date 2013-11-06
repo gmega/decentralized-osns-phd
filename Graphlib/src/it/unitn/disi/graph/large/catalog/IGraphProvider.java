@@ -1,9 +1,9 @@
 package it.unitn.disi.graph.large.catalog;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
-import it.unitn.disi.graph.IndexedNeighborGraph;
 
 /**
  * {@link IGraphProvider} is a base service allowing piecewise access to an

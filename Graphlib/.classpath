@@ -4,11 +4,8 @@
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/peersim"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Utilities"/>
-	<classpathentry kind="lib" path="/Utilities/lib/log4j-1.2.16.jar" sourcepath="/home/giuliano/Software/apache-log4j-1.2.16/src/main/java"/>
-	<classpathentry kind="lib" path="/Utilities/lib/trove-3.0.0rc2.jar"/>
-	<classpathentry kind="lib" path="/Utilities/lib/google-collect-1.0-rc3.jar" sourcepath="/home/giuliano/Software/guava-r05/guava-src-r05.zip"/>
-	<classpathentry kind="lib" path="/Utilities/lib/args4j-2.0.9.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Baseutilities"/>
+	<classpathentry kind="con" path="org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER/?project=Graphlib&amp;ivyXmlPath=ivy.xml&amp;confs=*&amp;acceptedTypes=jar%2Cbundle%2Cejb%2Cmaven-plugin&amp;alphaOrder=false&amp;resolveInWorkspace=true&amp;retrievedClasspath=false"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,12 +1,12 @@
 package it.unitn.disi.graph.large.catalog;
 
+import it.unitn.disi.cli.ITransformer;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
 import peersim.config.AutoConfig;
-
-import it.unitn.disi.cli.ITransformer;
 
 /**
  * CLI command for printing the contents of a catalog in text form.

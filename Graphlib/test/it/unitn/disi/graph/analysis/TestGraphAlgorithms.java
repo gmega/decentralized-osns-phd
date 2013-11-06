@@ -1,9 +1,9 @@
 package it.unitn.disi.graph.analysis;
 
-import junit.framework.Assert;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.GraphAlgorithms;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import junit.framework.Assert;
 
 import org.junit.Test;
 

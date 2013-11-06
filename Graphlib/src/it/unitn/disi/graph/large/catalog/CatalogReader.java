@@ -1,11 +1,11 @@
 package it.unitn.disi.graph.large.catalog;
 
-import java.io.InputStream;
-import java.util.Iterator;
-import java.util.List;
-
+import it.unitn.disi.graph.large.catalog.CatalogReadsTest.CatalogRecord;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
+
+import java.io.InputStream;
+import java.util.List;
 
 /**
  * Provides an {@link ICatalogCursor} interface for reading

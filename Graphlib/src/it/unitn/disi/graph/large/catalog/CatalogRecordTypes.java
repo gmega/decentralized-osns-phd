@@ -1,12 +1,12 @@
 package it.unitn.disi.graph.large.catalog;
 
+import it.unitn.disi.utils.logging.IBinaryRecordType;
+import it.unitn.disi.utils.logging.RecordTypeSet;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-
-import it.unitn.disi.utils.logging.IBinaryRecordType;
-import it.unitn.disi.utils.logging.RecordTypeSet;
 
 /**
  * {@link CatalogRecordTypes} define the record structures that go into graph

@@ -1,15 +1,15 @@
 package it.unitn.disi.graph.large.catalog;
 
-import java.io.OutputStream;
-
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
 import it.unitn.disi.graph.codecs.GraphCodecHelper;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+
+import java.io.OutputStream;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
 
 /** 
  * Command Line Interface frontend for {@link GraphIndexer}.

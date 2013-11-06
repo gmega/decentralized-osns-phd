@@ -3,7 +3,6 @@ package it.unitn.disi.graph.lightweight;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.DenseIDMapper;
 import it.unitn.disi.utils.SparseIDMapper;
-
 import peersim.graph.Graph;
 
 public class LSGCreateSubgraph extends LSGTransformer {

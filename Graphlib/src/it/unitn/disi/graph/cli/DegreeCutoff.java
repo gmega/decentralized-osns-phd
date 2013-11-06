@@ -1,16 +1,16 @@
 package it.unitn.disi.graph.cli;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.logging.CodecUtils;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.BitSet;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.logging.CodecUtils;
 
 /**
  * Transforms a graph by cutting off all vertices with out-degree less or equal

@@ -1,11 +1,11 @@
 package it.unitn.disi.graph.algorithms;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms.IEdgeFilter;
+
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.PriorityQueue;
-
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.algorithms.GraphAlgorithms.IEdgeFilter;
 
 /**
  * {@link LawlerTopK} computes the <i>k</i> shortest paths between a source and

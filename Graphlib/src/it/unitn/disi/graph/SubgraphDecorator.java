@@ -1,8 +1,8 @@
 package it.unitn.disi.graph;
 
+import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.DenseIDMapper;
 import it.unitn.disi.utils.IDMapper;
-import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.SparseIDMapper;
 
 import java.util.Collection;

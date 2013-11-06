@@ -1,5 +1,13 @@
 package it.unitn.disi.graph.cli;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.codecs.AdjListGraphEncoder;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.large.catalog.CatalogReader;
+import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
+import it.unitn.disi.graph.large.catalog.PartialLoader;
+import it.unitn.disi.utils.IDMapper;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -8,14 +16,6 @@ import java.io.OutputStream;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.graph.Graph;
-
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.codecs.AdjListGraphEncoder;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
-import it.unitn.disi.utils.IDMapper;
 
 @AutoConfig
 public class Egonet implements ITransformer {

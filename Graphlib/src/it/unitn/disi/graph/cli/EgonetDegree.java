@@ -1,20 +1,20 @@
 package it.unitn.disi.graph.cli;
 
+import it.unitn.disi.cli.ITransformer;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.large.catalog.CatalogReader;
+import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
+import it.unitn.disi.graph.large.catalog.PartialLoader;
+import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashSet;
 
-import it.unitn.disi.cli.ITransformer;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.codecs.ByteGraphDecoder;
-import it.unitn.disi.graph.large.catalog.CatalogReader;
-import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
-import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.TableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 
