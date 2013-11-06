@@ -6,7 +6,6 @@
 
     <configurations>
     	<conf name="core"/>
-    	<conf name="interfaces"/>
     </configurations>
     
     <publications>
