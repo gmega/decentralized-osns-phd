@@ -21,6 +21,7 @@ public class PrefixedOutputStreamTest {
 	public void tagsSimpleLine() {
 		ByteArrayOutputStream base = new ByteArrayOutputStream();
 		PrintWriter normal = new PrintWriter(base);
+		@SuppressWarnings("resource")
 		PrintWriter tagged = new PrintWriter(new PrefixedWriter("Well, and ",
 				normal));
 
@@ -44,6 +45,7 @@ public class PrefixedOutputStreamTest {
 
 		ByteArrayOutputStream base = new ByteArrayOutputStream();
 		PrintWriter normal = new PrintWriter(base);
+		@SuppressWarnings("resource")
 		PrintWriter tagged = new PrintWriter(new PrefixedWriter("L:", normal));
 
 		StringBuffer buf = new StringBuffer();

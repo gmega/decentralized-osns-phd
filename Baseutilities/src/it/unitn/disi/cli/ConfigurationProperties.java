@@ -78,6 +78,8 @@ public class ConfigurationProperties {
 	}
 
 	public void load(InputStream stream) throws IOException {
+		// We don't care about closing this reader cause the 
+		// stream isn't ours. 
 		BufferedReader reader = new BufferedReader(
 				new InputStreamReader(stream));
 

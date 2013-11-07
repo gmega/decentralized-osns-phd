@@ -65,7 +65,7 @@ public class StreamProvider {
 			Enum[] values = (Enum[]) valueOf.invoke(klass);
 
 			if (streams.length < values.length) {
-				throw new CmdLineException("Not enough " + input.toLowerCase()
+				throw new CmdLineException(null, "Not enough " + input.toLowerCase()
 						+ ": (required " + values.length + ", supplied: "
 						+ streams.length + ").");
 			} else if (streams.length > values.length) {

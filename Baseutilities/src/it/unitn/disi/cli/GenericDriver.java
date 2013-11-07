@@ -68,8 +68,8 @@ public class GenericDriver {
 
 	@Option(name = "-s", usage = "specifies an alternate separator character for the parameter list", required = false)
 	private char fSplitChar = ':';
-	
-	@Option(name = "-c", aliases = {"--config"}, usage = "specifies a specific configuration to use.", required = false)
+
+	@Option(name = "-c", aliases = { "--config" }, usage = "specifies a specific configuration to use.", required = false)
 	private String fConfig = ConfigurationProperties.ROOT_SECTION;
 
 	@Option(name = "-z", aliases = { "--zipped" }, usage = "allows usage of GZipped inputs", required = false)
@@ -103,9 +103,8 @@ public class GenericDriver {
 			}
 
 			String pClass;
-			IResolver props = parseProperties(fParameters,
-					fPropertyFile);
-			
+			IResolver props = parseProperties(fParameters, fPropertyFile);
+
 			if (props == null) {
 				System.out.println("Invalid configuration: " + fConfig + ".");
 				return;
@@ -115,7 +114,8 @@ public class GenericDriver {
 				try {
 					pClass = (String) props.getString("", "processor");
 				} catch (MissingParameterException ex) {
-					throw new CmdLineException("No processing class given.");
+					throw new CmdLineException(parser,
+							"No processing class given.");
 				}
 			} else {
 				pClass = fArguments.get(0);
@@ -251,9 +251,10 @@ public class GenericDriver {
 		if (params != null) {
 			String[] pairs = params.split(Character.toString(fSplitChar));
 			for (String pair : pairs) {
-				String [] kvPair = pair.split("="); 	
+				String[] kvPair = pair.split("=");
 				if (kvPair.length != 2) {
-					throw new ParseException("Malformed parameter " + pair + ".");
+					throw new ParseException("Malformed parameter " + pair
+							+ ".");
 				}
 
 				parser.setProperty(kvPair[0], kvPair[1]);
