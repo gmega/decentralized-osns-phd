@@ -1,7 +1,6 @@
 package it.unitn.disi.graph.cli;
 
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
-import it.unitn.disi.graph.Edge;
 import it.unitn.disi.graph.SubgraphDecorator;
 import it.unitn.disi.graph.codecs.AdjListGraphEncoder;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
@@ -9,7 +8,6 @@ import it.unitn.disi.utils.collections.Pair;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Random;
 

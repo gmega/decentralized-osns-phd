@@ -1,10 +1,10 @@
 package it.unitn.disi.graph.generators;
 
-import java.rmi.RemoteException;
-
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LSGCreator;
+
+import java.rmi.RemoteException;
 
 public class ListGraphGenerator implements IGraphProvider {
 

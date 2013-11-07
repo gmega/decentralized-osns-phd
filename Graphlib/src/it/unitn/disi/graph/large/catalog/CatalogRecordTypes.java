@@ -14,6 +14,7 @@ import java.util.List;
  * 
  * @author giuliano
  */
+@SuppressWarnings("unchecked")
 public enum CatalogRecordTypes implements ICatalogRecordType {
 
 	PROPERTY_RECORD(new NeighborhoodRoot(),
