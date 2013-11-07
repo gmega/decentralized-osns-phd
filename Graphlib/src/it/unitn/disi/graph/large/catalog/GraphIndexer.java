@@ -69,12 +69,10 @@ public class GraphIndexer {
 			CatalogComputer computer, OutputStream output) throws IOException {
 		int root = computer.currentNeighborhood();
 		int degree = graph.degree(root);
-		int written = 0;
 		for (int i = 0; i < degree; i++) {
-			written += writeInt(root, output);
-			written += writeInt(graph.getNeighbor(root, i), output);
+			writeInt(root, output);
+			writeInt(graph.getNeighbor(root, i), output);
 		}
-
 		return degree * 2 * Integer.SIZE;
 	}
 
