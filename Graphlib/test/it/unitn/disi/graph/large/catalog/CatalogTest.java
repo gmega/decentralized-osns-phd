@@ -41,6 +41,7 @@ public class CatalogTest {
 
 	protected static ByteArrayOutputStream load(File file) throws IOException {
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		@SuppressWarnings("resource")
 		BufferedInputStream is = new BufferedInputStream(new FileInputStream(
 				file));
 

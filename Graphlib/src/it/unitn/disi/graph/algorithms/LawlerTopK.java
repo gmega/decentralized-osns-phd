@@ -39,12 +39,12 @@ public class LawlerTopK implements ITopKEstimator {
 	};
 
 	public LawlerTopK(IndexedNeighborGraph graph, double[][] weights) {
-		fGraph = graph;
-		fWeights = weights;
 		fBranchedEdges = new BitSet[graph.size()];
 		fPrevious = new int[graph.size()];
 		fMinDists = new double[graph.size()];
 		fCurrentRoot = new BitSet();
+		fGraph = graph;
+		fWeights = weights;
 		for (int i = 0; i < graph.size(); i++) {
 			fBranchedEdges[i] = new BitSet();
 		}
@@ -96,7 +96,7 @@ public class LawlerTopK implements ITopKEstimator {
 				break;
 			}
 
-			// Whatever is at the top of the queue, that's our paths.size()-th
+			// Whatever is at the head of the queue, that's our paths.size()-th
 			// longest path.
 			// If we have enough tying paths to stop the algorithm, then stop
 			// it.

@@ -72,6 +72,11 @@ public class GraphServerImpl implements IGraphProvider {
 	}
 
 	@Override
+	public int size(Integer subgraph) throws RemoteException {
+		return fProvider.size(subgraph);
+	}
+
+	@Override
 	public synchronized IndexedNeighborGraph subgraph(Integer subgraph)
 			throws RemoteException {
 		fLogger.info("Got request for graph " + subgraph + ".");

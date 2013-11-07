@@ -1,5 +1,7 @@
 package it.unitn.disi.graph.generators;
 
+import java.rmi.RemoteException;
+
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LSGCreator;
@@ -12,18 +14,23 @@ public class ListGraphGenerator implements IGraphProvider {
 	}
 
 	@Override
-	public IndexedNeighborGraph subgraph(Integer node) {
-		LinearCreator lc = new LinearCreator(node);
+	public IndexedNeighborGraph subgraph(Integer subgraph) {
+		LinearCreator lc = new LinearCreator(subgraph);
 		return lc.create(true);
 	}
 
 	@Override
-	public int[] verticesOf(Integer node) {
-		int [] vertices = new int[node];
-		for (int i = 0; i < node; i++) {
+	public int[] verticesOf(Integer subgraph) {
+		int [] vertices = new int[subgraph];
+		for (int i = 0; i < subgraph; i++) {
 			vertices[i] = i;
 		}
 		return vertices;
+	}
+	
+	@Override
+	public int size(Integer subgraph) throws RemoteException {
+		return subgraph;
 	}
 	
 	static class LinearCreator extends LSGCreator {
@@ -42,4 +49,5 @@ public class ListGraphGenerator implements IGraphProvider {
 			}
 		}
 	}
+
 }

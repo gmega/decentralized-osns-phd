@@ -4,7 +4,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.stack.array.TIntArrayStack;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.streams.DisjointSets;
+import it.unitn.disi.utils.collections.DisjointSets;
 
 import java.util.ArrayList;
 import java.util.Arrays;

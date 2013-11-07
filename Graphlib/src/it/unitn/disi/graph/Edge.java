@@ -1,6 +1,11 @@
 package it.unitn.disi.graph;
 
+/**
+ * 
+ * @author giuliano
+ */
 public class Edge {
+	
 	public final int source;
 	public final int target;
 	public final boolean undirected;

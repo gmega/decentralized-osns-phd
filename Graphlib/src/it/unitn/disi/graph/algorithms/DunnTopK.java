@@ -9,8 +9,9 @@ import java.util.BitSet;
 /**
  * Returns the top-k edge or vertex-disjoint least cost paths in a graph by
  * using an iterated application of Dijktra's algorithm. This is a heuristic
- * method not unlike <a href="">Dunn's heuristic</a>, and doesn't give
- * guarantees on the aggregated cost of the paths.
+ * method not unlike <a href="http://dx.doi.org/10.1109/49.265708">Dunn's
+ * heuristic</a>, and doesn't give guarantees on the aggregated cost of the
+ * paths.
  * 
  * @author giuliano
  */
@@ -42,40 +43,46 @@ public class DunnTopK implements ITopKEstimator {
 	};
 
 	public DunnTopK(IndexedNeighborGraph graph, double[][] weights, Mode mode) {
-		fGraph = graph;
 		fPrevious = new int[graph.size()];
 		fMinDists = new double[graph.size()];
-		fWeights = weights;
-		fMode = mode;
 		fForbiddenVertices = new BitSet();
 		fForbiddenEdges = new BitSet[graph.size()];
+		
+		fGraph = graph;
+		fWeights = weights;
+		fMode = mode;
+		
 		for (int i = 0; i < graph.size(); i++) {
 			fForbiddenEdges[i] = new BitSet();
 		}
 	}
 
 	public ArrayList<PathEntry> topKShortest(int source, int target, int k) {
+		clearForbidden();
+		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();
+		for (int i = 0; i < k; i++) {
+			PathEntry entry = selectPath(source, target);
+			if (entry == null) {
+				break;
+			}
+			forbidPath(entry);
+			paths.add(entry);
+		}
+		return paths;
+	}
+
+	public void clearForbidden() {
 		fForbiddenVertices.clear();
 		for (BitSet set : fForbiddenEdges) {
 			set.clear();
 		}
-		ArrayList<PathEntry> paths = new ArrayList<PathEntry>();
-		for (int i = 0; i < k; i++) {
-			PathEntry entry = nextPath(source, target);
-			if (entry == null) {
-				break;
-			}
-			forbid(entry);
-			paths.add(entry);
-		}
-		return paths;
 	}
 
 	public double weight(int i, int j) {
 		return fWeights[i][j];
 	}
 
-	private PathEntry nextPath(int source, int target) {
+	private PathEntry selectPath(int source, int target) {
 		GraphAlgorithms.dijkstra(fGraph, fFilter, source, fWeights, fMinDists,
 				fPrevious);
 
@@ -90,19 +97,22 @@ public class DunnTopK implements ITopKEstimator {
 		return new PathEntry(path, fMinDists[target]);
 	}
 
-	private void forbid(PathEntry entry) {
+	private void forbidPath(PathEntry entry) {
 		int[] path = entry.path;
 		switch (fMode) {
+		
 		case EdgeDisjoint:
 			for (int i = 0; i < (path.length - 1); i++) {
 				fForbiddenEdges[path[i]].set(path[i + 1]);
 			}
 			break;
+			
 		case VertexDisjoint:
 			for (int i = 1; i < (path.length - 1); i++) {
 				fForbiddenVertices.set(path[i]);
 			}
 			break;
 		}
+		
 	}
 }
