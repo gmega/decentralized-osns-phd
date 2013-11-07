@@ -1,16 +1,16 @@
 package it.unitn.disi.churn.config;
 
 import it.unitn.disi.churn.config.AssignmentReader.Assignment;
-import it.unitn.disi.churn.config.IndexedReader.IndexEntry;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader.IndexEntry;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -149,7 +149,7 @@ public class ExperimentReader {
 		if (fAssigIndex == null) {
 			fAssigIndex = IndexedReader.createReader(
 					new File(fAssignmentIndex), new File(fAssignments));
-			fAssigReader = new AssignmentReader(fAssigIndex.getStream(), "id");
+			fAssigReader = new AssignmentReader(fAssigIndex.getReader(), "id");
 		}
 
 		if ((entry = fAssigIndex.select(root)) == null) {
