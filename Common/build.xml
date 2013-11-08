@@ -57,16 +57,16 @@
 		<delete includeemptydirs="true" dir="${lib.dir}"/>
 	</target>
 	
-	<target name="resolve" depends="clean-lib, load-ivy" description="--> resolve and retrieve dependencies with ivy">
+	<target name="publish-all" depends="buildlist" 
+			description="compile, jar and publish all projects in the right order">
+		<subant target="publish" buildpathref="build-path" />
+	</target>
+	
+	<target name="package" depends="clean-lib, load-ivy, publish-all" description="create deployable folder">
 		<mkdir dir="${lib.dir}"/> 
 		<!-- the call to resolve is not mandatory, retrieve makes an implicit call if we don't -->
 		<ivy:resolve file="${ivy.file}"/>
 		<ivy:retrieve pattern="${lib.dir}/[artifact].[ext]" />
-	</target>
-	
-	<target name="publish-all" depends="buildlist, resolve" 
-			description="compile, jar and publish all projects in the right order">
-		<subant target="publish" buildpathref="build-path" />
 	</target>
 	
 	<target name="clean-all" depends="buildlist" description="clean all projects">
