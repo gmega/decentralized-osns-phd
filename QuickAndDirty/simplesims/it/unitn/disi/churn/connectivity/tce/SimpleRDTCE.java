@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.connectivity.tce;
 
-import java.util.Arrays;
-
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
+
+import java.util.Arrays;
 
 /**
  * {@link SimpleTCE} extension which adds tracking of receiver delay. The memory

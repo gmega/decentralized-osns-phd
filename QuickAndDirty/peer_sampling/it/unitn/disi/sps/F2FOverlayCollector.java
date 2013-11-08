@@ -1,13 +1,13 @@
 package it.unitn.disi.sps;
 
 import it.unitn.disi.epidemics.IPeerSelector;
-import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.newscasting.internal.selectors.PercentileCentralitySelector;
 import it.unitn.disi.sps.selectors.TabooSelectionFilter;
 import it.unitn.disi.utils.collections.StaticVector;
 import it.unitn.disi.utils.peersim.FallThroughReference;
 import it.unitn.disi.utils.peersim.IInitializable;
+import it.unitn.disi.utils.peersim.ISelectionFilter;
 import it.unitn.disi.utils.peersim.PeersimUtils;
 import it.unitn.disi.utils.peersim.PermutingCache;
 import it.unitn.disi.utils.peersim.ProtocolReference;

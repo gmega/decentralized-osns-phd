@@ -4,18 +4,17 @@ import it.unitn.disi.churn.connectivity.SimulationTaskBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.generators.ListGraphGenerator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
 import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import java.util.List;
 import java.util.Random;
 

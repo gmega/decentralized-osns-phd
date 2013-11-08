@@ -1,9 +1,9 @@
 package it.unitn.disi.distsim.streamserver;
 
-import java.io.File;
-
 import it.unitn.disi.distsim.control.ManagedService;
 import it.unitn.disi.distsim.control.ServiceMBean;
+
+import java.io.File;
 
 public interface StreamServerMBean extends ServiceMBean, ManagedService {
 

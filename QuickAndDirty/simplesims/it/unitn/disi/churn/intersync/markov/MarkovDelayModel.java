@@ -1,16 +1,14 @@
 package it.unitn.disi.churn.intersync.markov;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.algorithms.DunnTopK;
+import it.unitn.disi.graph.algorithms.DunnTopK.Mode;
+import it.unitn.disi.graph.algorithms.PathEntry;
+
 import java.util.ArrayList;
 
-import peersim.util.IncrementalStats;
-
-import jphase.DenseContPhaseVar;
 import jphase.generator.NeutsContPHGenerator;
-
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.DunnTopK;
-import it.unitn.disi.graph.analysis.DunnTopK.Mode;
-import it.unitn.disi.graph.analysis.PathEntry;
+import peersim.util.IncrementalStats;
 
 public class MarkovDelayModel {
 

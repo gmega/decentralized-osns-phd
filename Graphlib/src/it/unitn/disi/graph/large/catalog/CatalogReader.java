@@ -1,6 +1,5 @@
 package it.unitn.disi.graph.large.catalog;
 
-import it.unitn.disi.graph.large.catalog.CatalogReadsTest.CatalogRecord;
 import it.unitn.disi.utils.logging.EventCodec;
 import it.unitn.disi.utils.logging.EventCodec.DecodingStream;
 

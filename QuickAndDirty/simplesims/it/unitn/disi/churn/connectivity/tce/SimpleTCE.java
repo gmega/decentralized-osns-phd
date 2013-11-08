@@ -1,12 +1,12 @@
 package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IEventObserver;
+import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.ISimulationEngine;
 
 import java.util.Arrays;
 

@@ -1,9 +1,8 @@
 package it.unitn.disi.churn.intersync.markov;
 
-import jphase.DenseContPhaseVar;
+import it.unitn.disi.utils.tabular.TableWriter;
 import jphase.generator.NeutsContPHGenerator;
 import jphase.generator.PhaseGenerator;
-import it.unitn.disi.utils.tabular.TableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 

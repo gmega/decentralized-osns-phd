@@ -2,7 +2,6 @@ package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
-import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.BinaryCompositeFilter;
 import it.unitn.disi.newscasting.ComponentComputationService;
 import it.unitn.disi.newscasting.internal.forwarding.HistoryForwarding;
@@ -10,6 +9,7 @@ import it.unitn.disi.newscasting.internal.selectors.HollowFilter;
 import it.unitn.disi.newscasting.internal.selectors.IUtilityFunction;
 import it.unitn.disi.utils.OrderingUtils;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.ISelectionFilter;
 import it.unitn.disi.utils.peersim.ProtocolReference;
 import it.unitn.disi.utils.tabular.IReference;
 

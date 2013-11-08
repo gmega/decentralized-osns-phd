@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.intersync;
 
-import peersim.util.IncrementalStats;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.measure.AvgEvaluator;
 import it.unitn.disi.simulator.measure.IValueObserver;
+import peersim.util.IncrementalStats;
 
 /**
  * Estimates edge delays by the method of Batch Means (BM).

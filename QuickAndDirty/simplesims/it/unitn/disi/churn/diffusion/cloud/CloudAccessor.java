@@ -1,18 +1,18 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
-import java.util.Arrays;
-import java.util.Random;
-
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
+import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.IDisseminationService;
 import it.unitn.disi.churn.diffusion.IMessageObserver;
-import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.protocol.PeriodicAction;
+
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * {@link CloudAccessor} will access the "cloud" at the expiration of a timer,

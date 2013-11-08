@@ -1,5 +1,7 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -11,12 +13,17 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 	private String fIndex2Key;
 
 	private String fAttributeKey;
-	
+
 	private int fLastRead;
 
-	public MatrixReader(InputStream stream, String id, String index1,
+	public MatrixReader(InputStream is, String id, String index1,
 			String index2, String attributeKey) throws IOException {
-		super(stream, id);
+		this(new TableReader(is), id, index1, index2, attributeKey);
+	}
+
+	public MatrixReader(TableReader reader, String id, String index1,
+			String index2, String attributeKey) throws IOException {
+		super(reader, id);
 		fIndex1Key = index1;
 		fIndex2Key = index2;
 		fAttributeKey = attributeKey;
@@ -30,7 +37,7 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 		for (int i = 0; i < w.length; i++) {
 			Arrays.fill(w[i], Double.MAX_VALUE);
 		}
-		
+
 		fLastRead = 0;
 
 		while (!rootChanged()) {
@@ -47,7 +54,7 @@ public class MatrixReader extends SequentialAttributeReader<double[][]> {
 
 		return w;
 	}
-	
+
 	public int lastRead() {
 		return fLastRead;
 	}

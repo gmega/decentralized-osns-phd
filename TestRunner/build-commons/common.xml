@@ -103,6 +103,11 @@
     <!-- ================================= 
           target: run
          ================================= -->
+    <target name="run" depends="version, compile" description="--> compile and run the project">
+        <java classpathref="run.path.id" classname="${main.class.name}"/>
+    	<arg line="${args}"/>
+    </target>
+	
 	<target name="ivy-new-version" depends="load-ivy" unless="ivy.new.revision">
     	<!-- default module version prefix value -->
 		<property name="module.version.prefix" value="${module.version.target}-dev-b" />

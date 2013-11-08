@@ -1,23 +1,24 @@
 package it.unitn.disi.churn.intersync.markov;
 
-import java.util.ArrayList;
-
-import peersim.config.Attribute;
-import peersim.config.AutoConfig;
-import peersim.util.IncrementalStats;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
-import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.random.Exponential;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.simulator.random.MTUnitUniformDistribution;
 import it.unitn.disi.simulator.random.MersenneTwister;
 import it.unitn.disi.utils.collections.Pair;
+
+import java.util.ArrayList;
+
+import peersim.config.Attribute;
+import peersim.config.AutoConfig;
+import peersim.util.IncrementalStats;
 
 @AutoConfig
 public class TimerOffsetEstimator implements Runnable {

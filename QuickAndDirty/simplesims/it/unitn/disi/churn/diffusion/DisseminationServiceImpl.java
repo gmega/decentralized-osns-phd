@@ -1,9 +1,5 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Random;
-
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.IClockData;
@@ -16,6 +12,10 @@ import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.simulator.protocol.PeriodicAction;
 import it.unitn.disi.utils.ResettableCounter;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Random;
 
 /**
  * {@link DisseminationServiceImpl} knows how to disseminate messages. Ideally

@@ -1,9 +1,9 @@
 package it.unitn.disi.newscasting.experiments;
 
 import it.unitn.disi.epidemics.IPeerSelector;
-import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.experiments.DisseminationExperiment;
+import it.unitn.disi.utils.peersim.ISelectionFilter;
 import peersim.core.Node;
 
 /**

@@ -1,11 +1,11 @@
 package it.unitn.disi.churn.diffusion.experiments.config;
 
-import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
-import it.unitn.disi.churn.diffusion.DiffusionWick;
-import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
 import it.unitn.disi.churn.diffusion.Anchor;
 import it.unitn.disi.churn.diffusion.BalancingSelector;
+import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.CoreTracker;
+import it.unitn.disi.churn.diffusion.DiffusionWick;
+import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
@@ -13,8 +13,8 @@ import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
-import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
+import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
@@ -38,9 +38,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
-import peersim.config.IResolver;
-import peersim.config.ObjectCreator;
-
 public class CloudSimulationBuilder {
 
 	public static final int AE_PRIORITY = 0;
@@ -63,8 +60,6 @@ public class CloudSimulationBuilder {
 
 	private final Random fRandom;
 
-	private final char fSelectorType;
-
 	private final double fNUPBurnin;
 
 	private final double fNUPAnchor;
@@ -75,13 +70,7 @@ public class CloudSimulationBuilder {
 
 	private final double fFixedFraction;
 
-	private double fBdwThreshold;
-
-	private final IResolver fResolver;
-
-	private final int[] fIds;
-
-	private int[] fDegrees;
+	private IPeerSelector[] fSelectors;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -103,23 +92,42 @@ public class CloudSimulationBuilder {
 	 *            random number generator.
 	 */
 	public CloudSimulationBuilder(double burnin, double period,
-			double nupBurnin, char selectorType, IndexedNeighborGraph graph,
-			Random random, double nupOnly, double loginGrace,
-			double fixedFraction, double bdwThreshold, boolean randomize,
-			int[] ids, IResolver resolver) {
+			double nupBurnin, IndexedNeighborGraph graph, Random random,
+			double nupOnly, double loginGrace, double fixedFraction,
+			boolean randomize) {
 		fDelta = period;
 		fGraph = graph;
 		fRandom = random;
 		fBurnin = burnin;
-		fSelectorType = selectorType;
-		fBdwThreshold = bdwThreshold;
 		fNUPBurnin = nupBurnin;
 		fNUPAnchor = nupOnly;
 		fRandomize = randomize;
 		fLoginGrace = loginGrace;
 		fFixedFraction = fixedFraction;
-		fResolver = resolver;
-		fIds = ids;
+		fSelectors = new IPeerSelector[fGraph.size()];
+	}
+
+	public CloudSimulationBuilder useSimpleSelector(String type) {
+		switch (type.toLowerCase().charAt(0)) {
+		case 'a':
+			fSelectors = fillArray(fSelectors, new BiasedCentralitySelector(
+					fRandom, true));
+		case 'r':
+			fSelectors = fillArray(fSelectors, new RandomSelector(fRandom));
+
+		case 'c':
+			fSelectors = fillArray(fSelectors, new BiasedCentralitySelector(
+					fRandom, false));
+		}
+		return this;
+	}
+
+	public CloudSimulationBuilder useBalancedSelector(
+			double[] inboundBandwidth, double[] outboundBandwidth,
+			int[] egodegrees, int[] socialdegrees) {
+		fSelectors = BalancingSelector.degreeApproximationSelectors(fRandom,
+				egodegrees, socialdegrees, outboundBandwidth, inboundBandwidth);
+		return this;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -303,8 +311,8 @@ public class CloudSimulationBuilder {
 					.asymptoticAvailability() < antientropyLAThreshold;
 
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
-					peerSelector(source, processes), processes[i],
-					new CachingTransformer(new LiveTransformer()), runner,
+					fSelectors[i], processes[i], new CachingTransformer(
+							new LiveTransformer()), runner,
 					builder.reference(), messages == 1, quenchDesync,
 					maxQuenchAge(), pushTimeout, antientropyShortCycle,
 					antientropyLongCycle, fBurnin, isLA ? new BitSet()
@@ -359,87 +367,12 @@ public class CloudSimulationBuilder {
 		return accessors;
 	}
 
-	protected IPeerSelector peerSelector(int source, IProcess[] processes) {
-		switch (fSelectorType) {
-
-		case 'a':
-			return new BiasedCentralitySelector(fRandom, true);
-
-		case 'r':
-			return new RandomSelector(fRandom);
-
-		case 'c':
-			return new BiasedCentralitySelector(fRandom, false);
-
-		case 'b': {
-			BalancingSelector selector = new BalancingSelector(fRandom,
-					dynamicDegrees(source, processes), fBdwThreshold);
-			ObjectCreator.fieldInject(BalancingSelector.class, selector, "",
-					fResolver);
-			return selector;
+	private IPeerSelector[] fillArray(IPeerSelector[] selectors,
+			IPeerSelector selector) {
+		for (int i = 0; i < selectors.length; i++) {
+			selectors[i] = selector;
 		}
-
-		case 's': {
-			BalancingSelector selector = new BalancingSelector(fRandom,
-					staticDegrees(), fBdwThreshold);
-			ObjectCreator.fieldInject(BalancingSelector.class, selector, "",
-					fResolver);
-			return selector;
-		}
-
-		default:
-			throw new UnsupportedOperationException();
-		}
-
-	};
-
-	private int[] staticDegrees() {
-		if (fDegrees == null) {
-			fDegrees = new int[fGraph.size()];
-			for (int i = 0; i < fDegrees.length; i++) {
-				fDegrees[i] = 100 * fGraph.degree(i);
-			}
-		}
-
-		return fDegrees;
-	}
-
-	private int[] dynamicDegrees(int source, IProcess[] processes) {
-		if (fDegrees == null) {
-			fDegrees = new int[fGraph.size()];
-			for (int i = 0; i < fDegrees.length; i++) {
-				int staticDegree = fGraph.degree(i);
-
-				// Dynamic degree.
-				double expected = 0.0;
-				for (int j = 0; j < staticDegree; j++) {
-					// This will cause a ClassCastException if user tries to
-					// compute dynamic degrees with a non-renewal-process.
-					RenewalProcess process = (RenewalProcess) processes[fGraph
-							.getNeighbor(i, j)];
-					expected += process.asymptoticAvailability();
-				}
-
-				fDegrees[i] = (int) Math.max(1, Math.round(expected));
-
-				StringBuffer sbuffer = new StringBuffer("DDGS:");
-				sbuffer.append(fIds[0]);
-				sbuffer.append(" ");
-				sbuffer.append(fIds[source]);
-				sbuffer.append(" ");
-				sbuffer.append(fIds[i]);
-				sbuffer.append(" ");
-				sbuffer.append(staticDegree);
-				sbuffer.append(" ");
-				sbuffer.append(expected);
-				sbuffer.append(" ");
-				sbuffer.append(fDegrees[i]);
-
-				System.out.println(sbuffer.toString());
-			}
-		}
-
-		return fDegrees;
+		return selectors;
 	}
 
 	class OneShotProcess extends IProcess {
@@ -490,6 +423,11 @@ public class CloudSimulationBuilder {
 		@Override
 		public double time() {
 			return fBurnin + fNUPBurnin + 0.0000000001D;
+		}
+
+		@Override
+		public double asymptoticAvailability() {
+			return 1.0;
 		}
 
 	}

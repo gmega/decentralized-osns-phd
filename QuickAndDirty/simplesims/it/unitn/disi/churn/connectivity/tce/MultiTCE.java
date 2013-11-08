@@ -1,8 +1,5 @@
 package it.unitn.disi.churn.connectivity.tce;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.IEventObserver;
@@ -12,6 +9,9 @@ import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.IMetricAccumulator;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.logging.IProgressTracker;
+
+import java.util.Iterator;
+import java.util.LinkedList;
 
 @Binding
 public class MultiTCE implements IEventObserver {

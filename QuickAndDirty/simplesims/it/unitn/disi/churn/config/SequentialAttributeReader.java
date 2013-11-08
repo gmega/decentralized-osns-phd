@@ -32,7 +32,6 @@ public abstract class SequentialAttributeReader<K> {
 	}
 
 	public void streamRepositioned() throws IOException {
-		fReader.streamRepositioned();
 		fDone = false;
 		advance();
 		fChanged = false;

@@ -1,15 +1,15 @@
 package it.unitn.disi.distsim.xstream;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-
 import it.unitn.disi.distsim.control.ISerializer;
 import it.unitn.disi.distsim.dataserver.CheckpointManager;
 import it.unitn.disi.distsim.scheduler.Scheduler;
 import it.unitn.disi.distsim.streamserver.StreamServer;
 import it.unitn.disi.utils.MiscUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 
 import javax.management.NotificationBroadcasterSupport;
 

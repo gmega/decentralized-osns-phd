@@ -1,7 +1,7 @@
 package it.unitn.disi.churn.config;
 
-import it.unitn.disi.churn.config.IndexedReader.IndexEntry;
 import it.unitn.disi.utils.tabular.TableReader;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader.IndexEntry;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -19,10 +19,7 @@ public class Experiment implements Serializable {
 	public final double[] lis;
 	public final double[] dis;
 
-	public final IndexEntry entry;
-
-	public Experiment(int root, TableReader source, double[] lis, double[] dis,
-			IndexEntry entry) {
+	public Experiment(int root, TableReader source, double[] lis, double[] dis) {
 		this.root = root;
 
 		HashMap<String, String> attributes = new HashMap<String, String>();
@@ -33,7 +30,6 @@ public class Experiment implements Serializable {
 
 		this.lis = lis;
 		this.dis = dis;
-		this.entry = entry;
 	}
 
 	public String toString() {

@@ -173,18 +173,4 @@ public class CatalogReadsTest extends CatalogTest {
 		throw new NoSuchElementException();
 	}
 
-	class CatalogRecord {
-		int root;
-		int size;
-		double clustering;
-		long offset;
-
-		public CatalogRecord(ICatalogCursor source) {
-			root = source.get("root").intValue();
-			size = source.get("size").intValue();
-			clustering = source.get("clustering").doubleValue();
-			offset = source.get("offset").longValue();
-		}
-	}
-
 }

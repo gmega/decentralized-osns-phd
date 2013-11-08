@@ -1,12 +1,18 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.utils.tabular.TableReader;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 public class AssignmentReader extends SequentialAttributeReader<Object> {
 
-	public AssignmentReader(InputStream stream, String id) throws IOException {
-		super(stream, id);
+	public AssignmentReader(InputStream is, String id) throws IOException {
+		super(is, id);
+	}
+
+	public AssignmentReader(TableReader reader, String id) throws IOException {
+		super(reader, id);
 	}
 
 	@Override

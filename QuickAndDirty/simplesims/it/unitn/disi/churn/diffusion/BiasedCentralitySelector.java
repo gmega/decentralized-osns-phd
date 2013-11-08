@@ -2,7 +2,7 @@ package it.unitn.disi.churn.diffusion;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.INetwork;
-import it.unitn.disi.util.RouletteWheel;
+import it.unitn.disi.simulator.random.RouletteWheel;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.Arrays;

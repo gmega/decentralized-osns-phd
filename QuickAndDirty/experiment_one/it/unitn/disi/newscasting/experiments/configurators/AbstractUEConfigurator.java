@@ -6,7 +6,6 @@ import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IEventObserver;
 import it.unitn.disi.epidemics.IPeerSelector;
 import it.unitn.disi.epidemics.IProtocolSet;
-import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.epidemics.IWritableEventStorage;
 import it.unitn.disi.newscasting.experiments.ExperimentStatisticsManager;
 import it.unitn.disi.newscasting.experiments.SelectionFailureTracker;
@@ -16,6 +15,7 @@ import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.unitsim.GovernorBase;
 import it.unitn.disi.unitsim.cd.CDGovernor;
 import it.unitn.disi.utils.peersim.FallThroughReference;
+import it.unitn.disi.utils.peersim.ISelectionFilter;
 import it.unitn.disi.utils.tabular.TableReader;
 
 import java.io.File;

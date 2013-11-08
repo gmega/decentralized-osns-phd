@@ -1,5 +1,38 @@
 package it.unitn.disi.churn.diffusion.experiments;
 
+import gnu.trove.list.array.TIntArrayList;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import it.unitn.disi.churn.config.Experiment;
+import it.unitn.disi.churn.config.ExperimentReader;
+import it.unitn.disi.churn.config.GraphConfigurator;
+import it.unitn.disi.churn.diffusion.CoreTracker;
+import it.unitn.disi.churn.diffusion.IPeerSelector;
+import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
+import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
+import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.PeerSelectorBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
+import it.unitn.disi.churn.diffusion.experiments.config.Utils;
+import it.unitn.disi.graph.IGraphProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.concurrent.SimulationTask;
+import it.unitn.disi.simulator.concurrent.Worker;
+import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.measure.AvgAccumulation;
+import it.unitn.disi.simulator.measure.INodeMetric;
+import it.unitn.disi.simulator.measure.IncrementalStatsFreqAccumulator;
+import it.unitn.disi.simulator.measure.MetricsCollector;
+import it.unitn.disi.simulator.measure.SumAccumulation;
+import it.unitn.disi.simulator.protocol.FixedProcess;
+import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.streams.PrefixedWriter;
+import it.unitn.disi.utils.tabular.TableWriter;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
@@ -14,35 +47,6 @@ import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;
 import peersim.extras.am.util.IncrementalStatsFreq;
-
-import gnu.trove.list.array.TIntArrayList;
-import it.unitn.disi.churn.config.Experiment;
-import it.unitn.disi.churn.config.ExperimentReader;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.diffusion.CoreTracker;
-import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
-import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
-import it.unitn.disi.churn.diffusion.experiments.config.CloudSimulationBuilder;
-import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
-import it.unitn.disi.churn.diffusion.experiments.config.Utils;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
-import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
-import it.unitn.disi.simulator.concurrent.SimulationTask;
-import it.unitn.disi.simulator.concurrent.Worker;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
-import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.simulator.measure.IncrementalStatsFreqAccumulator;
-import it.unitn.disi.simulator.measure.MetricsCollector;
-import it.unitn.disi.simulator.measure.AvgAccumulation;
-import it.unitn.disi.simulator.measure.SumAccumulation;
-import it.unitn.disi.simulator.protocol.FixedProcess;
-import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.collections.Pair;
-import it.unitn.disi.utils.streams.PrefixedWriter;
-import it.unitn.disi.utils.tabular.TableWriter;
 
 @AutoConfig
 public class DiffusionExperimentWorker extends Worker {
@@ -351,12 +355,14 @@ public class DiffusionExperimentWorker extends Worker {
 
 		int source = MiscUtils.indexOf(exp.ids, exp.source);
 
+		IPeerSelector[] selectors = getSelectors(diffusion, exp.experiment.root);
+
 		// Static experiment.
 		if (exp.experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
 			elements = builder.build(fPeriod, exp.experiment,
 					MiscUtils.indexOf(exp.ids, exp.experiment.root), source,
-					fSelector, graph, diffusion);
+					graph, selectors);
 		}
 
 		// Experiments with churn.
@@ -372,10 +378,11 @@ public class DiffusionExperimentWorker extends Worker {
 						State.up);
 			}
 
-			elements = new CloudSimulationBuilder(fBurnin, fDelta, fNUPBurnin,
-					fSelector.charAt(0), graph, diffusion, fNUPAnchor,
-					fLoginGrace, fFixedFraction, fBdwTarget, fRandomized,
-					exp.ids, fResolver).build(source, fMessages, fQuenchDesync,
+			CloudSimulationBuilder builder = new CloudSimulationBuilder(
+					fBurnin, fDelta, fNUPBurnin, graph, diffusion, fNUPAnchor,
+					fLoginGrace, fFixedFraction, fRandomized);
+
+			elements = builder.build(source, fMessages, fQuenchDesync,
 					fPushTimeout, fAEShortCycle, fAELongCycle, fAEThreshold,
 					fAEShortCycles, fP2PSims, fCloudAssisted, fBaseline,
 					fTrackCores, fBlacklistingAE, processes);
@@ -548,6 +555,21 @@ public class DiffusionExperimentWorker extends Worker {
 		sbuffer.append("]");
 
 		return sbuffer.toString();
+	}
+
+	private IPeerSelector[] getSelectors(Random random, int id) {
+		String configScript = fResolver.getString("", "selector");
+		PeerSelectorBuilder builder = new PeerSelectorBuilder(fProvider,
+				random, id);
+
+		Binding binding = new Binding();
+		binding.setVariable("builder", builder);
+		binding.setVariable("assignments", fReader.getAssignmentReader());
+
+		GroovyShell shell = new GroovyShell(binding);
+		shell.evaluate(configScript);
+
+		return builder.lastResults();
 	}
 
 	private void outputRegular(Pair<ExperimentData, MetricsCollector> result) {
@@ -790,18 +812,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private int[] cloudNodes(Experiment exp, int[] ids, BitSet fixed)
 			throws Exception {
-
-		// Reads cloud nodes.
-		TIntArrayList cloud = new TIntArrayList();
-		for (int i = 0; i < ids.length; i++) {
-			int row = exp.entry.rowStart + i;
-			if (fixed.get(row)) {
-				cloud.add(i);
-			}
-		}
-
-		return cloud.toArray();
-
+		// FIXME have to reimplement this.
+		throw new UnsupportedOperationException("Reimplement!");
 	}
 
 	private long nextSeed() {

@@ -1,14 +1,11 @@
 package it.unitn.disi.churn.connectivity.tce;
 
-import it.unitn.disi.churn.connectivity.tce.BFSQueue;
-import it.unitn.disi.churn.connectivity.tce.CloudTCE;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.utils.collections.Pair;

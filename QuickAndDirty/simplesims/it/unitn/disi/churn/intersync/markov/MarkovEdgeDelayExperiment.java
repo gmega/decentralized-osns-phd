@@ -1,19 +1,20 @@
 package it.unitn.disi.churn.intersync.markov;
 
-import java.util.Random;
-
 import it.unitn.disi.churn.intersync.EdgeDelaySampler;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
+import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.simulator.random.Exponential;
 import it.unitn.disi.simulator.random.IDistribution;
 import it.unitn.disi.simulator.random.MTUnitUniformDistribution;
 import it.unitn.disi.simulator.random.MersenneTwister;
+
+import java.util.Random;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;

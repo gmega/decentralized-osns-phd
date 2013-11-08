@@ -1,15 +1,11 @@
 package it.unitn.disi.churn.antientropy;
 
-import java.util.BitSet;
-import java.util.Random;
-
 import it.unitn.disi.churn.config.Experiment;
-
 import it.unitn.disi.churn.diffusion.BalancingSelector;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.RandomSelector;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IClockData;
@@ -23,6 +19,11 @@ import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Random;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
@@ -36,7 +37,9 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 
 	private final String fSelector;
 
-	private final double fBandwidth;
+	private final double fInboundBdw;
+	
+	private final double fOutboundBdw;
 
 	private TableWriter fWriter;
 
@@ -47,12 +50,14 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 			@Attribute(value = "sim_duration") double simulationTime,
 			@Attribute(value = "n", defaultValue = "2147483647") int n,
 			@Attribute(value = "burnin") double burnin,
-			@Attribute(value = "bandwidth", defaultValue = "1") double bandwidth,
+			@Attribute(value = "inbound_bdw", defaultValue = "1") double inboundBdw,
+			@Attribute(value = "outbound_bdw", defaultValue = "1") double outboundBdw,
 			@Attribute(value = "selector", defaultValue = "r") String selector) {
 		super(resolver, simulationTime, burnin, n);
 		fWriter = new TableWriter(System.out, "id", "source", "target",
 				"select", "selected", "uptime", "degree");
-		fBandwidth = bandwidth;
+		fInboundBdw = inboundBdw;
+		fOutboundBdw = outboundBdw;
 		fSelector = selector;
 	}
 
@@ -76,7 +81,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		}
 
 		System.err.println("-- Selector is " + fSelector + ".");
-		System.err.println("-- Bandwidth cap is " + fBandwidth
+		System.err.println("-- Bandwidth cap is " + fInboundBdw
 				+ " if effective.");
 
 		Random random = new Random();
@@ -173,15 +178,19 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 
 	private IPeerSelector selector(IProcess[] processes, int source, int[] ids,
 			IndexedNeighborGraph graph, Random random) {
+
+		double[] inbound = new double[processes.length];
+		Arrays.fill(inbound, fInboundBdw);
+
 		switch (fSelector.charAt(0)) {
 		case 'r':
 			return new RandomSelector(random);
 		case 'b':
-			return new BalancingSelector(random, staticDegrees(graph),
-					fBandwidth);
+			return new BalancingSelector(random, staticDegrees(graph), inbound,
+					fOutboundBdw);
 		case 'd':
 			return new BalancingSelector(random, dynamicDegrees(source, ids,
-					processes, graph), fBandwidth);
+					processes, graph), inbound, fOutboundBdw);
 		}
 
 		throw new IllegalArgumentException();

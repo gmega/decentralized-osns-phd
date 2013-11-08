@@ -1,10 +1,10 @@
 package it.unitn.disi.churn.diffusion.graph;
 
-import peersim.graph.BitMatrixGraph;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.PathEntry;
+import it.unitn.disi.graph.algorithms.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.collections.Pair;
+import peersim.graph.BitMatrixGraph;
 
 public class BranchingGraphGenerator {
 

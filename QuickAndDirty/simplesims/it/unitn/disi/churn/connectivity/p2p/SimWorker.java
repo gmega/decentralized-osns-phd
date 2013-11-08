@@ -1,6 +1,5 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.cli.ITransformer;
@@ -200,18 +199,18 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 		if (fCloudBitmap == null) {
 			fCloudBitmap = readCloudBitmap();
 		}
-
-		// Reads cloud nodes.
-		TIntArrayList cloud = new TIntArrayList();
-		for (int i = 0; i < ids.length; i++) {
-			int row = exp.entry.rowStart + i;
-			if (fCloudBitmap.get(row)) {
-				cloud.add(i);
-			}
-		}
-
-		return cloud.toArray();
-
+//
+//		// Reads cloud nodes.
+//		TIntArrayList cloud = new TIntArrayList();
+//		for (int i = 0; i < ids.length; i++) {
+//			int row = exp.entry.rowStart + i;
+//			if (fCloudBitmap.get(row)) {
+//				cloud.add(i);
+//			}
+//		}
+//
+//		return cloud.toArray();
+		throw new UnsupportedOperationException("Reimplement!");
 	}
 
 	// -------------------------------------------------------------------------

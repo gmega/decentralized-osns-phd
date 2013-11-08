@@ -1,9 +1,9 @@
 package it.unitn.disi.churn.diffusion.cloud;
 
-import java.util.ArrayList;
-
 import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+
+import java.util.ArrayList;
 
 /**
  * Simple {@link ICloud} implementation that manages one update at a time.

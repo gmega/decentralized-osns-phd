@@ -2,12 +2,11 @@ package it.unitn.disi.churn.connectivity.tce;
 
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.IEventObserver;
-import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
-import it.unitn.disi.unitsim.experiments.TemporalConnectivityExperiment;
+import it.unitn.disi.simulator.core.Schedulable;
 
 import java.util.Arrays;
 

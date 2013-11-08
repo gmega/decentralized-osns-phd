@@ -1,13 +1,12 @@
 package it.unitn.disi.churn.intersync;
 
-import it.unitn.disi.network.churn.yao.AveragesFromFile;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IDistributionGenerator;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IProcess.State;
-import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
@@ -180,7 +179,8 @@ public class SyncEstimatorCLI {
 
 	private IAverageGenerator averageGenerator(Random random) {
 		if (fParfile != null) {
-			return new AveragesFromFile(fParfile, true);
+			throw new UnsupportedOperationException(
+					"Averages from file not implemented.");
 		}
 
 		return YaoPresets.averageGenerator("yao", random);

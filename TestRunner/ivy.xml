@@ -1,0 +1,19 @@
+<ivy-module version="1.0">
+
+    <info organisation="it.unitn.disi" 
+    	module="deployable-unit"
+    	status="integration"/>
+    	    
+    <configurations>
+    	<conf name="core"/>
+    </configurations>
+    
+    <dependencies>
+        <dependency org="it.unitn.disi" name="base-utils" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="graphlib" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="edsim" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="simcontrol" rev="latest.integration" conf="core"/>
+        <dependency org="it.unitn.disi" name="osn-sims" rev="latest.integration" conf="core"/>
+    </dependencies>
+    
+</ivy-module>

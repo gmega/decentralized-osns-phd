@@ -2,8 +2,8 @@ package it.unitn.disi.churn.diffusion;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.GraphAlgorithms.TarjanState;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms.TarjanState;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.core.INetwork;
 

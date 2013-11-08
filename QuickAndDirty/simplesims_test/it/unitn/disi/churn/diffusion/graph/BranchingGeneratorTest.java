@@ -1,12 +1,13 @@
 package it.unitn.disi.churn.diffusion.graph;
 
+import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.algorithms.PathEntry;
+import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
+import it.unitn.disi.utils.collections.Pair;
+
 import java.util.Arrays;
 
 import junit.framework.Assert;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.utils.collections.Pair;
 
 import org.junit.Test;
 

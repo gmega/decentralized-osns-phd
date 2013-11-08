@@ -1,31 +1,25 @@
 package it.unitn.disi.churn.intersync.markov;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-
 import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.IndexedReader;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
-import it.unitn.disi.churn.diffusion.graph.BranchingGraphGenerator;
 import it.unitn.disi.distsim.scheduler.generators.ISchedule;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.Schedulers;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.ITopKEstimator;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
-import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
-import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableWriter;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
@@ -77,8 +71,8 @@ public class UnfoldExperiment implements Runnable {
 		fReader = new ExperimentReader("id");
 		ObjectCreator
 				.fieldInject(ExperimentReader.class, fReader, "", resolver);
-		fSchedule = SchedulerFactory.getInstance()
-				.createScheduler(resolver, "");
+		fSchedule = Schedulers.get(resolver.getString("", "scheduler.type"),
+				resolver);
 
 		fWeightReader = IndexedReader.createReader(new File(weightIndex),
 				new File(weights));
@@ -109,7 +103,7 @@ public class UnfoldExperiment implements Runnable {
 
 		TableWriter writer = new TableWriter(System.out, "id", "source",
 				"target", "delay");
-		
+
 		while ((id = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
 			Experiment experiment = fReader.readExperiment(id, fProvider);
 			IndexedNeighborGraph original = fProvider.subgraph(experiment.root);
@@ -139,7 +133,7 @@ public class UnfoldExperiment implements Runnable {
 		if (fWeightReader.select(id) == null) {
 			throw new NoSuchElementException();
 		}
-		MatrixReader reader = new MatrixReader(fWeightReader.getStream(), "V0",
+		MatrixReader reader = new MatrixReader(fWeightReader.getReader(), "V0",
 				"V1", "V2", "V3");
 
 		double[][] weights = reader.read(ids);

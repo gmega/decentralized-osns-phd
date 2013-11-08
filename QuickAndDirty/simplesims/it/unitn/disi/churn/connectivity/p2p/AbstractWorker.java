@@ -1,7 +1,5 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
-import java.util.Properties;
-
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
@@ -10,8 +8,11 @@ import it.unitn.disi.distsim.control.ControlClient;
 import it.unitn.disi.distsim.scheduler.IWorker;
 import it.unitn.disi.distsim.scheduler.RemoteSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
+
+import java.util.Properties;
+
 import peersim.config.Attribute;
 import peersim.config.IResolver;
 import peersim.config.ObjectCreator;

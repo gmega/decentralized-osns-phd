@@ -1,16 +1,17 @@
 package it.unitn.disi.churn.antientropy;
 
-import java.util.Random;
-
 import it.unitn.disi.churn.config.Experiment;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.utils.tabular.TableWriter;
+
+import java.util.Random;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;

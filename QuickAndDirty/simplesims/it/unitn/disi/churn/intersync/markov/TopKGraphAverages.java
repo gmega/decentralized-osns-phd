@@ -1,24 +1,24 @@
 package it.unitn.disi.churn.intersync.markov;
 
 import it.unitn.disi.churn.config.Experiment;
-import it.unitn.disi.churn.config.IndexedReader;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.SimulationTaskBuilder;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.churn.connectivity.p2p.AbstractWorker;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
+import it.unitn.disi.distsim.scheduler.generators.Schedulers;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.ITopKEstimator;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.newscasting.experiments.schedulers.SchedulerFactory;
+import it.unitn.disi.graph.algorithms.ITopKEstimator;
+import it.unitn.disi.graph.algorithms.PathEntry;
+import it.unitn.disi.graph.generators.ListGraphGenerator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
-import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,12 +79,12 @@ public class TopKGraphAverages extends AbstractWorker {
 		IndexedReader reader = IndexedReader.createReader(new File(fWeightIdx),
 				new File(fWeightDb));
 
-		MatrixReader wReader = new MatrixReader(reader.getStream(), "id",
+		MatrixReader wReader = new MatrixReader(reader.getReader(), "id",
 				"source", "target", "delay");
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),
-				"id", "source", "target", "gdelay", "fdelay", "mdelay", "sdelay",
-				"ipdelay");
+				"id", "source", "target", "gdelay", "fdelay", "mdelay",
+				"sdelay", "ipdelay");
 
 		ExoticSimHelper helper = new ExoticSimHelper(fRepeat, fBurnin,
 				fYaoConfig, simHelper());
@@ -126,9 +126,11 @@ public class TopKGraphAverages extends AbstractWorker {
 			}
 
 			if (fSimulateDelayGroundTruth) {
-				fullSimDelay = Utils.lookup(simHelper().bruteForceSimulate("full", graph,
-						exp.root, rSource, exp.lis, exp.dis, new int[] {},
-						false, false, true), "ed", Double.class).getMetric(target);
+				fullSimDelay = Utils.lookup(
+						simHelper().bruteForceSimulate("full", graph, exp.root,
+								rSource, exp.lis, exp.dis, new int[] {}, false,
+								false, true), "ed", Double.class).getMetric(
+						target);
 			}
 
 			if (fSimulateTopkGroundTruth) {
@@ -167,8 +169,8 @@ public class TopKGraphAverages extends AbstractWorker {
 		if (fIterator.equals("default")) {
 			return super.iterator();
 		}
-		return SchedulerFactory.getInstance().createScheduler(fResolver, "")
-				.iterator();
+		return Schedulers.get(fResolver.getString("", "scheduler.type"),
+				fResolver).iterator();
 	}
 
 	private double[] lambdaDown(double[] dis) {

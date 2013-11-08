@@ -1,17 +1,17 @@
 package it.unitn.disi.churn.diffusion;
 
+import it.unitn.disi.churn.diffusion.cloud.SessionStatistics;
+import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.measure.INodeMetric;
+
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
 import peersim.extras.am.util.IncrementalStatsFreq;
-
-import it.unitn.disi.churn.diffusion.cloud.SessionStatistics;
-import it.unitn.disi.simulator.core.IClockData;
-import it.unitn.disi.simulator.core.INetwork;
-import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.measure.INodeMetric;
 
 public class MessageStatistics extends SessionStatistics implements
 		IMessageObserver {

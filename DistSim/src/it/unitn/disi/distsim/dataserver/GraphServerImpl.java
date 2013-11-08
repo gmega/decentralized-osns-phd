@@ -1,10 +1,10 @@
 package it.unitn.disi.distsim.dataserver;
 
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
 import it.unitn.disi.graph.large.catalog.PartialLoader;
 
 import java.io.File;
@@ -26,7 +26,7 @@ public class GraphServerImpl implements IGraphProvider {
 
 	private static final Logger fLogger = Logger
 			.getLogger(GraphServerImpl.class);
- 
+
 	private final File fGraph;
 
 	private final File fCatalog;
@@ -69,6 +69,11 @@ public class GraphServerImpl implements IGraphProvider {
 	@Override
 	public synchronized int size() throws RemoteException {
 		return fProvider.size();
+	}
+
+	@Override
+	public synchronized int size(Integer subgraph) throws RemoteException {
+		return fProvider.size(subgraph);
 	}
 
 	@Override

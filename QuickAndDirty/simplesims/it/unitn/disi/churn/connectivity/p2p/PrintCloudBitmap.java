@@ -21,6 +21,7 @@ public class PrintCloudBitmap implements ITransformer {
 	
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
+		@SuppressWarnings("resource")
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
 				new File(bmp)));
 

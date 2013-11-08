@@ -1,18 +1,18 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.Arrays;
-
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.IBroadcastObserver;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.experiments.config.SimpleMutableMetric;
 import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.IEventObserver;
-import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
+
+import java.util.Arrays;
 
 /**
  * {@link DiffusionWick} starts the update dissemination from the source and

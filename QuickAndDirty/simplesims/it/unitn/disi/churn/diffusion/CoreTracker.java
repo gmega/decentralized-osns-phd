@@ -1,15 +1,15 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.BitSet;
-
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.GraphAlgorithms;
-import it.unitn.disi.graph.analysis.GraphAlgorithms.IEdgeFilter;
-import it.unitn.disi.simulator.core.INetwork;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms;
+import it.unitn.disi.graph.algorithms.GraphAlgorithms.IEdgeFilter;
 import it.unitn.disi.simulator.core.IEventObserver;
-import it.unitn.disi.simulator.core.Schedulable;
+import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.INodeMetric;
+
+import java.util.BitSet;
 
 /**
  * {@link CoreTracker} maintains information about membership in the initially

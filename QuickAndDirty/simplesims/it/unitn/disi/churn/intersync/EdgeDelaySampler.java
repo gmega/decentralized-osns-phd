@@ -3,11 +3,11 @@ package it.unitn.disi.churn.intersync;
 import gnu.trove.list.array.TDoubleArrayList;
 import it.unitn.disi.simulator.core.Binding;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
+import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
-import it.unitn.disi.simulator.core.IEventObserver;
-import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.measure.IValueObserver;
 
 /**

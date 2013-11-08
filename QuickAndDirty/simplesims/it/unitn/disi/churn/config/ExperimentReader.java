@@ -40,13 +40,6 @@ public class ExperimentReader {
 	@Attribute(value = "assignments", defaultValue = "none")
 	protected String fAssignments;
 
-	/**
-	 * Index with the entry position of each neighborhood in the neighborhood/
-	 * node assignments file.
-	 */
-	@Attribute(value = "index", defaultValue = "none")
-	protected String fAssignmentIndex;
-
 	private String fIdField;
 
 	/**
@@ -54,9 +47,7 @@ public class ExperimentReader {
 	 */
 	private TableReader fSourceReader;
 
-	private IndexedReader fAssigIndex;
-
-	private AssignmentReader fAssigReader;
+	private FastRandomAssignmentReader fAssignmentReader;
 
 	// -------------------------------------------------------------------------
 
@@ -79,9 +70,7 @@ public class ExperimentReader {
 	// -------------------------------------------------------------------------
 
 	private void checkConfig() {
-		if (fChurn
-				&& (fAssignments.equals("none") || fAssignmentIndex
-						.equals("none"))) {
+		if (fChurn && fAssignments.equals("none")) {
 			throw new MissingParameterException("assignments or index");
 		}
 	}
@@ -101,11 +90,9 @@ public class ExperimentReader {
 	public Experiment readChurn(IGraphProvider provider,
 			TableReader sourceReader, int root) throws IOException,
 			RemoteException {
-		Pair<Assignment, IndexEntry> assignment = readLIDI(root,
-				provider.verticesOf(root));
+		Assignment a = readLIDI(root, provider.verticesOf(root));
 
-		return new Experiment(root, sourceReader, assignment.a.li,
-				assignment.a.di, assignment.b);
+		return new Experiment(root, sourceReader, a.li, a.di);
 	}
 
 	// -------------------------------------------------------------------------
@@ -119,7 +106,7 @@ public class ExperimentReader {
 
 	private Experiment staticExperiment(TableReader sourceReader) {
 		int root = Integer.parseInt(sourceReader.get(fIdField));
-		return new Experiment(root, sourceReader, null, null, null);
+		return new Experiment(root, sourceReader, null, null);
 	}
 
 	// -------------------------------------------------------------------------
@@ -142,24 +129,17 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	private Pair<Assignment, IndexEntry> readLIDI(int root, int[] ids)
-			throws IOException {
-		IndexEntry entry;
+	private Assignment readLIDI(int root, int[] ids) throws IOException {
+		Assignment a = new Assignment(ids.length);
 
-		if (fAssigIndex == null) {
-			fAssigIndex = IndexedReader.createReader(
-					new File(fAssignmentIndex), new File(fAssignments));
-			fAssigReader = new AssignmentReader(fAssigIndex.getReader(), "id");
+		for (int i = 0; i < ids.length; i++) {
+			fAssignmentReader.select(ids[i]);
+			a.li[i] = fAssignmentReader.li();
+			a.di[i] = fAssignmentReader.di();
+			a.nodes[i] = i;
 		}
 
-		if ((entry = fAssigIndex.select(root)) == null) {
-			throw new NoSuchElementException();
-		}
-
-		fAssigReader.streamRepositioned();
-		Assignment ass = (Assignment) fAssigReader.read(ids);
-
-		return new Pair<Assignment, IndexEntry>(ass, entry);
+		return a;
 	}
 
 	// -------------------------------------------------------------------------
@@ -172,6 +152,10 @@ public class ExperimentReader {
 		while (row > sourceReader().currentRow()) {
 			sourceReader().next();
 		}
+	}
+	
+	public FastRandomAssignmentReader getAssignmentReader() {
+		return fAssignmentReader;
 	}
 
 	// -------------------------------------------------------------------------

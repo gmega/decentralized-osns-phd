@@ -1,14 +1,5 @@
 package it.unitn.disi.churn.connectivity;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-
-import org.lambda.functions.implementations.F0;
-
 import it.unitn.disi.churn.config.AssignmentReader;
 import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator;
@@ -23,6 +14,16 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
 import it.unitn.disi.utils.CallbackThreadPoolExecutor;
 import it.unitn.disi.utils.streams.ResettableFileInputStream;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+
+import org.lambda.functions.implementations.F0;
+
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;

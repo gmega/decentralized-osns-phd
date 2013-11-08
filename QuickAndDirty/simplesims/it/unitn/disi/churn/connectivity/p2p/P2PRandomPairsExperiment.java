@@ -2,15 +2,15 @@ package it.unitn.disi.churn.connectivity.p2p;
 
 import gnu.trove.list.array.TIntArrayList;
 import it.unitn.disi.churn.config.AssignmentReader;
+import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.cli.IMultiTransformer;
 import it.unitn.disi.cli.StreamProvider;
+import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.PathEntry;
-import it.unitn.disi.graph.large.catalog.IGraphProvider;
+import it.unitn.disi.graph.algorithms.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.utils.collections.Pair;

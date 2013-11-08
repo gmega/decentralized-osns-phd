@@ -1,13 +1,13 @@
 package it.unitn.disi.churn.diffusion;
 
-import java.util.ArrayList;
-
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessStatistics;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
+
+import java.util.ArrayList;
 
 /**
  * {@link Anchor} stops the simulation cold at a given time instant. It also

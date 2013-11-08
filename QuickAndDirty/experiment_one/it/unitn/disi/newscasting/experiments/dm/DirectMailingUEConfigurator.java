@@ -3,10 +3,10 @@ package it.unitn.disi.newscasting.experiments.dm;
 import it.unitn.disi.epidemics.IApplicationConfigurator;
 import it.unitn.disi.epidemics.IContentExchangeStrategy;
 import it.unitn.disi.epidemics.IPeerSelector;
-import it.unitn.disi.epidemics.ISelectionFilter;
 import it.unitn.disi.newscasting.experiments.configurators.AbstractUEConfigurator;
 import it.unitn.disi.newscasting.internal.SocialNewscastingService;
 import it.unitn.disi.newscasting.internal.selectors.RandomSelectorOverLinkable;
+import it.unitn.disi.utils.peersim.ISelectionFilter;
 import peersim.config.AutoConfig;
 
 @AutoConfig

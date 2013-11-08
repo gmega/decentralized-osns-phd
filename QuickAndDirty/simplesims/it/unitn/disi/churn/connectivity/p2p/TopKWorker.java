@@ -1,17 +1,17 @@
 package it.unitn.disi.churn.connectivity.p2p;
 
 import it.unitn.disi.churn.config.Experiment;
-import it.unitn.disi.churn.config.IndexedReader;
 import it.unitn.disi.churn.config.MatrixReader;
 import it.unitn.disi.churn.connectivity.TEExperimentHelper;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
 import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.analysis.PathEntry;
+import it.unitn.disi.graph.algorithms.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Triplet;
 import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
+import it.unitn.disi.utils.tabular.minidb.IndexedReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,19 +19,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.NoSuchElementException;
 
-import com.google.common.collect.ObjectArrays;
-
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.config.IResolver;
 
+import com.google.common.collect.ObjectArrays;
+
 @AutoConfig
 public class TopKWorker extends AbstractWorker {
 
-	private static final int YEN = 1; 
-	private static final int EDGE_DISJOINT = 2; 
+	private static final int YEN = 1;
+	private static final int EDGE_DISJOINT = 2;
 	private static final int VERTEX_DISJOINT = 4;
-	
+
 	@Attribute("weights")
 	private String fWeightDb;
 
@@ -48,14 +48,14 @@ public class TopKWorker extends AbstractWorker {
 			@Attribute("mode") String mode) throws IOException {
 		super(resolver, "id");
 	}
-	
+
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 
 		IndexedReader reader = IndexedReader.createReader(new File(fWeightIdx),
 				new File(fWeightDb));
 
-		MatrixReader wReader = new MatrixReader(reader.getStream(), "id",
+		MatrixReader wReader = new MatrixReader(reader.getReader(), "id",
 				"source", "target", "delay");
 
 		TableWriter writer = new TableWriter(new PrefixedWriter("ES:", oup),

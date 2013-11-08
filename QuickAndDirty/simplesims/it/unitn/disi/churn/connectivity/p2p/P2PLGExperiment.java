@@ -7,6 +7,7 @@ import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.EdgeTask;
 import it.unitn.disi.churn.intersync.ParallelParwiseEstimator.GraphTask;
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.generators.ListGraphGenerator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.churnmodel.yao.YaoPresets.IAverageGenerator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
@@ -14,7 +15,6 @@ import it.unitn.disi.simulator.concurrent.TaskExecutor;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.measure.IValueObserver;
 import it.unitn.disi.simulator.measure.IncrementalStatsAdapter;
-import it.unitn.disi.unitsim.ListGraphGenerator;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.io.InputStream;

@@ -78,8 +78,8 @@ public class ConfigurationProperties {
 	}
 
 	public void load(InputStream stream) throws IOException {
-		// We don't care about closing this reader cause the 
-		// stream isn't ours. 
+		// We don't care about closing this reader cause the
+		// stream isn't ours.
 		BufferedReader reader = new BufferedReader(
 				new InputStreamReader(stream));
 
@@ -87,12 +87,12 @@ public class ConfigurationProperties {
 	}
 
 	public IResolver resolver(String section) {
-		
+
 		Properties sectionProps = fProperties.get(section);
 		if (sectionProps == null) {
 			return null;
 		}
-		
+
 		final Properties merged = new Properties();
 
 		merged.putAll(fProperties.get(ROOT_SECTION));
@@ -134,7 +134,7 @@ public class ConfigurationProperties {
 				break;
 
 			case attribute:
-				parseAttribute(line);
+				parseAttribute(line, reader);
 
 			case empty_line:
 			case comment:
@@ -145,11 +145,39 @@ public class ConfigurationProperties {
 
 	}
 
-	private void parseAttribute(String line) {
+	private String groovy(BufferedReader reader) throws IOException {
+		StringBuffer script = new StringBuffer();
+		String sep = System.getProperty("line.separator");
+
+		String line;
+		while (true) {
+			line = reader.readLine();
+			if (line == null) {
+				throw new ParseException(
+						"--- unterminated groovy script ---\n "
+								+ script.toString() + ".");
+			}
+			if (line.trim().equals("::")) {
+				break;
+			}
+			script.append(line);
+			script.append(sep);
+		}
+
+		return script.toString();
+	}
+
+	private void parseAttribute(String line, BufferedReader reader)
+			throws IOException {
 		String[] attribute = line.split("=");
 		if (attribute.length != 2) {
 			throw new ParseException("Malformed attribute " + line + ".");
 		}
+
+		if (attribute[1].trim().equals("groovy::")) {
+			attribute[2] = groovy(reader);
+		}
+
 		fProperties.get(fSection).put(attribute[0].trim(), attribute[1].trim());
 	}
 

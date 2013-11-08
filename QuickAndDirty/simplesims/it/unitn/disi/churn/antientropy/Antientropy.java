@@ -1,8 +1,5 @@
 package it.unitn.disi.churn.antientropy;
 
-import java.util.BitSet;
-import java.util.Random;
-
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.graph.IndexedNeighborGraph;
@@ -13,6 +10,9 @@ import it.unitn.disi.simulator.core.ISimulationEngine;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.protocol.PeriodicAction;
 import it.unitn.disi.utils.ResettableCounter;
+
+import java.util.BitSet;
+import java.util.Random;
 
 public class Antientropy extends PeriodicAction {
 

@@ -1,8 +1,8 @@
 package it.unitn.disi.distsim.streamserver;
 
-import java.io.File;
-
 import it.unitn.disi.distsim.control.ISimulation;
+
+import java.io.File;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
