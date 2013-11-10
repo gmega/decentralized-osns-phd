@@ -303,7 +303,7 @@ public class PeerSelectorBuilder {
 		private double[] scaledArray(int[] original, double scaling) {
 			double[] array = new double[original.length];
 			for (int i = 0; i < array.length; i++) {
-				array[i] *= scaling;
+				array[i] = original[i] * scaling;
 			}
 			return array;
 		}

@@ -10,6 +10,8 @@ public interface IPeerSelector {
 	public static int NO_LIVE_PEER = -1;
 
 	public static int NO_PEER = -2;
+	
+	public static int SKIP_ROUND = -3;
 
 	/**
 	 * Selects a peer.

@@ -3,21 +3,16 @@ package it.unitn.disi.churn.config;
 import it.unitn.disi.churn.config.AssignmentReader.Assignment;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.utils.MiscUtils;
-import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.tabular.TableReader;
-import it.unitn.disi.utils.tabular.minidb.IndexedReader;
-import it.unitn.disi.utils.tabular.minidb.IndexedReader.IndexEntry;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.MissingParameterException;
 
 @AutoConfig
 public class ExperimentReader {
@@ -29,15 +24,9 @@ public class ExperimentReader {
 	protected String fSources;
 
 	/**
-	 * Whether or not we should read churn assignments for these experiments.
-	 */
-	@Attribute("churn")
-	protected boolean fChurn;
-
-	/**
 	 * File containing all neighborhood/node assignments.
 	 */
-	@Attribute(value = "assignments", defaultValue = "none")
+	@Attribute(value = "assignments", defaultValue = Attribute.VALUE_NULL)
 	protected String fAssignments;
 
 	private String fIdField;
@@ -59,8 +48,8 @@ public class ExperimentReader {
 
 	public Experiment readExperiment(Integer row, IGraphProvider provider)
 			throws Exception {
-		if (fChurn) {
-			checkConfig();
+
+		if (shouldReadChurn()) {
 			return readChurnByRow(row, provider);
 		}
 
@@ -69,10 +58,8 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	private void checkConfig() {
-		if (fChurn && fAssignments.equals("none")) {
-			throw new MissingParameterException("assignments or index");
-		}
+	private boolean shouldReadChurn() {
+		return fAssignments != null;
 	}
 
 	// -------------------------------------------------------------------------
@@ -153,7 +140,7 @@ public class ExperimentReader {
 			sourceReader().next();
 		}
 	}
-	
+
 	public FastRandomAssignmentReader getAssignmentReader() {
 		return fAssignmentReader;
 	}
@@ -186,9 +173,8 @@ public class ExperimentReader {
 			public Experiment next() {
 				try {
 					reader.next();
-					return fChurn ? readChurn(provider, reader,
-							Integer.parseInt(reader.get(fIdField)))
-							: staticExperiment(reader);
+					return readExperiment(
+							Integer.parseInt(reader.get(fIdField)), provider);
 				} catch (Exception ex) {
 					throw MiscUtils.nestRuntimeException(ex);
 				}

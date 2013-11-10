@@ -195,7 +195,8 @@ public class HFloodSM implements ICyclicProtocol {
 		int neighborId = selectPeer(network);
 
 		// No live neighbors at the moment, so we have to wait.
-		if (neighborId < 0) {
+		if (neighborId == IPeerSelector.NO_LIVE_PEER
+				|| neighborId == IPeerSelector.NO_PEER) {
 			changeState(State.WAITING);
 			return;
 		}
@@ -206,7 +207,10 @@ public class HFloodSM implements ICyclicProtocol {
 		// Updates last active round.
 		fLastRound = engine.clock().rawTime();
 
-		doSend(engine, network, neighborId, 0);
+		// Only sends a message if we actually have a peer to send to.
+		if (neighborId != IPeerSelector.SKIP_ROUND) {
+			doSend(engine, network, neighborId, 0);
+		}
 	}
 
 	private boolean timedOut(ISimulationEngine engine) {

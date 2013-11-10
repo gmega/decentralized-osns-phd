@@ -175,7 +175,7 @@ public class ConfigurationProperties {
 		}
 
 		if (attribute[1].trim().equals("groovy::")) {
-			attribute[2] = groovy(reader);
+			attribute[1] = groovy(reader);
 		}
 
 		fProperties.get(fSection).put(attribute[0].trim(), attribute[1].trim());

@@ -1,6 +1,5 @@
 package it.unitn.disi.churn.diffusion.experiments;
 
-import gnu.trove.list.array.TIntArrayList;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import it.unitn.disi.churn.config.Experiment;
@@ -56,8 +55,12 @@ public class DiffusionExperimentWorker extends Worker {
 	private double fPeriod;
 
 	// Selector of push protocol.
-	@Attribute("push_selector")
-	private String fSelector;
+	@Attribute("push_selector.updates")
+	private String fUpdateSelector;
+
+	// Selector of push protocol.
+	@Attribute(value = "push_selector.quench", defaultValue = Attribute.VALUE_NULL)
+	private String fQuenchSelector;
 
 	// Timeout (period without contacts before giving up) of push protocol.
 	@Attribute(value = "push_timeout")
@@ -81,7 +84,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	// Causes all nodes with asymptotic availability falling below a threshold
 	// to be blacklisted a priori by antientropy.
-	@Attribute(value = "antientropy_availability_threshold")
+	@Attribute(value = "antientropy_availability_threshold", defaultValue = "0.0")
 	private double fAEThreshold;
 
 	// "Grace period" for expired PeriodicActions.
@@ -95,10 +98,6 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
 	private double fFixedFraction;
 
-	// Fixed fraction of HYBRID's timer.
-	@Attribute(value = "bandwidth_target", defaultValue = "100")
-	private double fBdwTarget;
-
 	// Slowdown factor for push of QUENCH messages respectively to
 	// updates.
 	@Attribute(value = "quench_desync", defaultValue = "1")
@@ -108,6 +107,12 @@ public class DiffusionExperimentWorker extends Worker {
 	// when we allow the update to be posted.
 	@Attribute(value = "nup_burnin", defaultValue = "-1")
 	private double fNUPBurnin;
+
+	/**
+	 * What burnin value to use.
+	 */
+	@Attribute("burnin")
+	protected double fBurnin;
 
 	@Attribute(value = "fixedseeds", defaultValue = "false")
 	private boolean fFixSeed;
@@ -248,7 +253,7 @@ public class DiffusionExperimentWorker extends Worker {
 		System.err.println("There are " + fFixedMap.cardinality()
 				+ " fixed nodes.");
 
-		System.err.println("-- Selector is (" + fSelector + ").");
+		System.err.println("-- Selector is (" + fUpdateSelector + ").");
 		System.err.println("Push protocol timeout is " + fPushTimeout + ".");
 		System.err.println(antientropy());
 		System.err.println("Antientropy availability threshold is "
@@ -558,7 +563,6 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	private IPeerSelector[] getSelectors(Random random, int id) {
-		String configScript = fResolver.getString("", "selector");
 		PeerSelectorBuilder builder = new PeerSelectorBuilder(fProvider,
 				random, id);
 
@@ -567,7 +571,7 @@ public class DiffusionExperimentWorker extends Worker {
 		binding.setVariable("assignments", fReader.getAssignmentReader());
 
 		GroovyShell shell = new GroovyShell(binding);
-		shell.evaluate(configScript);
+		shell.evaluate(fUpdateSelector);
 
 		return builder.lastResults();
 	}

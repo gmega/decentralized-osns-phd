@@ -52,12 +52,6 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	@Attribute("cores")
 	protected int fCores;
 
-	/**
-	 * What burnin value to use.
-	 */
-	@Attribute("burnin")
-	protected double fBurnin;
-
 	private final Lock fMutex;
 
 	private volatile SimulationState fState;

@@ -11,6 +11,8 @@
 
 	<property name="build.dir" value="build" />
 	<property name="src.dir" value="src" />
+	
+	<echo message="Debug level: ${debug.level}"/>
 	   
 	<target name="download-ivy" unless="skip.download">
 		<mkdir dir="${ivy.jar.dir}"/>
@@ -69,11 +71,11 @@
 		<ivy:retrieve pattern="${lib.dir}/[artifact].[ext]" />
 	</target>
 	
-	<target name="clean-all" depends="buildlist" description="clean all projects">
+	<target name="clean" depends="buildlist" description="clean all projects">
 		<subant target="clean" buildpathref="build-path" />
 	</target>
 	  
-	<target name="clean" depends="clean-all, load-ivy" 
+	<target name="clean-all" depends="clean, clean-lib" 
 		description="clean tutorial: delete repository, ivy cache, and all projects">
 		<delete dir="repository/shared"/>
 		<ivy:cleancache />

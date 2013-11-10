@@ -260,10 +260,6 @@ public class ObjectCreator implements IAttributeSource {
 			Object value = resolveParameter(prefix, key, attribute,
 					field.getType());
 
-			if (value == null) {
-				throw new MissingParameterException(prefix + "." + key);
-			}
-
 			try {
 				field.set(instance, value);
 			} catch (IllegalAccessException ex) {
