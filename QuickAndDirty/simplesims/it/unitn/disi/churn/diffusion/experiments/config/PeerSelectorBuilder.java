@@ -105,6 +105,7 @@ public class PeerSelectorBuilder {
 
 		public StatelessSelectorBuilder(IPeerSelector selector, int size) {
 			fSelector = selector;
+			fSize = size;
 		}
 
 		public IPeerSelector[] andGetSelectors() {
