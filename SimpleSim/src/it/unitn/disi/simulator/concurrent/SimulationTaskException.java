@@ -1,4 +1,4 @@
-package it.unitn.disi.simulator.random;
+package it.unitn.disi.simulator.concurrent;
 
 import java.io.PrintStream;
 import java.util.Map;

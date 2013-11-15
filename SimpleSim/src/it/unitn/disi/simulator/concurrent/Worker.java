@@ -14,7 +14,6 @@ import it.unitn.disi.distsim.scheduler.ISchedulerClient;
 import it.unitn.disi.distsim.scheduler.IWorker;
 import it.unitn.disi.distsim.scheduler.RemoteSchedulerClient;
 import it.unitn.disi.distsim.scheduler.generators.IScheduleIterator;
-import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 import it.unitn.disi.utils.logging.ProgressTracker;

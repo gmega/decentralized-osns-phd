@@ -2,7 +2,6 @@ package it.unitn.disi.simulator.concurrent;
 
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.measure.INodeMetric;
-import it.unitn.disi.simulator.random.SimulationTaskException;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -24,9 +23,9 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 	private final EDSimulationEngine fEngine;
 
 	private final Map<String, ? extends Object> fParameters;
-	
+
 	private boolean fActive;
-	
+
 	/**
 	 * Constructs a new {@link SimulationTask}.
 	 * 
@@ -58,15 +57,19 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 	@Override
 	public SimulationTask call() throws SimulationTaskException {
 		try {
+			preRunHook();
 			fActive = true;
 			fEngine.run();
 			fActive = false;
+			// If results in exception, postRunHooks are not called as results
+			// are assumed to not be valid anyway.
+			postRunHook();
 		} catch (Exception ex) {
 			throw new SimulationTaskException(fParameters, fEngine, ex);
 		}
 		return this;
 	}
-	
+
 	public boolean isActive() {
 		return fActive;
 	}
@@ -85,5 +88,13 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 
 	public Object id() {
 		return fId;
+	}
+
+	protected void preRunHook() {
+		// To be implemented by subclasses.
+	}
+
+	protected void postRunHook() {
+		// To be implemented by subclasses.
 	}
 }

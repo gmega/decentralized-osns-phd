@@ -188,9 +188,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			waitForClearance();
 			fRunning = true;
 			while (!fPaused && !fDone) {
-				if (!uncheckedStep()) {
-					fDone = true;
-				}
+				uncheckedStep();
 			}
 
 			/**
@@ -358,6 +356,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private boolean uncheckedStep() {
 		if (fQueue.isEmpty()) {
+			fDone = true;
 			return false;
 		}
 
