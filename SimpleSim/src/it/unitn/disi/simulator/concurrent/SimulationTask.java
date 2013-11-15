@@ -57,13 +57,9 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 	@Override
 	public SimulationTask call() throws SimulationTaskException {
 		try {
-			preRunHook();
 			fActive = true;
 			fEngine.run();
 			fActive = false;
-			// If results in exception, postRunHooks are not called as results
-			// are assumed to not be valid anyway.
-			postRunHook();
 		} catch (Exception ex) {
 			throw new SimulationTaskException(fParameters, fEngine, ex);
 		}
@@ -88,13 +84,5 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 
 	public Object id() {
 		return fId;
-	}
-
-	protected void preRunHook() {
-		// To be implemented by subclasses.
-	}
-
-	protected void postRunHook() {
-		// To be implemented by subclasses.
 	}
 }

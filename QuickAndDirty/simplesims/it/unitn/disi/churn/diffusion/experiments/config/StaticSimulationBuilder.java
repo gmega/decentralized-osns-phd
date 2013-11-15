@@ -7,6 +7,7 @@ import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.IProtocolReference;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
 import it.unitn.disi.churn.diffusion.PIDReference;
+import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
@@ -14,7 +15,10 @@ import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.ILifecycleObserver;
 import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.simulator.core.ILifecycleObserver.Type;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.CyclicProtocolRunner;
@@ -37,15 +41,16 @@ public class StaticSimulationBuilder {
 			IndexedNeighborGraph graph, IPeerSelector[] selectors) {
 
 		EngineBuilder builder = new EngineBuilder();
-		
+
 		IProcess processes[] = new IProcess[graph.size()];
 		for (int i = 0; i < processes.length; i++) {
 			processes[i] = new FixedProcess(i, State.up);
 		}
-		
+
 		builder.addProcess(processes);
 
-		MessageStatistics stats = new MessageStatistics("msg", graph.size(),
+		final UptimeTracker tracker = new UptimeTracker("msg", graph.size());
+		final MessageStatistics stats = new MessageStatistics("msg", graph.size(),
 				true);
 		fProtocols = protocols(graph, root, new CachingTransformer(
 				new LiveTransformer()), processes, selectors, stats);
@@ -57,20 +62,41 @@ public class StaticSimulationBuilder {
 		builder.addObserver(cpr, 1, true, true);
 		builder.preschedule(new CyclicSchedulable(period, 1));
 
+		builder.addObserver(new ILifecycleObserver() {
+			
+			@Override
+			public void lifecycleEvent(ISimulationEngine engine, Type evt) {
+				switch (evt) {
+				
+				case done:
+					tracker.broadcastDone(null, engine);
+					stats.stopTrackingSession(engine.clock());
+					break;
+				
+				case running:
+					tracker.broadcastStarted(null, engine);
+					stats.startTrackingSession(engine.clock());
+					break;
+					
+				default:
+				}
+				
+			}
+		});
+
 		EDSimulationEngine engine = builder.engine();
-		
+
 		HFloodMMsg msg = new HFloodMMsg(0.0, 0);
 		for (int i = 0; i < fProtocols.length; i++) {
 			fProtocols[i].setMessage(msg, null);
 		}
-		
-		fProtocols[0].markReached(0, engine.clock(), 0);
 
-		stats.startTrackingSession(engine.clock());
+		fProtocols[0].markReached(0, engine.clock(), 0);
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(SMMetrics.rdMetric(source, fProtocols));
 		metrics.addAll(stats.metrics());
+		metrics.add(tracker.accruedUptime());
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
 				engine, metrics);

@@ -146,8 +146,6 @@ public class MessageStatistics extends SessionStatistics implements
 			}
 		}
 
-		System.out.println("TRUN: " + clock.rawTime());
-
 		INetwork network = clock.engine().network();
 
 		for (int i = 0; i < fBdwTracker[ANTIENTROPY].length; i++) {

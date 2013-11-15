@@ -1,5 +1,6 @@
 package it.unitn.disi.simulator.core;
 
+import it.unitn.disi.simulator.core.ILifecycleObserver.Type;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.io.Serializable;
@@ -48,7 +49,9 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private double fTime = 0.0;
 
-	private IEventObserver[][] fObservers;
+	private IEventObserver[][] fEventObservers;
+
+	private ILifecycleObserver[] fLifecycleObservers;
 
 	private int fLive;
 
@@ -57,10 +60,11 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	// -------------------------------------------------------------------------
 
 	EDSimulationEngine(IProcess[] processes, Descriptor[] descriptors,
-			int extraPermits, double burnin) {
+			ILifecycleObserver[] lifecycle, int extraPermits, double burnin) {
 
 		this(processes, burnin, extraPermits);
 		setEventObservers(descriptors);
+		setLifecycleObservers(lifecycle);
 		setStopPermits(fBindingObservers.size() + extraPermits);
 	}
 
@@ -144,14 +148,14 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 	// -------------------------------------------------------------------------
 
 	private void setEventObservers(Descriptor... descriptors) {
-		fObservers = new IEventObserver[maxType(descriptors) + 1][];
-		for (int i = 0; i < fObservers.length; i++) {
-			fObservers[i] = new IEventObserver[count(descriptors, i)];
+		fEventObservers = new IEventObserver[maxType(descriptors) + 1][];
+		for (int i = 0; i < fEventObservers.length; i++) {
+			fEventObservers[i] = new IEventObserver[count(descriptors, i)];
 			int k = 0;
 			for (int j = 0; j < descriptors.length; j++) {
 				Descriptor descriptor = descriptors[j];
 				if (descriptor.type == i && descriptor.listening) {
-					fObservers[i][k++] = descriptor.observer;
+					fEventObservers[i][k++] = descriptor.observer;
 					if (descriptor.binding) {
 						fBindingObservers.add(descriptor.observer);
 					}
@@ -186,7 +190,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		// Main simulation loop.
 		while (!fDone) {
 			waitForClearance();
-			fRunning = true;
+			resumed();
 			while (!fPaused && !fDone) {
 				uncheckedStep();
 			}
@@ -198,9 +202,38 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 			 * made by the thread running the main simulation loop before it
 			 * paused.
 			 */
-			fRunning = false;
+			halted();
 		}
 
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void halted() {
+		fRunning = false;
+		lifecycle(Type.halted);
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void resumed() {
+		fRunning = true;
+		lifecycle(Type.running);
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void done() {
+		fDone = true;
+		lifecycle(Type.done);
+	}
+
+	// -------------------------------------------------------------------------
+
+	private void lifecycle(Type type) {
+		for (ILifecycleObserver observer : fLifecycleObservers) {
+			observer.lifecycleEvent(this, type);
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -218,17 +251,26 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	// -------------------------------------------------------------------------
 
+	private void setLifecycleObservers(ILifecycleObserver[] lifecycle) {
+		fLifecycleObservers = new ILifecycleObserver[lifecycle.length];
+		System.arraycopy(lifecycle, 0, fLifecycleObservers, 0, lifecycle.length);
+	}
+
+	// -------------------------------------------------------------------------
+
 	public int step(int events) {
 		checkCanRun();
-		fRunning = true;
+		resumed();
 
-		for (int i = 0; i < events; i++) {
+		int executed;
+		for (executed = 0; executed < events; executed++) {
 			if (!uncheckedStep() || fDone) {
-				return i;
+				break;
 			}
 		}
 
-		return events;
+		halted();
+		return executed;
 	}
 
 	// -------------------------------------------------------------------------
@@ -280,7 +322,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		fStopPermits = Math.max(fStopPermits - drain, 0);
 
 		if (fStopPermits == 0) {
-			fDone = true;
+			done();
 		}
 	}
 
@@ -356,7 +398,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private boolean uncheckedStep() {
 		if (fQueue.isEmpty()) {
-			fDone = true;
+			done();
 			return false;
 		}
 
@@ -383,7 +425,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 
 	private void notifyObservers(Schedulable p, double time) {
 		int type = p.type();
-		if (type < 0 || type >= fObservers.length) {
+		if (type < 0 || type >= fEventObservers.length) {
 			return;
 		}
 
@@ -391,7 +433,7 @@ public class EDSimulationEngine implements Runnable, INetwork, IClockData,
 		 * Note that we only dispatch events to observers of the type that
 		 * matches the schedulable type.
 		 */
-		for (IEventObserver sim : fObservers[type]) {
+		for (IEventObserver sim : fEventObservers[type]) {
 			if (!sim.isDone()) {
 				sim.eventPerformed(this, p,
 						p.isExpired() ? IEventObserver.EXPIRED : p.time());

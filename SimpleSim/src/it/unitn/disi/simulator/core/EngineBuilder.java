@@ -16,7 +16,9 @@ import java.util.List;
  */
 public class EngineBuilder {
 
-	private List<Descriptor> fObservers;
+	private List<Descriptor> fEventObservers;
+
+	private List<ILifecycleObserver> fLifecycleObservers;
 
 	private List<IProcess> fProcesses;
 
@@ -35,8 +37,9 @@ public class EngineBuilder {
 	 * engine.
 	 */
 	public EngineBuilder() {
-		fObservers = new ArrayList<Descriptor>();
+		fEventObservers = new ArrayList<Descriptor>();
 		fProcesses = new ArrayList<IProcess>();
+		fLifecycleObservers = new ArrayList<ILifecycleObserver>();
 		fPreschedulables = new ArrayList<Schedulable>();
 	}
 
@@ -64,8 +67,12 @@ public class EngineBuilder {
 	 */
 	public void addObserver(IEventObserver observer, int type, boolean binding,
 			boolean listening) {
-		fObservers.add(new Descriptor(observer, type, binding, listening));
+		fEventObservers.add(new Descriptor(observer, type, binding, listening));
 		fBinding += binding ? 1 : 0;
+	}
+
+	public void addObserver(ILifecycleObserver observer) {
+		fLifecycleObservers.add(observer);
 	}
 
 	public void addProcess(IProcess... processes) {
@@ -181,9 +188,11 @@ public class EngineBuilder {
 
 		fInstance = new EDSimulationEngine(
 				fProcesses.toArray(new IProcess[fProcesses.size()]),
-				fObservers.toArray(new Descriptor[fObservers.size()]),
-				fExtraPermits, fBurnin);
-
+				fEventObservers.toArray(new Descriptor[fEventObservers.size()]),
+				fLifecycleObservers
+						.toArray(new ILifecycleObserver[fLifecycleObservers
+								.size()]), fExtraPermits, fBurnin);
+		
 		for (Schedulable schedulable : fPreschedulables) {
 			fInstance.schedule(schedulable);
 		}

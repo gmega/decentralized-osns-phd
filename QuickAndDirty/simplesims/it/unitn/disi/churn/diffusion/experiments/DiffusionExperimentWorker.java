@@ -138,7 +138,7 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "cloudassisted", defaultValue = "false")
 	private boolean fCloudAssisted;
 
-	@Attribute(value = "summary", defaultValue = "false")
+	@Attribute(value = "summarized", defaultValue = "false")
 	private boolean fSummary;
 
 	@Attribute(value = "randomized", defaultValue = "false")
@@ -153,8 +153,6 @@ public class DiffusionExperimentWorker extends Worker {
 	private IGraphProvider fProvider;
 
 	private BitSet fFixedMap;
-
-	private final IResolver fResolver;
 
 	// -------------------------------------------------------------------------
 	// Reflex that writers have an inflexible API.
@@ -194,8 +192,6 @@ public class DiffusionExperimentWorker extends Worker {
 		fReader = new ExperimentReader("id");
 		ObjectCreator
 				.fieldInject(ExperimentReader.class, fReader, "", resolver);
-
-		fResolver = resolver;
 	}
 
 	protected void initialize() throws Exception {
@@ -594,6 +590,9 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	private void outputSummarized(Pair<ExperimentData, MetricsCollector> result) {
+		
+		printP2PCosts(fP2PCostWriter, result.a, result.b);
+		
 		MetricsCollector metrics = result.b;
 		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric("rd");
 

@@ -2,6 +2,7 @@ package it.unitn.disi.churn.config;
 
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.generators.InMemoryProvider;
 import it.unitn.disi.graph.generators.ListGraphGenerator;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
@@ -57,6 +58,8 @@ public class GraphConfigurator {
 			loader.start(null);
 			System.err.println("done.");
 			provider = loader;
+		} else if (fGraphType.equals("inmemory"))  {
+			provider = new InMemoryProvider(fGraph);
 		} else if (fGraphType.equals("remote")) {
 			String host = fResolver.getString("", HOST);
 			int port = fResolver.getInt("", PORT);
