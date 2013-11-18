@@ -285,6 +285,38 @@ public class PeerSelectorBuilder {
 			return this;
 		}
 
+		/**
+		 * Sets the inbound bandwidth of every node v to a max(cap, inbound[v]),
+		 * where inbound[v] is the bandwidth assignment for v produced by a
+		 * previous call.
+		 * 
+		 * @param cap
+		 *            the lower bound for outbound bandwidth cap.
+		 * @return
+		 */
+		public BalancedSelectorBuilder andLowerInboundCap(double cap) {
+			ensureBdwCaps();
+			setMinimumBdw(fInboundBandwidth, cap);
+			
+			return this;
+		}
+		
+		/**
+		 * Sets the outbound bandwidth of every node v to max(cap, outbound[v]),
+		 * where outbound[v] is the bandwidth assignment for v produced by a
+		 * previous call.
+		 * 
+		 * @param cap
+		 *            the lower bound for outbound bandwidth cap.
+		 * @return
+		 */
+		public BalancedSelectorBuilder andLowerOutboundCap(double cap) {
+			ensureBdwCaps();
+			setMinimumBdw(fOutboundBandwidth, cap);
+			
+			return this;
+		}
+
 		public IPeerSelector[] andGetSelectors() throws IOException {
 			ensureDegrees();
 			ensureBdwCaps();
@@ -293,6 +325,12 @@ public class PeerSelectorBuilder {
 					fInboundBandwidth);
 
 			return fLast;
+		}
+
+		private void setMinimumBdw(double[] assignment, double cap) {
+			for (int i = 0; i < assignment.length; i++) {
+				assignment[i] = Math.max(cap, assignment[i]);
+			}
 		}
 
 		private double[] filledArray(double cap) {
