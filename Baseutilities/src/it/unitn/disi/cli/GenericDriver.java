@@ -106,7 +106,7 @@ public class GenericDriver {
 			IResolver props = parseProperties(fParameters, fPropertyFile);
 
 			if (props == null) {
-				System.out.println("Invalid configuration: " + fConfig + ".");
+				System.err.println("Invalid configuration: " + fConfig + ".");
 				return;
 			}
 

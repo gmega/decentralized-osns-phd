@@ -1,5 +1,6 @@
 package it.unitn.disi.cli;
 
+import it.unitn.disi.utils.SectionReplacer;
 import it.unitn.disi.utils.exception.ParseException;
 
 import java.io.BufferedReader;
@@ -18,9 +19,10 @@ import peersim.config.MissingParameterException;
 import peersim.config.StringValueResolver;
 
 /**
- * Simple configuration property manager which supports a three-level lookup
- * structure, with the second level being defined by a key. The main idea is
- * allowing users to organize simulation properties in three levels, where:
+ * Simple (and not really robust) configuration property manager which supports
+ * a three-level lookup structure, with the second level being defined by a key.
+ * The main idea is allowing users to organize simulation properties in three
+ * levels, where:
  * 
  * <ol>
  * <li>the first level contains common simulation parameters;</li>
@@ -37,8 +39,10 @@ import peersim.config.StringValueResolver;
 public class ConfigurationProperties {
 
 	private static enum TokenType {
-		load, section_decl, section_end, comment, attribute, empty_line
+		load, section_decl, section_end, comment, attribute, empty_line, section_include
 	}
+	
+	public static final String NO_EXPAND = "$$";
 
 	public static final String ROOT_SECTION = "root";
 
@@ -46,7 +50,7 @@ public class ConfigurationProperties {
 
 	/** Pattern for matching bash-style variables. */
 	private static final Pattern fVarPattern = Pattern
-			.compile("\\$\\{(.*?)\\}");
+			.compile("\\$\\{(.*?)\\}|(\\$\\$)");
 
 	private HashMap<String, Properties> fProperties = new HashMap<String, Properties>();
 
@@ -119,6 +123,7 @@ public class ConfigurationProperties {
 
 		String line;
 		while ((line = reader.readLine()) != null) {
+			line = line.trim();
 			switch (lineType(line)) {
 
 			case load:
@@ -133,6 +138,10 @@ public class ConfigurationProperties {
 				sectionEnd();
 				break;
 
+			case section_include:
+				includeSection(line);
+				break;
+
 			case attribute:
 				parseAttribute(line, reader);
 
@@ -143,6 +152,22 @@ public class ConfigurationProperties {
 			}
 		}
 
+	}
+
+	private void includeSection(String line) {
+		String[] section = line.split(" ");
+		if (line.length() != 2) {
+			throw new ParseException("Invalid use clause " + line + ".");
+		}
+
+		Properties props = checkedGet(section[1].trim());
+		if (props == null) {
+			fProperties.get(fSection).putAll(props);
+		}
+	}
+
+	public Properties checkedGet(String section) {
+		return fProperties.get(section);
 	}
 
 	private String groovy(BufferedReader reader) throws IOException {
@@ -208,33 +233,47 @@ public class ConfigurationProperties {
 
 	private String expand(String string, Properties props) {
 		Matcher matcher = fVarPattern.matcher(string);
-		StringBuffer moldable = new StringBuffer(string);
+		SectionReplacer replacer = new SectionReplacer(string);
 
 		while (matcher.find()) {
 			String key = matcher.group(1);
 			String value;
-			// Lookup properties.
-			if (props.containsKey(key)) {
-				value = props.get(key).toString();
+			if(!key.equals(NO_EXPAND)) {
+				value = "$";
+			} else {
+				value = varLookup(props, key);
 			}
-			// Lookup system var.
-			else {
-				value = System.getenv(key);
-			}
-
-			if (value == null) {
-				throw new ParseException("Can't resolve variable " + key + ".");
-			}
-
-			moldable.replace(matcher.start(0), matcher.end(0), value);
+			replacer.replace(matcher.start(0), matcher.end(0) - 1, value);
 		}
-		return moldable.toString();
+
+		return replacer.toString();
+	}
+
+	public String varLookup(Properties props, String key) throws ParseException {
+		String value;
+		// Lookup properties.
+		if (props.containsKey(key)) {
+			value = props.get(key).toString();
+		}
+		// Lookup system var.
+		else {
+			value = System.getenv(key);
+		}
+
+		if (value == null) {
+			throw new ParseException("Can't resolve variable " + key + ".");
+		}
+		return value;
 	}
 
 	private TokenType lineType(String line) {
 		// Poor man's lexer.
 		if (line.startsWith("section")) {
 			return TokenType.section_decl;
+		}
+
+		if (line.startsWith("use")) {
+			return TokenType.section_include;
 		}
 
 		if (line.startsWith("}")) {
