@@ -143,6 +143,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@Attribute(value = "randomized", defaultValue = "false")
 	private boolean fRandomized;
+	
+	private boolean fPrintOnce;
 
 	private volatile int fSeedUniquefier;
 
@@ -565,9 +567,12 @@ public class DiffusionExperimentWorker extends Worker {
 		Binding binding = new Binding();
 		binding.setVariable("builder", builder);
 		binding.setVariable("assignments", fReader.getAssignmentReader());
+		binding.setVariable("first", !fPrintOnce);
 
 		GroovyShell shell = new GroovyShell(binding);
 		shell.evaluate(fUpdateSelector);
+		
+		fPrintOnce = true;
 
 		return builder.lastResults();
 	}
