@@ -1,37 +1,26 @@
 package it.unitn.disi.churn.diffusion.graph;
 
-import it.unitn.disi.churn.config.Experiment;
-import it.unitn.disi.churn.config.ExperimentReader;
-import it.unitn.disi.churn.config.GraphConfigurator;
-import it.unitn.disi.graph.IndexedNeighborGraph;
-import it.unitn.disi.graph.large.catalog.PartialLoader;
+import java.io.RandomAccessFile;
+
+import it.unitn.disi.graph.generators.InMemoryProvider;
+import it.unitn.disi.utils.MiscUtils;
+import it.unitn.disi.utils.streams.EOFException;
 import it.unitn.disi.utils.tabular.TableWriter;
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
-import peersim.config.IResolver;
-import peersim.config.ObjectCreator;
 
 @AutoConfig
 public class DynamicDegreeComputer implements Runnable {
 
-	private int fExperiments;
+	private InMemoryProvider fProvider;
 
-	private final ExperimentReader fReader;
+	private double[] fAssignments;
 
-	private PartialLoader fProvider;
+	public DynamicDegreeComputer(@Attribute("graph") String graph,
+			@Attribute("assignments") String assignments) throws Exception {
 
-	public DynamicDegreeComputer(
-			@Attribute(Attribute.AUTO) IResolver resolver,
-			@Attribute("n") int experiments) 
-					throws Exception {
-
-		fProvider = (PartialLoader) ObjectCreator.createInstance(
-				GraphConfigurator.class, "", resolver).graphProvider();
-
-		fReader = new ExperimentReader("id");
-		fExperiments = experiments;
-		ObjectCreator
-				.fieldInject(ExperimentReader.class, fReader, "", resolver);
+		fProvider = new InMemoryProvider(graph);
+		fAssignments = loadAssignments(assignments);
 	}
 
 	@Override
@@ -45,53 +34,54 @@ public class DynamicDegreeComputer implements Runnable {
 
 	public void run0() throws Exception {
 
-		TableWriter writer = new TableWriter(System.out, "id", "source",
-				"target", "realdegree", "egodegree", "dynamicdegree");
+		TableWriter writer = new TableWriter(System.out, "id", "degree",
+				"dynamicdegree");
 
-		for (int i = 2; i <= fExperiments + 1; i++) {
-			Experiment experiment = fReader.readExperiment(i, fProvider);
+		for (int i = 0; i < fProvider.size(); i++) {
+			int[] vertices = fProvider.verticesOf(i);
 
-			IndexedNeighborGraph graph = fProvider.subgraph(experiment.root);
-			int[] ids = fProvider.verticesOf(experiment.root);
-			int source = Integer.parseInt(experiment.attributes.get("node"));
-
-			double[] ai = availabilities(experiment);
-
-			for (int j = 0; j < graph.size(); j++) {
-				writer.set("id", experiment.root);
-				writer.set("source", source);
-				writer.set("target", ids[j]);
-				writer.set("realdegree", fProvider.size(ids[j]) - 1);
-				writer.set("egodegree", graph.degree(j));
-				writer.set("dynamicdegree", dynamicDegree(graph, j, ai));
-				writer.emmitRow();
+			if (vertices[0] != i) {
+				throw new IllegalStateException("Unsupported provider.");
 			}
-		}
 
+			writer.set("id", i);
+			writer.set("degree", vertices.length - 1);
+			writer.set("dynamicdegree", dynamicDegree(vertices));
+			writer.emmitRow();
+		}
 	}
 
-	private double dynamicDegree(IndexedNeighborGraph graph, int node,
-			double[] ai) {
-		double avg = 0;
-		int degree = graph.degree(node);
-		for (int i = 0; i < degree; i++) {
-			int neighbor = graph.getNeighbor(node, i);
-			avg += ai[neighbor];
-		}
+	private double[] loadAssignments(String fileName) throws Exception {
+		double[] assignments = new double[fProvider.size() * 2];
 
-		return avg;
+		System.err.print("-- Load assignments...");
+		RandomAccessFile file = null;
+		try {
+			file = new RandomAccessFile(fileName, "r");
+			for (int i = 0; i < assignments.length; i++) {
+				assignments[i] = file.readDouble();
+			}
+			System.err.println(" done.");
+			return assignments;
+		} catch (EOFException ex) {
+			System.err.println("Stream terminated unexpectedly. Aborting.");
+			throw ex;
+		} finally {
+			MiscUtils.safeClose(file, true);
+		}
 	}
 
-	private double[] availabilities(Experiment experiment) {
-		double[] li = experiment.lis;
-		double[] di = experiment.dis;
-		double[] ai = new double[experiment.lis.length];
+	private int dynamicDegree(int[] vertices) {
+		double degree = 0.0;
+		for (int i = 1; i < vertices.length; i++) {
+			int idx = vertices[i];
+			double li = fAssignments[2 * idx];
+			double di = fAssignments[2 * idx + 1];
 
-		for (int i = 0; i < ai.length; i++) {
-			ai[i] = li[i] / (li[i] + di[i]);
+			degree += (li / (li + di));
 		}
 
-		return ai;
+		return MiscUtils.safeCast(Math.max(1, Math.round(degree)));
 	}
 
 }
