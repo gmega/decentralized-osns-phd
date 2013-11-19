@@ -41,8 +41,6 @@ public class ConfigurationProperties {
 	private static enum TokenType {
 		load, section_decl, section_end, comment, attribute, empty_line, section_include
 	}
-	
-	public static final String NO_EXPAND = "$$";
 
 	public static final String ROOT_SECTION = "root";
 
@@ -51,6 +49,10 @@ public class ConfigurationProperties {
 	/** Pattern for matching bash-style variables. */
 	private static final Pattern fVarPattern = Pattern
 			.compile("\\$\\{(.*?)\\}|(\\$\\$)");
+
+	/** Assigns symbolic names to pattern groups to make code more readable. */
+	private static final int VAR_KEY = 1;
+	private static final int NO_EXPAND = 2;
 
 	private HashMap<String, Properties> fProperties = new HashMap<String, Properties>();
 
@@ -236,12 +238,11 @@ public class ConfigurationProperties {
 		SectionReplacer replacer = new SectionReplacer(string);
 
 		while (matcher.find()) {
-			String key = matcher.group(1);
 			String value;
-			if(!key.equals(NO_EXPAND)) {
+			if (matcher.group(NO_EXPAND) != null) {
 				value = "$";
 			} else {
-				value = varLookup(props, key);
+				value = varLookup(props, matcher.group(VAR_KEY));
 			}
 			replacer.replace(matcher.start(0), matcher.end(0) - 1, value);
 		}
