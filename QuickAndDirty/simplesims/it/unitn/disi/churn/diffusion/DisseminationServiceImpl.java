@@ -43,10 +43,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private final double fMaxQuenchAge;
 
-	private final int fQuenchDesync;
-
-	private int fQuenchRound;
-
 	private State fState;
 
 	private BitSet fStaticBlacklist;
@@ -64,8 +60,9 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 	private ArrayList<IBroadcastObserver> fBcastObservers = new ArrayList<IBroadcastObserver>();
 
 	public DisseminationServiceImpl(int pid, Random rnd,
-			IndexedNeighborGraph graph, IPeerSelector selector,
-			IProcess process, ILiveTransformer transformer,
+			IndexedNeighborGraph graph, IPeerSelector updateSelector,
+			IPeerSelector quenchSelector, IProcess process,
+			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			IReference<ISimulationEngine> engine, boolean oneShot,
 			int quenchDesync, double maxQuenchAge, double pushTimeout,
@@ -73,25 +70,22 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			double antientropyDelay, BitSet antientropyStaticblacklist,
 			int antientropyShortRounds, int antientropyPrio, boolean aeBlacklist) {
 
-		fPushProtocols[UPDATE] = new HFloodUP(graph, selector, process,
+		fPushProtocols[UPDATE] = new HFloodUP(graph, updateSelector, process,
 				transformer, this, pushTimeout);
 
-		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, selector, process,
-				transformer, this, pushTimeout);
+		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, quenchSelector,
+				process, transformer, this, pushTimeout);
 
 		fAntientropy = new Antientropy(engine, rnd, process.id(),
 				antientropyPrio, antientropyShortCycle, antientropyLongCycle,
 				antientropyShortRounds, antientropyDelay, aeBlacklist);
 
 		fGraph = graph;
-
 		fRunner = runner;
 		fPid = pid;
 		fProcess = process;
 		fOneShot = oneShot;
 		fMaxQuenchAge = maxQuenchAge;
-		fQuenchDesync = quenchDesync;
-		fQuenchRound = 0;
 		fStaticBlacklist = antientropyStaticblacklist;
 	}
 
@@ -160,16 +154,14 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 	@Override
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
 
+		// XXX Why no check for fState == DONE? Bug?
+		
 		fPushProtocols[UPDATE].nextCycle(engine, process);
-		if (fQuenchRound == 0) {
-			if (shouldStopQuench(engine)) {
-				fPushProtocols[NO_UPDATE].stop();
-			}
-			fPushProtocols[NO_UPDATE].nextCycle(engine, process);
-			fQuenchRound = fQuenchDesync;
+		if (shouldStopQuench(engine)) {
+			fPushProtocols[NO_UPDATE].stop();
 		}
+		fPushProtocols[NO_UPDATE].nextCycle(engine, process);
 
-		fQuenchRound--;
 		// If dissemination is done, we're done.
 		if (fPushProtocols[UPDATE].getState() == State.DONE) {
 			fState = fOneShot ? State.DONE : State.IDLE;

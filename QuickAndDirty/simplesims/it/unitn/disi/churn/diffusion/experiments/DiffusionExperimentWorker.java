@@ -143,7 +143,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@Attribute(value = "randomized", defaultValue = "false")
 	private boolean fRandomized;
-	
+
 	private boolean fPrintOnce;
 
 	private volatile int fSeedUniquefier;
@@ -358,14 +358,18 @@ public class DiffusionExperimentWorker extends Worker {
 
 		int source = MiscUtils.indexOf(exp.ids, exp.source);
 
-		IPeerSelector[] selectors = getSelectors(diffusion, exp.experiment.root);
+		IPeerSelector[] updateSelectors = getSelectors(diffusion,
+				fUpdateSelector, exp.experiment.root);
+		IPeerSelector[] quenchSelectors = getSelectors(diffusion,
+				fQuenchSelector, exp.experiment.root);
+		fPrintOnce = true;
 
 		// Static experiment.
 		if (exp.experiment.lis == null) {
 			StaticSimulationBuilder builder = new StaticSimulationBuilder();
 			elements = builder.build(fPeriod, exp.experiment,
 					MiscUtils.indexOf(exp.ids, exp.experiment.root), source,
-					graph, selectors);
+					graph, updateSelectors);
 		}
 
 		// Experiments with churn.
@@ -383,7 +387,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 			CloudSimulationBuilder builder = new CloudSimulationBuilder(
 					fBurnin, fDelta, fNUPBurnin, graph, diffusion, fNUPAnchor,
-					fLoginGrace, fFixedFraction, fRandomized);
+					fLoginGrace, fFixedFraction, fRandomized, updateSelectors,
+					quenchSelectors);
 
 			elements = builder.build(source, fMessages, fQuenchDesync,
 					fPushTimeout, fAEShortCycle, fAELongCycle, fAEThreshold,
@@ -560,7 +565,7 @@ public class DiffusionExperimentWorker extends Worker {
 		return sbuffer.toString();
 	}
 
-	private IPeerSelector[] getSelectors(Random random, int id) {
+	private IPeerSelector[] getSelectors(Random random, String config, int id) {
 		PeerSelectorBuilder builder = new PeerSelectorBuilder(fProvider,
 				random, id);
 
@@ -570,9 +575,7 @@ public class DiffusionExperimentWorker extends Worker {
 		binding.setVariable("first", !fPrintOnce);
 
 		GroovyShell shell = new GroovyShell(binding);
-		shell.evaluate(fUpdateSelector);
-		
-		fPrintOnce = true;
+		shell.evaluate(config);
 
 		return builder.lastResults();
 	}
@@ -595,9 +598,9 @@ public class DiffusionExperimentWorker extends Worker {
 	}
 
 	private void outputSummarized(Pair<ExperimentData, MetricsCollector> result) {
-		
+
 		printP2PCosts(fP2PCostWriter, result.a, result.b);
-		
+
 		MetricsCollector metrics = result.b;
 		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric("rd");
 

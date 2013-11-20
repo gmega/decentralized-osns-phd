@@ -1,15 +1,12 @@
 package it.unitn.disi.churn.diffusion.experiments.config;
 
 import it.unitn.disi.churn.diffusion.Anchor;
-import it.unitn.disi.churn.diffusion.BalancingSelector;
-import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.CoreTracker;
 import it.unitn.disi.churn.diffusion.DiffusionWick;
 import it.unitn.disi.churn.diffusion.DiffusionWick.PostMM;
 import it.unitn.disi.churn.diffusion.DisseminationServiceImpl;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.MessageStatistics;
-import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.cloud.CloudAccessor;
 import it.unitn.disi.churn.diffusion.cloud.ICloud;
@@ -70,7 +67,9 @@ public class CloudSimulationBuilder {
 
 	private final double fFixedFraction;
 
-	private IPeerSelector[] fSelectors;
+	private IPeerSelector[] fUpdateSelectors;
+
+	private IPeerSelector[] fQuenchSelectors;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -94,7 +93,8 @@ public class CloudSimulationBuilder {
 	public CloudSimulationBuilder(double burnin, double period,
 			double nupBurnin, IndexedNeighborGraph graph, Random random,
 			double nupOnly, double loginGrace, double fixedFraction,
-			boolean randomize) {
+			boolean randomize, IPeerSelector[] updateSelectors,
+			IPeerSelector[] quenchSelectors) {
 		fDelta = period;
 		fGraph = graph;
 		fRandom = random;
@@ -104,30 +104,8 @@ public class CloudSimulationBuilder {
 		fRandomize = randomize;
 		fLoginGrace = loginGrace;
 		fFixedFraction = fixedFraction;
-		fSelectors = new IPeerSelector[fGraph.size()];
-	}
-
-	public CloudSimulationBuilder useSimpleSelector(String type) {
-		switch (type.toLowerCase().charAt(0)) {
-		case 'a':
-			fSelectors = fillArray(fSelectors, new BiasedCentralitySelector(
-					fRandom, true));
-		case 'r':
-			fSelectors = fillArray(fSelectors, new RandomSelector(fRandom));
-
-		case 'c':
-			fSelectors = fillArray(fSelectors, new BiasedCentralitySelector(
-					fRandom, false));
-		}
-		return this;
-	}
-
-	public CloudSimulationBuilder useBalancedSelector(
-			double[] inboundBandwidth, double[] outboundBandwidth,
-			int[] egodegrees, int[] socialdegrees) {
-		fSelectors = BalancingSelector.degreeApproximationSelectors(fRandom,
-				egodegrees, socialdegrees, outboundBandwidth, inboundBandwidth);
-		return this;
+		fUpdateSelectors = updateSelectors;
+		fQuenchSelectors = quenchSelectors;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -311,8 +289,8 @@ public class CloudSimulationBuilder {
 					.asymptoticAvailability() < antientropyLAThreshold;
 
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
-					fSelectors[i], processes[i], new CachingTransformer(
-							new LiveTransformer()), runner,
+					fUpdateSelectors[i], fQuenchSelectors[i], processes[i],
+					new CachingTransformer(new LiveTransformer()), runner,
 					builder.reference(), messages == 1, quenchDesync,
 					maxQuenchAge(), pushTimeout, antientropyShortCycle,
 					antientropyLongCycle, fBurnin, isLA ? new BitSet()
@@ -365,14 +343,6 @@ public class CloudSimulationBuilder {
 		}
 
 		return accessors;
-	}
-
-	private IPeerSelector[] fillArray(IPeerSelector[] selectors,
-			IPeerSelector selector) {
-		for (int i = 0; i < selectors.length; i++) {
-			selectors[i] = selector;
-		}
-		return selectors;
 	}
 
 	class OneShotProcess extends IProcess {
