@@ -56,45 +56,61 @@ public class BalancingSelector implements IPeerSelector {
 	public int selectPeer(int selecting, IndexedNeighborGraph neighbors,
 			BitSet forbidden, INetwork net) {
 
-		// Skips round to keep outbound bandwidth targets.
-		if (!hasOutboundBandwidth()) {
-			return IPeerSelector.NO_PEER;
-		}
+		/**
+		 * We first check whether there are available neighbors or not, so as to
+		 * cause NO_LIVE_PEER or NO_PEER to take precedence over SKIP_ROUND.
+		 * Failing to do so would effectively preclude the client protocol from
+		 * going into sleep, rendering the simulations extremely slow.
+		 */
 
-		// Random selection.
+		// Constructs filtered neighbor list.
+		boolean down = false;
 		fNeighbors.resetQuick();
 		int degree = neighbors.degree(selecting);
 		for (int i = 0; i < degree; i++) {
 			int neighbor = neighbors.getNeighbor(selecting, i);
-			if (canSelect(forbidden, net.process(neighbor))) {
-				fNeighbors.add(neighbor);
+			IProcess neighborProcess = net.process(neighbor);
+			if (canSelect(forbidden, neighborProcess)) {
+				if (neighborProcess.isUp()) {
+					fNeighbors.add(neighbor);
+				} else {
+					// At least one eligible neighbor can't be selected
+					// because it's currently offline.
+					down = true;
+				}
 			}
 		}
 
+		// No eligible neighbor.
 		if (fNeighbors.size() == 0) {
-			return IPeerSelector.NO_LIVE_PEER;
+			return down ? IPeerSelector.NO_LIVE_PEER : IPeerSelector.NO_PEER;
+		}
+
+		// Skips round to keep outbound bandwidth targets.
+		if (!hasOutboundBandwidth()) {
+			return IPeerSelector.SKIP_ROUND;
 		}
 
 		// Reweighted random selection.
 		int candidate = fNeighbors.get(fRandom.nextInt(fNeighbors.size()));
-		if (fRandom.nextDouble() < reweightFactor(selecting, candidate)) {
+		if (fRandom.nextDouble() < reweightFactor(fNeighbors.size(), candidate)) {
 			return candidate;
 		}
 
 		// We throttle back on this round.
-		return IPeerSelector.NO_PEER;
+		return IPeerSelector.SKIP_ROUND;
 	}
 
 	private boolean hasOutboundBandwidth() {
 		return fRandom.nextDouble() < fOutbound;
 	}
 
-	private double reweightFactor(int u, int w) {
-		return (fInbound[w] * fDegrees[u]) / (fOutbound * fDegrees[w]);
+	private double reweightFactor(int delta_u, int w) {
+		return (fInbound[w] * delta_u) / (fOutbound * fDegrees[w]);
 	}
 
 	public boolean canSelect(BitSet forbidden, IProcess neighbor) {
-		return neighbor.isUp() && !forbidden.get(neighbor.id());
+		return !forbidden.get(neighbor.id());
 	}
 
 }
