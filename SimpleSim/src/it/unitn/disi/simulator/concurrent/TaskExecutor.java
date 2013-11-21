@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 
 /**
- * Helper class for running blocks of tasks and getting the results for
- * completed tasks first. There are plenty of ways of using this class wrong.
+ * Helper class for queueing and running blocks of tasks over several cores, and
+ * getting the results for completed tasks first.
  * 
  * @author giuliano
  */
@@ -50,6 +50,17 @@ public class TaskExecutor {
 		this(cores, Integer.MAX_VALUE);
 	}
 
+	/**
+	 * Constructs a new {@link TaskExecutor}.
+	 * 
+	 * @param cores
+	 *            the maximum number of cores to use for running submitted
+	 *            tasks.
+	 * 
+	 * @param maxQueuedTasks
+	 *            the maximum number of tasks allowed to be in the queue before
+	 *            submissions starts to block.
+	 */
 	public TaskExecutor(int cores, int maxQueuedTasks) {
 		fMaxQueuedTasks = maxQueuedTasks;
 		fCores = cores;
@@ -85,17 +96,39 @@ public class TaskExecutor {
 				});
 	}
 
-	public void start(String task, int taskBlock) {
-		start(task, taskBlock, false);
-	}
-
-	public synchronized void start(String task, int taskBlock, boolean quiet) {
+	/**
+	 * Starts a new block of tasks with a given size. This method should be
+	 * called before any kind of submission is done.
+	 * 
+	 * @param task
+	 *            the task title, to be used in an {@link IProgressTracker}, or
+	 *            <code>null</code> if no progress tracking is desired.
+	 * 
+	 * @param taskBlock
+	 *            the size of the task block; i.e., the number of calls to
+	 *            {@link #submit(Callable)}/{@link #consume()} that this
+	 *            {@link TaskExecutor} should expect to receive.
+	 * 
+	 */
+	public synchronized void start(String task, int taskBlock) {
 		fTasks = taskBlock;
 		fConsumed = taskBlock;
 		fBlockSize = taskBlock;
-		fTracker = quiet ? Progress.nullTracker() : Progress
+		fTracker = task == null ? Progress.nullTracker() : Progress
 				.synchronizedTracker(Progress.newTracker(task, taskBlock));
 		fTracker.startTask();
+	}
+
+	/**
+	 * Convenience method. Same as: <BR>
+	 * <code>
+	 * 	start(null, taskBlock);
+	 * </code>
+	 * 
+	 * @see #start(String, int)
+	 */
+	public void start(int taskBlock) {
+		start(null, taskBlock);
 	}
 
 	public void submit(Callable<? extends Object> callable)
@@ -104,7 +137,8 @@ public class TaskExecutor {
 		CallbackThreadPoolExecutor<Object> executor;
 		synchronized (this) {
 			if (fTasks == 0) {
-				throw new IllegalStateException("Task block is complete.");
+				throw new IllegalStateException(
+						"Task block is complete or haven't started.");
 			}
 			fTasks--;
 			sema = fSema;
@@ -132,6 +166,11 @@ public class TaskExecutor {
 	}
 
 	public synchronized void cancelBatch() {
+		cancelBatchWithException(new InterruptedException(
+				"Task batch interrupted."));
+	}
+
+	public synchronized void cancelBatchWithException(Exception error) {
 
 		// Blocks new tasks from being submitted and consumed.
 		fTasks = 0;
@@ -145,7 +184,7 @@ public class TaskExecutor {
 		// To deal with consumers, we stuff the queue with exceptions. This way
 		// we guarantee they will all unblock, and realize that there are no new
 		// completed tasks from this batch coming their way.
-		fillQueue();
+		fillQueue(error);
 
 		// To deal with producers, we stuff the semaphore with permits. This
 		// way we guarantee they will not be kept on hold. This coupled with the
@@ -202,9 +241,7 @@ public class TaskExecutor {
 		fSema = new Semaphore(fMaxQueuedTasks);
 	}
 
-	private void fillQueue() {
-		InterruptedException ex = new InterruptedException(
-				"Task batch interrupted.");
+	private void fillQueue(Exception ex) {
 		for (int i = 0; i < fBlockSize; i++) {
 			fReady.add(ex);
 		}

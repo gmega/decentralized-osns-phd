@@ -112,7 +112,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		// Independent worker.
 		else {
 			fLogger.info("Worker doesn't require task coordinator.");
-			
+
 			fControl = null;
 			fCheckpoint = null;
 			fChkpClient = null;
@@ -155,13 +155,14 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		return fClient.iterator();
 	}
 
-	private Object runTasks(final int id, final Serializable data) {
+	private Object runTasks(final int id, final Serializable data)
+			throws Exception {
 
 		startTask(id, data);
 
 		final int iterations = fRepeat - fState.iteration;
 
-		fExecutor.start(label(id, data), iterations, quiet(id, data));
+		fExecutor.start(quiet(id, data) ? null : label(id, data), iterations);
 
 		// Publishes the current progress of this worker as a property that
 		// can be consumed by remote clients.
@@ -173,14 +174,19 @@ public abstract class Worker implements Runnable, Application, IWorker {
 			@Override
 			public void run() {
 				for (int i = 0; i < iterations && !Thread.interrupted(); i++) {
-					SimulationTask sTask = createTask(id, data);
 					try {
+						SimulationTask sTask = createTask(id, data);
 						fExecutor.submit(sTask);
 					} catch (InterruptedException e) {
 						break;
 					} catch (IllegalStateException e) {
 						// We might get this when the batch is suspended.
 						break;
+					} catch (Exception ex) {
+						fLogger.error(
+								"Problem creating/submitting task. Stopping"
+										+ " submission thread.", ex);
+						fExecutor.cancelBatchWithException(ex);
 					}
 				}
 			}
@@ -214,6 +220,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 				}
 				break;
 			}
+
 			fState.iteration++;
 			fMutex.unlock();
 			updateTaskStatistics();
@@ -248,7 +255,7 @@ public abstract class Worker implements Runnable, Application, IWorker {
 		updateStatus(PROP_TASK_STATS, sbuffer.toString());
 	}
 
-	private SimulationTask getTask(TaskExecutor executor) {
+	private SimulationTask getTask(TaskExecutor executor) throws Exception {
 		Object value;
 		try {
 			value = executor.consume();
@@ -265,10 +272,13 @@ public abstract class Worker implements Runnable, Application, IWorker {
 			ste.dumpProperties(System.err);
 			fFailed++;
 			updateTaskStatistics();
-		} else {
-			System.err.println("Can't handle return value - "
-					+ value.toString());
 		}
+
+		if (value instanceof Exception) {
+			throw (Exception) value;
+		}
+
+		System.err.println("Can't handle return value - " + value.toString());
 
 		return null;
 	}
@@ -427,7 +437,8 @@ public abstract class Worker implements Runnable, Application, IWorker {
 	 * 
 	 * @return a {@link SimulationTask} ready to be executed.
 	 */
-	protected abstract SimulationTask createTask(int id, Serializable data);
+	protected abstract SimulationTask createTask(int id, Serializable data)
+			throws Exception;
 
 	/**
 	 * Creates a new result aggregate, which will aggregate results for all
