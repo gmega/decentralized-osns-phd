@@ -107,7 +107,7 @@ public class SimulationControl implements SimulationControlMBean {
 		File file = sim.baseFolder();
 		wipeTree(file);
 
-		fSimulationList.remove(id);
+		fSimulationList.remove(sim);
 		fSimulationKeys.remove(id);
 
 		try {
