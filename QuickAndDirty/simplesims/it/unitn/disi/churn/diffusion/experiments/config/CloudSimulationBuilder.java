@@ -109,12 +109,11 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, int messages, int quenchDesync,
-			double pushTimeout, double antientropyShortCycle,
-			double antientropyLongCycle, double antientropyLAThreshold,
-			int shortCycles, boolean dissemination, boolean cloudAssist,
-			boolean baseline, boolean trackCores, boolean aeBlacklist,
-			IProcess[] processes) {
+			final int source, int messages, double pushTimeout,
+			double antientropyShortCycle, double antientropyLongCycle,
+			double antientropyLAThreshold, int shortCycles,
+			boolean dissemination, boolean cloudAssist, boolean baseline,
+			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -145,7 +144,6 @@ public class CloudSimulationBuilder {
 		prots = create(processes, runner, source,
 				pid,
 				messages,
-				quenchDesync,
 				pushTimeout,
 				// Antientropy cycle length is negative if no dissemination.
 				// This causes antientropy to be disabled.
@@ -272,11 +270,11 @@ public class CloudSimulationBuilder {
 
 	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int source, int pid, int messages, int quenchDesync,
-			double pushTimeout, double antientropyShortCycle,
-			double antientropyLongCycle, int shortCycles,
-			double antientropyLAThreshold, boolean aeBlacklist,
-			List<INodeMetric<? extends Object>> metrics, EngineBuilder builder) {
+			int source, int pid, int messages, double pushTimeout,
+			double antientropyShortCycle, double antientropyLongCycle,
+			int shortCycles, double antientropyLAThreshold,
+			boolean aeBlacklist, List<INodeMetric<? extends Object>> metrics,
+			EngineBuilder builder) {
 
 		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
@@ -291,11 +289,10 @@ public class CloudSimulationBuilder {
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
 					fUpdateSelectors[i], fQuenchSelectors[i], processes[i],
 					new CachingTransformer(new LiveTransformer()), runner,
-					builder.reference(), messages == 1, quenchDesync,
-					maxQuenchAge(), pushTimeout, antientropyShortCycle,
-					antientropyLongCycle, fBurnin, isLA ? new BitSet()
-							: availabilityBlacklist(processes,
-									antientropyLAThreshold), shortCycles,
+					builder.reference(), messages == 1, maxQuenchAge(),
+					pushTimeout, antientropyShortCycle, antientropyLongCycle,
+					fBurnin, isLA ? new BitSet() : availabilityBlacklist(
+							processes, antientropyLAThreshold), shortCycles,
 					AE_PRIORITY, aeBlacklist);
 
 			processes[i].addProtocol(protocols[i]);

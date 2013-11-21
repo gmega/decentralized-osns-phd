@@ -65,7 +65,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			IReference<ISimulationEngine> engine, boolean oneShot,
-			int quenchDesync, double maxQuenchAge, double pushTimeout,
+			double maxQuenchAge, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
 			double antientropyDelay, BitSet antientropyStaticblacklist,
 			int antientropyShortRounds, int antientropyPrio, boolean aeBlacklist) {
@@ -155,7 +155,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 	public void nextCycle(ISimulationEngine engine, IProcess process) {
 
 		// XXX Why no check for fState == DONE? Bug?
-		
+
 		fPushProtocols[UPDATE].nextCycle(engine, process);
 		if (shouldStopQuench(engine)) {
 			fPushProtocols[NO_UPDATE].stop();

@@ -98,11 +98,6 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "fixed_fraction", defaultValue = "0.0")
 	private double fFixedFraction;
 
-	// Slowdown factor for push of QUENCH messages respectively to
-	// updates.
-	@Attribute(value = "quench_desync", defaultValue = "1")
-	private int fQuenchDesync;
-
 	// Burn-in period between when NUP messages start to be fired and
 	// when we allow the update to be posted.
 	@Attribute(value = "nup_burnin", defaultValue = "-1")
@@ -264,8 +259,6 @@ public class DiffusionExperimentWorker extends Worker {
 
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
-			System.err.println("-- Quench runs every " + fQuenchDesync
-					+ " rounds.");
 
 			if (fBaseline) {
 				System.err.println("-- Baseline cloud sims are on.");
@@ -390,10 +383,10 @@ public class DiffusionExperimentWorker extends Worker {
 					fLoginGrace, fFixedFraction, fRandomized, updateSelectors,
 					quenchSelectors);
 
-			elements = builder.build(source, fMessages, fQuenchDesync,
-					fPushTimeout, fAEShortCycle, fAELongCycle, fAEThreshold,
-					fAEShortCycles, fP2PSims, fCloudAssisted, fBaseline,
-					fTrackCores, fBlacklistingAE, processes);
+			elements = builder.build(source, fMessages, fPushTimeout,
+					fAEShortCycle, fAELongCycle, fAEThreshold, fAEShortCycles,
+					fP2PSims, fCloudAssisted, fBaseline, fTrackCores,
+					fBlacklistingAE, processes);
 		}
 
 		return new SimulationTask(
