@@ -59,7 +59,7 @@ public class PairwiseEstimateWorker extends AbstractWorker {
 			IScheduleIterator iterator = iterator();
 			Integer row;
 			while ((row = (Integer) iterator.nextIfAvailable()) != IScheduleIterator.DONE) {
-				Experiment e = experimentReader().readExperiment(row,
+				Experiment e = experimentReader().readExperimentByRow(row,
 						provider());
 				IndexedNeighborGraph graph = provider().subgraph(e.root);
 

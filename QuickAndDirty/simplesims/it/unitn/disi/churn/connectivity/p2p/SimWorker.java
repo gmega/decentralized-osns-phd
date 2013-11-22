@@ -83,7 +83,7 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 			IScheduleIterator schedule = this.iterator();
 			Integer row;
 			while ((row = (Integer) schedule.nextIfAvailable()) != IScheduleIterator.DONE) {
-				Experiment e = experimentReader().readExperiment(row,
+				Experiment e = experimentReader().readExperimentByRow(row,
 						provider());
 				IndexedNeighborGraph graph = provider().subgraph(e.root);
 				int[] ids = provider().verticesOf(e.root);

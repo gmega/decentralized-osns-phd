@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 
 public class FastRandomAssignmentReader {
 
-	private static final int RECORD_LENGTH = Double.SIZE * 2;
+	private static final int RECORD_LENGTH = (Double.SIZE/Byte.SIZE) * 2;
 
 	private final RandomAccessFile fFile;
 	

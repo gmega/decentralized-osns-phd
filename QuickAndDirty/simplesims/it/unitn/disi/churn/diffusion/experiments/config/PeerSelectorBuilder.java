@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import it.unitn.disi.churn.config.FastRandomAssignmentReader;
 import it.unitn.disi.churn.diffusion.BalancingSelector;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
@@ -21,7 +23,7 @@ import it.unitn.disi.utils.MiscUtils;
  */
 public class PeerSelectorBuilder {
 
-	private IPeerSelector[] fLast;
+	private IBuilder fLast;
 
 	private Random fRandom;
 
@@ -36,11 +38,55 @@ public class PeerSelectorBuilder {
 	}
 
 	/**
+	 * Builds selectors by delegating configuration to a Groovy script.
+	 * 
+	 * 
+	 * @param script
+	 *            a Groovy script containing calls to this builder. The builder
+	 *            will be accessible under variable "builder" (until I have time
+	 *            to adopt more DSL-ish patterns).
+	 * 
+	 * @param binding
+	 *            a {@link Binding} object containing other objects that should
+	 *            be visible to the script.
+	 * 
+	 * @return
+	 * 
+	 * @throws IllegalStateException
+	 *             if no calls to the builder are performed in the script.
+	 */
+	public IPeerSelector[] build(String script, Binding binding)
+			throws Exception {
+		binding.setVariable("builder", this);
+
+		GroovyShell shell = new GroovyShell(binding);
+		shell.evaluate(script);
+
+		if (fLast == null) {
+			throw new IllegalStateException("Not selectors were configured.");
+		}
+
+		return fLast.build();
+	}
+
+	/**
+	 * Convenience method. Same as:<BR>
+	 * <code>
+	 * 	build(script, new Binding());
+	 * </code>
+	 * 
+	 * @see #build(String, Binding)
+	 */
+	public IPeerSelector[] build(String script) throws Exception {
+		return build(script, new Binding());
+	}
+
+	/**
 	 * @return a builder for selectors that pick nodes uniformly at random.
 	 */
 	public StatelessSelectorBuilder useRandom() throws IOException {
-		return new StatelessSelectorBuilder(new RandomSelector(fRandom),
-				egoSize());
+		return last(new StatelessSelectorBuilder(new RandomSelector(fRandom),
+				egoSize()));
 	}
 
 	/**
@@ -48,8 +94,8 @@ public class PeerSelectorBuilder {
 	 *         is inveresely proportional to their degree.
 	 */
 	public StatelessSelectorBuilder useAnticentrality() throws IOException {
-		return new StatelessSelectorBuilder(new BiasedCentralitySelector(
-				fRandom, true), egoSize());
+		return last(new StatelessSelectorBuilder(new BiasedCentralitySelector(
+				fRandom, true), egoSize()));
 	}
 
 	/**
@@ -57,8 +103,8 @@ public class PeerSelectorBuilder {
 	 *         is proportional to their degree.
 	 */
 	public StatelessSelectorBuilder useCentrality() throws IOException {
-		return new StatelessSelectorBuilder(new BiasedCentralitySelector(
-				fRandom, false), egoSize());
+		return last(new StatelessSelectorBuilder(new BiasedCentralitySelector(
+				fRandom, false), egoSize()));
 	}
 
 	/**
@@ -77,14 +123,12 @@ public class PeerSelectorBuilder {
 	 *             if there are problems reading the graph.
 	 */
 	public BalancedSelectorBuilder useBalanced() throws IOException {
-		return new BalancedSelectorBuilder();
+		return last(new BalancedSelectorBuilder());
 	}
 
-	public IPeerSelector[] lastResults() {
-		if (fLast == null) {
-			throw new IllegalStateException("Nothing has been built.");
-		}
-		return fLast;
+	private <T extends IBuilder> T last(T builder) {
+		fLast = builder;
+		return builder;
 	}
 
 	private int egoSize() throws IOException {
@@ -97,7 +141,7 @@ public class PeerSelectorBuilder {
 	 * 
 	 * @author giuliano
 	 */
-	public class StatelessSelectorBuilder {
+	public class StatelessSelectorBuilder implements IBuilder {
 
 		private IPeerSelector fSelector;
 
@@ -108,13 +152,12 @@ public class PeerSelectorBuilder {
 			fSize = size;
 		}
 
-		public IPeerSelector[] andGetSelectors() {
+		public IPeerSelector[] build() {
 			IPeerSelector[] selectors = new IPeerSelector[fSize];
 			for (int i = 0; i < selectors.length; i++) {
 				selectors[i] = fSelector;
 			}
-			fLast = selectors;
-			return fLast;
+			return selectors;
 		}
 
 	}
@@ -125,7 +168,7 @@ public class PeerSelectorBuilder {
 	 * 
 	 * @author giuliano
 	 */
-	public class BalancedSelectorBuilder {
+	public class BalancedSelectorBuilder implements IBuilder {
 
 		private IndexedNeighborGraph fGraph;
 
@@ -297,10 +340,10 @@ public class PeerSelectorBuilder {
 		public BalancedSelectorBuilder andLowerInboundCap(double cap) {
 			ensureBdwCaps();
 			setMinimumBdw(fInboundBandwidth, cap);
-			
+
 			return this;
 		}
-		
+
 		/**
 		 * Sets the outbound bandwidth of every node v to max(cap, outbound[v]),
 		 * where outbound[v] is the bandwidth assignment for v produced by a
@@ -313,18 +356,16 @@ public class PeerSelectorBuilder {
 		public BalancedSelectorBuilder andLowerOutboundCap(double cap) {
 			ensureBdwCaps();
 			setMinimumBdw(fOutboundBandwidth, cap);
-			
+
 			return this;
 		}
 
-		public IPeerSelector[] andGetSelectors() throws IOException {
+		public IPeerSelector[] build() throws IOException {
 			ensureDegrees();
 			ensureBdwCaps();
-			fLast = BalancingSelector.degreeApproximationSelectors(fRandom,
+			return BalancingSelector.degreeApproximationSelectors(fRandom,
 					fEgoDegrees, fSocialDegrees, fOutboundBandwidth,
 					fInboundBandwidth);
-
-			return fLast;
 		}
 
 		private void setMinimumBdw(double[] assignment, double cap) {
@@ -378,5 +419,9 @@ public class PeerSelectorBuilder {
 
 			return round(degree);
 		}
+	}
+
+	private static interface IBuilder {
+		public IPeerSelector[] build() throws IOException;
 	}
 }

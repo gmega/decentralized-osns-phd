@@ -25,7 +25,7 @@
 	<!-- ================================= 
 	          target: install-ivy         
 		================================= -->
-	<target name="install-ivy" depends="download-ivy" description="--> install ivy">
+	<target name="install-ivy" depends="download-ivy" description="--> downloads and installs ivy">
 		<path id="ivy.lib.path">
 			<pathelement location="${ivy.jar.file}"/>
 		</path>
@@ -55,28 +55,28 @@
 		</ivy:buildlist>
 	</target>
 
-	<target name="clean-lib" description="--> clean the project libraries directory (dependencies)">
+	<target name="clean-lib" description="--> clean the project libraries directories">
 		<delete includeemptydirs="true" dir="${lib.dir}"/>
 	</target>
 	
 	<target name="publish-all" depends="buildlist" 
-			description="compile, jar and publish all projects in the right order">
+			description="--> compiles, build jars and publishes all project artefacts">
 		<subant target="publish" buildpathref="build-path" />
 	</target>
 	
-	<target name="package" depends="clean-lib, load-ivy, publish-all" description="create deployable folder">
+	<target name="package" depends="clean-lib, load-ivy, publish-all" description="--> create lib folder with content required for deployment">
 		<mkdir dir="${lib.dir}"/> 
 		<!-- the call to resolve is not mandatory, retrieve makes an implicit call if we don't -->
 		<ivy:resolve file="${ivy.file}"/>
 		<ivy:retrieve pattern="${lib.dir}/[artifact].[ext]" />
 	</target>
 	
-	<target name="clean" depends="buildlist" description="clean all projects">
+	<target name="clean" depends="buildlist" description="--> clean all projects">
 		<subant target="clean" buildpathref="build-path" />
 	</target>
 	  
 	<target name="clean-all" depends="clean, clean-lib" 
-		description="clean tutorial: delete repository, ivy cache, and all projects">
+		description="--> delete ivy repository and cache, and all published artefacts">
 		<delete dir="repository/shared"/>
 		<ivy:cleancache />
 	</target>

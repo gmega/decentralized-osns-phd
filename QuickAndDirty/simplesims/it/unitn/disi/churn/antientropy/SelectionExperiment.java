@@ -1,9 +1,9 @@
 package it.unitn.disi.churn.antientropy;
 
+import groovy.lang.Binding;
 import it.unitn.disi.churn.config.Experiment;
-import it.unitn.disi.churn.diffusion.BalancingSelector;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
-import it.unitn.disi.churn.diffusion.RandomSelector;
+import it.unitn.disi.churn.diffusion.experiments.config.PeerSelectorBuilder;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
@@ -13,14 +13,13 @@ import it.unitn.disi.simulator.core.IEventObserver;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationEngine;
-import it.unitn.disi.simulator.core.RenewalProcess;
 import it.unitn.disi.simulator.core.Schedulable;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
+import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -37,10 +36,6 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 
 	private final String fSelector;
 
-	private final double fInboundBdw;
-	
-	private final double fOutboundBdw;
-
 	private TableWriter fWriter;
 
 	private int[] fDegrees;
@@ -52,12 +47,10 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 			@Attribute(value = "burnin") double burnin,
 			@Attribute(value = "inbound_bdw", defaultValue = "1") double inboundBdw,
 			@Attribute(value = "outbound_bdw", defaultValue = "1") double outboundBdw,
-			@Attribute(value = "selector", defaultValue = "r") String selector) {
+			@Attribute(value = "selector") String selector) {
 		super(resolver, simulationTime, burnin, n);
-		fWriter = new TableWriter(System.out, "id", "source", "target",
-				"select", "selected", "uptime", "degree");
-		fInboundBdw = inboundBdw;
-		fOutboundBdw = outboundBdw;
+		fWriter = new TableWriter(new PrefixedWriter("DT:", System.out), "id",
+				"source", "target", "select", "selected", "uptime", "degree");
 		fSelector = selector;
 	}
 
@@ -81,17 +74,20 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		}
 
 		System.err.println("-- Selector is " + fSelector + ".");
-		System.err.println("-- Bandwidth cap is " + fInboundBdw
-				+ " if effective.");
 
 		Random random = new Random();
 		int source = Integer.parseInt(exp.attributes.get("node"));
 
+		PeerSelectorBuilder psb = new PeerSelectorBuilder(provider, random,
+				exp.root);
+		Binding binding = new Binding();
+		binding.setVariable("assignments", exp.parent.getAssignmentReader());
+		IPeerSelector[] selectors = psb.build(fSelector, binding);
+
 		int[] ids = provider.verticesOf(exp.root);
 		SimpleProtocol[] prots = new SimpleProtocol[processes.length];
 		for (int i = 0; i < processes.length; i++) {
-			prots[i] = new SimpleProtocol(selector(processes, source, ids,
-					graph, random), graph);
+			prots[i] = new SimpleProtocol(selectors[i], graph);
 			processes[i].addProtocol(prots[i]);
 		}
 
@@ -174,76 +170,6 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		}
 
 		fDegrees = null;
-	}
-
-	private IPeerSelector selector(IProcess[] processes, int source, int[] ids,
-			IndexedNeighborGraph graph, Random random) {
-
-		double[] inbound = new double[processes.length];
-		Arrays.fill(inbound, fInboundBdw);
-
-		switch (fSelector.charAt(0)) {
-		case 'r':
-			return new RandomSelector(random);
-		case 'b':
-			return new BalancingSelector(random, staticDegrees(graph), inbound,
-					fOutboundBdw);
-		case 'd':
-			return new BalancingSelector(random, dynamicDegrees(source, ids,
-					processes, graph), inbound, fOutboundBdw);
-		}
-
-		throw new IllegalArgumentException();
-	}
-
-	private int[] staticDegrees(IndexedNeighborGraph graph) {
-		if (fDegrees == null) {
-			fDegrees = new int[graph.size()];
-			for (int i = 0; i < fDegrees.length; i++) {
-				fDegrees[i] = graph.degree(i);
-			}
-		}
-
-		return fDegrees;
-	}
-
-	private int[] dynamicDegrees(int source, int[] ids, IProcess[] processes,
-			IndexedNeighborGraph graph) {
-		if (fDegrees == null) {
-			fDegrees = new int[graph.size()];
-			for (int i = 0; i < fDegrees.length; i++) {
-				int staticDegree = graph.degree(i);
-
-				// Dynamic degree.
-				double expected = 0.0;
-				for (int j = 0; j < staticDegree; j++) {
-					// This will cause a ClassCastException if user tries to
-					// compute dynamic degrees with a non-renewal-process.
-					RenewalProcess process = (RenewalProcess) processes[graph
-							.getNeighbor(i, j)];
-					expected += process.asymptoticAvailability();
-				}
-
-				fDegrees[i] = (int) Math.max(1, Math.round(expected));
-
-				StringBuffer sbuffer = new StringBuffer("DDGS:");
-				sbuffer.append(ids[0]);
-				sbuffer.append(" ");
-				sbuffer.append(source);
-				sbuffer.append(" ");
-				sbuffer.append(ids[i]);
-				sbuffer.append(" ");
-				sbuffer.append(staticDegree);
-				sbuffer.append(" ");
-				sbuffer.append(expected);
-				sbuffer.append(" ");
-				sbuffer.append(fDegrees[i]);
-
-				System.out.println(sbuffer.toString());
-			}
-		}
-
-		return fDegrees;
 	}
 
 	class SimpleProtocol implements ICyclicProtocol {

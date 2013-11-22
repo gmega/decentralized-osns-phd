@@ -46,14 +46,22 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	public Experiment readExperiment(Integer row, IGraphProvider provider)
+	public Experiment readExperimentByRow(Integer row, IGraphProvider provider)
 			throws Exception {
+		seekSourceRow(row);
+		return readExperiment(fSourceReader, provider);
+	}
 
+	// -------------------------------------------------------------------------
+
+	public Experiment readExperiment(TableReader reader, IGraphProvider provider)
+			throws IOException {
+		int root = Integer.parseInt(reader.get(fIdField));
 		if (shouldReadChurn()) {
-			return readChurnByRow(row, provider);
+			return readChurn(provider, reader, root);
 		}
 
-		return readStaticByRow(row);
+		return staticExperiment(reader);
 	}
 
 	// -------------------------------------------------------------------------
@@ -64,36 +72,18 @@ public class ExperimentReader {
 
 	// -------------------------------------------------------------------------
 
-	private Experiment readChurnByRow(Integer row, IGraphProvider provider)
-			throws Exception {
-		seekSourceRow(row);
-		int root = Integer.parseInt(fSourceReader.get(fIdField));
-
-		return readChurn(provider, fSourceReader, root);
-	}
-
-	// -------------------------------------------------------------------------
-
 	public Experiment readChurn(IGraphProvider provider,
 			TableReader sourceReader, int root) throws IOException,
 			RemoteException {
 		Assignment a = readLIDI(root, provider.verticesOf(root));
-
-		return new Experiment(root, sourceReader, a.li, a.di);
-	}
-
-	// -------------------------------------------------------------------------
-
-	private Experiment readStaticByRow(Integer row) throws Exception {
-		seekSourceRow(row);
-		return staticExperiment(fSourceReader);
+		return new Experiment(root, sourceReader, this, a.li, a.di);
 	}
 
 	// -------------------------------------------------------------------------
 
 	private Experiment staticExperiment(TableReader sourceReader) {
 		int root = Integer.parseInt(sourceReader.get(fIdField));
-		return new Experiment(root, sourceReader, null, null);
+		return new Experiment(root, sourceReader, this, null, null);
 	}
 
 	// -------------------------------------------------------------------------
@@ -118,11 +108,12 @@ public class ExperimentReader {
 
 	private Assignment readLIDI(int root, int[] ids) throws IOException {
 		Assignment a = new Assignment(ids.length);
+		FastRandomAssignmentReader reader = getAssignmentReader();
 
 		for (int i = 0; i < ids.length; i++) {
-			fAssignmentReader.select(ids[i]);
-			a.li[i] = fAssignmentReader.li();
-			a.di[i] = fAssignmentReader.di();
+			reader.select(ids[i]);
+			a.li[i] = reader.li();
+			a.di[i] = reader.di();
 			a.nodes[i] = i;
 		}
 
@@ -141,7 +132,11 @@ public class ExperimentReader {
 		}
 	}
 
-	public FastRandomAssignmentReader getAssignmentReader() {
+	public FastRandomAssignmentReader getAssignmentReader() throws IOException {
+		if (fAssignmentReader == null && fAssignments != null) {
+			fAssignmentReader = new FastRandomAssignmentReader(new File(
+					fAssignments));
+		}
 		return fAssignmentReader;
 	}
 
@@ -173,8 +168,7 @@ public class ExperimentReader {
 			public Experiment next() {
 				try {
 					reader.next();
-					return readExperiment(
-							Integer.parseInt(reader.get(fIdField)), provider);
+					return readExperiment(reader, provider);
 				} catch (Exception ex) {
 					throw MiscUtils.nestRuntimeException(ex);
 				}

@@ -140,11 +140,22 @@
           target: jar              
          ================================= -->
     <target name="jar" depends="version, compile" description="--> make a jar file for this project">
-        <jar destfile="${jar.file}">
+		<!-- Inserts build time/date and SVN revision. -->
+    	<exec executable="svnversion" outputproperty="svn.revision">
+			<arg value="." />
+		</exec>
+		<tstamp>
+			<format property="build.time" pattern="dd/MM/yyyy hh:mm aa" unit="hour" />
+		</tstamp>
+        
+    	<jar destfile="${jar.file}">
             <fileset dir="${classes.dir}" />
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Build-Version" value="${version}" />
+            	<attribute name="Build-SVN-Revision" value="${svn.revision}"/>
+            	<attribute name="Build-Data" value="${build.time}"/>
+            	<attribute name="Library" value="${ant.project.name}"/>
             </manifest>
         </jar>
     </target>

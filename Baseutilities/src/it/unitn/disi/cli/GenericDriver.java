@@ -12,11 +12,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
-import java.net.JarURLConnection;
+
 import java.net.URL;
-import java.net.URLConnection;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -51,6 +52,9 @@ public class GenericDriver {
 
 	private static final int E_KILLFILE = -3;
 
+	private static final String[] VERSION_FINGERPRINT_KEYS = { "Library",
+			"Build-Version", "Build-SVN-Revision", "Build-Data" };
+
 	@Option(name = "-i", usage = "colon (:) separated list of input files (stdin if ommitted)", required = false)
 	private String fInputs;
 
@@ -75,8 +79,8 @@ public class GenericDriver {
 	@Option(name = "-z", aliases = { "--zipped" }, usage = "allows usage of GZipped inputs", required = false)
 	private boolean fGZipped;
 
-	@Option(name = "-v", aliases = { "--verbose" }, usage = "verbose (print status information)", required = false)
-	private boolean fVerbose;
+	@Option(name = "-v", aliases = { "--version" }, usage = "prints version information and quits", required = false)
+	private boolean fVersion;
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "prints this help message", required = false)
 	private boolean fHelpOnly;
@@ -99,6 +103,11 @@ public class GenericDriver {
 
 			if (fHelpOnly) {
 				printHelp(parser);
+				return;
+			}
+
+			if (fVersion) {
+				printVersionFingerprint();
 				return;
 			}
 
@@ -128,7 +137,9 @@ public class GenericDriver {
 
 			Object processor = create(pClass, props);
 
-			printVersionInformation(processor);
+			System.out.println("--- BEGIN VERSION FINGEPRINT ---");
+			printVersionFingerprint();
+			System.out.println("---- END VERSION FINGEPRINT ----");
 
 			if (fWallClock > 0) {
 				startTimer(fWallClock);
@@ -206,21 +217,72 @@ public class GenericDriver {
 		timer.schedule(shutdown, expiry);
 	}
 
-	private void printVersionInformation(Object processor) throws IOException {
-		Class<?> cls = processor.getClass();
-		URL res = cls.getResource(cls.getSimpleName() + ".class");
-		URLConnection conn = res.openConnection();
-		if (!(conn instanceof JarURLConnection)) {
-			System.err
-					.println("Unbundled class file: no versioning information available.");
-			return;
+	private void printVersionFingerprint() throws Exception {
+		String fp = versionFingerprint();
+
+		// Prints an MD5 of the fingerprint.
+		byte[] digest = MessageDigest.getInstance("MD5").digest(fp.getBytes());
+		StringBuffer md5 = new StringBuffer();
+		for (int i = 0; i < digest.length; i++) {
+			String hex = Integer.toHexString(0xFF & digest[i]);
+			if (hex.length() == 1) {
+				md5.append(0);
+			}
+			md5.append(hex);
 		}
 
-		Manifest mf = ((JarURLConnection) conn).getManifest();
-		Attributes attributes = mf.getMainAttributes();
-		System.err.println("-- SVN Revision: "
-				+ attributes.getValue("Revision"));
-		System.err.println("-- Build Date: " + attributes.getValue("Date"));
+		System.out.println(fp);
+		System.out.println("FP: " + md5);
+	}
+
+	private String versionFingerprint() throws IOException {
+		Enumeration<URL> manifestURLs = getClass().getClassLoader()
+				.getResources("META-INF/MANIFEST.MF");
+
+		String sep = System.getProperty("line.separator");
+		StringBuffer fingerprint = new StringBuffer();
+		while (manifestURLs.hasMoreElements()) {
+			URL url = manifestURLs.nextElement();
+			try {
+				Manifest manifest = new Manifest(url.openStream());
+				String libFingerprint = libraryFingerprint(manifest
+						.getMainAttributes());
+				if (libFingerprint != null) {
+					fingerprint.append(libFingerprint);
+					fingerprint.append(sep);
+				}
+			} catch (IOException ex) {
+				System.err.println("Failed to read manifest for " + url);
+			}
+		}
+		return fingerprint.toString();
+	}
+
+	private String libraryFingerprint(Attributes attributes) {
+		StringBuffer fingerprint = new StringBuffer();
+		String sep = System.getProperty("line.separator");
+		String lib = attributes.getValue("Library");
+		if (lib == null) {
+			return null;
+		}
+
+		fingerprint.append(lib);
+		fingerprint.append(":");
+		fingerprint.append(sep);
+
+		for (String key : VERSION_FINGERPRINT_KEYS) {
+			fingerprint.append("\t");
+			String value = attributes.getValue(key);
+			if (value == null) {
+				return null;
+			}
+			fingerprint.append(key);
+			fingerprint.append(": ");
+			fingerprint.append(value);
+			fingerprint.append(sep);
+		}
+		fingerprint.deleteCharAt(fingerprint.length() - 1);
+		return fingerprint.toString();
 	}
 
 	private void configLogging() {
@@ -305,10 +367,6 @@ public class GenericDriver {
 		String[] inputs = inputString.split(":");
 		InputStream[] iStreams = new InputStream[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
-			if (fVerbose) {
-				System.err.println("Opening input stream " + inputs[i] + ".");
-			}
-
 			if (inputs[i].equals("stdin")) {
 				if (stdinUsed) {
 					throw new IllegalArgumentException(
@@ -333,9 +391,6 @@ public class GenericDriver {
 
 		for (Closeable closeable : closeables) {
 			try {
-				if (fVerbose) {
-					System.err.println("Closing " + closeable.toString() + ".");
-				}
 				closeable.close();
 			} catch (IOException ex) {
 				System.out.println("Error while closing stream:");
@@ -350,10 +405,6 @@ public class GenericDriver {
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
 
-		if (fVerbose) {
-			System.err.println("Loading processor class " + string + ".");
-		}
-
 		@SuppressWarnings("unchecked")
 		Class<Object> klass = (Class<Object>) Class.forName(string);
 
@@ -364,7 +415,6 @@ public class GenericDriver {
 	public static void main(String[] args) {
 		try {
 			new GenericDriver()._main(args);
-			System.err.println("Normal termination.");
 			System.exit(0);
 		} catch (Exception ex) {
 			System.err.println("Abnormal termination: exception thrown.");

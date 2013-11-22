@@ -5,7 +5,6 @@ import it.unitn.disi.churn.diffusion.HFloodMMsg;
 import it.unitn.disi.churn.diffusion.HFloodSM;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.IProtocolReference;
-import it.unitn.disi.churn.diffusion.MessageStatistics;
 import it.unitn.disi.churn.diffusion.PIDReference;
 import it.unitn.disi.churn.diffusion.UptimeTracker;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
@@ -14,11 +13,9 @@ import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
-import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.ILifecycleObserver;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.ISimulationEngine;
-import it.unitn.disi.simulator.core.ILifecycleObserver.Type;
 import it.unitn.disi.simulator.core.IProcess.State;
 import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.CyclicProtocolRunner;
@@ -27,7 +24,6 @@ import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.utils.collections.Pair;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class StaticSimulationBuilder {
@@ -50,10 +46,11 @@ public class StaticSimulationBuilder {
 		builder.addProcess(processes);
 
 		final UptimeTracker tracker = new UptimeTracker("msg", graph.size());
-		final MessageStatistics stats = new MessageStatistics("msg", graph.size(),
-				true);
+		// final MessageStatistics stats = new MessageStatistics("msg",
+		// graph.size(),
+		// true);
 		fProtocols = protocols(graph, root, new CachingTransformer(
-				new LiveTransformer()), processes, selectors, stats);
+				new LiveTransformer()), processes, selectors);
 
 		CyclicProtocolRunner<HFloodSM> cpr = new CyclicProtocolRunner<HFloodSM>(
 				HFLOOD_PID);
@@ -63,24 +60,22 @@ public class StaticSimulationBuilder {
 		builder.preschedule(new CyclicSchedulable(period, 1));
 
 		builder.addObserver(new ILifecycleObserver() {
-			
+
 			@Override
 			public void lifecycleEvent(ISimulationEngine engine, Type evt) {
 				switch (evt) {
-				
+
 				case done:
 					tracker.broadcastDone(null, engine);
-					stats.stopTrackingSession(engine.clock());
 					break;
-				
+
 				case running:
 					tracker.broadcastStarted(null, engine);
-					stats.startTrackingSession(engine.clock());
 					break;
-					
+
 				default:
 				}
-				
+
 			}
 		});
 
@@ -95,7 +90,6 @@ public class StaticSimulationBuilder {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		metrics.add(SMMetrics.rdMetric(source, fProtocols));
-		metrics.addAll(stats.metrics());
 		metrics.add(tracker.accruedUptime());
 
 		return new Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>>(
@@ -104,7 +98,7 @@ public class StaticSimulationBuilder {
 
 	protected HFloodSM[] protocols(IndexedNeighborGraph graph, int root,
 			ILiveTransformer transformer, IProcess[] processes,
-			IPeerSelector[] selectors, final MessageStatistics stats) {
+			IPeerSelector[] selectors) {
 		fProtocols = new HFloodSM[graph.size()];
 
 		IProtocolReference<HFloodSM> ref = new PIDReference<HFloodSM>(
@@ -112,15 +106,7 @@ public class StaticSimulationBuilder {
 
 		for (int i = 0; i < graph.size(); i++) {
 			fProtocols[i] = new HFloodSM(graph, selectors[i], processes[i],
-					transformer, ref) {
-				@Override
-				protected void messageReceived(int sender, IClockData clock,
-						int flags) {
-					stats.messageReceived(sender, id(), (HFloodMMsg) message(),
-							clock, flags);
-				}
-
-			};
+					transformer, ref);
 			processes[i].addProtocol(fProtocols[i]);
 		}
 

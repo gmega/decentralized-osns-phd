@@ -12,6 +12,8 @@ public class Experiment implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	public final ExperimentReader parent;
+
 	public final int root;
 
 	public final Map<String, String> attributes;
@@ -19,7 +21,8 @@ public class Experiment implements Serializable {
 	public final double[] lis;
 	public final double[] dis;
 
-	public Experiment(int root, TableReader source, double[] lis, double[] dis) {
+	public Experiment(int root, TableReader source, ExperimentReader parent,
+			double[] lis, double[] dis) {
 		this.root = root;
 
 		HashMap<String, String> attributes = new HashMap<String, String>();
@@ -30,6 +33,7 @@ public class Experiment implements Serializable {
 
 		this.lis = lis;
 		this.dis = dis;
+		this.parent = parent;
 	}
 
 	public String toString() {

@@ -96,7 +96,7 @@ public class TopKGraphAverages extends AbstractWorker {
 		Integer row;
 		while ((row = (Integer) iterator.nextIfAvailable()) != IScheduleIterator.DONE) {
 			// Reads availabilities.
-			Experiment exp = experimentReader().readExperiment(row, provider());
+			Experiment exp = experimentReader().readExperimentByRow(row, provider());
 			IndexedNeighborGraph graph = provider().subgraph(exp.root);
 			int[] ids = provider().verticesOf(exp.root);
 

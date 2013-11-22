@@ -1,7 +1,6 @@
 package it.unitn.disi.churn.diffusion.experiments;
 
 import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
 import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
@@ -139,7 +138,7 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "randomized", defaultValue = "false")
 	private boolean fRandomized;
 
-	private boolean fPrintOnce;
+	private boolean fFirst = true;
 
 	private volatile int fSeedUniquefier;
 
@@ -314,7 +313,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@Override
 	protected Serializable load(Integer row) throws Exception {
-		Experiment experiment = fReader.readExperiment(row, fProvider);
+		Experiment experiment = fReader.readExperimentByRow(row, fProvider);
 		IndexedNeighborGraph graph = fProvider.subgraph(experiment.root);
 		Random churnSeeds = fFixSeed ? new Random(
 				Long.parseLong(experiment.attributes.get("seed"))) : null;
@@ -329,7 +328,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected SimulationTask createTask(int id, Serializable data) {
+	protected SimulationTask createTask(int id, Serializable data)
+			throws Exception {
 		ExperimentData exp = (ExperimentData) data;
 		IndexedNeighborGraph graph = exp.graph;
 
@@ -353,9 +353,6 @@ public class DiffusionExperimentWorker extends Worker {
 
 		IPeerSelector[] updateSelectors = getSelectors(diffusion,
 				fUpdateSelector, exp.experiment.root);
-		IPeerSelector[] quenchSelectors = getSelectors(diffusion,
-				fQuenchSelector, exp.experiment.root);
-		fPrintOnce = true;
 
 		// Static experiment.
 		if (exp.experiment.lis == null) {
@@ -367,6 +364,9 @@ public class DiffusionExperimentWorker extends Worker {
 
 		// Experiments with churn.
 		else {
+			IPeerSelector[] quenchSelectors = getSelectors(diffusion,
+					fQuenchSelector, exp.experiment.root);
+
 			// Create regular processes.
 			IProcess[] processes = fYaoChurn
 					.createProcesses(exp.experiment.lis, exp.experiment.dis,
@@ -388,6 +388,8 @@ public class DiffusionExperimentWorker extends Worker {
 					fP2PSims, fCloudAssisted, fBaseline, fTrackCores,
 					fBlacklistingAE, processes);
 		}
+		
+		fFirst = false;
 
 		return new SimulationTask(
 				data,
@@ -558,19 +560,15 @@ public class DiffusionExperimentWorker extends Worker {
 		return sbuffer.toString();
 	}
 
-	private IPeerSelector[] getSelectors(Random random, String config, int id) {
+	private IPeerSelector[] getSelectors(Random random, String config, int id)
+			throws Exception {
 		PeerSelectorBuilder builder = new PeerSelectorBuilder(fProvider,
 				random, id);
-
 		Binding binding = new Binding();
-		binding.setVariable("builder", builder);
 		binding.setVariable("assignments", fReader.getAssignmentReader());
-		binding.setVariable("first", !fPrintOnce);
-
-		GroovyShell shell = new GroovyShell(binding);
-		shell.evaluate(config);
-
-		return builder.lastResults();
+		binding.setVariable("first", fFirst);
+		
+		return builder.build(config, binding);
 	}
 
 	private void outputRegular(Pair<ExperimentData, MetricsCollector> result) {
@@ -592,7 +590,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private void outputSummarized(Pair<ExperimentData, MetricsCollector> result) {
 
-		printP2PCosts(fP2PCostWriter, result.a, result.b);
+		//printP2PCosts(fP2PCostWriter, result.a, result.b);
 
 		MetricsCollector metrics = result.b;
 		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric("rd");
@@ -816,8 +814,8 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private int[] cloudNodes(Experiment exp, int[] ids, BitSet fixed)
 			throws Exception {
-		// FIXME have to reimplement this.
-		throw new UnsupportedOperationException("Reimplement!");
+		System.err.println("-- Warning: fixed cloud nodes are not supported.");
+		return new int[0];
 	}
 
 	private long nextSeed() {

@@ -105,7 +105,7 @@ public class UnfoldExperiment implements Runnable {
 				"target", "delay");
 
 		while ((id = (Integer) it.nextIfAvailable()) != IScheduleIterator.DONE) {
-			Experiment experiment = fReader.readExperiment(id, fProvider);
+			Experiment experiment = fReader.readExperimentByRow(id, fProvider);
 			IndexedNeighborGraph original = fProvider.subgraph(experiment.root);
 			int[] ids = fProvider.verticesOf(experiment.root);
 

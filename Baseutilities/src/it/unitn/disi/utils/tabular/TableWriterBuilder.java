@@ -12,10 +12,10 @@ import java.util.ArrayList;
  */
 public class TableWriterBuilder {
 
-	private final ArrayList<String> fFields = new ArrayList<String>();
+	private final ArrayList<String> fFields;
 
 	public TableWriterBuilder() {
-
+		fFields = new ArrayList<String>();
 	}
 
 	public void addFields(String... fields) {

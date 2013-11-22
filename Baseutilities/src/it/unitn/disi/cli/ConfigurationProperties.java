@@ -158,14 +158,17 @@ public class ConfigurationProperties {
 
 	private void includeSection(String line) {
 		String[] section = line.split(" ");
-		if (line.length() != 2) {
+		if (section.length != 2) {
 			throw new ParseException("Invalid use clause " + line + ".");
 		}
 
 		Properties props = checkedGet(section[1].trim());
 		if (props == null) {
-			fProperties.get(fSection).putAll(props);
+			throw new ParseException("Invalid use clause " + line
+					+ " -- section " + section[1] + " is not yet defined.");
 		}
+
+		fProperties.get(fSection).putAll(props);
 	}
 
 	public Properties checkedGet(String section) {
