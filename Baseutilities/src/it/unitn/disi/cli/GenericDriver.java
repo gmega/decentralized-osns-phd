@@ -137,9 +137,9 @@ public class GenericDriver {
 
 			Object processor = create(pClass, props);
 
-			System.out.println("--- BEGIN VERSION FINGEPRINT ---");
+			System.err.println("--- BEGIN VERSION FINGEPRINT ---");
 			printVersionFingerprint();
-			System.out.println("---- END VERSION FINGEPRINT ----");
+			System.err.println("---- END VERSION FINGEPRINT ----");
 
 			if (fWallClock > 0) {
 				startTimer(fWallClock);
@@ -231,8 +231,8 @@ public class GenericDriver {
 			md5.append(hex);
 		}
 
-		System.out.println(fp);
-		System.out.println("FP: " + md5);
+		System.err.println(fp);
+		System.err.println("FP: " + md5);
 	}
 
 	private String versionFingerprint() throws IOException {

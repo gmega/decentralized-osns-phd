@@ -1,5 +1,6 @@
 package test;
 
+import it.unitn.disi.churn.config.FastRandomAssignmentReaderTest;
 import it.unitn.disi.churn.connectivity.tce.TestTCExperiment;
 import it.unitn.disi.churn.diffusion.BandwidthTrackerTest;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelectorTest;
@@ -86,6 +87,7 @@ import org.junit.runners.Suite;
 	BranchingGeneratorTest.class,
 	BandwidthTrackerTest.class,
 	PeriodicActionTest.class,
+	FastRandomAssignmentReaderTest.class
 })
 
 public class AllTests {
