@@ -120,9 +120,6 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "p2psims", defaultValue = "true")
 	private boolean fP2PSims;
 
-	@Attribute(value = "baseline", defaultValue = "false")
-	private boolean fBaseline;
-
 	@Attribute(value = "messages", defaultValue = "1")
 	private int fMessages;
 
@@ -159,11 +156,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private TableWriter fBdwDistributionWriter;
 
-	private TableWriter fBaselineLatencyWriter;
-
 	private TableWriter fCloudStatWriter;
-
-	private TableWriter fBaselineCStatWriter;
 
 	private TableWriter fSummaryWriter;
 
@@ -186,6 +179,7 @@ public class DiffusionExperimentWorker extends Worker {
 				YaoChurnConfigurator.class, "", resolver) : null;
 
 		fReader = new ExperimentReader("id");
+
 		ObjectCreator
 				.fieldInject(ExperimentReader.class, fReader, "", resolver);
 	}
@@ -204,7 +198,7 @@ public class DiffusionExperimentWorker extends Worker {
 				// Message counts.
 				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "aeuprec",
 				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"msgtime",
+				"hfinit", "hfrespond", "msgtime",
 
 				// Bandwidth statistics.
 				"aebdwsum", "aebdwmax", "aebdwsqr", "hfbdwsum", "hfbdwmax",
@@ -217,19 +211,10 @@ public class DiffusionExperimentWorker extends Worker {
 				System.out), "id", "source", "target", "bdw", "ae", "hf",
 				"tot", "uptime");
 
-		fBaselineLatencyWriter = new TableWriter(new PrefixedWriter("ESB:",
-				System.out), "id", "source", "target", "b.edsumd", "b.edsum",
-				"b.edsumu", "b.rdsumd", "b.rdsum", "b.rdsumu", "size", "fixed",
-				"exps", "msgs");
-
 		fCloudStatWriter = new TableWriter(
 				new PrefixedWriter("CS:", System.out), "id", "source",
 				"target", "totup", "totnup", "totime", "updup", "updnup",
 				"updtime");
-
-		fBaselineCStatWriter = new TableWriter(new PrefixedWriter("CSB:",
-				System.out), "id", "source", "target", "b.totup", "b.totnup",
-				"b.totime", "b.updup", "b.updnup", "b.updtime");
 
 		fSummaryWriter = new TableWriter(
 				new PrefixedWriter("SUM:", System.out), "id", "rdavg", "rdsum",
@@ -259,15 +244,11 @@ public class DiffusionExperimentWorker extends Worker {
 		if (fCloudAssisted) {
 			System.err.println("-- Cloud sims are on.");
 
-			if (fBaseline) {
-				System.err.println("-- Baseline cloud sims are on.");
-			}
-
 			if (fRandomized) {
 				System.err.println("-- Periods are randomized  ["
 						+ (fDelta * fFixedFraction) + ", " + fDelta + "]");
 			} else {
-				System.err.println("-- Periods are fixed:" + fPeriod);
+				System.err.println("-- Periods are fixed:" + fDelta);
 			}
 		}
 
@@ -385,10 +366,10 @@ public class DiffusionExperimentWorker extends Worker {
 
 			elements = builder.build(source, fMessages, fPushTimeout,
 					fAEShortCycle, fAELongCycle, fAEThreshold, fAEShortCycles,
-					fP2PSims, fCloudAssisted, fBaseline, fTrackCores,
-					fBlacklistingAE, processes);
+					fP2PSims, fCloudAssisted, fTrackCores, fBlacklistingAE,
+					processes);
 		}
-		
+
 		fFirst = false;
 
 		return new SimulationTask(
@@ -406,9 +387,6 @@ public class DiffusionExperimentWorker extends Worker {
 		MetricsCollector collector = new MetricsCollector();
 
 		addCloudMetrics("", graph, collector);
-		if (fBaseline) {
-			addCloudMetrics("b", graph, collector);
-		}
 
 		if (fCloudAssisted) {
 			collector.addAccumulator(new AvgAccumulation(SimpleCloudImpl.TOTAL,
@@ -483,6 +461,12 @@ public class DiffusionExperimentWorker extends Worker {
 				.size()));
 		collector.addAccumulator(new SumAccumulation("msg.bdw.tot.upbins",
 				graph.size()));
+
+		collector.addAccumulator(new SumAccumulation(
+				"msg.hflood.contacts.init", graph.size()));
+
+		collector.addAccumulator(new SumAccumulation(
+				"msg.hflood.contacts.respond", graph.size()));
 
 		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
 				"msg.bdw.ae", graph.size()));
@@ -562,12 +546,17 @@ public class DiffusionExperimentWorker extends Worker {
 
 	private IPeerSelector[] getSelectors(Random random, String config, int id)
 			throws Exception {
+
+		if (!fP2PSims) {
+			return null;
+		}
+
 		PeerSelectorBuilder builder = new PeerSelectorBuilder(fProvider,
 				random, id);
 		Binding binding = new Binding();
 		binding.setVariable("assignments", fReader.getAssignmentReader());
 		binding.setVariable("first", fFirst);
-		
+
 		return builder.build(config, binding);
 	}
 
@@ -580,17 +569,12 @@ public class DiffusionExperimentWorker extends Worker {
 
 		if (fCloudAssisted) {
 			printCloudAcessStatistics("", fCloudStatWriter, result.a, result.b);
-			if (fBaseline) {
-				printLatencies("b", fBaselineLatencyWriter, result.a, result.b);
-				printCloudAcessStatistics("b", fBaselineCStatWriter, result.a,
-						result.b);
-			}
 		}
 	}
 
 	private void outputSummarized(Pair<ExperimentData, MetricsCollector> result) {
 
-		//printP2PCosts(fP2PCostWriter, result.a, result.b);
+		// printP2PCosts(fP2PCostWriter, result.a, result.b);
 
 		MetricsCollector metrics = result.b;
 		AvgAccumulation rd = (AvgAccumulation) metrics.getMetric("rd");
@@ -656,6 +640,11 @@ public class DiffusionExperimentWorker extends Worker {
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
 		INodeMetric<Double> uptime = metrics.getMetric("msg.uptime");
 
+		INodeMetric<Double> hfInitiated = metrics
+				.getMetric("msg.hflood.contacts.init");
+		INodeMetric<Double> hfReceived = metrics
+				.getMetric("msg.hflood.contacts.respond");
+
 		INodeMetric<Double> aeZeroUpbins = metrics
 				.getMetric("msg.bdw.ae.upbins");
 		INodeMetric<Double> hfZeroUpbins = metrics
@@ -682,6 +671,9 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set("aeinit", aeInitiated.getMetric(i));
 			writer.set("aerespond", aeReceived.getMetric(i));
+
+			writer.set("hfinit", hfInitiated.getMetric(i));
+			writer.set("hfrespond", hfReceived.getMetric(i));
 
 			IncrementalStatsFreq aeStats = aeBdw.getMetric(i);
 			IncrementalStatsFreq hfStats = hfBdw.getMetric(i);

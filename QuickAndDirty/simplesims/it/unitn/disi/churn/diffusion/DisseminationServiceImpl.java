@@ -99,7 +99,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		if (message.isNUP()) {
 			fPushProtocols[NO_UPDATE].setMessage(message, null);
 			fPushProtocols[NO_UPDATE].markReached(fProcess.id(),
-					engine.clock(), 0);
+					engine.clock(), HFloodSM.NO_MESSAGE);
 		}
 
 		else {
@@ -124,8 +124,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				}
 			}
 			// Marks the current as reached.
-			fPushProtocols[UPDATE]
-					.markReached(fProcess.id(), engine.clock(), 0);
+			fPushProtocols[UPDATE].markReached(fProcess.id(), engine.clock(),
+					HFloodSM.NO_MESSAGE);
 		}
 
 		if (fRunner != null) {
@@ -194,6 +194,16 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		return (engine.clock().rawTime() - ts) > fMaxQuenchAge;
 	}
 
+	public int contactsReceived(boolean update) {
+		return update ? fPushProtocols[UPDATE].contactsReceived()
+				: fPushProtocols[NO_UPDATE].contactsReceived();
+	}
+	
+	public int contactsInitiated(boolean update) {
+		return update ? fPushProtocols[UPDATE].contactsInitiated()
+				: fPushProtocols[NO_UPDATE].contactsInitiated();
+	}
+
 	@Override
 	public State getState() {
 		return fState;
@@ -217,9 +227,16 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private void messageReceived(int sender, int receiver, HFloodMMsg message,
 			IClockData clock, int flags) {
+		
+		if ((flags & HFloodSM.NO_MESSAGE) != 0) {
+			return;
+		}
+
 		for (IMessageObserver observer : fObservers) {
 			observer.messageReceived(sender, receiver, message, clock, flags);
+
 		}
+		
 	}
 
 	class HFloodNUP extends HFloodUP {
@@ -272,7 +289,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		public void markReached(int sender, IClockData clock, int flags) {
 
 			boolean duplicate = isReached();
-
+			
 			super.markReached(sender, clock, flags);
 
 			if (!duplicate) {

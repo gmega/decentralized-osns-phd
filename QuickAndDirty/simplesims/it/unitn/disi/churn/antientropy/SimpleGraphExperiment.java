@@ -17,7 +17,7 @@ public abstract class SimpleGraphExperiment implements Runnable {
 
 	protected final YaoChurnConfigurator fYaoChurn;
 
-	private ExperimentReader fReader;
+	protected ExperimentReader fReader;
 
 	protected final double fSimulationTime;
 	

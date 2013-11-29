@@ -81,7 +81,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		PeerSelectorBuilder psb = new PeerSelectorBuilder(provider, random,
 				exp.root);
 		Binding binding = new Binding();
-		binding.setVariable("assignments", exp.parent.getAssignmentReader());
+		binding.setVariable("assignments", fReader);
 		IPeerSelector[] selectors = psb.build(fSelector, binding);
 
 		int[] ids = provider.verticesOf(exp.root);

@@ -14,11 +14,13 @@ import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
 import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
+import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
 import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
 import it.unitn.disi.simulator.core.IClockData;
+import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
@@ -27,7 +29,9 @@ import it.unitn.disi.simulator.measure.INodeMetric;
 import it.unitn.disi.simulator.protocol.FixedProcess;
 import it.unitn.disi.simulator.protocol.ICyclicProtocol;
 import it.unitn.disi.simulator.protocol.PausingCyclicProtocolRunner;
+import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.collections.Pair;
+import it.unitn.disi.utils.collections.Triplet;
 
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
@@ -112,8 +116,8 @@ public class CloudSimulationBuilder {
 			final int source, int messages, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
 			double antientropyLAThreshold, int shortCycles,
-			boolean dissemination, boolean cloudAssist, boolean baseline,
-			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
+			boolean dissemination, boolean cloudAssist, boolean trackCores,
+			boolean aeBlacklist, IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -157,9 +161,17 @@ public class CloudSimulationBuilder {
 			create(reference, processes, prots, cloud, source);
 		}
 
-		MessageStatistics mstats = new MessageStatistics("msg", fGraph.size(),
-				true);
+		// If no dissemination is being simulated, we turn off message tracking,
+		// as it can be quite expensive even if it's doing nothing.
+		MessageStatistics mstats = null;
+		if (dissemination) {
+			mstats = new MessageStatistics("msg", fGraph.size(), true);
+			metrics.add(mstats.accruedTime());
+			metrics.addAll(mstats.metrics());
+		}
+
 		UptimeTracker upTracker = new UptimeTracker("msg", processes.length);
+		metrics.add(upTracker.accruedUptime());
 
 		// 1c. Add dissemination wick (guy that posts update after some
 		// period of time ellapses), or an anchor for updateless sims. These
@@ -172,10 +184,6 @@ public class CloudSimulationBuilder {
 		} else {
 			addAnchor(prots, builder, cloud, metrics, mstats, upTracker);
 		}
-
-		metrics.add(mstats.accruedTime());
-		metrics.add(upTracker.accruedUptime());
-		metrics.addAll(mstats.metrics());
 
 		// 1d. Add CoreTracker if required -- tracks initial connected core,
 		// which we need for the two-phase sims.
@@ -204,7 +212,6 @@ public class CloudSimulationBuilder {
 		metrics.add(anchor.statistics().accesses(AccessType.productive));
 		metrics.add(anchor.statistics().accruedTime());
 
-		anchor.addMeasurementSessionObserver(mstats);
 		anchor.addMeasurementSessionObserver(new ITimeWindowTracker() {
 			@Override
 			public void startTrackingSession(IClockData clock) {
@@ -219,8 +226,13 @@ public class CloudSimulationBuilder {
 
 		builder.preschedule(anchor);
 
-		for (int i = 0; i < protocols.length; i++) {
-			protocols[i].addMessageObserver(mstats);
+		if (mstats != null) {
+			anchor.addMeasurementSessionObserver(mstats);
+			for (int i = 0; i < protocols.length; i++) {
+				protocols[i].addMessageObserver(mstats);
+			}
+		} else {
+			builder.setExtraPermits(1);
 		}
 	}
 
@@ -263,8 +275,10 @@ public class CloudSimulationBuilder {
 
 		for (int i = 0; i < protocols.length; i++) {
 			protocols[i].addBroadcastObserver(tracker);
-			protocols[i].addBroadcastObserver(mstats);
-			protocols[i].addMessageObserver(mstats);
+			if (mstats != null) {
+				protocols[i].addBroadcastObserver(mstats);
+				protocols[i].addMessageObserver(mstats);
+			}
 		}
 	}
 
@@ -276,7 +290,7 @@ public class CloudSimulationBuilder {
 			boolean aeBlacklist, List<INodeMetric<? extends Object>> metrics,
 			EngineBuilder builder) {
 
-		DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
+		final DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
 
 		for (int i = 0; i < protocols.length; i++) {
@@ -287,8 +301,17 @@ public class CloudSimulationBuilder {
 					.asymptoticAvailability() < antientropyLAThreshold;
 
 			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
-					fUpdateSelectors[i], fQuenchSelectors[i], processes[i],
-					new CachingTransformer(new LiveTransformer()), runner,
+					fUpdateSelectors == null ? null : fUpdateSelectors[i],
+					fQuenchSelectors == null ? null : fQuenchSelectors[i],
+					processes[i],
+					new ILiveTransformer() {
+						@Override
+						public Triplet<AbstractIDMapper, INetwork, IndexedNeighborGraph> live(
+								IndexedNeighborGraph source, INetwork network) {
+							return null;
+						}
+					},
+					runner,
 					builder.reference(), messages == 1, maxQuenchAge(),
 					pushTimeout, antientropyShortCycle, antientropyLongCycle,
 					fBurnin, isLA ? new BitSet() : availabilityBlacklist(
@@ -303,6 +326,32 @@ public class CloudSimulationBuilder {
 			}
 
 		}
+
+		metrics.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "msg.hflood.contacts.init";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) protocols[i].contactsInitiated(false);
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "msg.hflood.contacts.respond";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) protocols[i].contactsReceived(false);
+			}
+		});
 
 		return protocols;
 	}

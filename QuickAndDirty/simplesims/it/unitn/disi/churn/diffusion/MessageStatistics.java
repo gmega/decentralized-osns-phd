@@ -27,7 +27,7 @@ public class MessageStatistics extends SessionStatistics implements
 	private static final int SENT = 0;
 
 	private static final int RECEIVED = 1;
-	
+
 	private static final boolean CARDINALITY_CHECK = false;
 
 	private final int[][][] fUpdates;
@@ -121,7 +121,6 @@ public class MessageStatistics extends SessionStatistics implements
 		} else {
 			fUpdates[SENT][protocol][sender]++;
 			fUpdates[RECEIVED][protocol][receiver]++;
-
 			if (CARDINALITY_CHECK) {
 				if ((flags & HFloodSM.DUPLICATE) == 0) {
 					if (fSingle.get(receiver)) {

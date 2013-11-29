@@ -76,14 +76,14 @@ public class ExperimentReader {
 			TableReader sourceReader, int root) throws IOException,
 			RemoteException {
 		Assignment a = readLIDI(root, provider.verticesOf(root));
-		return new Experiment(root, sourceReader, this, a.li, a.di);
+		return new Experiment(root, sourceReader, a.li, a.di);
 	}
 
 	// -------------------------------------------------------------------------
 
 	private Experiment staticExperiment(TableReader sourceReader) {
 		int root = Integer.parseInt(sourceReader.get(fIdField));
-		return new Experiment(root, sourceReader, this, null, null);
+		return new Experiment(root, sourceReader, null, null);
 	}
 
 	// -------------------------------------------------------------------------

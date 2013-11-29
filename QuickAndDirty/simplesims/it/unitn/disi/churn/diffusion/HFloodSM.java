@@ -38,6 +38,11 @@ public class HFloodSM implements ICyclicProtocol {
 	 */
 	public static final int ANTIENTROPY_PULL = 4;
 
+	/**
+	 * Toggled when node reached from means other than the P2P network.
+	 */
+	public static final int NO_MESSAGE = 8;
+
 	// -------------------------------------------------------------------------
 	// Protocol config.
 	// -------------------------------------------------------------------------
@@ -67,11 +72,15 @@ public class HFloodSM implements ICyclicProtocol {
 	private double fLastRound;
 
 	// -------------------------------------------------------------------------
-	// Delay metrics.
+	// Delay and status metrics.
 	// -------------------------------------------------------------------------
 	private double fEndToEndDelay;
 
 	private double fRawReceiverDelay;
+
+	private int fContactsInitiated;
+
+	private int fContactsReceived;
 
 	public HFloodSM(IndexedNeighborGraph graph, IPeerSelector selector,
 			IProcess process, ILiveTransformer transformer,
@@ -133,23 +142,28 @@ public class HFloodSM implements ICyclicProtocol {
 	 * @param clock
 	 */
 	public void markReached(int sender, IClockData clock, int flags) {
-		if (fState == State.DONE) {
-			return;
-		}
 
-		if (!isReached()) {
+		boolean duplicate = isReached();
+
+		if (!duplicate) {
 			fEndToEndDelay = clock.time();
 			fRawReceiverDelay = fProcess.uptime(clock);
 			fHistory.set(id());
-			// Register time when we first activate.
-			fLastRound = clock.rawTime();
-			changeState(State.ACTIVE);
-			messageReceived(sender, clock, flags);
-		} else {
-			if (!isAntientropy(flags)) {
-				messageReceived(sender, clock, flags | DUPLICATE);
+
+			if (fState != State.DONE) {
+				// Register time when we first activate.
+				fLastRound = clock.rawTime();
+				changeState(State.ACTIVE);
 			}
 		}
+
+		// If message is duplicate and antientropy, it's just an artefact and
+		// we should not count it.
+		if (!duplicate || !isAntientropy(flags)) {
+			messageReceived(sender, clock, duplicate ? flags | DUPLICATE
+					: flags);
+		}
+
 	}
 
 	private boolean isAntientropy(int flags) {
@@ -209,6 +223,8 @@ public class HFloodSM implements ICyclicProtocol {
 
 		// Only sends a message if we actually have a peer to send to.
 		if (neighborId != IPeerSelector.SKIP_ROUND) {
+			fContactsInitiated++;
+			fReference.get(this, network, neighborId).fContactsReceived++;
 			doSend(engine, network, neighborId, 0);
 		}
 	}
@@ -334,6 +350,14 @@ public class HFloodSM implements ICyclicProtocol {
 
 	public double rawEndToEndDelay() {
 		return fEndToEndDelay;
+	}
+
+	public int contactsInitiated() {
+		return fContactsInitiated;
+	}
+
+	public int contactsReceived() {
+		return fContactsReceived;
 	}
 
 	public double rawReceiverDelay() {
