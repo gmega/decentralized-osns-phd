@@ -198,7 +198,7 @@ public class DiffusionExperimentWorker extends Worker {
 				// Message counts.
 				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "aeuprec",
 				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"hfinit", "hfrespond", "msgtime",
+				"msgtime",
 
 				// Bandwidth statistics.
 				"aebdwsum", "aebdwmax", "aebdwsqr", "hfbdwsum", "hfbdwmax",
@@ -462,12 +462,6 @@ public class DiffusionExperimentWorker extends Worker {
 		collector.addAccumulator(new SumAccumulation("msg.bdw.tot.upbins",
 				graph.size()));
 
-		collector.addAccumulator(new SumAccumulation(
-				"msg.hflood.contacts.init", graph.size()));
-
-		collector.addAccumulator(new SumAccumulation(
-				"msg.hflood.contacts.respond", graph.size()));
-
 		collector.addAccumulator(new IncrementalStatsFreqAccumulator(
 				"msg.bdw.ae", graph.size()));
 
@@ -640,11 +634,6 @@ public class DiffusionExperimentWorker extends Worker {
 		INodeMetric<Double> time = metrics.getMetric("msg.accrued");
 		INodeMetric<Double> uptime = metrics.getMetric("msg.uptime");
 
-		INodeMetric<Double> hfInitiated = metrics
-				.getMetric("msg.hflood.contacts.init");
-		INodeMetric<Double> hfReceived = metrics
-				.getMetric("msg.hflood.contacts.respond");
-
 		INodeMetric<Double> aeZeroUpbins = metrics
 				.getMetric("msg.bdw.ae.upbins");
 		INodeMetric<Double> hfZeroUpbins = metrics
@@ -671,9 +660,6 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set("aeinit", aeInitiated.getMetric(i));
 			writer.set("aerespond", aeReceived.getMetric(i));
-
-			writer.set("hfinit", hfInitiated.getMetric(i));
-			writer.set("hfrespond", hfReceived.getMetric(i));
 
 			IncrementalStatsFreq aeStats = aeBdw.getMetric(i);
 			IncrementalStatsFreq hfStats = hfBdw.getMetric(i);

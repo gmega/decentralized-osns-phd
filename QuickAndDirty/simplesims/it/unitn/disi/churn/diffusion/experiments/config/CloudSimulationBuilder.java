@@ -13,9 +13,7 @@ import it.unitn.disi.churn.diffusion.cloud.ICloud;
 import it.unitn.disi.churn.diffusion.cloud.ICloud.AccessType;
 import it.unitn.disi.churn.diffusion.cloud.ITimeWindowTracker;
 import it.unitn.disi.churn.diffusion.cloud.SimpleCloudImpl;
-import it.unitn.disi.churn.diffusion.graph.CachingTransformer;
 import it.unitn.disi.churn.diffusion.graph.ILiveTransformer;
-import it.unitn.disi.churn.diffusion.graph.LiveTransformer;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
@@ -153,7 +151,7 @@ public class CloudSimulationBuilder {
 				// This causes antientropy to be disabled.
 				dissemination ? antientropyShortCycle : -1,
 				antientropyLongCycle, shortCycles, antientropyLAThreshold,
-				aeBlacklist, metrics, builder);
+				aeBlacklist, builder);
 
 		// 1b. Cloud-assistance, if enabled.
 		if (cloudAssist) {
@@ -287,8 +285,7 @@ public class CloudSimulationBuilder {
 			int source, int pid, int messages, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
 			int shortCycles, double antientropyLAThreshold,
-			boolean aeBlacklist, List<INodeMetric<? extends Object>> metrics,
-			EngineBuilder builder) {
+			boolean aeBlacklist, EngineBuilder builder) {
 
 		final DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
@@ -300,7 +297,10 @@ public class CloudSimulationBuilder {
 			boolean isLA = ((RenewalProcess) processes[i])
 					.asymptoticAvailability() < antientropyLAThreshold;
 
-			protocols[i] = new DisseminationServiceImpl(pid, fRandom, fGraph,
+			protocols[i] = new DisseminationServiceImpl(
+					pid,
+					fRandom,
+					fGraph,
 					fUpdateSelectors == null ? null : fUpdateSelectors[i],
 					fQuenchSelectors == null ? null : fQuenchSelectors[i],
 					processes[i],
@@ -310,12 +310,11 @@ public class CloudSimulationBuilder {
 								IndexedNeighborGraph source, INetwork network) {
 							return null;
 						}
-					},
-					runner,
-					builder.reference(), messages == 1, maxQuenchAge(),
-					pushTimeout, antientropyShortCycle, antientropyLongCycle,
-					fBurnin, isLA ? new BitSet() : availabilityBlacklist(
-							processes, antientropyLAThreshold), shortCycles,
+					}, runner, builder.reference(), messages == 1,
+					maxQuenchAge(), pushTimeout, antientropyShortCycle,
+					antientropyLongCycle, fBurnin, isLA ? new BitSet()
+							: availabilityBlacklist(processes,
+									antientropyLAThreshold), shortCycles,
 					AE_PRIORITY, aeBlacklist);
 
 			processes[i].addProtocol(protocols[i]);
@@ -326,32 +325,6 @@ public class CloudSimulationBuilder {
 			}
 
 		}
-
-		metrics.add(new INodeMetric<Double>() {
-
-			@Override
-			public Object id() {
-				return "msg.hflood.contacts.init";
-			}
-
-			@Override
-			public Double getMetric(int i) {
-				return (double) protocols[i].contactsInitiated(false);
-			}
-		});
-
-		metrics.add(new INodeMetric<Double>() {
-
-			@Override
-			public Object id() {
-				return "msg.hflood.contacts.respond";
-			}
-
-			@Override
-			public Double getMetric(int i) {
-				return (double) protocols[i].contactsReceived(false);
-			}
-		});
 
 		return protocols;
 	}

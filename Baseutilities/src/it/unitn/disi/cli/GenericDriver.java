@@ -9,7 +9,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 
@@ -52,6 +54,8 @@ public class GenericDriver {
 
 	private static final int E_KILLFILE = -3;
 
+	private static final int E_LOGIN = -4;
+
 	private static final String[] VERSION_FINGERPRINT_KEYS = { "Library",
 			"Build-Version", "Build-SVN-Revision", "Build-Data" };
 
@@ -87,6 +91,9 @@ public class GenericDriver {
 
 	@Option(name = "-k", aliases = { "--killfile" }, usage = "uses a kill file", required = false)
 	private boolean fUseKillFile;
+
+	@Option(name = "-u", aliases = { "--ultranice" }, usage = "ultranice mode (suicides if someone logs in)", required = false)
+	private boolean fUltranice;
 
 	@Argument
 	private List<String> fArguments = new ArrayList<String>();
@@ -148,6 +155,10 @@ public class GenericDriver {
 			if (fUseKillFile) {
 				startKillfileMon();
 			}
+			
+			if (fUltranice) {
+				startUltraniceMon();
+			}
 
 			if (processor instanceof ITransformer) {
 				((ITransformer) processor).execute(fIStreams[0], fOStreams[0]);
@@ -196,6 +207,45 @@ public class GenericDriver {
 		System.err.println("-- Kill file polling at: "
 				+ killFile.getAbsolutePath() + ".");
 		killMonitor.start();
+	}
+
+	private void startUltraniceMon() {
+		Thread niceMonitor = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						Thread.sleep(KILL_FILE_POLL);
+						Process who = Runtime.getRuntime().exec("who");
+						String contents = readOutput(who);
+						if (contents.trim().length() != 0) {
+							System.err.println("User logged in. Bye-bye...");
+							System.err.println(contents);
+							System.exit(E_LOGIN);
+						}
+					} catch (InterruptedException ex) {
+						break;
+					} catch (IOException ex) {
+						System.err.println("Error polling connected users.");
+						ex.printStackTrace();
+						break;
+					}
+				}
+			}
+
+			private String readOutput(Process who) throws IOException {
+				StringBuffer buffer = new StringBuffer();
+				Reader reader = new InputStreamReader(who.getInputStream());
+				int c;
+				while ((c = reader.read()) != -1) {
+					buffer.append((char) c);
+				}
+				return buffer.toString();
+			}
+
+		}, "Kill-on-login monitor");
+
+		niceMonitor.start();
 	}
 
 	private void startTimer(double wallclock) {
