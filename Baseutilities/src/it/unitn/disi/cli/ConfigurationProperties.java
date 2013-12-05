@@ -1,5 +1,6 @@
 package it.unitn.disi.cli;
 
+import groovy.lang.GroovyShell;
 import it.unitn.disi.utils.SectionReplacer;
 import it.unitn.disi.utils.exception.ParseException;
 
@@ -48,11 +49,15 @@ public class ConfigurationProperties {
 
 	/** Pattern for matching bash-style variables. */
 	private static final Pattern fVarPattern = Pattern
-			.compile("\\$\\{(.*?)\\}|(\\$\\$)");
+			.compile("\\{(.*?)\\}|(\\$\\$)");
 
 	/** Assigns symbolic names to pattern groups to make code more readable. */
 	private static final int VAR_KEY = 1;
 	private static final int NO_EXPAND = 2;
+
+	/** Pattern for matching scripts. */
+	private static final Pattern fScriptPattern = Pattern.compile(
+			"\\s*script\\s*(!?\\{)(.*?)\\}", Pattern.DOTALL);
 
 	private HashMap<String, Properties> fProperties = new HashMap<String, Properties>();
 
@@ -175,26 +180,19 @@ public class ConfigurationProperties {
 		return fProperties.get(section);
 	}
 
-	private String groovy(BufferedReader reader) throws IOException {
-		StringBuffer script = new StringBuffer();
-		String sep = System.getProperty("line.separator");
+	private String script(Matcher matcher) throws IOException {
+		String evalMode = matcher.group(1);
+		String script = matcher.group(2);
 
-		String line;
-		while (true) {
-			line = reader.readLine();
-			if (line == null) {
-				throw new ParseException(
-						"--- unterminated groovy script ---\n "
-								+ script.toString() + ".");
-			}
-			if (line.trim().equals("::")) {
-				break;
-			}
-			script.append(line);
-			script.append(sep);
+		if (evalMode.startsWith("!")) {
+			return script;
 		}
 
-		return script.toString();
+		// For now, uses raw environment.
+		GroovyShell shell = new GroovyShell();
+		Object val = shell.evaluate(script);
+
+		return (val == null) ? null : val.toString();
 	}
 
 	private void parseAttribute(String line, BufferedReader reader)
@@ -204,8 +202,10 @@ public class ConfigurationProperties {
 			throw new ParseException("Malformed attribute " + line + ".");
 		}
 
-		if (attribute[1].trim().equals("groovy::")) {
-			attribute[1] = groovy(reader);
+		// Checks if it's a script.
+		Matcher m = fScriptPattern.matcher(attribute[1]);
+		if (m.matches()) {
+			script(m);
 		}
 
 		fProperties.get(fSection).put(attribute[0].trim(), attribute[1].trim());
