@@ -107,6 +107,13 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 			}
 		}
 
+		if (done > fRemaining) {
+			fOther.error("Log contained inconsistencies (possibly duplicate" +
+					" experiment entries)");
+		}
+		
+		fRemaining = Math.min(0, fRemaining - done);
+
 		fOther.info("Log replay complete. " + done
 				+ " experiments marked as done.");
 	}
@@ -137,7 +144,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 	public Pair<Integer, Integer> acquireExperiment(int workerId)
 			throws RemoteException {
 		Pair<Integer, Integer> acquired = null;
-		
+
 		synchronized (fExperiments) {
 			while ((acquired = tryAcquire(workerId)) == null && fRemaining > 0) {
 				try {
@@ -288,7 +295,7 @@ public class SchedulerImpl implements IScheduler, ISchedulerAdmin {
 		for (WorkerEntry entry : fWorkers.values()) {
 			list.add(entry.worker);
 		}
-		
+
 		return list;
 	}
 
