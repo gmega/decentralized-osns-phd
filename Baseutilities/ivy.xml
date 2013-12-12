@@ -21,6 +21,7 @@
         <dependency org="com.googlecode.matrix-toolkits-java" name="mtj" rev="1.0.1" conf="core->default"/>
         <dependency	org="args4j" name="args4j-tools" rev="2.0.25" conf="core->default"/>
         <dependency org="com.google.guava" name="guava" rev="15.0" conf="core->default"/>
+        <dependency org="org.codehaus.groovy" name="groovy-all" rev="2.1.9" conf="core->default"/>
     </dependencies>
     
 </ivy-module>

@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PushbackReader;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -47,17 +48,15 @@ public class ConfigurationProperties {
 
 	public static final String TOP_SECTION = "top";
 
+	public static final String KEYWORD_SCRIPT = "script";
+
 	/** Pattern for matching bash-style variables. */
 	private static final Pattern fVarPattern = Pattern
-			.compile("\\{(.*?)\\}|(\\$\\$)");
+			.compile("\\$\\{(.*?)\\}|(\\$\\$)");
 
 	/** Assigns symbolic names to pattern groups to make code more readable. */
 	private static final int VAR_KEY = 1;
 	private static final int NO_EXPAND = 2;
-
-	/** Pattern for matching scripts. */
-	private static final Pattern fScriptPattern = Pattern.compile(
-			"\\s*script\\s*(!?\\{)(.*?)\\}", Pattern.DOTALL);
 
 	private HashMap<String, Properties> fProperties = new HashMap<String, Properties>();
 
@@ -180,19 +179,47 @@ public class ConfigurationProperties {
 		return fProperties.get(section);
 	}
 
-	private String script(Matcher matcher) throws IOException {
-		String evalMode = matcher.group(1);
-		String script = matcher.group(2);
+	private String eval(String line, PushbackReader reader) throws IOException {
 
-		if (evalMode.startsWith("!")) {
-			return script;
+		// Script starts here.
+		int start = line.indexOf('{'); // rather ugly...
+		if (start == -1) {
+			throw new ParseException("Missing opening braces.");
+		}
+		
+		boolean eval = line.charAt(start - 1) != '!';
+		reader.unread(line.substring(start  + 1).toCharArray());
+		
+		StringBuffer buffer = new StringBuffer();
+
+		// Parses using "pushdown" automaton.
+		int count = 1;
+		while (count != 0) {
+			int c = reader.read();
+			if (c == -1) {
+				throw new ParseException("Unterminated script " + buffer);
+			}
+
+			if (c == '}') {
+				count--; // pop
+			} else if (c == '{') {
+				count++; // push
+			}
+
+			buffer.append((char) c);
 		}
 
-		// For now, uses raw environment.
-		GroovyShell shell = new GroovyShell();
-		Object val = shell.evaluate(script);
+		buffer.deleteCharAt(buffer.length() - 1);
+		String script = buffer.toString();
 
-		return (val == null) ? null : val.toString();
+		if (eval) {
+			// Evals using Groovy. For now, uses raw environment.
+			GroovyShell shell = new GroovyShell();
+			Object val = shell.evaluate(script);
+			return (val == null) ? null : val.toString();
+		}
+		
+		return script;
 	}
 
 	private void parseAttribute(String line, BufferedReader reader)
@@ -202,13 +229,14 @@ public class ConfigurationProperties {
 			throw new ParseException("Malformed attribute " + line + ".");
 		}
 
-		// Checks if it's a script.
-		Matcher m = fScriptPattern.matcher(attribute[1]);
-		if (m.matches()) {
-			script(m);
+		String value = attribute[1].trim();
+
+		if (value.startsWith(KEYWORD_SCRIPT)) {
+			// XXX BAD -- will overflow with line lenghts > 100
+			value = eval(attribute[1], new PushbackReader(reader, 100));
 		}
 
-		fProperties.get(fSection).put(attribute[0].trim(), attribute[1].trim());
+		fProperties.get(fSection).put(attribute[0].trim(), value);
 	}
 
 	private void sectionEnd() {
