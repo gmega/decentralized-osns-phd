@@ -17,10 +17,17 @@ public class FixedProcess extends IProcess {
 
 	private final int fId;
 
-	public FixedProcess(int id, State state) {
+	private boolean fAnnounce;
+
+	public FixedProcess(int id, State state, boolean announce) {
 		super();
 		fState = state;
 		fId = id;
+		fAnnounce = announce;
+	}
+
+	public FixedProcess(int id, State state) {
+		this(id, state, false);
 	}
 
 	@Override
@@ -61,13 +68,20 @@ public class FixedProcess extends IProcess {
 
 	@Override
 	public void scheduled(ISimulationEngine state) {
-		throw new IllegalStateException(
-				"Fixed processes should not be scheduled.");
+		if (!fAnnounce) {
+			throw new IllegalStateException("Error: fixed processes "
+					+ "should not be scheduled beyond the "
+					+ "initial announcement.");
+		}
+
+		fAnnounce = false;
+		
+		notifyObservers(state, time());
 	}
 
 	@Override
 	public double time() {
-		return Double.MAX_VALUE;
+		return fAnnounce ? 0 : Double.POSITIVE_INFINITY;
 	}
 
 }
