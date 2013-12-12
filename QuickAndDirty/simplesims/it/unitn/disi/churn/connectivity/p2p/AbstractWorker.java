@@ -30,7 +30,7 @@ public abstract class AbstractWorker implements ITransformer, IWorker {
 	/**
 	 * How many repetitions to run.
 	 */
-	@Attribute("repeat")
+	@Attribute("repetitions")
 	protected int fRepeat;
 
 	/**

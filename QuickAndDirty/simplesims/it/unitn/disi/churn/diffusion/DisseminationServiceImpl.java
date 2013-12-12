@@ -55,31 +55,37 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private final Antientropy fAntientropy;
 
+	private final MessageStatistics fStats;
+
 	private ArrayList<IMessageObserver> fObservers = new ArrayList<IMessageObserver>();
 
 	private ArrayList<IBroadcastObserver> fBcastObservers = new ArrayList<IBroadcastObserver>();
 
 	public DisseminationServiceImpl(int pid, Random rnd,
-			IndexedNeighborGraph graph, IPeerSelector updateSelector,
-			IPeerSelector quenchSelector, IProcess process,
-			ILiveTransformer transformer,
+			IndexedNeighborGraph graph, IPeerSelector pushUpdateSelector,
+			IPeerSelector pushQuenchSelector, IPeerSelector aeSelector,
+			IProcess process, ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			IReference<ISimulationEngine> engine, boolean oneShot,
 			double maxQuenchAge, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
 			double antientropyDelay, BitSet antientropyStaticblacklist,
-			int antientropyShortRounds, int antientropyPrio, boolean aeBlacklist) {
+			int antientropyShortRounds, int antientropyPrio,
+			boolean aeBlacklist,
+			// For debugging.
+			MessageStatistics stats) {
 
-		fPushProtocols[UPDATE] = new HFloodUP(graph, updateSelector, process,
-				transformer, this, pushTimeout);
-
-		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, quenchSelector,
+		fPushProtocols[UPDATE] = new HFloodUP(graph, pushUpdateSelector,
 				process, transformer, this, pushTimeout);
 
-		fAntientropy = new Antientropy(engine, rnd, process.id(),
+		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, pushQuenchSelector,
+				process, transformer, this, pushTimeout);
+
+		fAntientropy = new Antientropy(engine, aeSelector, process.id(),
 				antientropyPrio, antientropyShortCycle, antientropyLongCycle,
 				antientropyShortRounds, antientropyDelay, aeBlacklist);
 
+		fStats = stats;
 		fGraph = graph;
 		fRunner = runner;
 		fPid = pid;
@@ -194,16 +200,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		return (engine.clock().rawTime() - ts) > fMaxQuenchAge;
 	}
 
-	public int contactsReceived(boolean update) {
-		return update ? fPushProtocols[UPDATE].contactsReceived()
-				: fPushProtocols[NO_UPDATE].contactsReceived();
-	}
-	
-	public int contactsInitiated(boolean update) {
-		return update ? fPushProtocols[UPDATE].contactsInitiated()
-				: fPushProtocols[NO_UPDATE].contactsInitiated();
-	}
-
 	@Override
 	public State getState() {
 		return fState;
@@ -227,16 +223,15 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 	private void messageReceived(int sender, int receiver, HFloodMMsg message,
 			IClockData clock, int flags) {
-		
+
 		if ((flags & HFloodSM.NO_MESSAGE) != 0) {
 			return;
 		}
 
 		for (IMessageObserver observer : fObservers) {
 			observer.messageReceived(sender, receiver, message, clock, flags);
-
 		}
-		
+
 	}
 
 	class HFloodNUP extends HFloodUP {
@@ -256,19 +251,43 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 						+ this.message());
 			}
 
-			// If we got here, tries to replace the message.
-			this.setMessage(message, history);
-			this.markReached(sender.id(), clock, flags);
+			// Old quench messages.
+			if (!shouldAccept(message)) {
+				if (!isDuplicate(message)) {
+					boolean antientropy = (flags & ANTIENTROPY_PULL) != 0;
+					antientropy |= (flags & ANTIENTROPY_PUSH) != 0;
+					fStats.expiredQuench(
+							antientropy ? MessageStatistics.ANTIENTROPY
+									: MessageStatistics.HFLOOD, id());
+				}
+			} 
+			
+			// Quench is useful, replaces it.
+			else {
+				this.setMessage(message, history);
+			}
+
+			// Marks as reached if message got replaced.
+			if (!isReached()) { 
+				this.markReached(sender.id(), clock, flags);
+			} 
+			
+			// Otherwise have to manually trigger message event as the semantics
+			// for detecting duplicate messages is messed up.
+			else {
+				messageReceived(sender.id(), clock, flags);
+			}
 
 			return history;
 		}
 
-		@Override
-		public void setMessage(IMessage message, BitSet history) {
-			if (message() == null
-					|| message.timestamp() > message().timestamp()) {
-				super.setMessage(message, history);
-			}
+		private boolean isDuplicate(HFloodMMsg message) {
+			return message == this.message();
+		}
+
+		public boolean shouldAccept(IMessage message) {
+			return message() == null
+					|| message.timestamp() > message().timestamp();
 		}
 
 	}
@@ -287,11 +306,12 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		@Override
 		public void markReached(int sender, IClockData clock, int flags) {
-
+			/*
+			 * We override markReched essentially to decrement the broadcast
+			 * tracker counter.
+			 */
 			boolean duplicate = isReached();
-			
 			super.markReached(sender, clock, flags);
-
 			if (!duplicate) {
 				HFloodMMsg msg = (HFloodMMsg) message();
 				if (msg.getTracker() != null) {
@@ -325,9 +345,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 
 		private ResettableCounter fShortRounds;
 
-		public Antientropy(IReference<ISimulationEngine> engine, Random rnd,
-				int id, int prio, double shortPeriod, double longPeriod,
-				int shortRounds, double initialDelay, boolean blacklistSessions) {
+		public Antientropy(IReference<ISimulationEngine> engine,
+				IPeerSelector peerSelector, int id, int prio,
+				double shortPeriod, double longPeriod, int shortRounds,
+				double initialDelay, boolean blacklistSessions) {
 
 			super(engine, prio, id, initialDelay);
 
@@ -335,7 +356,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			fLongPeriod = longPeriod;
 			fShortRounds = new ResettableCounter(shortRounds);
 
-			fSelector = new RandomSelector(rnd);
+			fSelector = peerSelector;
 			fSessionBlacklist = new BitSet();
 			fBlacklistSessions = blacklistSessions;
 		}

@@ -1,7 +1,6 @@
 package it.unitn.disi.churn.antientropy;
 
 import it.unitn.disi.churn.diffusion.IPeerSelector;
-import it.unitn.disi.churn.diffusion.RandomSelector;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.INetwork;
 import it.unitn.disi.simulator.core.IProcess;
@@ -43,7 +42,7 @@ public class Antientropy extends PeriodicAction {
 	public Antientropy(IReference<ISimulationEngine> engine, Random rnd,
 			IndexedNeighborGraph graph, int id, int prio,
 			double shortPeriod, double longPeriod, int shortRounds,
-			double initialDelay, boolean blacklist) {
+			double initialDelay, boolean blacklist, IPeerSelector selector) {
 
 		super(engine, prio, id, initialDelay);
 
@@ -52,7 +51,7 @@ public class Antientropy extends PeriodicAction {
 		
 		fShortRounds = new ResettableCounter(shortRounds);
 
-		fSelector = new RandomSelector(rnd);
+		fSelector = selector;
 		fSessionBlacklist = new BitSet();
 		fBlackList = blacklist;
 		fGraph = graph;

@@ -69,9 +69,11 @@ public class CloudSimulationBuilder {
 
 	private final double fFixedFraction;
 
-	private IPeerSelector[] fUpdateSelectors;
+	private IPeerSelector[] fPushUpdateSelectors;
 
-	private IPeerSelector[] fQuenchSelectors;
+	private IPeerSelector[] fPushQuenchSelectors;
+
+	private IPeerSelector[] fAESelectors;
 
 	/**
 	 * Creates a new {@link CloudSimulationBuilder}.
@@ -96,7 +98,7 @@ public class CloudSimulationBuilder {
 			double nupBurnin, IndexedNeighborGraph graph, Random random,
 			double nupOnly, double loginGrace, double fixedFraction,
 			boolean randomize, IPeerSelector[] updateSelectors,
-			IPeerSelector[] quenchSelectors) {
+			IPeerSelector[] pushQuenchSelectors, IPeerSelector[] aeSelectors) {
 		fDelta = period;
 		fGraph = graph;
 		fRandom = random;
@@ -106,8 +108,9 @@ public class CloudSimulationBuilder {
 		fRandomize = randomize;
 		fLoginGrace = loginGrace;
 		fFixedFraction = fixedFraction;
-		fUpdateSelectors = updateSelectors;
-		fQuenchSelectors = quenchSelectors;
+		fPushUpdateSelectors = updateSelectors;
+		fPushQuenchSelectors = pushQuenchSelectors;
+		fAESelectors = aeSelectors;
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
@@ -142,23 +145,7 @@ public class CloudSimulationBuilder {
 			builder.addObserver(runner.networkObserver(),
 					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
 		}
-
-		prots = create(processes, runner, source,
-				pid,
-				messages,
-				pushTimeout,
-				// Antientropy cycle length is negative if no dissemination.
-				// This causes antientropy to be disabled.
-				dissemination ? antientropyShortCycle : -1,
-				antientropyLongCycle, shortCycles, antientropyLAThreshold,
-				aeBlacklist, builder);
-
-		// 1b. Cloud-assistance, if enabled.
-		if (cloudAssist) {
-			cloud = new SimpleCloudImpl(source);
-			create(reference, processes, prots, cloud, source);
-		}
-
+		
 		// If no dissemination is being simulated, we turn off message tracking,
 		// as it can be quite expensive even if it's doing nothing.
 		MessageStatistics mstats = null;
@@ -168,6 +155,23 @@ public class CloudSimulationBuilder {
 			metrics.addAll(mstats.metrics());
 		}
 
+		prots = create(processes, runner, source,
+				pid,
+				messages,
+				pushTimeout,
+				// Antientropy cycle length is negative if no dissemination.
+				// This causes antientropy to be disabled.
+				dissemination ? antientropyShortCycle : -1,
+				antientropyLongCycle, shortCycles, antientropyLAThreshold,
+				aeBlacklist, builder, metrics, mstats);
+
+		// 1b. Cloud-assistance, if enabled.
+		if (cloudAssist) {
+			cloud = new SimpleCloudImpl(source);
+			create(reference, processes, prots, cloud, source);
+		}
+
+	
 		UptimeTracker upTracker = new UptimeTracker("msg", processes.length);
 		metrics.add(upTracker.accruedUptime());
 
@@ -285,7 +289,8 @@ public class CloudSimulationBuilder {
 			int source, int pid, int messages, double pushTimeout,
 			double antientropyShortCycle, double antientropyLongCycle,
 			int shortCycles, double antientropyLAThreshold,
-			boolean aeBlacklist, EngineBuilder builder) {
+			boolean aeBlacklist, EngineBuilder builder,
+			List<INodeMetric<? extends Object>> metrics, MessageStatistics stats) {
 
 		final DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
@@ -301,8 +306,11 @@ public class CloudSimulationBuilder {
 					pid,
 					fRandom,
 					fGraph,
-					fUpdateSelectors == null ? null : fUpdateSelectors[i],
-					fQuenchSelectors == null ? null : fQuenchSelectors[i],
+					fPushUpdateSelectors == null ? null
+							: fPushUpdateSelectors[i],
+					fPushQuenchSelectors == null ? null
+							: fPushQuenchSelectors[i],
+					fAESelectors[i] == null ? null : fAESelectors[i],
 					processes[i],
 					new ILiveTransformer() {
 						@Override
@@ -315,7 +323,7 @@ public class CloudSimulationBuilder {
 					antientropyLongCycle, fBurnin, isLA ? new BitSet()
 							: availabilityBlacklist(processes,
 									antientropyLAThreshold), shortCycles,
-					AE_PRIORITY, aeBlacklist);
+					AE_PRIORITY, aeBlacklist, stats);
 
 			processes[i].addProtocol(protocols[i]);
 

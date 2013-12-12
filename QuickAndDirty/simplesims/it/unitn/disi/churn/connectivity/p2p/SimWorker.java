@@ -199,6 +199,12 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 		if (fCloudBitmap == null) {
 			fCloudBitmap = readCloudBitmap();
 		}
+		
+		if (fCloudBitmap.cardinality() > 0) {
+			throw new UnsupportedOperationException("Reimplement!");	
+		}
+		
+		return new int[0];
 //
 //		// Reads cloud nodes.
 //		TIntArrayList cloud = new TIntArrayList();
@@ -210,7 +216,6 @@ public class SimWorker extends AbstractWorker implements ITransformer {
 //		}
 //
 //		return cloud.toArray();
-		throw new UnsupportedOperationException("Reimplement!");
 	}
 
 	// -------------------------------------------------------------------------

@@ -4,7 +4,10 @@ import it.unitn.disi.churn.config.Experiment;
 import it.unitn.disi.churn.config.ExperimentReader;
 import it.unitn.disi.churn.config.GraphConfigurator;
 import it.unitn.disi.graph.IGraphProvider;
+import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
+import it.unitn.disi.simulator.core.IProcess;
+import it.unitn.disi.simulator.protocol.FixedProcess;
 
 import java.util.Iterator;
 
@@ -20,7 +23,7 @@ public abstract class SimpleGraphExperiment implements Runnable {
 	protected ExperimentReader fReader;
 
 	protected final double fSimulationTime;
-	
+
 	protected final double fBurnin;
 
 	private int fN;
@@ -57,6 +60,23 @@ public abstract class SimpleGraphExperiment implements Runnable {
 			runExperiment(exp, provider);
 			fN--;
 		}
+	}
+
+	public IProcess[] createProcesses(Experiment exp, IndexedNeighborGraph graph) {
+		IProcess[] processes;
+		if (exp.lis != null) {
+			processes = fYaoChurn.createProcesses(exp.lis, exp.dis,
+					graph.size());
+			System.err.println("-- Using Yao churn (" + fYaoChurn.mode() + ")");
+		} else {
+			processes = new IProcess[graph.size()];
+			for (int i = 0; i < processes.length; i++) {
+				processes[i] = new FixedProcess(i,
+						it.unitn.disi.simulator.core.IProcess.State.up, true);
+			}
+			System.err.println("-- Static simulation.");
+		}
+		return processes;
 	}
 
 	protected abstract void runExperiment(Experiment exp,

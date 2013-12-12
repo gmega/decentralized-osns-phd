@@ -18,9 +18,9 @@ public class MessageStatistics extends SessionStatistics implements
 
 	private static final double SECOND = 1.0 / 3600.0;
 
-	private static final int ANTIENTROPY = 0;
+	public static final int ANTIENTROPY = 0;
 
-	private static final int HFLOOD = 1;
+	public static final int HFLOOD = 1;
 
 	private static final int COMBINED = 2;
 
@@ -33,6 +33,8 @@ public class MessageStatistics extends SessionStatistics implements
 	private final int[][][] fUpdates;
 
 	private final int[][][] fQuench;
+
+	private final int[][] fExpiredQuenches;
 
 	private final int[][] fAEDigest;
 
@@ -54,6 +56,7 @@ public class MessageStatistics extends SessionStatistics implements
 		fUpdates = new int[2][2][size];
 		fQuench = new int[2][2][size];
 		fAEDigest = new int[2][size];
+		fExpiredQuenches = new int[2][size];
 		fSize = size;
 
 		fBdwTracker = new BandwidthTracker[3][size];
@@ -272,6 +275,12 @@ public class MessageStatistics extends SessionStatistics implements
 		}
 	}
 
+	public void expiredQuench(int protocol, int node) {
+		if (isCounting()) {
+			fExpiredQuenches[protocol][node]++;
+		}
+	}
+
 	public List<INodeMetric<? extends Object>> metrics() {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
@@ -467,6 +476,33 @@ public class MessageStatistics extends SessionStatistics implements
 			@Override
 			public Double getMetric(int i) {
 				return (double) fUptimeZeroBins[COMBINED][i];
+			}
+		});
+
+		// Adds "quench quality" metrics.
+		metrics.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "msg.hflood.rec.nup.expired";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fExpiredQuenches[HFLOOD][i];
+			}
+		});
+
+		metrics.add(new INodeMetric<Double>() {
+
+			@Override
+			public Object id() {
+				return "msg.ae.rec.nup.expired";
+			}
+
+			@Override
+			public Double getMetric(int i) {
+				return (double) fExpiredQuenches[ANTIENTROPY][i];
 			}
 		});
 

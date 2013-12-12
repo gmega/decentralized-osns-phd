@@ -1,13 +1,17 @@
 package it.unitn.disi.churn.antientropy;
 
 import it.unitn.disi.churn.config.Experiment;
+import it.unitn.disi.churn.diffusion.IPeerSelector;
+import it.unitn.disi.churn.diffusion.experiments.config.PeerSelectorBuilder;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.core.EDSimulationEngine;
 import it.unitn.disi.simulator.core.EngineBuilder;
+import it.unitn.disi.simulator.core.IClockData;
 import it.unitn.disi.simulator.core.IProcess;
 import it.unitn.disi.simulator.core.IReference;
 import it.unitn.disi.simulator.core.ISimulationEngine;
+import it.unitn.disi.utils.streams.PrefixedWriter;
 import it.unitn.disi.utils.tabular.TableWriter;
 
 import java.util.Random;
@@ -34,6 +38,9 @@ public class SimpleAESim extends SimpleGraphExperiment {
 	@Attribute(value = "burnin")
 	private double fBurnin;
 
+	@Attribute(value = "selector")
+	private String fSelector;
+
 	private TableWriter fWriter;
 
 	public SimpleAESim(@Attribute(Attribute.AUTO) IResolver resolver,
@@ -41,8 +48,8 @@ public class SimpleAESim extends SimpleGraphExperiment {
 			@Attribute(value = "burnin") double burnin,
 			@Attribute(value = "n", defaultValue = "2147483647") int n) {
 		super(resolver, simulationTime, burnin, n);
-		fWriter = new TableWriter(System.out, "id", "source", "target", "send",
-				"reply", "time");
+		fWriter = new TableWriter(new PrefixedWriter("DS:", System.out), "id",
+				"source", "target", "send", "reply", "uptime", "time");
 	}
 
 	protected void runExperiment(Experiment exp, IGraphProvider provider)
@@ -50,20 +57,22 @@ public class SimpleAESim extends SimpleGraphExperiment {
 
 		IndexedNeighborGraph graph = provider.subgraph(exp.root);
 		int[] ids = provider.verticesOf(exp.root);
+		Random random = new Random();
 
-		IProcess[] processes = fYaoChurn.createProcesses(exp.lis, exp.dis,
-				graph.size());
+		IProcess[] processes = createProcesses(exp, graph);
 
 		Antientropy[] protocols = new Antientropy[processes.length];
+		PeerSelectorBuilder selectorBuilder = new PeerSelectorBuilder(provider,
+				random, exp.root);
+		IPeerSelector[] selectors = selectorBuilder.build(fSelector);
 
 		EngineBuilder builder = new EngineBuilder();
 		IReference<ISimulationEngine> engineRef = builder.reference();
 
-		Random random = new Random();
 		for (int i = 0; i < processes.length; i++) {
 			protocols[i] = new Antientropy(engineRef, random, graph,
 					processes[i].id(), 0, fShortPeriod, fLongPeriod,
-					fShortRounds, fBurnin, fBlacklist);
+					fShortRounds, fBurnin, fBlacklist, selectors[i]);
 
 			processes[i].addObserver(protocols[i]);
 			processes[i].addProtocol(protocols[i]);
@@ -73,10 +82,12 @@ public class SimpleAESim extends SimpleGraphExperiment {
 		builder.preschedule(new SimulationTerminator(fSimulationTime));
 		builder.setExtraPermits(1);
 		builder.setBurnin(fBurnin);
-		
+
 		// Runs simulation.
 		EDSimulationEngine engine = builder.engine();
 		engine.run();
+		
+		IClockData clock = engine.clock();
 
 		for (int i = 0; i < graph.size(); i++) {
 			fWriter.set("id", exp.root);
@@ -84,7 +95,8 @@ public class SimpleAESim extends SimpleGraphExperiment {
 			fWriter.set("target", ids[i]);
 			fWriter.set("send", protocols[i].initiate());
 			fWriter.set("reply", protocols[i].respond());
-			fWriter.set("time", engine.clock().time());
+			fWriter.set("uptime", processes[i].uptime(clock));
+			fWriter.set("time", clock.time());
 
 			fWriter.emmitRow();
 		}

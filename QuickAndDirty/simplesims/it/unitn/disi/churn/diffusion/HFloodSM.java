@@ -267,6 +267,9 @@ public class HFloodSM implements ICyclicProtocol {
 			return false;
 		}
 
+		// doSend will call sendMessage and eventually lead to reactivation
+		// of the push protocol on the receiver side, which will start pushing
+		// the message around himself.
 		doSend(engine, network, initiator, type);
 
 		return true;

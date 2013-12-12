@@ -32,7 +32,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 
 	private static final BitSet EMPTY_BITSET = new BitSet();
 
-	private static final double SECOND = 1 / 3600.00D;
+	private final double fPushPeriod;
 
 	private final String fSelector;
 
@@ -45,6 +45,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 			@Attribute(value = "sim_duration") double simulationTime,
 			@Attribute(value = "n", defaultValue = "2147483647") int n,
 			@Attribute(value = "burnin") double burnin,
+			@Attribute(value = "push_period") double pushPeriod,
 			@Attribute(value = "inbound_bdw", defaultValue = "1") double inboundBdw,
 			@Attribute(value = "outbound_bdw", defaultValue = "1") double outboundBdw,
 			@Attribute(value = "selector") String selector) {
@@ -52,6 +53,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		fWriter = new TableWriter(new PrefixedWriter("DT:", System.out), "id",
 				"source", "target", "select", "selected", "uptime", "degree");
 		fSelector = selector;
+		fPushPeriod = pushPeriod;
 	}
 
 	@Override
@@ -60,18 +62,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		IndexedNeighborGraph graph = provider.subgraph(exp.root);
 
 		IProcess[] processes;
-		if (exp.lis != null) {
-			processes = fYaoChurn.createProcesses(exp.lis, exp.dis,
-					graph.size());
-			System.err.println("-- Using Yao churn (" + fYaoChurn.mode() + ")");
-		} else {
-			processes = new IProcess[graph.size()];
-			for (int i = 0; i < processes.length; i++) {
-				processes[i] = new FixedProcess(i,
-						it.unitn.disi.simulator.core.IProcess.State.up);
-			}
-			System.err.println("-- Static simulation.");
-		}
+		processes = createProcesses(exp, graph);
 
 		System.err.println("-- Selector is " + fSelector + ".");
 
@@ -94,7 +85,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 		EngineBuilder builder = new EngineBuilder();
 
 		final PausingCyclicProtocolRunner<SimpleProtocol> runner = new PausingCyclicProtocolRunner<SimpleProtocol>(
-				builder.reference(), SECOND, 2, 0);
+				builder.reference(), fPushPeriod, 2, 0);
 
 		builder.addProcess(processes);
 		builder.addObserver(runner, 2, false, true);
@@ -171,6 +162,7 @@ public class SelectionExperiment extends SimpleGraphExperiment {
 
 		fDegrees = null;
 	}
+
 
 	class SimpleProtocol implements ICyclicProtocol {
 

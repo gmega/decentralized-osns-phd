@@ -53,13 +53,17 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute("push_cycle_length")
 	private double fPeriod;
 
-	// Selector of push protocol.
+	// Push selector for quenches.
 	@Attribute("push_selector.updates")
 	private String fUpdateSelector;
 
-	// Selector of push protocol.
+	// Push selector for updates.
 	@Attribute(value = "push_selector.quench", defaultValue = Attribute.VALUE_NULL)
 	private String fQuenchSelector;
+
+	// Antientropy selector for quenches.
+	@Attribute("antientropy_selector")
+	private String fAESelector;
 
 	// Timeout (period without contacts before giving up) of push protocol.
 	@Attribute(value = "push_timeout")
@@ -196,9 +200,9 @@ public class DiffusionExperimentWorker extends Worker {
 				"target",
 
 				// Message counts.
-				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "aeuprec",
-				"aenuprec", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"msgtime",
+				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "hfnupexp", "aeuprec",
+				"aenuprec", "aenupexp", "aeupsend", "aenupsend", "aeinit", "aerespond",
+				"msgtime", 
 
 				// Bandwidth statistics.
 				"aebdwsum", "aebdwmax", "aebdwsqr", "hfbdwsum", "hfbdwmax",
@@ -345,8 +349,15 @@ public class DiffusionExperimentWorker extends Worker {
 
 		// Experiments with churn.
 		else {
-			IPeerSelector[] quenchSelectors = getSelectors(diffusion,
-					fQuenchSelector, exp.experiment.root);
+			IPeerSelector[] pushQuenchSelectors = fCloudAssisted ? getSelectors(
+					diffusion, fQuenchSelector, exp.experiment.root) : null;
+
+			IPeerSelector[] aeSelectors = null;
+
+			if (fAEShortCycle > 0) {
+				aeSelectors = getSelectors(diffusion, fAESelector,
+						exp.experiment.root);
+			}
 
 			// Create regular processes.
 			IProcess[] processes = fYaoChurn
@@ -362,7 +373,7 @@ public class DiffusionExperimentWorker extends Worker {
 			CloudSimulationBuilder builder = new CloudSimulationBuilder(
 					fBurnin, fDelta, fNUPBurnin, graph, diffusion, fNUPAnchor,
 					fLoginGrace, fFixedFraction, fRandomized, updateSelectors,
-					quenchSelectors);
+					pushQuenchSelectors, aeSelectors);
 
 			elements = builder.build(source, fMessages, fPushTimeout,
 					fAEShortCycle, fAELongCycle, fAEThreshold, fAEShortCycles,
@@ -434,11 +445,17 @@ public class DiffusionExperimentWorker extends Worker {
 				graph.size()));
 		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.nup",
 				graph.size()));
-
+		
+		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.nup.expired",
+				graph.size()));
+		
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph
 				.size()));
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup", graph
 				.size()));
+		
+		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup.expired",
+				graph.size()));
 
 		collector.addAccumulator(new SumAccumulation("msg.ae.sent.up", graph
 				.size()));
@@ -623,7 +640,10 @@ public class DiffusionExperimentWorker extends Worker {
 
 		INodeMetric<Double> aeInitiated = metrics.getMetric("msg.ae.init");
 		INodeMetric<Double> aeReceived = metrics.getMetric("msg.ae.respond");
-
+		
+		INodeMetric<Double> aeNUPExpReceived = metrics.getMetric("msg.ae.rec.nup.expired");
+		INodeMetric<Double> hfNUPExpReceived = metrics.getMetric("msg.hflood.rec.nup.expired");
+				
 		INodeMetric<IncrementalStatsFreq> aeBdw = metrics
 				.getMetric("msg.bdw.ae");
 		INodeMetric<IncrementalStatsFreq> hfBdw = metrics
@@ -648,15 +668,25 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set("hfuprec", hfloodUpdatesRecv.getMetric(i));
 			writer.set("hfnuprec", hfloodQuenchRecv.getMetric(i));
+			writer.set("hfnupexp", hfNUPExpReceived.getMetric(i));
+			
+			if (hfloodQuenchRecv.getMetric(i) < hfNUPExpReceived.getMetric(i)) {
+				throw new IllegalStateException();
+			}
 
 			writer.set("hfupsent", hfloodUpdatesSent.getMetric(i));
 			writer.set("hfnupsent", hfloodQuenchSent.getMetric(i));
 
 			writer.set("aeuprec", aeUpdatesRec.getMetric(i));
 			writer.set("aenuprec", aeQuenchRec.getMetric(i));
+			
+			if (aeQuenchRec.getMetric(i) < aeNUPExpReceived.getMetric(i)) {
+				throw new IllegalStateException();
+			}
 
 			writer.set("aeupsend", aeUpdatesSent.getMetric(i));
 			writer.set("aenupsend", aeQuenchSent.getMetric(i));
+			writer.set("aenupexp", aeNUPExpReceived.getMetric(i));
 
 			writer.set("aeinit", aeInitiated.getMetric(i));
 			writer.set("aerespond", aeReceived.getMetric(i));
