@@ -35,16 +35,16 @@ public class SimpleCloudImpl implements ICloud {
 
 		fPublisher = page;
 		fUpdate = update;
-		
+
 		accessed(accessor, page, engine, AccessType.write);
 	}
 
 	@Override
-	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp,
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, int sequence,
 			ISimulationEngine engine) {
-		
+
 		// No update or update too old.
-		if (fUpdate == null || fUpdate.timestamp() <= timestamp) {
+		if (fUpdate == null || fUpdate.sequence <= sequence) {
 			accessed(accessor, page, engine, AccessType.nup);
 			return NO_UPDATE;
 		}

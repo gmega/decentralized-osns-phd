@@ -24,6 +24,10 @@ import java.util.Random;
  * however, it's a mix between the former and the latter, with protocols
  * themselves keeping track of which messages are known and which are not.
  * 
+ * The current implementation is hacky, and strongly based on the assumption
+ * that a single update message circulates at a time. Changing this assumption
+ * will require a completely rewritten implementation.
+ * 
  * @author giuliano
  */
 public class DisseminationServiceImpl implements ICyclicProtocol,
@@ -42,6 +46,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 	private final boolean fOneShot;
 
 	private final double fMaxQuenchAge;
+
+	private int fLastKnown = -1;
 
 	private State fState;
 
@@ -67,19 +73,19 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			IProcess process, ILiveTransformer transformer,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
 			IReference<ISimulationEngine> engine, boolean oneShot,
-			double maxQuenchAge, double pushTimeout,
-			double antientropyShortCycle, double antientropyLongCycle,
-			double antientropyDelay, BitSet antientropyStaticblacklist,
-			int antientropyShortRounds, int antientropyPrio,
-			boolean aeBlacklist,
+			double maxQuenchAge, double updatePushTimeout,
+			double quenchPushTimeout, double antientropyShortCycle,
+			double antientropyLongCycle, double antientropyDelay,
+			BitSet antientropyStaticblacklist, int antientropyShortRounds,
+			int antientropyPrio, boolean aeBlacklist,
 			// For debugging.
 			MessageStatistics stats) {
 
 		fPushProtocols[UPDATE] = new HFloodUP(graph, pushUpdateSelector,
-				process, transformer, this, pushTimeout);
+				process, transformer, this, updatePushTimeout);
 
 		fPushProtocols[NO_UPDATE] = new HFloodNUP(graph, pushQuenchSelector,
-				process, transformer, this, pushTimeout);
+				process, transformer, this, quenchPushTimeout);
 
 		fAntientropy = new Antientropy(engine, aeSelector, process.id(),
 				antientropyPrio, antientropyShortCycle, antientropyLongCycle,
@@ -137,6 +143,10 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		if (fRunner != null) {
 			fRunner.wakeUp();
 		}
+	}
+
+	public int latestSequence() {
+		return fLastKnown;
 	}
 
 	@Override
@@ -260,22 +270,42 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 							antientropy ? MessageStatistics.ANTIENTROPY
 									: MessageStatistics.HFLOOD, id());
 				}
-			} 
-			
+			}
+
 			// Quench is useful, replaces it.
 			else {
 				this.setMessage(message, history);
 			}
 
 			// Marks as reached if message got replaced.
-			if (!isReached()) { 
+			if (!isReached()) {
 				this.markReached(sender.id(), clock, flags);
-			} 
-			
+			}
+
 			// Otherwise have to manually trigger message event as the semantics
 			// for detecting duplicate messages is messed up.
 			else {
 				messageReceived(sender.id(), clock, flags);
+			}
+
+			// Finally, we trigger on-demand antientropy if we're missing
+			// sequence numbers.
+			DisseminationServiceImpl diss = (DisseminationServiceImpl) sender
+					.process().getProtocol(fPid);
+			if (diss.fLastKnown > fLastKnown) {
+				// We have to schedule the pull as doing it here would be messy.
+				// We update the counter immediately so no more pulls get
+				// scheduled. This works fine under the assumptions that:
+				//
+				// 1. the sender will remain online long enough;
+				// 2. we have only one update to download.
+				//
+				// which is okay for this simple simulation.
+				//
+				clock.engine().schedule(
+						new PullExchange(clock.rawTime(),
+								diss.fPushProtocols[UPDATE]));
+				fLastKnown = diss.fLastKnown;
 			}
 
 			return history;
@@ -300,10 +330,6 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			super(graph, selector, process, transformer, reference, timeout);
 		}
 
-		public void rearm() {
-			super.setMessage(null, null);
-		}
-
 		@Override
 		public void markReached(int sender, IClockData clock, int flags) {
 			/*
@@ -317,6 +343,12 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				if (msg.getTracker() != null) {
 					msg.getTracker().decrement(clock.engine());
 				}
+
+				// This works fine because we only deal with one update at
+				// a time.
+				if(!msg.isNUP()) {
+					fLastKnown = msg.sequence;
+				}
 			}
 		}
 
@@ -324,6 +356,49 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 		protected void messageReceived(int sender, IClockData clock, int flags) {
 			DisseminationServiceImpl.this.messageReceived(sender,
 					fProcess.id(), (HFloodMMsg) message(), clock, flags);
+		}
+	}
+
+	class PullExchange extends Schedulable {
+
+		private static final long serialVersionUID = 1L;
+
+		private final double fTime;
+
+		private final HFloodSM fPeer;
+
+		private boolean fScheduled = false;
+
+		public PullExchange(double time, HFloodSM peer) {
+			fTime = time;
+			fPeer = peer;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return fScheduled;
+		}
+
+		@Override
+		public void scheduled(ISimulationEngine engine) {
+			fScheduled = true;
+			// Registers the pull request.
+			messageReceived(fProcess.id(), fPeer.process().id(), null,
+					engine.clock(), HFloodSM.ANTIENTROPY_PUSH
+							| HFloodSM.ANTIENTROPY_PULL);
+
+			// Pulls.
+			fPeer.antientropy(engine, fProcess.id(), true);
+		}
+
+		@Override
+		public double time() {
+			return fTime;
+		}
+
+		@Override
+		public int type() {
+			return -1;
 		}
 	}
 

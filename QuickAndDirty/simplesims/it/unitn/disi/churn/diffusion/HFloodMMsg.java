@@ -4,33 +4,44 @@ import it.unitn.disi.churn.diffusion.DisseminationServiceImpl.BroadcastTracker;
 
 public class HFloodMMsg implements IMessage {
 
-	public final double fTimestamp;
+	public final double timestamp;
 
-	public final int fSource;
+	public final int source;
+
+	public final int sequence;
 
 	private BroadcastTracker fTracker;
+	
+	public static HFloodMMsg createUpdate(double timestamp, int source, int sequence) {
+		return new HFloodMMsg(timestamp, source, sequence);
+	}
+	
+	public static HFloodMMsg createQuench(double timestamp) {
+		return new HFloodMMsg(timestamp, -1, -1);
+	}
 
-	public HFloodMMsg(double timestamp, int source) {
-		fTimestamp = timestamp;
-		fSource = source;
+	private HFloodMMsg(double timestamp, int source, int sequence) {
+		this.timestamp = timestamp;
+		this.source = source;
+		this.sequence = sequence;
 	}
 
 	public boolean isNUP() {
-		return fSource == -1;
+		return sequence == -1;
 	}
 
 	public int source() {
-		return fSource;
+		return source;
 	}
 
 	public double timestamp() {
-		return fTimestamp;
+		return timestamp;
 	}
 
 	void setTracker(BroadcastTracker tracker) {
 		fTracker = tracker;
 	}
-	
+
 	BroadcastTracker getTracker() {
 		return fTracker;
 	}
@@ -39,7 +50,7 @@ public class HFloodMMsg implements IMessage {
 		StringBuffer buf = new StringBuffer();
 
 		if (isNUP()) {
-			buf.append("NUP");
+			buf.append("Quench");
 		} else {
 			buf.append("Update");
 		}
@@ -47,12 +58,12 @@ public class HFloodMMsg implements IMessage {
 		buf.append(" message ");
 		if (!isNUP()) {
 			buf.append("from ");
-			buf.append(fSource);
+			buf.append(source);
 			buf.append(" ");
 		}
 
 		buf.append("@ ");
-		buf.append(fTimestamp);
+		buf.append(timestamp);
 		return buf.toString();
 	}
 

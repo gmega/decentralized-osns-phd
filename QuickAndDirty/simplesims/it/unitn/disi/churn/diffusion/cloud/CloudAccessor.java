@@ -91,8 +91,8 @@ public class CloudAccessor extends PeriodicAction implements IMessageObserver {
 		IClockData clock = engine.clock();
 
 		// Fetch updates.
-		HFloodMMsg[] updates = fCloud
-				.fetchUpdates(id(), -1, fLastHeard, engine);
+		HFloodMMsg[] updates = fCloud.fetchUpdates(id(), -1, fDisseminationService.latestSequence(),
+				engine);
 
 		if (DEBUG) {
 			printEvent(
@@ -104,8 +104,8 @@ public class CloudAccessor extends PeriodicAction implements IMessageObserver {
 		}
 
 		if (updates == ICloud.NO_UPDATE) {
-			fDisseminationService.post(new HFloodMMsg(clock.rawTime(), -1),
-					engine);
+			fDisseminationService.post(
+					HFloodMMsg.createQuench(clock.rawTime()), engine);
 		} else {
 			// XXX note that we disseminate old timestamp information when
 			// there's an updlate. Updates are therefore not so useful for

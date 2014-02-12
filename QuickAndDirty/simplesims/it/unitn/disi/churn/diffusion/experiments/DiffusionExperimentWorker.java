@@ -66,8 +66,12 @@ public class DiffusionExperimentWorker extends Worker {
 	private String fAESelector;
 
 	// Timeout (period without contacts before giving up) of push protocol.
-	@Attribute(value = "push_timeout")
-	private double fPushTimeout;
+	@Attribute(value = "update.push_timeout")
+	private double fUpdatePushTimeout;
+
+	// Timeout (period without contacts before giving up) of push protocol.
+	@Attribute(value = "quench.push_timeout")
+	private double fQuenchPushTimeout;
 
 	// Short cycle of antientropy.
 	@Attribute(value = "antientropy_shortcycle")
@@ -200,9 +204,9 @@ public class DiffusionExperimentWorker extends Worker {
 				"target",
 
 				// Message counts.
-				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "hfnupexp", "aeuprec",
-				"aenuprec", "aenupexp", "aeupsend", "aenupsend", "aeinit", "aerespond",
-				"msgtime", 
+				"hfuprec", "hfnuprec", "hfupsent", "hfnupsent", "hfnupexp",
+				"aeuprec", "aenuprec", "aenupexp", "aeupsend", "aenupsend",
+				"aeinit", "aerespond", "msgtime",
 
 				// Bandwidth statistics.
 				"aebdwsum", "aebdwmax", "aebdwsqr", "hfbdwsum", "hfbdwmax",
@@ -235,7 +239,10 @@ public class DiffusionExperimentWorker extends Worker {
 				+ " fixed nodes.");
 
 		System.err.println("-- Selector is (" + fUpdateSelector + ").");
-		System.err.println("Push protocol timeout is " + fPushTimeout + ".");
+		System.err
+				.println("Update push timeout is " + fUpdatePushTimeout + ".");
+		System.err
+				.println("Quench push timeout is " + fQuenchPushTimeout + ".");
 		System.err.println(antientropy());
 		System.err.println("Antientropy availability threshold is "
 				+ fAEThreshold + ".");
@@ -325,6 +332,9 @@ public class DiffusionExperimentWorker extends Worker {
 		long diffSeed = nextSeed();
 		long churnSeed = exp.churnSeeds == null ? nextSeed() : exp.churnSeeds
 				.nextLong();
+		
+//		long diffSeed = 15297801637240602L;
+		//long churnSeed = 15297801637241603L;
 
 		props.put("seed.diffusion", diffSeed);
 		props.put("seed.churn", churnSeed);
@@ -375,10 +385,10 @@ public class DiffusionExperimentWorker extends Worker {
 					fLoginGrace, fFixedFraction, fRandomized, updateSelectors,
 					pushQuenchSelectors, aeSelectors);
 
-			elements = builder.build(source, fMessages, fPushTimeout,
-					fAEShortCycle, fAELongCycle, fAEThreshold, fAEShortCycles,
-					fP2PSims, fCloudAssisted, fTrackCores, fBlacklistingAE,
-					processes);
+			elements = builder.build(source, fMessages, fUpdatePushTimeout,
+					fQuenchPushTimeout, fAEShortCycle, fAELongCycle,
+					fAEThreshold, fAEShortCycles, fP2PSims, fCloudAssisted,
+					fTrackCores, fBlacklistingAE, processes);
 		}
 
 		fFirst = false;
@@ -445,15 +455,15 @@ public class DiffusionExperimentWorker extends Worker {
 				graph.size()));
 		collector.addAccumulator(new SumAccumulation("msg.hflood.sent.nup",
 				graph.size()));
-		
-		collector.addAccumulator(new SumAccumulation("msg.hflood.rec.nup.expired",
-				graph.size()));
-		
+
+		collector.addAccumulator(new SumAccumulation(
+				"msg.hflood.rec.nup.expired", graph.size()));
+
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.up", graph
 				.size()));
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup", graph
 				.size()));
-		
+
 		collector.addAccumulator(new SumAccumulation("msg.ae.rec.nup.expired",
 				graph.size()));
 
@@ -640,10 +650,12 @@ public class DiffusionExperimentWorker extends Worker {
 
 		INodeMetric<Double> aeInitiated = metrics.getMetric("msg.ae.init");
 		INodeMetric<Double> aeReceived = metrics.getMetric("msg.ae.respond");
-		
-		INodeMetric<Double> aeNUPExpReceived = metrics.getMetric("msg.ae.rec.nup.expired");
-		INodeMetric<Double> hfNUPExpReceived = metrics.getMetric("msg.hflood.rec.nup.expired");
-				
+
+		INodeMetric<Double> aeNUPExpReceived = metrics
+				.getMetric("msg.ae.rec.nup.expired");
+		INodeMetric<Double> hfNUPExpReceived = metrics
+				.getMetric("msg.hflood.rec.nup.expired");
+
 		INodeMetric<IncrementalStatsFreq> aeBdw = metrics
 				.getMetric("msg.bdw.ae");
 		INodeMetric<IncrementalStatsFreq> hfBdw = metrics
@@ -669,7 +681,7 @@ public class DiffusionExperimentWorker extends Worker {
 			writer.set("hfuprec", hfloodUpdatesRecv.getMetric(i));
 			writer.set("hfnuprec", hfloodQuenchRecv.getMetric(i));
 			writer.set("hfnupexp", hfNUPExpReceived.getMetric(i));
-			
+
 			if (hfloodQuenchRecv.getMetric(i) < hfNUPExpReceived.getMetric(i)) {
 				throw new IllegalStateException();
 			}
@@ -679,7 +691,7 @@ public class DiffusionExperimentWorker extends Worker {
 
 			writer.set("aeuprec", aeUpdatesRec.getMetric(i));
 			writer.set("aenuprec", aeQuenchRec.getMetric(i));
-			
+
 			if (aeQuenchRec.getMetric(i) < aeNUPExpReceived.getMetric(i)) {
 				throw new IllegalStateException();
 			}

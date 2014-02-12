@@ -22,6 +22,12 @@ public interface IDisseminationService {
 	public void post(IMessage message, ISimulationEngine engine);
 
 	/**
+	 * @return the number of the sequence number of the latest update known by
+	 *         this {@link IDisseminationService}.
+	 */
+	public int latestSequence();
+
+	/**
 	 * Registers an {@link IMessageObserver} with this dissemination service.
 	 */
 	public void addMessageObserver(IMessageObserver observer);

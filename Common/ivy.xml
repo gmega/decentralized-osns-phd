@@ -14,6 +14,7 @@
         <dependency org="it.unitn.disi" name="edsim" rev="latest.integration" conf="core"/>
         <dependency org="it.unitn.disi" name="simcontrol" rev="latest.integration" conf="core"/>
         <dependency org="it.unitn.disi" name="osn-sims" rev="latest.integration" conf="core"/>
+        <dependency	org="args4j" name="args4j-tools" rev="2.0.25" conf="core->default"/>
     </dependencies>
     
 </ivy-module>

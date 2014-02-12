@@ -30,13 +30,13 @@ public interface ICloud {
 	 *            the node making the access.
 	 * @param page
 	 *            the page id for which to fetch updates.
-	 * @param timestamp
-	 *            a timestamp marking how old, at most, returned updates should
-	 *            be.
+	 * @param sequence
+	 *            the sequence number of the latest update known by this node.
+	 *            
 	 * @return all updates with timestamp larger or equal to the query
 	 *         timestamp.
 	 */
-	public HFloodMMsg[] fetchUpdates(int accessor, int page, double timestamp,
+	public HFloodMMsg[] fetchUpdates(int accessor, int page, int sequence,
 			ISimulationEngine engine);
 
 	/**
@@ -61,10 +61,8 @@ public interface ICloud {
 		 */
 		public void registerAccess(int accessor, int page, AccessType type);
 	}
-	
+
 	public enum AccessType {
-		write,
-		productive,
-		nup
+		write, productive, nup
 	}
 }

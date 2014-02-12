@@ -178,6 +178,10 @@ public class HFloodSM implements ICyclicProtocol {
 	public int id() {
 		return fProcess.id();
 	}
+	
+	IProcess process() {
+		return fProcess;
+	}
 
 	/**
 	 * Halts dissemination at this protocol instance. If the protocol hasn't

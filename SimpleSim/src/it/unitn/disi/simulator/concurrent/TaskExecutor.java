@@ -42,8 +42,6 @@ public class TaskExecutor {
 
 	private volatile IProgressTracker fTracker;
 
-	private boolean fDiscard;
-
 	private int fMaxQueuedTasks;
 
 	public TaskExecutor(int cores) {
@@ -87,9 +85,6 @@ public class TaskExecutor {
 					}
 
 					private void queue(Object result) {
-						if (fDiscard) {
-							return;
-						}
 						fSema.release();
 						fReady.offer(result);
 					}

@@ -114,11 +114,11 @@ public class CloudSimulationBuilder {
 	}
 
 	public Pair<EDSimulationEngine, List<INodeMetric<? extends Object>>> build(
-			final int source, int messages, double pushTimeout,
-			double antientropyShortCycle, double antientropyLongCycle,
-			double antientropyLAThreshold, int shortCycles,
-			boolean dissemination, boolean cloudAssist, boolean trackCores,
-			boolean aeBlacklist, IProcess[] processes) {
+			final int source, int messages, double updatePushTimeout,
+			double quenchPushTimeout, double antientropyShortCycle,
+			double antientropyLongCycle, double antientropyLAThreshold,
+			int shortCycles, boolean dissemination, boolean cloudAssist,
+			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -145,7 +145,7 @@ public class CloudSimulationBuilder {
 			builder.addObserver(runner.networkObserver(),
 					IProcess.PROCESS_SCHEDULABLE_TYPE, false, true);
 		}
-		
+
 		// If no dissemination is being simulated, we turn off message tracking,
 		// as it can be quite expensive even if it's doing nothing.
 		MessageStatistics mstats = null;
@@ -158,7 +158,8 @@ public class CloudSimulationBuilder {
 		prots = create(processes, runner, source,
 				pid,
 				messages,
-				pushTimeout,
+				updatePushTimeout,
+				quenchPushTimeout,
 				// Antientropy cycle length is negative if no dissemination.
 				// This causes antientropy to be disabled.
 				dissemination ? antientropyShortCycle : -1,
@@ -171,7 +172,6 @@ public class CloudSimulationBuilder {
 			create(reference, processes, prots, cloud, source);
 		}
 
-	
 		UptimeTracker upTracker = new UptimeTracker("msg", processes.length);
 		metrics.add(upTracker.accruedUptime());
 
@@ -286,11 +286,12 @@ public class CloudSimulationBuilder {
 
 	private DisseminationServiceImpl[] create(IProcess[] processes,
 			PausingCyclicProtocolRunner<? extends ICyclicProtocol> runner,
-			int source, int pid, int messages, double pushTimeout,
-			double antientropyShortCycle, double antientropyLongCycle,
-			int shortCycles, double antientropyLAThreshold,
-			boolean aeBlacklist, EngineBuilder builder,
-			List<INodeMetric<? extends Object>> metrics, MessageStatistics stats) {
+			int source, int pid, int messages, double updatePushTimeout,
+			double quenchPushTimeout, double antientropyShortCycle,
+			double antientropyLongCycle, int shortCycles,
+			double antientropyLAThreshold, boolean aeBlacklist,
+			EngineBuilder builder, List<INodeMetric<? extends Object>> metrics,
+			MessageStatistics stats) {
 
 		final DisseminationServiceImpl[] protocols = new DisseminationServiceImpl[fGraph
 				.size()];
@@ -310,7 +311,7 @@ public class CloudSimulationBuilder {
 							: fPushUpdateSelectors[i],
 					fPushQuenchSelectors == null ? null
 							: fPushQuenchSelectors[i],
-					fAESelectors[i] == null ? null : fAESelectors[i],
+					fAESelectors == null ? null : fAESelectors[i],
 					processes[i],
 					new ILiveTransformer() {
 						@Override
@@ -319,11 +320,11 @@ public class CloudSimulationBuilder {
 							return null;
 						}
 					}, runner, builder.reference(), messages == 1,
-					maxQuenchAge(), pushTimeout, antientropyShortCycle,
-					antientropyLongCycle, fBurnin, isLA ? new BitSet()
-							: availabilityBlacklist(processes,
-									antientropyLAThreshold), shortCycles,
-					AE_PRIORITY, aeBlacklist, stats);
+					maxQuenchAge(), updatePushTimeout, quenchPushTimeout,
+					antientropyShortCycle, antientropyLongCycle, fBurnin,
+					isLA ? new BitSet() : availabilityBlacklist(processes,
+							antientropyLAThreshold), shortCycles, AE_PRIORITY,
+					aeBlacklist, stats);
 
 			processes[i].addProtocol(protocols[i]);
 

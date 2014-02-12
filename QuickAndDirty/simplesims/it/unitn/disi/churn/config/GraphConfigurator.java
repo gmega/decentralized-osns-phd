@@ -1,5 +1,6 @@
 package it.unitn.disi.churn.config;
 
+import it.unitn.disi.distsim.dataserver.CachingProvider;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.generators.InMemoryProvider;
@@ -58,7 +59,7 @@ public class GraphConfigurator {
 			loader.start(null);
 			System.err.println("done.");
 			provider = loader;
-		} else if (fGraphType.equals("inmemory"))  {
+		} else if (fGraphType.equals("inmemory")) {
 			provider = new InMemoryProvider(fGraph);
 		} else if (fGraphType.equals("remote")) {
 			String host = fResolver.getString("", HOST);
@@ -69,7 +70,9 @@ public class GraphConfigurator {
 					+ ".");
 			try {
 				Registry registry = LocateRegistry.getRegistry(host, port);
-				provider = (IGraphProvider) registry.lookup(graphId);
+				// We keep up to 50000 ego networks in memory.
+				provider = new CachingProvider(
+						(IGraphProvider) registry.lookup(graphId), 50000);
 			} catch (RemoteException ex) {
 				fLogger.error("Failed to resolve registry at supplied address/port. "
 						+ "Is the server running?");

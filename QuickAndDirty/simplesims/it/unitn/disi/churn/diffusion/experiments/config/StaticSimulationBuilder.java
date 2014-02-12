@@ -81,7 +81,7 @@ public class StaticSimulationBuilder {
 
 		EDSimulationEngine engine = builder.engine();
 
-		HFloodMMsg msg = new HFloodMMsg(0.0, 0);
+		HFloodMMsg msg = HFloodMMsg.createUpdate(0.0, 0, 0);
 		for (int i = 0; i < fProtocols.length; i++) {
 			fProtocols[i].setMessage(msg, null);
 		}
