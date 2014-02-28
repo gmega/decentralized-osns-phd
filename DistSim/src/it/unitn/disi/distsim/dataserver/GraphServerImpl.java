@@ -3,6 +3,7 @@ package it.unitn.disi.distsim.dataserver;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
+import it.unitn.disi.graph.generators.InMemoryProvider;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
 import it.unitn.disi.graph.large.catalog.CatalogRecordTypes;
 import it.unitn.disi.graph.large.catalog.PartialLoader;
@@ -44,7 +45,7 @@ public class GraphServerImpl implements IGraphProvider {
 				CatalogRecordTypes.PROPERTY_RECORD);
 		PartialLoader loader = new PartialLoader(reader,
 				ByteGraphDecoder.class, fGraph);
-
+		
 		fLogger.info("Now reading catalog.");
 		loader.start(null);
 		fLogger.info("Done reading catalog.");

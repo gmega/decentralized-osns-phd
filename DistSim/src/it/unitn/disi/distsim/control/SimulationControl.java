@@ -123,6 +123,11 @@ public class SimulationControl implements SimulationControlMBean {
 		Simulation sim = checkedGet(id);
 		sim.resetAll();
 	}
+	
+	@Override
+	public synchronized List<String> list() {
+		return new ArrayList<String>(fSimulationKeys);
+	}
 
 	@Override
 	public File getMasterFolder() {

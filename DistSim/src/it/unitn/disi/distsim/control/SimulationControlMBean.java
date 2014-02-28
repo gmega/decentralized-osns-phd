@@ -1,6 +1,7 @@
 package it.unitn.disi.distsim.control;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Main interface for creating/destroying simulations.
@@ -8,7 +9,7 @@ import java.io.File;
  * @author giuliano
  */
 public interface SimulationControlMBean {
-
+	
 	/**
 	 * Creates a new simulation with a given id.
 	 * 
@@ -32,7 +33,12 @@ public interface SimulationControlMBean {
 	 *            the unique id of the simulation to reset.
 	 */
 	public void reset(String id);
-
+	
+	/**
+	 * @return the list of registered simulations.
+	 */
+	public List<String> list();
+	
 	/**
 	 * @return the master output folder (at the server) in which all simulation
 	 *         data will be stored.
