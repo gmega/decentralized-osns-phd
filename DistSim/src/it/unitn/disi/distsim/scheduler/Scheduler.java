@@ -42,7 +42,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	private HashMap<String, String> fProperties = new HashMap<String, String>();
 
 	@XStreamAlias("autostart")
-	private boolean fRunning;
+	private boolean fAutostart;
 
 	@XStreamOmitField
 	private SchedulerImpl fMaster = null;
@@ -82,15 +82,15 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 				System.currentTimeMillis(), "Scheduler [" + fControl.id()
 						+ "] started.", "isRunning", "boolean", false, true));
 
-		fRunning = true;
+		fAutostart = true;
 		fControl.attributeListUpdated(this);
 	}
 	
 	@Override
 	public void reset() {
-		boolean wasRunning = fRunning;
+		boolean wasRunning = fAutostart;
 		// Stops the scheduler.
-		if (fRunning) {
+		if (fAutostart) {
 			stop();
 		}
 
@@ -133,21 +133,16 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 		return Schedulers.get(fSchedulerType, new HashMapResolver(fProperties));
 	}
 
-	private void checkNotRunning() throws IllegalStateException {
-		if (fMaster != null) {
-			throw new IllegalStateException("Server already running.");
-		}
-	}
-
 	@Override
 	public synchronized void stop() {
+		checkRunning();
 		fMaster.shutdown();
 		fMaster = null;
 		fControl.remove("queue");		
 		sendNotification(new AttributeChangeNotification(this, fSequence++,
 				System.currentTimeMillis(), "Scheduler [" + fControl.id()
 						+ "] stopped.", "isRunning", "boolean", false, true));
-		fRunning = false;
+		fAutostart = false;
 		fControl.attributeListUpdated(this);
 	}
 
@@ -222,7 +217,7 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 
 	@Override
 	public boolean shouldAutoStart() {
-		return fRunning;
+		return fAutostart;
 	}
 
 	@Override
@@ -256,6 +251,18 @@ public class Scheduler extends NotificationBroadcasterSupport implements
 	@Override
 	public int getRegisteredWorkers() {
 		return fMaster.activeWorkers();
+	}
+
+	private void checkNotRunning() throws IllegalStateException {
+		if (isRunning()) {
+			throw new IllegalStateException("Server already running.");
+		}
+	}
+
+	private void checkRunning() throws IllegalStateException {
+		if (!isRunning()) {
+			throw new IllegalStateException("Server not running.");
+		}
 	}
 	
 }
