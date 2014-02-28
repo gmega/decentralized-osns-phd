@@ -206,6 +206,7 @@ public class GenericDriver {
 
 		System.err.println("-- Kill file polling at: "
 				+ killFile.getAbsolutePath() + ".");
+		killMonitor.setDaemon(true);
 		killMonitor.start();
 	}
 
@@ -245,6 +246,7 @@ public class GenericDriver {
 
 		}, "Kill-on-login monitor");
 
+		niceMonitor.setDaemon(true);
 		niceMonitor.start();
 	}
 
