@@ -46,6 +46,8 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 	private final boolean fOneShot;
 
 	private final double fMaxQuenchAge;
+	
+	private boolean fOnDemandPull;
 
 	private int fLastKnown = -1;
 
@@ -77,7 +79,7 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 			double quenchPushTimeout, double antientropyShortCycle,
 			double antientropyLongCycle, double antientropyDelay,
 			BitSet antientropyStaticblacklist, int antientropyShortRounds,
-			int antientropyPrio, boolean aeBlacklist,
+			int antientropyPrio, boolean aeBlacklist, boolean onDemandPull,
 			// For debugging.
 			MessageStatistics stats) {
 
@@ -288,25 +290,28 @@ public class DisseminationServiceImpl implements ICyclicProtocol,
 				messageReceived(sender.id(), clock, flags);
 			}
 
-			// Finally, we trigger on-demand antientropy if we're missing
-			// sequence numbers.
-			DisseminationServiceImpl diss = (DisseminationServiceImpl) sender
-					.process().getProtocol(fPid);
-			if (diss.fLastKnown > fLastKnown) {
-				// We have to schedule the pull as doing it here would be messy.
-				// We update the counter immediately so no more pulls get
-				// scheduled. This works fine under the assumptions that:
-				//
-				// 1. the sender will remain online long enough;
-				// 2. we have only one update to download.
-				//
-				// which is okay for this simple simulation.
-				//
-				clock.engine().schedule(
-						new PullExchange(clock.rawTime(),
-								diss.fPushProtocols[UPDATE]));
-				fLastKnown = diss.fLastKnown;
+			if (fOnDemandPull) {
+				// Finally, we trigger on-demand antientropy if we're missing
+				// sequence numbers.
+				DisseminationServiceImpl diss = (DisseminationServiceImpl) sender
+						.process().getProtocol(fPid);
+				if (diss.fLastKnown > fLastKnown) {
+					// We have to schedule the pull as doing it here would be messy.
+					// We update the counter immediately so no more pulls get
+					// scheduled. This works fine under the assumptions that:
+					//
+					// 1. the sender will remain online long enough;
+					// 2. we have only one update to download.
+					//
+					// which is okay for this simple simulation.
+					//
+					clock.engine().schedule(
+							new PullExchange(clock.rawTime(),
+									diss.fPushProtocols[UPDATE]));
+					fLastKnown = diss.fLastKnown;
+				}
 			}
+			
 
 			return history;
 		}

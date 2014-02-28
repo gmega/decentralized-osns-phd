@@ -118,7 +118,8 @@ public class CloudSimulationBuilder {
 			double quenchPushTimeout, double antientropyShortCycle,
 			double antientropyLongCycle, double antientropyLAThreshold,
 			int shortCycles, boolean dissemination, boolean cloudAssist,
-			boolean trackCores, boolean aeBlacklist, IProcess[] processes) {
+			boolean trackCores, boolean aeBlacklist, boolean onDemandPull,
+			IProcess[] processes) {
 
 		List<INodeMetric<? extends Object>> metrics = new ArrayList<INodeMetric<? extends Object>>();
 		DisseminationServiceImpl[] prots;
@@ -164,7 +165,7 @@ public class CloudSimulationBuilder {
 				// This causes antientropy to be disabled.
 				dissemination ? antientropyShortCycle : -1,
 				antientropyLongCycle, shortCycles, antientropyLAThreshold,
-				aeBlacklist, builder, metrics, mstats);
+				aeBlacklist, onDemandPull, builder, metrics, mstats);
 
 		// 1b. Cloud-assistance, if enabled.
 		if (cloudAssist) {
@@ -289,7 +290,7 @@ public class CloudSimulationBuilder {
 			int source, int pid, int messages, double updatePushTimeout,
 			double quenchPushTimeout, double antientropyShortCycle,
 			double antientropyLongCycle, int shortCycles,
-			double antientropyLAThreshold, boolean aeBlacklist,
+			double antientropyLAThreshold, boolean aeBlacklist, boolean onDemandPull,
 			EngineBuilder builder, List<INodeMetric<? extends Object>> metrics,
 			MessageStatistics stats) {
 
@@ -324,7 +325,7 @@ public class CloudSimulationBuilder {
 					antientropyShortCycle, antientropyLongCycle, fBurnin,
 					isLA ? new BitSet() : availabilityBlacklist(processes,
 							antientropyLAThreshold), shortCycles, AE_PRIORITY,
-					aeBlacklist, stats);
+					aeBlacklist, onDemandPull, stats);
 
 			processes[i].addProtocol(protocols[i]);
 

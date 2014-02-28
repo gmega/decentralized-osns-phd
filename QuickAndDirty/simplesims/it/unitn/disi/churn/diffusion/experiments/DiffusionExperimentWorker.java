@@ -94,6 +94,11 @@ public class DiffusionExperimentWorker extends Worker {
 	@Attribute(value = "antientropy_availability_threshold", defaultValue = "0.0")
 	private double fAEThreshold;
 
+	// If enabled, causes node who receive a quench message and notice a missing
+	// sequence number to try to reconcile with the sending node (pull only).
+	@Attribute(value = "pull_on_demand", defaultValue = "false")
+	private boolean fOnDemandPull;
+
 	// "Grace period" for expired PeriodicActions.
 	@Attribute(value = "login_grace", defaultValue = "0")
 	private double fLoginGrace;
@@ -262,7 +267,7 @@ public class DiffusionExperimentWorker extends Worker {
 				System.err.println("-- Periods are fixed:" + fDelta);
 			}
 		}
-
+		System.err.println("-- Pull on demand is " + fOnDemandPull);
 	}
 
 	private String antientropy() {
@@ -332,9 +337,9 @@ public class DiffusionExperimentWorker extends Worker {
 		long diffSeed = nextSeed();
 		long churnSeed = exp.churnSeeds == null ? nextSeed() : exp.churnSeeds
 				.nextLong();
-		
-//		long diffSeed = 15297801637240602L;
-		//long churnSeed = 15297801637241603L;
+
+		// long diffSeed = 15297801637240602L;
+		// long churnSeed = 15297801637241603L;
 
 		props.put("seed.diffusion", diffSeed);
 		props.put("seed.churn", churnSeed);
@@ -388,7 +393,7 @@ public class DiffusionExperimentWorker extends Worker {
 			elements = builder.build(source, fMessages, fUpdatePushTimeout,
 					fQuenchPushTimeout, fAEShortCycle, fAELongCycle,
 					fAEThreshold, fAEShortCycles, fP2PSims, fCloudAssisted,
-					fTrackCores, fBlacklistingAE, processes);
+					fTrackCores, fBlacklistingAE, fOnDemandPull, processes);
 		}
 
 		fFirst = false;
