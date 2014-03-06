@@ -28,6 +28,12 @@ import peersim.config.Attribute;
 import peersim.config.AutoConfig;
 import peersim.util.IncrementalStats;
 
+/**
+ * Generates egonetwork/source samples. This implementation is only suitable for
+ * <it>sparse</it> samples. I wouldn't go over 10% of the network with it. 
+ * 
+ * @author giuliano
+ */
 @AutoConfig
 public class SimpleSimulation implements Runnable {
 

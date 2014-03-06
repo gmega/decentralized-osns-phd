@@ -1,6 +1,6 @@
 package it.unitn.disi.churn.config;
 
-import it.unitn.disi.distsim.dataserver.CachingProvider;
+import it.unitn.disi.graph.CachingProvider;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.generators.InMemoryProvider;

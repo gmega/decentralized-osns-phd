@@ -13,6 +13,7 @@ import it.unitn.disi.churn.diffusion.experiments.config.PeerSelectorBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.graph.IGraphProvider;
+import it.unitn.disi.graph.IRemoteGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
@@ -185,8 +186,8 @@ public class DiffusionExperimentWorker extends Worker {
 			throws Exception {
 		super(resolver, debug, localSchedule);
 
-		fProvider = ObjectCreator.createInstance(GraphConfigurator.class, "",
-				resolver).graphProvider();
+		fProvider = (IRemoteGraphProvider) ObjectCreator.createInstance(
+				GraphConfigurator.class, "", resolver).graphProvider();
 
 		fYaoChurn = churn ? ObjectCreator.createInstance(
 				YaoChurnConfigurator.class, "", resolver) : null;
@@ -315,7 +316,7 @@ public class DiffusionExperimentWorker extends Worker {
 		Random churnSeeds = fFixSeed ? new Random(
 				Long.parseLong(experiment.attributes.get("seed"))) : null;
 
-		int source = Integer.parseInt(experiment.attributes.get("node"));
+		int source = Integer.parseInt(experiment.attributes.get("source"));
 		int[] ids = fProvider.verticesOf(experiment.root);
 
 		return new ExperimentData(experiment, graph, source, ids,

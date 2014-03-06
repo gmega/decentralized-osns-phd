@@ -216,8 +216,10 @@ public class MessageStatistics extends SessionStatistics implements
 			int downZeros = ((IncrementalStatsFreq) fBdwTracker[COMBINED][i]
 					.getStats()).getFreq(0);
 			if (fUptimeZeroBins[COMBINED][i] > downZeros) {
-				throw new IllegalStateException(fUptimeZeroBins[COMBINED][i]
-						+ " > " + downZeros);
+				// throw new IllegalStateException(fUptimeZeroBins[COMBINED][i]
+				// + " > " + downZeros);
+				System.out.println("BDIF: " + fUptimeZeroBins[COMBINED][i]
+						+ ", " + downZeros);
 			}
 
 			checkDrift(aeBuckets, eBuckets, "ANTI");

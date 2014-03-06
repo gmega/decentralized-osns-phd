@@ -11,6 +11,7 @@ import it.unitn.disi.churn.diffusion.BalancingSelector;
 import it.unitn.disi.churn.diffusion.BiasedCentralitySelector;
 import it.unitn.disi.churn.diffusion.IPeerSelector;
 import it.unitn.disi.churn.diffusion.RandomSelector;
+import it.unitn.disi.graph.CachingProvider;
 import it.unitn.disi.graph.IGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.utils.MiscUtils;
@@ -223,9 +224,12 @@ public class PeerSelectorBuilder {
 		 *             {@link FastRandomAssignmentReader}.
 		 */
 		public BalancedSelectorBuilder withDynamicSocialDegrees(
-				FastRandomAssignmentReader index) throws IOException {
+				FastRandomAssignmentReader index) throws Exception {
 			int ids[] = fProvider.verticesOf(fEgonetId);
 			int[] fSocialDegrees = new int[ids.length];
+
+			preload(ids);
+
 			for (int i = 0; i < fSocialDegrees.length; i++) {
 				fSocialDegrees[i] = dynamicDegree(ids[i], fProvider, index);
 			}
@@ -241,8 +245,11 @@ public class PeerSelectorBuilder {
 		 *             if there are problems accessing graph components.
 		 */
 		public BalancedSelectorBuilder withStaticSocialDegrees()
-				throws IOException {
+				throws Exception {
 			int ids[] = fProvider.verticesOf(fEgonetId);
+
+			preload(ids);
+
 			fSocialDegrees = new int[ids.length];
 			for (int i = 0; i < ids.length; i++) {
 				fSocialDegrees[i] = fProvider.size(ids[i]) - 1;
@@ -303,7 +310,7 @@ public class PeerSelectorBuilder {
 		 *            the cap to be honoured per friend.
 		 */
 		public BalancedSelectorBuilder perFriendOutboundCap(double cap)
-				throws IOException {
+				throws Exception {
 			ensureDegrees();
 			fOutboundBandwidth = scaledArray(fSocialDegrees, cap);
 
@@ -321,7 +328,7 @@ public class PeerSelectorBuilder {
 		 *            the cap to be honoured per friend.
 		 */
 		public BalancedSelectorBuilder perFriendInboundCap(double cap)
-				throws IOException {
+				throws Exception {
 			ensureDegrees();
 			fInboundBandwidth = scaledArray(fSocialDegrees, cap);
 
@@ -360,12 +367,21 @@ public class PeerSelectorBuilder {
 			return this;
 		}
 
-		public IPeerSelector[] build() throws IOException {
+		public IPeerSelector[] build() throws Exception {
 			ensureDegrees();
 			ensureBdwCaps();
 			return BalancingSelector.degreeApproximationSelectors(fRandom,
 					fEgoDegrees, fSocialDegrees, fOutboundBandwidth,
 					fInboundBandwidth);
+		}
+
+		private void preload(int... ids) throws Exception {
+			if (fProvider instanceof CachingProvider) {
+				CachingProvider provider = (CachingProvider) fProvider;
+				provider.preload(
+						Arrays.asList(provider.SIZE, provider.VERTICES),
+						ids);
+			}
 		}
 
 		private void setMinimumBdw(double[] assignment, double cap) {
@@ -388,7 +404,7 @@ public class PeerSelectorBuilder {
 			return array;
 		}
 
-		private void ensureDegrees() throws IOException {
+		private void ensureDegrees() throws Exception {
 			if (fEgoDegrees == null) {
 				withStaticEgoDegrees();
 			}
@@ -422,6 +438,6 @@ public class PeerSelectorBuilder {
 	}
 
 	private static interface IBuilder {
-		public IPeerSelector[] build() throws IOException;
+		public IPeerSelector[] build() throws Exception;
 	}
 }
