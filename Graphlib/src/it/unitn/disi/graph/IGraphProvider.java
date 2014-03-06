@@ -4,10 +4,14 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 /**
- * {@link IGraphProvider} is a base service allowing piecewise access to an
- * underlying, possibly huge graph, without having to load it into memory.
+ * {@link IGraphProvider} specifies a base service allowing piecewise access to
+ * an underlying, possibly huge graph, without having to load it into memory.
  * Conceptually, large graphs are split into a number of subgraphs, which can
  * then be accessed one at a time.<BR>
+ * <BR>
+ * Though it can be used remotely, the interface is appropriate for graphs that
+ * are stored locally. For remote access, see {@link IRemoteGraphProvider}.
+ * 
  * <BR>
  * The actual method and characteristics of how graphs are split is
  * implementation-dependent.

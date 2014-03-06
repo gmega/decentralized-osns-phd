@@ -24,17 +24,24 @@ import peersim.graph.Graph;
 import peersim.graph.NeighbourListGraph;
 
 /**
- * Partial loader can load cataloged graphs one neighborhood at a time.
+ * Partial loader can load cataloged graphs one neighborhood at a time. Because
+ * of the way this is done, it's inherently sequential and not suitable for
+ * concurrency. The goal here is to have low footprint, and use a separate
+ * loader for each process.
+ * 
+ * XXX the catalog could be flyweighted to ease the use of {@link PartialLoader}
+ * in concurrent scenarios. Clients could keep a pool of PartialLoaders and
+ * assign them to requests as they go.
  * 
  * @author giuliano
  */
 public class PartialLoader implements IGraphProvider, IPlugin {
 
-	private Class<? extends ResettableGraphDecoder> fDecoderClass;
+	private final Class<? extends ResettableGraphDecoder> fDecoderClass;
 
-	private ICatalogCursor fCursor;
+	private final ICatalogCursor fCursor;
 
-	private File fGraph;
+	private final File fGraph;
 
 	private Map<Integer, CatalogEntry> fCatalog;
 
@@ -49,7 +56,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 		fGraph = graph;
 	}
 
-	public IndexedNeighborGraph subgraph(Integer root) {
+	public synchronized IndexedNeighborGraph subgraph(Integer root) {
 		CatalogEntry entry = catalogEntry(root);
 		NeighbourListGraph nlg = new NeighbourListGraph(entry.size + 1, false);
 
@@ -72,20 +79,20 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 	}
 
 	@Override
-	public int size() {
+	public synchronized int size() {
 		return fCatalog.size();
 	}
 
 	@Override
-	public int[] verticesOf(Integer subgraph) {
+	public synchronized int[] verticesOf(Integer subgraph) {
 		DenseIDMapper mapper = init(catalogEntry(subgraph), new NullGraph());
 		return mapper.reverseMappings();
 	}
 
-	public IDMapper mapper(Integer subgraph) {
+	public synchronized IDMapper mapper(Integer subgraph) {
 		final int[] vertices = verticesOf(subgraph);
 		return new IDMapper() {
-			
+
 			@Override
 			public int map(int i) {
 				if (!isMapped(i)) {
@@ -93,7 +100,6 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 				}
 				return vertices[i];
 			}
-			
 
 			@Override
 			public int reverseMap(int i) {
@@ -104,11 +110,11 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 			public boolean isMapped(int i) {
 				return i < vertices.length && i >= 0;
 			}
-			
+
 		};
 	}
 
-	public int size(Integer subgraph) {
+	public synchronized int size(Integer subgraph) {
 		return catalogEntry(subgraph).size + 1;
 	}
 
@@ -170,7 +176,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 	}
 
 	@Override
-	public void start(IResolver resolver) throws Exception {
+	public synchronized void start(IResolver resolver) throws Exception {
 		HashMap<Integer, CatalogEntry> catalog = new HashMap<Integer, CatalogEntry>();
 
 		while (fCursor.hasNext()) {
@@ -180,7 +186,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 					new CatalogEntry(root, fCursor.get(NeighborhoodSize.KEY)
 							.intValue(), fCursor.get("offset").longValue()));
 		}
-		
+
 		fCatalog = Collections.unmodifiableMap(catalog);
 
 		fStream = new ResettableFileInputStream(fGraph);
@@ -188,7 +194,7 @@ public class PartialLoader implements IGraphProvider, IPlugin {
 	}
 
 	@Override
-	public void stop() throws Exception {
+	public synchronized void stop() throws Exception {
 		fStream.close();
 	}
 

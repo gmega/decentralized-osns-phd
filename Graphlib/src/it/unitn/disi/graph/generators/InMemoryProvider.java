@@ -28,11 +28,11 @@ public class InMemoryProvider implements IGraphProvider {
 
 	private final LightweightStaticGraph fGraph;
 
-	public InMemoryProvider(@Attribute("graph") String graph)
+	public InMemoryProvider(@Attribute("graph") String filepath)
 			throws IOException, ClassNotFoundException, NoSuchMethodException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
-		this(graph, ByteGraphDecoder.class.getName());
+		this(filepath, ByteGraphDecoder.class.getName());
 	}
 
 	public InMemoryProvider(@Attribute("graph") String graph,
@@ -40,28 +40,35 @@ public class InMemoryProvider implements IGraphProvider {
 			ClassNotFoundException, NoSuchMethodException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
+		this(new File(graph), decoderClass);
+	}
+
+	public InMemoryProvider(File graph, String decoderClass)
+			throws IOException, ClassNotFoundException, NoSuchMethodException,
+			InstantiationException, IllegalAccessException,
+			InvocationTargetException {
 		ResettableGraphDecoder decoder = GraphCodecHelper.createDecoder(
-				new ResettableFileInputStream(new File(graph)), decoderClass);
+				new ResettableFileInputStream(graph), decoderClass);
 		fGraph = LightweightStaticGraph.load(decoder);
 	}
 
 	@Override
-	public int size() throws RemoteException {
+	public int size() {
 		return fGraph.size();
 	}
 
 	@Override
-	public int size(Integer i) throws RemoteException {
+	public int size(Integer i) {
 		return fGraph.degree(i) + 1;
 	}
 
 	@Override
-	public IndexedNeighborGraph subgraph(Integer i) throws RemoteException {
+	public IndexedNeighborGraph subgraph(Integer i)  {
 		return LightweightStaticGraph.subgraph(fGraph, verticesOf(i));
 	}
 
 	@Override
-	public int[] verticesOf(Integer i) throws RemoteException {
+	public int[] verticesOf(Integer i) {
 		int[] vertices = new int[size(i)];
 		vertices[0] = i;
 		System.arraycopy(fGraph.fastGetNeighbours(i), 0, vertices, 1,
