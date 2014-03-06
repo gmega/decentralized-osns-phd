@@ -1,7 +1,7 @@
 package it.unitn.disi.distsim.dataserver;
 
+import it.unitn.disi.graph.BatchingProviderDecorator;
 import it.unitn.disi.graph.IGraphProvider;
-import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.codecs.ByteGraphDecoder;
 import it.unitn.disi.graph.generators.InMemoryProvider;
 import it.unitn.disi.graph.large.catalog.CatalogReader;
@@ -23,43 +23,46 @@ import org.apache.log4j.Logger;
  * 
  * @author giuliano
  */
-public class GraphServerImpl implements IGraphProvider {
+public class GraphServer {
 
 	private static final Logger fLogger = Logger
-			.getLogger(GraphServerImpl.class);
+			.getLogger(GraphServer.class);
 
-	private final File fGraph;
+	private final BatchingProviderDecorator fProvider;
 
-	private final File fCatalog;
-
-	private IGraphProvider fProvider;
-
-	public GraphServerImpl(File graph, File catalog) throws RemoteException {
-		fGraph = graph;
-		fCatalog = catalog;
-	}
-
-	public synchronized void start(String graphId, boolean createRegistry,
-			int port) throws Exception {
-		CatalogReader reader = new CatalogReader(new FileInputStream(fCatalog),
+	public static GraphServer diskServer(File graph, File catalog)
+			throws Exception {
+		CatalogReader reader = new CatalogReader(new FileInputStream(catalog),
 				CatalogRecordTypes.PROPERTY_RECORD);
 		PartialLoader loader = new PartialLoader(reader,
-				ByteGraphDecoder.class, fGraph);
-		
+				ByteGraphDecoder.class, graph);
+
 		fLogger.info("Now reading catalog.");
 		loader.start(null);
 		fLogger.info("Done reading catalog.");
 
-		fProvider = loader;
+		return new GraphServer(loader);
+	}
 
+	public static GraphServer inMemoryServer(File graph) throws Exception {
+		return new GraphServer(new InMemoryProvider(graph,
+				ByteGraphDecoder.class.getName()));
+	}
+
+	public GraphServer(IGraphProvider provider) {
+		fProvider = new BatchingProviderDecorator(provider);
+	}
+
+	public synchronized void start(String graphId, boolean createRegistry,
+			int port) throws Exception {
 		fLogger.info("Starting registry and publishing object reference.");
 		try {
 			if (createRegistry) {
 				LocateRegistry.createRegistry(port);
 			}
-			UnicastRemoteObject.exportObject(this, 0);
+			UnicastRemoteObject.exportObject(fProvider, 0);
 			Registry registry = LocateRegistry.getRegistry(port);
-			registry.rebind(graphId, this);
+			registry.rebind(graphId, fProvider);
 		} catch (RemoteException ex) {
 			fLogger.error("Error while publishing object.", ex);
 			System.exit(-1);
@@ -67,29 +70,5 @@ public class GraphServerImpl implements IGraphProvider {
 		fLogger.info("All good.");
 	}
 
-	@Override
-	public synchronized int size() throws RemoteException {
-		return fProvider.size();
-	}
-
-	@Override
-	public synchronized int size(Integer subgraph) throws RemoteException {
-		return fProvider.size(subgraph);
-	}
-
-	@Override
-	public synchronized IndexedNeighborGraph subgraph(Integer subgraph)
-			throws RemoteException {
-		fLogger.info("Got request for graph " + subgraph + ".");
-		IndexedNeighborGraph ing = fProvider.subgraph(subgraph);
-		fLogger.info("Returning graph with " + ing.size() + " vertices.");
-		return ing;
-	}
-
-	@Override
-	public synchronized int[] verticesOf(Integer subgraph)
-			throws RemoteException {
-		return fProvider.verticesOf(subgraph);
-	}
 
 }

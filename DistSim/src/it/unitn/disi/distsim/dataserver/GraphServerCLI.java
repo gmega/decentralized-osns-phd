@@ -10,19 +10,19 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 /**
- * The Command Line Interface companion to {@link GraphServerImpl}.
+ * The Command Line Interface companion to {@link GraphServer}.
  * 
  * @author giuliano
  */
 public class GraphServerCLI {
-	
+
 	@Option(name = "-i", aliases = { "--graphid" }, usage = "ID of the graph being served by this server", required = true)
 	private String fGraphId;
 
 	@Option(name = "-g", aliases = { "--graph" }, usage = "File containing the large graph.", required = true)
 	private File fGraph;
 
-	@Option(name = "-c", aliases = { "--catalog" }, usage = "File containing the graph's catalog.", required = true)
+	@Option(name = "-c", aliases = { "--catalog" }, usage = "File containing the graph's catalog.", required = false)
 	private File fCatalog;
 
 	@Option(name = "-p", aliases = { "--port" }, usage = "Listening port to server (defaults to 50326).", required = false)
@@ -41,24 +41,31 @@ public class GraphServerCLI {
 			parser.printUsage(System.err);
 			System.exit(-1);
 		}
-		
+
 		configureLogging();
-		
+
 		Logger logger = Logger.getLogger(GraphServerCLI.class);
-		
+
 		try {
-			GraphServerImpl server = new GraphServerImpl(fGraph, fCatalog);
+			GraphServer server;
+			if (fCatalog == null) {
+				logger.info("In-memory server.");
+				server = GraphServer.inMemoryServer(fGraph);
+			} else {
+				logger.info("Disk server.");
+				server = GraphServer.diskServer(fGraph, fCatalog);
+			}
 			server.start(fGraphId, !fReuse, fPort);
 		} catch (Exception ex) {
 			logger.error("Failed to start graph server.", ex);
 		}
 
 	}
-	
+
 	private void configureLogging() {
 		BasicConfigurator.configure();
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		new GraphServerCLI()._main(args);
 	}
