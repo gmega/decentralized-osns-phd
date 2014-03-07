@@ -160,7 +160,12 @@ public class OutputRedirector implements ITransformer {
 			while (is.available() > 0 || forceRead) {
 				int c = is.read();
 				forceRead = false;
+				
 				if (c == -1) {
+					/* Note that even if we already found the EOF, the buffer
+					 * may still have some stuff that needs to be sent, so that
+					 * we can't simply return -1. 
+					 */
 					fEOF = true;
 					break;
 				}
