@@ -1,5 +1,7 @@
 package it.unitn.disi.distsim.streamserver;
 
+import it.unitn.disi.utils.streams.TimedFlusher;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -13,12 +15,14 @@ public class StreamServerImpl implements Runnable {
 
 	private static final int MAX_BACKLOG = 128;
 
-	private static final int STREAM_FLUSHING_INTERVAL = 30000;
+	public static final int STREAM_FLUSHING_INTERVAL = 30000;
 
 	private static final Logger fLogger = Logger
 			.getLogger(StreamServerImpl.class);
 
 	private final CopyOnWriteArrayList<ClientHandler> fActiveHandlers = new CopyOnWriteArrayList<ClientHandler>();
+
+	private final TimedFlusher fFlusher =  new TimedFlusher(STREAM_FLUSHING_INTERVAL);
 
 	private final File fOutput;
 
@@ -43,8 +47,7 @@ public class StreamServerImpl implements Runnable {
 
 		fLogger.info("Output folder is: " + fOutput + ".");
 
-		Thread flusher = new Thread(new TimedFlusher(STREAM_FLUSHING_INTERVAL),
-				"Stream Flusher");
+		Thread flusher = new Thread(fFlusher, "Stream Flusher");
 		flusher.start();
 
 		try {
@@ -107,6 +110,7 @@ public class StreamServerImpl implements Runnable {
 				new Thread(handler).start();
 				synchronized (this) {
 					fActiveHandlers.add(handler);
+					fFlusher.add(handler);
 				}
 			}
 		} finally {
@@ -142,6 +146,7 @@ public class StreamServerImpl implements Runnable {
 		}
 
 		fActiveHandlers.remove(clientHandler);
+		fFlusher.remove(clientHandler);
 	}
 
 	class Shutdown implements Runnable {
@@ -192,34 +197,6 @@ public class StreamServerImpl implements Runnable {
 			fLogger.info("Bye-bye.");
 		}
 
-	}
-
-	class TimedFlusher implements Runnable {
-
-		private final long fFlushInterval;
-
-		public TimedFlusher(long flushInterval) {
-			fFlushInterval = flushInterval;
-		}
-
-		@Override
-		public void run() {
-			while (!Thread.interrupted()) {
-				for (ClientHandler handler : fActiveHandlers) {
-					try {
-						handler.flushToFile();
-					} catch (IOException ex) {
-						fLogger.error("Failed to flush buffer", ex);
-					}
-				}
-				try {
-					Thread.sleep(fFlushInterval);
-				} catch (InterruptedException e) {
-					// Restore interruption state.
-					Thread.currentThread().interrupt();
-				}
-			}
-		}
 	}
 
 }

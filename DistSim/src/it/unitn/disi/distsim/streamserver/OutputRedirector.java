@@ -2,7 +2,10 @@ package it.unitn.disi.distsim.streamserver;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.control.SimulationControl;
+import it.unitn.disi.utils.streams.FlushableGZIPOutputStream;
+import it.unitn.disi.utils.streams.TimedFlusher;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -30,6 +33,15 @@ import peersim.config.AutoConfig;
 @AutoConfig
 public class OutputRedirector implements ITransformer {
 
+	public static final int GZIP_FLUSH_INTERVAL = 5000;
+
+	public static final int FILL_BACKOFF = 100;
+
+	// Don't go for more than 2.5 secs without writing. May not be
+	// so efficient for apps that pump boatloads of data at a time,
+	// but provides good latency to output.
+	public static final int FILL_TIMEOUT = 2500;
+
 	@Attribute("job")
 	private String fJobId;
 
@@ -39,11 +51,18 @@ public class OutputRedirector implements ITransformer {
 	@Attribute("sim-id")
 	private String fSimId;
 
+	@Attribute(value = "gzip", defaultValue = "false")
+	private boolean fGZip;
+
 	@Attribute(value = "stream.port", defaultValue = "0")
 	private int fStreamPort;
 
 	@Attribute(value = "control.port", defaultValue = "30327")
 	private int fPort;
+
+	private Thread fFlusherThread;
+
+	private boolean fEOF;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
@@ -52,38 +71,141 @@ public class OutputRedirector implements ITransformer {
 
 		Logger logger = Logger.getLogger(OutputRedirector.class);
 
-		Socket socket = null;
+		OutputStream oStream = null;
 		byte[] buffer = new byte[1048576];
 
 		try {
 
 			// Attempts to resolve port from JMX if no port is specified.
-			if (fStreamPort == 0) {
-				try {
-					fStreamPort = resolvePort(logger);
-				} catch (Exception ex) {
-					logger.error("Can't resolve streaming port.", ex);
-					return;
+			try {
+				fStreamPort = fStreamPort == 0 ? resolvePort(logger)
+						: fStreamPort;
+			} catch (Exception ex) {
+				logger.error("Can't resolve streaming port.", ex);
+				return;
+			}
+
+			Socket socket = new Socket(fAddress, fStreamPort);
+			oStream = socket.getOutputStream();
+
+			sendPreamble(oStream);
+
+			// GZip streams have to be periodically flushed or
+			// results may take too long to get to the server.
+			if (fGZip) {
+				oStream = new FlushableGZIPOutputStream(oStream);
+				startFlusher(oStream);
+			}
+
+			while (!fEOF) {
+				int read = fillBuffer(is, buffer, FILL_TIMEOUT);
+				if (read > 0) {
+					oStream.write(buffer, 0, read);
 				}
 			}
 
-			socket = new Socket(fAddress, fStreamPort);
-			OutputStream oStream = socket.getOutputStream();
-
-			// Sends the id.
-			ObjectOutputStream stream = new ObjectOutputStream(oStream);
-			stream.writeObject(fJobId);
-
-			int read;
-			while ((read = is.read(buffer)) != -1) {
-				oStream.write(buffer, 0, read);
-			}
+			// Socket will be closed in finally block.
+			oStream.flush();
 
 		} finally {
-			if (socket != null) {
-				socket.close();
+			// Stops the flusher if one is active.
+			if (fGZip) {
+				shutdownFlusher();
+			}
+
+			if (oStream != null) {
+				oStream.close();
 			}
 		}
+	}
+
+	public void startFlusher(OutputStream oStream) {
+		TimedFlusher flusher = new TimedFlusher(GZIP_FLUSH_INTERVAL);
+		flusher.add(oStream);
+
+		fFlusherThread = new Thread(flusher, "GZIP flusher thread.");
+		fFlusherThread.setDaemon(true);
+		fFlusherThread.start();
+	}
+
+	public void shutdownFlusher() throws InterruptedException {
+		fFlusherThread.interrupt();
+		fFlusherThread.join();
+	}
+
+	public int fillBuffer(InputStream is, byte[] buffer, long FILL_TIMEOUT)
+			throws IOException, InterruptedException {
+
+		long start = System.currentTimeMillis();
+		boolean forceRead = false;
+		int read = 0;
+
+		while (true) {
+
+			/**
+			 * Ideally, we want to read until EOF is found (or we timeout).
+			 * Unfortunately, available() doesn't allow us to distinguish
+			 * between a read that will block and a read that will result in an
+			 * EOF, as both return zero. We therefore have to bend over
+			 * backwards to make it work, and that's why the 'forceRead' flag is
+			 * there.
+			 */
+			while (is.available() > 0 || forceRead) {
+				int c = is.read();
+				forceRead = false;
+				if (c == -1) {
+					fEOF = true;
+					break;
+				}
+
+				buffer[read] = (byte) c;
+				read++;
+
+				if (read == buffer.length) {
+					return read;
+				}
+			}
+
+			// If we found an EOF already, returns immediately.
+			if (fEOF) {
+				return -1;
+			}
+
+			// Backs off.
+			Thread.sleep(FILL_BACKOFF);
+
+			// Timeout.
+			if ((System.currentTimeMillis() - start) > FILL_TIMEOUT) {
+				/*
+				 * If we timed out with nothing to read, forces a next iteration
+				 * in which a read will occur. In that case, we'll either:
+				 * 
+				 * 1. block until at least 1 byte is read, which is fine as we
+				 * have already returned everything there was to return on the
+				 * previous call, and this data will be forwarded anyway.
+				 * 
+				 * 2. find an EOF and initiate termination.
+				 */
+				if (read == 0) {
+					forceRead = true;
+				} else {
+					break;
+				}
+			}
+
+		}
+
+		return read;
+	}
+
+	public void sendPreamble(OutputStream oStream) throws IOException {
+		// Sends the id, and whether the log stream will be zipped or not.
+		ObjectOutputStream stream = new ObjectOutputStream(oStream);
+		stream.writeUTF(fJobId);
+		stream.writeBoolean(fGZip);
+
+		// Don't close it or we close the socket.
+		stream.flush();
 	}
 
 	/**

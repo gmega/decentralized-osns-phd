@@ -1,20 +1,24 @@
 package it.unitn.disi.distsim.streamserver;
 
+import it.unitn.disi.utils.collections.Pair;
+
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.log4j.Logger;
 
-public class ClientHandler implements Runnable {
+public class ClientHandler implements Runnable, Flushable {
 
 	private static final Logger fLogger = Logger.getLogger(ClientHandler.class);
 
@@ -25,12 +29,13 @@ public class ClientHandler implements Runnable {
 	private final StreamServerImpl fParent;
 
 	private volatile String fClientId;
-	
+
 	private OutputStream fFile;
 
 	private Thread fThread;
 
-	public ClientHandler(Socket socket, File outputFolder, StreamServerImpl parent) {
+	public ClientHandler(Socket socket, File outputFolder,
+			StreamServerImpl parent) {
 		fSocket = socket;
 		fOutputFolder = outputFolder;
 		fParent = parent;
@@ -47,7 +52,7 @@ public class ClientHandler implements Runnable {
 			fParent.handlerDone(this);
 		} catch (Exception ex) {
 			fParent.handlerError(ex, this);
-		} 
+		}
 	}
 
 	private void run0() throws Exception {
@@ -55,15 +60,24 @@ public class ClientHandler implements Runnable {
 
 		try {
 			is = fSocket.getInputStream();
-			fClientId = readId(is);
+			Pair<String, Boolean> preamble = preamble(is);
+
+			fClientId = preamble.a;
 
 			fLogger.info("Servicing client " + fClientId + " at "
 					+ fSocket.getRemoteSocketAddress() + ".");
 
 			File outFile = new File(fOutputFolder, fClientId);
+
 			setFileStream(outFile);
 
 			fLogger.info("Output file is " + outFile + ".");
+			
+			// If gzipped, decompress.
+			if (preamble.b) {
+				fLogger.info(fClientId + " uses compression.");
+				is = new GZIPInputStream(is);
+			}
 
 			byte[] buffer = new byte[1048576];
 
@@ -82,15 +96,17 @@ public class ClientHandler implements Runnable {
 
 	}
 
-	private synchronized void writeToFile(byte[] buffer, int read) throws IOException {
+	private synchronized void writeToFile(byte[] buffer, int read)
+			throws IOException {
 		fFile.write(buffer, 0, read);
 	}
 
-	private synchronized void setFileStream(File outFile) throws FileNotFoundException {
+	private synchronized void setFileStream(File outFile)
+			throws FileNotFoundException {
 		fFile = new BufferedOutputStream(new FileOutputStream(outFile));
 	}
-	
-	public synchronized void flushToFile() throws IOException {
+
+	public synchronized void flush() throws IOException {
 		if (fFile != null) {
 			fFile.flush();
 		}
@@ -106,10 +122,10 @@ public class ClientHandler implements Runnable {
 		}
 	}
 
-	private String readId(InputStream is) throws IOException,
+	private Pair<String, Boolean> preamble(InputStream is) throws IOException,
 			ClassNotFoundException {
 		ObjectInputStream stream = new ObjectInputStream(is);
-		return (String) stream.readObject();
+		return new Pair<String, Boolean>(stream.readUTF(), stream.readBoolean());
 	}
 
 	public String clientId() {
