@@ -82,7 +82,8 @@ public class CachingProvider implements IGraphProvider {
 	public int[] filter(int[] ids, PreloadStrategy filter) {
 		TIntArrayList filtered = new TIntArrayList();
 		for (int i = 0; i < ids.length; i++) {
-			if (filter.include(fCache.getIfPresent(ids[i]))) {
+			LazyCacheEntry entry = fCache.getIfPresent(ids[i]);
+			if (entry == null || filter.include(entry)) {
 				filtered.add(ids[i]);
 			}
 		}

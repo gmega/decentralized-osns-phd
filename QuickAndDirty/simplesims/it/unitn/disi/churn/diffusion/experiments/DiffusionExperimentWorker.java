@@ -13,7 +13,6 @@ import it.unitn.disi.churn.diffusion.experiments.config.PeerSelectorBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.StaticSimulationBuilder;
 import it.unitn.disi.churn.diffusion.experiments.config.Utils;
 import it.unitn.disi.graph.IGraphProvider;
-import it.unitn.disi.graph.IRemoteGraphProvider;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.simulator.churnmodel.yao.YaoChurnConfigurator;
 import it.unitn.disi.simulator.concurrent.SimulationTask;
@@ -186,7 +185,7 @@ public class DiffusionExperimentWorker extends Worker {
 			throws Exception {
 		super(resolver, debug, localSchedule);
 
-		fProvider = (IRemoteGraphProvider) ObjectCreator.createInstance(
+		fProvider = (IGraphProvider) ObjectCreator.createInstance(
 				GraphConfigurator.class, "", resolver).graphProvider();
 
 		fYaoChurn = churn ? ObjectCreator.createInstance(
