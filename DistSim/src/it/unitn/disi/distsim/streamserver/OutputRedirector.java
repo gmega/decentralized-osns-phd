@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.management.JMX;
 import javax.management.MBeanServerConnection;
@@ -19,6 +20,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import peersim.config.Attribute;
@@ -32,7 +34,10 @@ import peersim.config.AutoConfig;
  */
 @AutoConfig
 public class OutputRedirector implements ITransformer {
-	
+
+	private static final Logger fLogger = Logger
+			.getLogger(OutputRedirector.class);
+
 	public static final int GZIP_FLUSH_INTERVAL = 5000;
 
 	public static final int FILL_BACKOFF = 100;
@@ -59,17 +64,19 @@ public class OutputRedirector implements ITransformer {
 
 	@Attribute(value = "control.port", defaultValue = "30327")
 	private int fPort;
-	
-	private Logger fLogger;
 
-	private Thread fFlusherThread;
+	private volatile Thread fFlusherThread;
+
+	private volatile OutputStream fOStream;
+
+	private final AtomicBoolean fShutdown = new AtomicBoolean(false);
 
 	private boolean fEOF;
 
 	@Override
 	public void execute(InputStream is, OutputStream oup) throws Exception {
 
-		configureLogging();
+		registerShutdownHook();
 
 		OutputStream oStream = null;
 		byte[] buffer = new byte[1048576];
@@ -78,8 +85,7 @@ public class OutputRedirector implements ITransformer {
 
 			// Attempts to resolve port from JMX if no port is specified.
 			try {
-				fStreamPort = fStreamPort == 0 ? resolvePort()
-						: fStreamPort;
+				fStreamPort = fStreamPort == 0 ? resolvePort() : fStreamPort;
 			} catch (Exception ex) {
 				fLogger.error("Can't resolve streaming port.", ex);
 				return;
@@ -97,32 +103,24 @@ public class OutputRedirector implements ITransformer {
 				startFlusher(oStream);
 			}
 
+			fOStream = oStream;
+
 			while (!fEOF) {
 				int read = fillBuffer(is, buffer, FILL_TIMEOUT);
 				if (read > 0) {
-					if(fLogger.isDebugEnabled()) {
+					if (fLogger.isDebugEnabled()) {
 						fLogger.debug("Write " + read + " bytes.");
 					}
 					oStream.write(buffer, 0, read);
 				}
 			}
 
-			// Socket will be closed in finally block.
-			oStream.flush();
-
 		} finally {
-			// Stops the flusher if one is active.
-			if (fGZip) {
-				shutdownFlusher();
-			}
-
-			if (oStream != null) {
-				oStream.close();
-			}
+			shutdown();
 		}
 	}
 
-	public void startFlusher(OutputStream oStream) {
+	private void startFlusher(OutputStream oStream) {
 		TimedFlusher flusher = new TimedFlusher(GZIP_FLUSH_INTERVAL);
 		flusher.add(oStream);
 
@@ -131,19 +129,45 @@ public class OutputRedirector implements ITransformer {
 		fFlusherThread.start();
 	}
 
-	public void shutdownFlusher() throws InterruptedException {
-		fFlusherThread.interrupt();
-		fFlusherThread.join();
+	private void shutdown() throws InterruptedException, IOException {
+		if (!fShutdown.compareAndSet(false, true)) {
+			return;
+		}
+
+		fLogger.info("Shutdown stream forwarder.");
+
+		if (fGZip) {
+			fFlusherThread.interrupt();
+			fFlusherThread.join();
+		}
+
+		if (fOStream != null) {
+			fOStream.flush();
+			fOStream.close();
+		}
 	}
 
-	public int fillBuffer(InputStream is, byte[] buffer, long FILL_TIMEOUT)
+	private void registerShutdownHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				try {
+					shutdown();
+				} catch (Exception ex) {
+					fLogger.error(ex);
+				}
+			}
+		});
+	}
+
+	private int fillBuffer(InputStream is, byte[] buffer, long FILL_TIMEOUT)
 			throws IOException, InterruptedException {
 
 		long start = System.currentTimeMillis();
 		boolean forceRead = false;
 		int read = 0;
-		
-		if(fLogger.isDebugEnabled()) {
+
+		if (fLogger.isDebugEnabled()) {
 			fLogger.debug("Call to fillBuffer.");
 		}
 
@@ -160,11 +184,12 @@ public class OutputRedirector implements ITransformer {
 			while (is.available() > 0 || forceRead) {
 				int c = is.read();
 				forceRead = false;
-				
+
 				if (c == -1) {
-					/* Note that even if we already found the EOF, the buffer
+					/*
+					 * Note that even if we already found the EOF, the buffer
 					 * may still have some stuff that needs to be sent, so that
-					 * we can't simply return -1. 
+					 * we can't simply return -1.
 					 */
 					fEOF = true;
 					break;
@@ -188,7 +213,6 @@ public class OutputRedirector implements ITransformer {
 
 			// Timeout.
 			if ((System.currentTimeMillis() - start) > FILL_TIMEOUT) {
-				System.err.println("Timed out.");
 				/*
 				 * If we timed out with nothing to read, forces a next iteration
 				 * in which a read will occur. In that case, we'll either:
@@ -200,12 +224,12 @@ public class OutputRedirector implements ITransformer {
 				 * 2. find an EOF and initiate termination.
 				 */
 				if (read == 0) {
-					if(fLogger.isDebugEnabled()) {
+					if (fLogger.isDebugEnabled()) {
 						fLogger.debug("Next read will be forced.");
 					}
 					forceRead = true;
 				} else {
-					if(fLogger.isDebugEnabled()) {
+					if (fLogger.isDebugEnabled()) {
 						fLogger.debug("Read " + read + " bytes.");
 					}
 					break;
@@ -216,7 +240,7 @@ public class OutputRedirector implements ITransformer {
 		return read;
 	}
 
-	public void sendPreamble(OutputStream oStream) throws IOException {
+	private void sendPreamble(OutputStream oStream) throws IOException {
 		// Sends the id, and whether the log stream will be zipped or not.
 		ObjectOutputStream stream = new ObjectOutputStream(oStream);
 		stream.writeUTF(fJobId);
@@ -255,8 +279,4 @@ public class OutputRedirector implements ITransformer {
 		return port;
 	}
 
-	private void configureLogging() {
-		BasicConfigurator.configure();
-		fLogger = Logger.getLogger(OutputRedirector.class);
-	}
 }

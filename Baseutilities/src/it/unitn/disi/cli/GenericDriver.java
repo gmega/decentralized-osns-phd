@@ -14,7 +14,6 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
-
 import java.net.URL;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -27,6 +26,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.kohsuke.args4j.Argument;
@@ -85,6 +85,9 @@ public class GenericDriver {
 
 	@Option(name = "-v", aliases = { "--version" }, usage = "prints version information and quits", required = false)
 	private boolean fVersion;
+	
+	@Option(name = "-d", aliases = { "--debug" }, usage = "turns on debugging information", required = false)
+	private boolean fDebug;
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "prints this help message", required = false)
 	private boolean fHelpOnly;
@@ -342,6 +345,11 @@ public class GenericDriver {
 		root.addAppender(new ConsoleAppender(new PatternLayout(
 				PatternLayout.TTCC_CONVERSION_PATTERN),
 				ConsoleAppender.SYSTEM_ERR));
+		if (fDebug) {
+			root.setLevel(Level.DEBUG);
+		} else {
+			root.setLevel(Level.INFO);
+		}
 	}
 
 	private void printHelp(CmdLineParser parser) {
