@@ -32,7 +32,7 @@ import peersim.config.AutoConfig;
  */
 @AutoConfig
 public class OutputRedirector implements ITransformer {
-
+	
 	public static final int GZIP_FLUSH_INTERVAL = 5000;
 
 	public static final int FILL_BACKOFF = 100;
@@ -59,6 +59,8 @@ public class OutputRedirector implements ITransformer {
 
 	@Attribute(value = "control.port", defaultValue = "30327")
 	private int fPort;
+	
+	private Logger fLogger;
 
 	private Thread fFlusherThread;
 
@@ -69,8 +71,6 @@ public class OutputRedirector implements ITransformer {
 
 		configureLogging();
 
-		Logger logger = Logger.getLogger(OutputRedirector.class);
-
 		OutputStream oStream = null;
 		byte[] buffer = new byte[1048576];
 
@@ -78,10 +78,10 @@ public class OutputRedirector implements ITransformer {
 
 			// Attempts to resolve port from JMX if no port is specified.
 			try {
-				fStreamPort = fStreamPort == 0 ? resolvePort(logger)
+				fStreamPort = fStreamPort == 0 ? resolvePort()
 						: fStreamPort;
 			} catch (Exception ex) {
-				logger.error("Can't resolve streaming port.", ex);
+				fLogger.error("Can't resolve streaming port.", ex);
 				return;
 			}
 
@@ -100,6 +100,9 @@ public class OutputRedirector implements ITransformer {
 			while (!fEOF) {
 				int read = fillBuffer(is, buffer, FILL_TIMEOUT);
 				if (read > 0) {
+					if(fLogger.isDebugEnabled()) {
+						fLogger.debug("Write " + read + " bytes.");
+					}
 					oStream.write(buffer, 0, read);
 				}
 			}
@@ -139,6 +142,10 @@ public class OutputRedirector implements ITransformer {
 		long start = System.currentTimeMillis();
 		boolean forceRead = false;
 		int read = 0;
+		
+		if(fLogger.isDebugEnabled()) {
+			fLogger.debug("Call to fillBuffer.");
+		}
 
 		while (true) {
 
@@ -176,6 +183,7 @@ public class OutputRedirector implements ITransformer {
 
 			// Timeout.
 			if ((System.currentTimeMillis() - start) > FILL_TIMEOUT) {
+				System.err.println("Timed out.");
 				/*
 				 * If we timed out with nothing to read, forces a next iteration
 				 * in which a read will occur. In that case, we'll either:
@@ -187,12 +195,17 @@ public class OutputRedirector implements ITransformer {
 				 * 2. find an EOF and initiate termination.
 				 */
 				if (read == 0) {
+					if(fLogger.isDebugEnabled()) {
+						fLogger.debug("Next read will be forced.");
+					}
 					forceRead = true;
 				} else {
+					if(fLogger.isDebugEnabled()) {
+						fLogger.debug("Read " + read + " bytes.");
+					}
 					break;
 				}
 			}
-
 		}
 
 		return read;
@@ -213,31 +226,32 @@ public class OutputRedirector implements ITransformer {
 	 * on the server side for the stream socket. Actual port numbers are
 	 * published on the JMX {@link StreamServerMBean}.
 	 */
-	private int resolvePort(Logger logger) throws Exception {
+	private int resolvePort() throws Exception {
 		// We want to access beans via plain RMI.
 		JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://"
 				+ fAddress + ":" + fPort + "/jmxrmi");
 
-		logger.info("Contacting JMX server at " + url.toString() + ".");
+		fLogger.info("Contacting JMX server at " + url.toString() + ".");
 		JMXConnector connector = JMXConnectorFactory.connect(url);
 		MBeanServerConnection connection = connector.getMBeanServerConnection();
 
 		// Resolves the streaming service.
-		logger.info("Resolving streaming server mbean.");
+		fLogger.info("Resolving streaming server mbean.");
 		ObjectName streamServ = new ObjectName(SimulationControl.serviceName(
 				fSimId, "outputstreamer"));
 		StreamServerMBean server = (StreamServerMBean) JMX.newMBeanProxy(
 				connection, streamServ, StreamServerMBean.class);
 
 		// Retrieves port for socket server.
-		logger.info("Querying port.");
+		fLogger.info("Querying port.");
 		int port = server.getPort();
 
-		logger.info("Port is " + port + ".");
+		fLogger.info("Port is " + port + ".");
 		return port;
 	}
 
 	private void configureLogging() {
 		BasicConfigurator.configure();
+		fLogger = Logger.getLogger(OutputRedirector.class);
 	}
 }
