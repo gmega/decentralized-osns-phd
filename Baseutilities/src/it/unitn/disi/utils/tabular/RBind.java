@@ -80,7 +80,7 @@ public class RBind implements ITransformer {
 		for (String headerPart : header) {
 			if (!newHeader.contains(headerPart)) {
 				if (fIndulging) {
-					System.err.println("-- Skipping bad line " + count + ".");
+					System.err.println("-- Skipping bad line " + count + ": " + reader.currentLine());
 					return false;
 				}
 

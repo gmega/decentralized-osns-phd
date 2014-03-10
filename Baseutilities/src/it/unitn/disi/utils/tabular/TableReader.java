@@ -60,7 +60,7 @@ public class TableReader {
 			fHeader.add(key);
 		}
 		fROHeader = Collections.unmodifiableList(fHeader);
-		fNext = next;
+		fUnparsedCurrent = fNext = next;
 	}
 
 	public void streamRepositioned() throws IOException {
@@ -145,11 +145,15 @@ public class TableReader {
 	}
 
 	private String[] readLine() throws IOException {
+		String nextLine = fReader.readLine(); 
 		if (fNext != null) {
 			fUnparsedCurrent = fNext;
 			fCurrent = fNext.split(FS);
+		} else {
+			fUnparsedCurrent = nextLine;
 		}
-		fNext = fReader.readLine();
+		
+		fNext = nextLine;
 		fRow++;
 		return fCurrent;
 	}

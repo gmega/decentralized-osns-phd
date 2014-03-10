@@ -14,9 +14,10 @@ import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.log4j.Logger;
+
+import com.jcraft.jzlib.InflaterInputStream;
 
 public class ClientHandler implements Runnable, Flushable {
 
@@ -76,7 +77,7 @@ public class ClientHandler implements Runnable, Flushable {
 			// If gzipped, decompress.
 			if (preamble.b) {
 				fLogger.info(fClientId + " uses compression.");
-				is = new GZIPInputStream(is);
+				is = new InflaterInputStream(is);
 			}
 
 			byte[] buffer = new byte[1048576];

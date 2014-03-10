@@ -2,7 +2,6 @@ package it.unitn.disi.distsim.streamserver;
 
 import it.unitn.disi.cli.ITransformer;
 import it.unitn.disi.distsim.control.SimulationControl;
-import it.unitn.disi.utils.streams.FlushableGZIPOutputStream;
 import it.unitn.disi.utils.streams.TimedFlusher;
 
 import java.io.IOException;
@@ -19,9 +18,9 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import com.jcraft.jzlib.DeflaterOutputStream;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -99,7 +98,7 @@ public class OutputRedirector implements ITransformer {
 			// GZip streams have to be periodically flushed or
 			// results may take too long to get to the server.
 			if (fGZip) {
-				oStream = new FlushableGZIPOutputStream(oStream);
+				oStream = new DeflaterOutputStream(oStream);
 				startFlusher(oStream);
 			}
 
