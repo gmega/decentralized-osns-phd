@@ -11,6 +11,7 @@ import it.unitn.disi.graph.BFSIterableTest;
 import it.unitn.disi.graph.CompleteGraphTest;
 import it.unitn.disi.graph.GraphAlgorithmsTest;
 import it.unitn.disi.graph.LSGTransformsTest;
+import it.unitn.disi.graph.LightweightStaticGraphEIDTest;
 import it.unitn.disi.graph.analysis.TestGraphAlgorithms;
 import it.unitn.disi.graph.analysis.TestTopKShortest;
 import it.unitn.disi.graph.analysis.TestTopKShortestDisjoint;
@@ -35,32 +36,6 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//	ObjectCreatorTest.class,
-//	PermutingCacheTest.class,
-//	TestLatencyComputer.class,
-//	TestQueueManager.class,
-//	TestAntiCentralitySelector.class,
-//	SequentialSchedulerTest.class,
-//	HistoryForwardingTest.class,
-//	RandomSchedulerTest.class,
-//	TestCentralitySelector.class,
-//	TestGraphWrapper.class,
-//	TestPeerSelectors.class,
-//	TestView.class,
-//	TestBiasedSelector.class,
-//	EventStorageTest.class,
-//	RumorListTest.class,
-//	ExperimentRunnerTest.class,
-//	UnitExperimentTest.class,
-//	ComponentComputationServiceTest.class,
-//	PluginContainerTest.class,
-//	ComponentSelectorTest.class,
-//	ClusteringRankingTest.class,
-//	AVTEventChurnNetworkTest.class,
-//	DemersTest.class,
-//	DiscoveryProtocolTest.class, 
-//	BitSetNeighborhoodTest.class,
-//	TemporalConnectivityExperimentTest.class,
 	GraphAlgorithmsTest.class,
 	TestConnectivityComputer.class,
 	TestMiscUtils.class,
@@ -87,7 +62,8 @@ import org.junit.runners.Suite;
 	BranchingGeneratorTest.class,
 	BandwidthTrackerTest.class,
 	PeriodicActionTest.class,
-	FastRandomAssignmentReaderTest.class
+	FastRandomAssignmentReaderTest.class,
+	LightweightStaticGraphEIDTest.class
 })
 
 public class AllTests {
