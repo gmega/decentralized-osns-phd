@@ -23,7 +23,7 @@ public class LawlerTopK implements ITopKEstimator {
 
 	private double[] fMinDists;
 
-	private double[][] fWeights;
+	private WeightMatrix fWeights;
 
 	private BitSet[] fBranchedEdges;
 
@@ -38,7 +38,7 @@ public class LawlerTopK implements ITopKEstimator {
 		}
 	};
 
-	public LawlerTopK(IndexedNeighborGraph graph, double[][] weights) {
+	public LawlerTopK(IndexedNeighborGraph graph, WeightMatrix weights) {
 		fBranchedEdges = new BitSet[graph.size()];
 		fPrevious = new int[graph.size()];
 		fMinDists = new double[graph.size()];
@@ -184,7 +184,7 @@ public class LawlerTopK implements ITopKEstimator {
 		// Finally computes the cost.
 		double cost = 0.0;
 		for (int i = 0; i < (path.length - 1); i++) {
-			cost += fWeights[path[i]][path[i + 1]];
+			cost += fWeights.get(path[i], path[i + 1]);
 		}
 
 		return new PathEntry(path, deviation, cost);

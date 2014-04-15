@@ -1,6 +1,8 @@
 package it.unitn.disi.graph.peersim;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
+import it.unitn.disi.graph.algorithms.VisitorSupport;
 import it.unitn.disi.utils.collections.FastGetBitset;
 import peersim.graph.BitMatrixGraph;
 
@@ -45,6 +47,12 @@ public class BitMatrixGraphAdapter extends FastBitMatrixGraph implements Indexed
 		}
 		
 		return fCache[neighborIndex];
+	}
+
+	@Override
+	public void visit(IGraphVisitor visitor) {
+		VisitorSupport support = new VisitorSupport(this, directed);
+		support.visit(visitor);
 	}
 	
 }

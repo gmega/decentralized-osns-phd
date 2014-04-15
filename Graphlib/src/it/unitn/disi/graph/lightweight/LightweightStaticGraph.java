@@ -1,7 +1,9 @@
 package it.unitn.disi.graph.lightweight;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.GraphAlgorithms;
+import it.unitn.disi.graph.algorithms.VisitorSupport;
 import it.unitn.disi.graph.cli.GraphRemap;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 
@@ -79,7 +81,7 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 	// --------------------------------------------------------------------------
 
 	public static LightweightStaticGraph subgraph(
-			LightweightStaticGraph source, int...vertices) {
+			LightweightStaticGraph source, int... vertices) {
 		LSGCreateSubgraph subgraph = new LSGCreateSubgraph(vertices);
 		return subgraph.transform(source);
 	}
@@ -103,21 +105,46 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 	// Actual graph implementation.
 	// --------------------------------------------------------------------------
 
-	private final int[][] fAdjacency;
+	protected volatile int[][] fAdjacency;
 
-	private final int fEdges;
+	protected volatile int fEdges;
 
-	private transient Boolean fDirected;
+	protected volatile transient Boolean fDirected;
 
-	private transient Boolean fSimple;
+	protected volatile transient Boolean fSimple;
 
-	private transient Boolean fConnected;
+	protected volatile transient Boolean fConnected;
+	
+	// --------------------------------------------------------------------------
 
 	LightweightStaticGraph(int[][] adjacency) {
 		fAdjacency = adjacency;
 		fEdges = countEdges(adjacency);
 		sortAll();
 	}
+	
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Protected empty constructor for use by wrappers that are also subclasses
+	 * of {@link LightweightStaticGraph}. In this way, wrapping
+	 * {@link LightweightStaticGraph} can be done by:
+	 * <ol>
+	 * <li>creating the graph with one of the creational methods of
+	 * {@link LightweightStaticGraph}</li>
+	 * <li>invoking a creational method in the wrapper class that creates a
+	 * shallow copy of the graph (with the empty constructor), populates it, and
+	 * then initializes with wrapper-specific state. For example, see
+	 * {@link LightweightStaticGraphEID#asLightweightStaticGraphEID(LightweightStaticGraph)}.
+	 * </ol>
+	 * <BR>
+	 * This constructor is UNSAFE, and creates an object that is in an invalid
+	 * state. It should therefore NEVER be exposed to clients directly.
+	 */
+	protected LightweightStaticGraph() {
+	}
+
+	// --------------------------------------------------------------------------
 
 	private int countEdges(int[][] adjacency) {
 		int edges = 0;
@@ -127,10 +154,28 @@ public class LightweightStaticGraph implements IndexedNeighborGraph,
 		return edges;
 	}
 
+	// --------------------------------------------------------------------------
+
 	private void sortAll() {
 		for (int i = 0; i < fAdjacency.length; i++) {
 			Arrays.sort(fAdjacency[i]);
 		}
+	}
+	// --------------------------------------------------------------------------
+
+	public void visit(IGraphVisitor visitor) {
+		VisitorSupport support = new VisitorSupport(this, directed());
+		support.visit(visitor);
+	}
+
+	// --------------------------------------------------------------------------
+
+	protected void initializeShallowCopy(LightweightStaticGraph copy) {
+		copy.fAdjacency = this.fAdjacency;
+		copy.fConnected = this.fConnected;
+		copy.fDirected = this.fDirected;
+		copy.fSimple = this.fSimple;
+		copy.fEdges = this.fEdges;
 	}
 
 	// --------------------------------------------------------------------------

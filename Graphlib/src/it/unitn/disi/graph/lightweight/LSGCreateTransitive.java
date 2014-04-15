@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.lightweight;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.BFSIterable.BFSIterator;
 import it.unitn.disi.utils.collections.Pair;
 
@@ -12,7 +13,7 @@ public class LSGCreateTransitive extends LSGTransformer {
 	}
 	
 	@Override
-	protected void graphLoop(Action action) throws Exception {
+	protected void graphLoop(IGraphVisitor action) throws Exception {
 		LightweightStaticGraph base = this.sourceGraph();
 		for (int i = 0; i < base.size(); i++) {
 			BFSIterator it = new BFSIterator(base, i);
@@ -24,7 +25,7 @@ public class LSGCreateTransitive extends LSGTransformer {
 				if (next.b > fOrder) {
 					break;
 				}
-				action.edge(i, next.a);
+				action.visitEdge(i, next.a);
 			}
 		}
 	}

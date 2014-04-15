@@ -140,7 +140,7 @@ public class GraphAlgorithms {
 	// --------------------------------------------------------------------------
 
 	public static void dijkstra(IndexedNeighborGraph graph, int source,
-			double[][] weights, final double[] minDists, int[] previous) {
+			WeightMatrix weights, final double[] minDists, int[] previous) {
 		dijkstra(graph, NULL_FILTER, source, weights, minDists, previous);
 	}
 
@@ -165,7 +165,7 @@ public class GraphAlgorithms {
 	 *            between each destination and the source.
 	 */
 	public static void dijkstra(IndexedNeighborGraph graph, IEdgeFilter filter,
-			int source, double[][] weights, final double[] minDists,
+			int source, WeightMatrix weights, final double[] minDists,
 			int[] previous) {
 
 		Arrays.fill(previous, Integer.MAX_VALUE);
@@ -190,7 +190,7 @@ public class GraphAlgorithms {
 				if (filter.isForbidden(u, v)) {
 					continue;
 				}
-				double weight = weights[u][v];
+				double weight = weights.get(u, v);
 				double distanceThroughU = minDists[u] + weight;
 				if (distanceThroughU < minDists[v]) {
 					minDists[v] = distanceThroughU;

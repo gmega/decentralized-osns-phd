@@ -2,6 +2,8 @@ package it.unitn.disi.graph.analysis;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.LawlerTopK;
+import it.unitn.disi.graph.algorithms.NaiveWeightMatrix;
+import it.unitn.disi.graph.algorithms.WeightMatrix;
 import it.unitn.disi.graph.algorithms.LawlerTopK.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 
@@ -29,13 +31,13 @@ public class TestTopKShortest {
 				{}
 		});
 		
-		double [][] weights = new double[][] {
+		WeightMatrix weights = new NaiveWeightMatrix(new double[][] {
 				{0.0, 1.0, 1.0, 0.0, 9.0},
 				{0.0, 0.0, 1.0, 0.0, 3.0},
 				{0.0, 0.0, 0.0, 2.0, 1.0},
 				{0.0, 0.0, 0.0, 0.0, 2.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0}
-		};
+		});
 		
 		int [][] refPaths = new int[][] {
 				{0, 2, 4},
@@ -62,14 +64,14 @@ public class TestTopKShortest {
 				{},
 		});
 		
-		double [][] weights = new double[][] {
+		WeightMatrix weights = new NaiveWeightMatrix(new double[][] {
 				{0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 1.0, 1.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-		};
+		});
 		
 		int [][] refPaths = new int[][] {
 				{4, 0, 5},
@@ -99,14 +101,14 @@ public class TestTopKShortest {
 				{},
 		});
 		
-		double [][] weights = new double[][] {
+		WeightMatrix weights = new NaiveWeightMatrix(new double[][] {
 				{0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 1.0, 1.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 				{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-		};
+		});
 		
 		int [][] refPaths = new int[][] {
 				{4, 3, 5},
@@ -150,7 +152,7 @@ public class TestTopKShortest {
 			}
 		}
 
-		LawlerTopK tpk = new LawlerTopK(lsg, w);
+		LawlerTopK tpk = new LawlerTopK(lsg, new NaiveWeightMatrix(w));
 		for (int i = 0; i < 100; i++) {
 			int source = r.nextInt(lsg.size());
 			int destination = r.nextInt(lsg.size());
@@ -197,7 +199,7 @@ public class TestTopKShortest {
 		return cost;
 	}
 
-	private void runTest(IndexedNeighborGraph idg, double[][] weights,
+	private void runTest(IndexedNeighborGraph idg, WeightMatrix weights,
 			int[][] refPaths, double[] costs, int source, int target) {
 
 		LawlerTopK tpk = new LawlerTopK(idg, weights);

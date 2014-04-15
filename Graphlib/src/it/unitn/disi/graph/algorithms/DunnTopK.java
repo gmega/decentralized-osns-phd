@@ -25,7 +25,7 @@ public class DunnTopK implements ITopKEstimator {
 
 	private double[] fMinDists;
 
-	private double[][] fWeights;
+	private WeightMatrix fWeights;
 
 	private BitSet[] fForbiddenEdges;
 
@@ -42,7 +42,7 @@ public class DunnTopK implements ITopKEstimator {
 		}
 	};
 
-	public DunnTopK(IndexedNeighborGraph graph, double[][] weights, Mode mode) {
+	public DunnTopK(IndexedNeighborGraph graph, WeightMatrix weights, Mode mode) {
 		fPrevious = new int[graph.size()];
 		fMinDists = new double[graph.size()];
 		fForbiddenVertices = new BitSet();
@@ -79,7 +79,7 @@ public class DunnTopK implements ITopKEstimator {
 	}
 
 	public double weight(int i, int j) {
-		return fWeights[i][j];
+		return fWeights.get(i, j);
 	}
 
 	private PathEntry selectPath(int source, int target) {

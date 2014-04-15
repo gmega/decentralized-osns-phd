@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.lightweight;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.codecs.ResettableGraphDecoder;
 
 public class LSGLoader extends LSGCreator {
@@ -11,12 +12,12 @@ public class LSGLoader extends LSGCreator {
 	}
 
 	@Override
-	protected void graphLoop(Action action) throws Exception {
+	protected void graphLoop(IGraphVisitor action) throws Exception {
 		fDecoder.reset();
 		while (fDecoder.hasNext()) {
 			int source = fDecoder.getSource();
 			int target = fDecoder.next();
-			action.edge(source, target);
+			action.visitEdge(source, target);
 		}
 	}
 }

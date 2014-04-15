@@ -3,7 +3,6 @@ package it.unitn.disi.graph.generators;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.rmi.RemoteException;
 
 import peersim.config.Attribute;
 import peersim.config.AutoConfig;
@@ -74,6 +73,10 @@ public class InMemoryProvider implements IGraphProvider {
 		System.arraycopy(fGraph.fastGetNeighbours(i), 0, vertices, 1,
 				vertices.length - 1);
 		return vertices;
+	}
+	
+	public LightweightStaticGraph graph() {
+		return fGraph;
 	}
 
 }

@@ -2,6 +2,7 @@ package it.unitn.disi.graph.analysis;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.DunnTopK;
+import it.unitn.disi.graph.algorithms.NaiveWeightMatrix;
 import it.unitn.disi.graph.algorithms.DunnTopK.Mode;
 import it.unitn.disi.graph.algorithms.PathEntry;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
@@ -77,7 +78,7 @@ public class TestTopKShortestDisjoint {
 			double[] costs, Mode mode, int[][] refPaths, int source,
 			int destination, int k) {
 
-		DunnTopK tsd = new DunnTopK(lsg, weights,
+		DunnTopK tsd = new DunnTopK(lsg, new NaiveWeightMatrix(weights),
 				Mode.EdgeDisjoint);
 
 		ArrayList<PathEntry> paths = tsd.topKShortest(source, destination, k);

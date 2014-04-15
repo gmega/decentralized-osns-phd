@@ -2,6 +2,8 @@ package it.unitn.disi.graph.analysis;
 
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.algorithms.GraphAlgorithms;
+import it.unitn.disi.graph.algorithms.NaiveWeightMatrix;
+import it.unitn.disi.graph.algorithms.WeightMatrix;
 import it.unitn.disi.graph.lightweight.LightweightStaticGraph;
 import junit.framework.Assert;
 
@@ -20,7 +22,7 @@ public class TestGraphAlgorithms {
 				{3}
 		});
 		
-		double [][] weights = new double[][] {
+		WeightMatrix weights = new NaiveWeightMatrix(new double[][] {
 				{0,    64,   470,  550,  700,  540,  -1  },
 				{64,   0,   -1,   -1,   -1,    536,  -1  },
 				{470, -1,    0,    260, -1,   -1,    -1  },
@@ -28,7 +30,7 @@ public class TestGraphAlgorithms {
 				{700, -1,   -1,    150,  0,    680,  -1  },
 				{540,  536, -1,   -1,    680,  0,    -1  },
 				{-1,  -1,   -1 ,   250, -1,   -1,     0  }
-		};
+		});
 		
 		double [] minDists = new double[g.size()];
 		int [] previous = new int[g.size()];

@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.lightweight;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.utils.MiscUtils;
 import it.unitn.disi.utils.logging.IProgressTracker;
 import it.unitn.disi.utils.logging.Progress;
@@ -57,7 +58,7 @@ public abstract class LSGCreator {
 		return new LightweightStaticGraph(adjacency);
 	}
 
-	private void uncheckedGraphLoop(Action action) {
+	private void uncheckedGraphLoop(IGraphVisitor action) {
 		try {
 			graphLoop(action);
 		} catch (Exception ex) {
@@ -65,7 +66,7 @@ public abstract class LSGCreator {
 		}
 	}
 
-	protected abstract void graphLoop(Action action) throws Exception;
+	protected abstract void graphLoop(IGraphVisitor action) throws Exception;
 
 	private int[][] allocate(int[] sizes) {
 		int[][] adjacency = new int[sizes.length][];
@@ -94,28 +95,7 @@ public abstract class LSGCreator {
 		return adjacency;
 	}
 
-	public interface Action {
-		/**
-		 * Declares the existence of a vertex.
-		 * 
-		 * @param id
-		 *            the identifier of the new vertex.
-		 */
-		public void addVertex(int id);
-
-		/**
-		 * Creates a directed edge between vertices. This function will incur a
-		 * call to {@link #addVertex(int)} for each non-existing vertex.
-		 * 
-		 * @param source
-		 *            the source vertex.
-		 * @param target
-		 *            the target vertex.
-		 */
-		public void edge(int source, int target);
-	}
-
-	private class CountAction implements Action {
+	private class CountAction implements IGraphVisitor {
 
 		private ArrayList<Integer> fSizes = new ArrayList<Integer>();
 
@@ -124,16 +104,16 @@ public abstract class LSGCreator {
 		private int fMaxId = Integer.MIN_VALUE;
 
 		@Override
-		public void edge(int source, int target) {
-			addVertex(source);
-			addVertex(target);
+		public void visitEdge(int source, int target) {
+			visitVertex(source);
+			visitVertex(target);
 			int sourceCount = fSizes.get(source);
 			fCells++;
 			fSizes.set(source, sourceCount + 1);
 		}
 
 		@Override
-		public void addVertex(int id) {
+		public void visitVertex(int id) {
 			fMaxId = Math.max(id, fMaxId);
 			if (fSizes.size() <= fMaxId) {
 				MiscUtils.grow(fSizes, fMaxId + 1, 0);
@@ -157,7 +137,7 @@ public abstract class LSGCreator {
 		}
 	}
 
-	private class GraphBuildAction implements Action {
+	private class GraphBuildAction implements IGraphVisitor {
 
 		private int[][] fAdjacency;
 
@@ -169,12 +149,12 @@ public abstract class LSGCreator {
 		}
 
 		@Override
-		public void edge(int source, int target) {
+		public void visitEdge(int source, int target) {
 			fAdjacency[source][fCounters[source]++] = target;
 		}
 
 		@Override
-		public void addVertex(int id) {
+		public void visitVertex(int id) {
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package it.unitn.disi.graph.generators;
 
 import it.unitn.disi.graph.IGraphProvider;
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 import it.unitn.disi.graph.lightweight.LSGCreator;
 
@@ -42,10 +43,10 @@ public class ListGraphGenerator implements IGraphProvider {
 		}
 
 		@Override
-		protected void graphLoop(Action action) throws Exception {
+		protected void graphLoop(IGraphVisitor action) throws Exception {
 			for (int i = 0; i < fSize - 1; i++) {
-				action.edge(i, i + 1);
-				action.edge(i + 1, i);
+				action.visitEdge(i, i + 1);
+				action.visitEdge(i + 1, i);
 			}
 		}
 	}

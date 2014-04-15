@@ -23,4 +23,9 @@ public interface IndexedNeighborGraph extends Graph {
 	 *             if boundaries are not respected.
 	 */
 	public int getNeighbor(int nodeIndex, int neighborIndex);
+
+	/**
+	 * Visits this graph by means of an {@link IGraphVisitor}.
+	 */
+	public void visit(IGraphVisitor visitor);
 }

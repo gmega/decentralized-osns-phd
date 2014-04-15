@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.generators;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.graph.IndexedNeighborGraph;
 
 import java.util.ArrayList;
@@ -82,6 +83,18 @@ public class CompleteGraph implements IndexedNeighborGraph {
 	private void check(int index, int bound) {
 		if (index < 0 || index >= bound) {
 			throw new ArrayIndexOutOfBoundsException(index);
+		}
+	}
+	
+	public void visit(IGraphVisitor visitor) {
+		for(int i = 0; i < fSize; i++) {
+			visitor.visitVertex(i);
+			for(int j = 0; j < fSize; j++) {
+				if (i == j) {
+					continue;
+				}
+				visitor.visitEdge(i, j);
+			}
 		}
 	}
 }

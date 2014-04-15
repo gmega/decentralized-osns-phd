@@ -1,5 +1,6 @@
 package it.unitn.disi.graph.lightweight;
 
+import it.unitn.disi.graph.IGraphVisitor;
 import it.unitn.disi.utils.AbstractIDMapper;
 import it.unitn.disi.utils.DenseIDMapper;
 import it.unitn.disi.utils.SparseIDMapper;
@@ -16,13 +17,13 @@ public class LSGCreateSubgraph extends LSGTransformer {
 	}
 
 	@Override
-	protected void graphLoop(Action action) throws Exception {
+	protected void graphLoop(IGraphVisitor action) throws Exception {
 		init();
 		LightweightStaticGraph graph = sourceGraph();
 		for (int vertex : fVertices) {
 			int source = fMapper.map(vertex);
-			action.addVertex(source);
-			
+			action.visitVertex(source);
+
 			int degree = graph.degree(vertex);
 			for (int i = 0; i < degree; i++) {
 				int neighbor = graph.getNeighbor(vertex, i);
@@ -30,8 +31,8 @@ public class LSGCreateSubgraph extends LSGTransformer {
 					continue;
 				}
 				int mappedNeighbor = fMapper.map(neighbor);
-				action.addVertex(mappedNeighbor);
-				action.edge(source, mappedNeighbor);
+				action.visitVertex(mappedNeighbor);
+				action.visitEdge(source, mappedNeighbor);
 			}
 		}
 	}
