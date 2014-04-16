@@ -1,8 +1,9 @@
 package it.unitn.disi.graph;
 
 /**
- * An {@link IGraphVisitor} visits a graph vertex by vertex, and edge by edge.
- * The specifics on when edges and vertices will be visited is
+ * An {@link IGraphVisitor} is a "visitor-like" object (more like an iterator
+ * with inversion of control) that visits a graph vertex by vertex, and edge by
+ * edge. The specifics on when edges and vertices will be visited is
  * implementation-specific. One of the key applications of {@link IGraphVisitor}
  * is for traversal of graphs that do not have an explicit representation (e.g.
  * they are algorithmically derived at every visit).

@@ -57,7 +57,7 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 			j = tmp;
 		}
 
-		return fEdgeIndex[i] - undirectedOffset(i) + indexOf(i, j);
+		return rawEdgeId(i, checkedIndex(indexOf(i, j)));
 	}
 
 	/**
@@ -72,7 +72,7 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 	 * <BR>
 	 * <b>NOTE:</b> The index parameter WILL NOT be verified to be valid by the
 	 * method. If the user supplies an index which does not satisfy the
-	 * contract, the behavior is unspecified (i.e., it might return the wrong
+	 * contract, the behavior is unspecified.
 	 * 
 	 * 
 	 * @param i
@@ -93,8 +93,13 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 			i = j;
 		}
 
-		return fEdgeIndex[i] - undirectedOffset(i) + index;
+		return rawEdgeId(i, checkedIndex(index));
 	}
+
+	// -------------------------------------------------------------------------
+	// The following are more low-level operations, which access the edge index
+	// directly and may return garbage with higher probability if misused. ;-)
+	// -------------------------------------------------------------------------
 
 	/**
 	 * Allows access to the underlying edge index. The edge index is
@@ -111,6 +116,22 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 	 */
 	public int edgeIndex(int i) {
 		return fEdgeIndex[i];
+	}
+
+	/**
+	 * Returns the "raw" edge id, which is the id that the k-th edge of node 'i'
+	 * would be expected to have. The number returned is bogus if index >
+	 * degree(i).
+	 * 
+	 * @param i
+	 *            the reference node i.
+	 * @param index
+	 *            the k-th edge for which the id we wish to compute.
+	 * 
+	 * @return see method description.
+	 */
+	public int rawEdgeId(int i, int k) {
+		return fEdgeIndex[i] - undirectedOffset(i) + k;
 	}
 
 	public int undirectedOffset(int i) {
@@ -134,13 +155,13 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 				if (!directed() && i > neighbor) {
 					offsets[i]++;
 				}
-				
+
 				/* Otherwise the edge is being accounted for the first time. */
 				else if (i < (index.length - 1)) {
 					index[i + 1]++;
 				}
 			}
-			
+
 			if (i < (index.length - 1)) {
 				index[i + 1] += index[i];
 			}
@@ -148,6 +169,13 @@ public class LightweightStaticGraphEID extends LightweightStaticGraph {
 
 		fEdgeIndex = index;
 		fNeighborOffsets = offsets;
+	}
+
+	private int checkedIndex(int index) {
+		if (index == -1) {
+			throw new IllegalArgumentException("Invalid neighbor specified.");
+		}
+		return index;
 	}
 
 }

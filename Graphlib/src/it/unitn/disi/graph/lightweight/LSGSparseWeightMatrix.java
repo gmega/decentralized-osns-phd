@@ -21,12 +21,16 @@ public class LSGSparseWeightMatrix implements WeightMatrix {
 
 	@Override
 	public double get(int i, int j) {
-		return fElements[fGraph.edgeId(i, j)];
+		return element(fGraph.edgeId(i, j));
 	}
 
 	@Override
 	public double get(int i, int j, int index) {
-		return fElements[fGraph.edgeId(i, j, index)];
+		return element(fGraph.edgeId(i, j, index));
+	}
+
+	protected double element(int i) {
+		return fElements[i];
 	}
 
 }
