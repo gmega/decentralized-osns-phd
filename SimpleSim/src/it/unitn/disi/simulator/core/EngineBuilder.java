@@ -16,13 +16,15 @@ import java.util.List;
  */
 public class EngineBuilder {
 
+	private static final int RESIZE_THRESHOLD = 1000;
+
 	private List<Descriptor> fEventObservers;
 
 	private List<ILifecycleObserver> fLifecycleObservers;
 
 	private List<IProcess> fProcesses;
 
-	private List<Schedulable> fPreschedulables;
+	private ArrayList<Schedulable> fPreschedulables;
 
 	private int fExtraPermits;
 
@@ -83,8 +85,12 @@ public class EngineBuilder {
 
 	public void preschedule(Schedulable... schedulables) {
 		for (Schedulable schedulable : schedulables) {
-			fPreschedulables.add(schedulable);
+			preschedule(schedulable);
 		}
+	}
+
+	public void preschedule(Schedulable schedulable) {
+		fPreschedulables.add(schedulable);
 	}
 
 	/**
@@ -187,15 +193,31 @@ public class EngineBuilder {
 		}
 
 		fInstance = new EDSimulationEngine(
-				fProcesses.toArray(new IProcess[fProcesses.size()]),
+				processes,
 				fEventObservers.toArray(new Descriptor[fEventObservers.size()]),
 				fLifecycleObservers
 						.toArray(new ILifecycleObserver[fLifecycleObservers
 								.size()]), fExtraPermits, fBurnin);
-		
-		for (Schedulable schedulable : fPreschedulables) {
-			fInstance.schedule(schedulable);
+
+		// Let it be GC'ed.
+		fProcesses = null;
+
+		/*
+		 * Transfer elements to the engine, while shrinking the list. This is
+		 * useful when operating at the memory limit as it won't require storing
+		 * two copies of a possibly huge list.
+		 */
+		int size = fPreschedulables.size();
+		for (int i = fPreschedulables.size() - 1; i >= 0; i--) {
+			fInstance.schedule(fPreschedulables.remove(i));
+			if (size > RESIZE_THRESHOLD && i < size / 2) {
+				fPreschedulables.trimToSize();
+				size = fPreschedulables.size();
+			}
 		}
+
+		// Again, let the GC do its work.
+		fPreschedulables = null;
 
 		return fInstance;
 	}

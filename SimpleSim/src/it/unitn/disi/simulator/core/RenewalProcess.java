@@ -37,7 +37,7 @@ public class RenewalProcess extends IProcess implements Serializable {
 		fDown = down;
 		fState = initial;
 	}
-	
+
 	// -------------------------------------------------------------------------
 
 	@Override
@@ -46,30 +46,47 @@ public class RenewalProcess extends IProcess implements Serializable {
 		return up / (up + fDown.expectation());
 	}
 
+	/**
+	 * Changes this renewal process into the specified {@link State}, causing a
+	 * renewal and all corresponding statistics to be updated. Calling this
+	 * method directly is only safe <b>before the simulation begins</b>.<BR>
+	 * <BR>
+	 * Calling it during the simulation can break the alternating properties of
+	 * {@link RenewalProcess} to external observers, and calling it outside of
+	 * scheduling bounds will lead to wrong estimates of uptime. Further, it
+	 * will not cause {@link IEventObserver}s to be notified, which can lead to
+	 * further inconsistencies. You have been warned. ;-)
+	 * 
+	 * @param state
+	 *            the new state in which to transition this
+	 *            {@link RenewalProcess}.
+	 */
+	public void changeState(State state) {
+		double increment = 0;
+
+		switch (state) {
+
+		case up:
+			increment = fUp.sample();
+			// Overestimate of uptime.
+			fUptime += increment;
+			break;
+
+		case down:
+			increment = fDown.sample();
+			break;
+		}
+
+		fState = state;
+		fNextEvent += increment;
+	}
+
 	// -------------------------------------------------------------------------
 	// Schedulable interface.
 	// -------------------------------------------------------------------------
 
 	public void scheduled(ISimulationEngine state) {
-		double increment = 0;
-		switch (fState) {
-
-		case down:
-			increment = fUp.sample();
-			fState = State.up;
-			// Overestimate of uptime.
-			fUptime += increment;
-			break;
-
-		case up:
-			increment = fDown.sample();
-			fState = State.down;
-			break;
-
-		}
-
-		fNextEvent += increment;
-
+		changeState(fState.opposite());
 		notifyObservers(state, fNextEvent);
 	}
 

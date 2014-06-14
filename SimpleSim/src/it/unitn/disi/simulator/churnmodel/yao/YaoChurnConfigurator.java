@@ -22,7 +22,7 @@ public class YaoChurnConfigurator {
 
 	@Attribute(value = "assignments", defaultValue = "yao")
 	protected String fAssignments;
-	
+
 	public YaoChurnConfigurator() {
 	}
 
@@ -30,7 +30,7 @@ public class YaoChurnConfigurator {
 		fMode = mode;
 		fAssignments = assignments;
 	}
-	
+
 	public String mode() {
 		return fMode;
 	}
@@ -38,7 +38,7 @@ public class YaoChurnConfigurator {
 	public synchronized IAverageGenerator averageGenerator() {
 		return averageGenerator(CommonState.r);
 	}
-	
+
 	public synchronized IAverageGenerator averageGenerator(Random random) {
 		if (fAssignments.toLowerCase().equals("yao")) {
 			return YaoPresets.averageGenerator("yao", random);
@@ -76,14 +76,14 @@ public class YaoChurnConfigurator {
 				createProcesses(li, di, n, random));
 	}
 
-	public IProcess[] createProcesses(double[] li, double[] di, int n) {
+	public RenewalProcess[] createProcesses(double[] li, double[] di, int n) {
 		return createProcesses(li, di, n, new Random());
 	}
 
-	public IProcess[] createProcesses(double[] li, double[] di, int n,
+	public RenewalProcess[] createProcesses(double[] li, double[] di, int n,
 			Random random) {
 
-		IProcess[] rp = new IProcess[n];
+		RenewalProcess[] rp = new RenewalProcess[n];
 		IDistributionGenerator generator = distributionGenerator(random);
 
 		for (int i = 0; i < rp.length; i++) {

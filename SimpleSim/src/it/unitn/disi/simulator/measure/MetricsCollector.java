@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 @SuppressWarnings("rawtypes")
-public class MetricsCollector implements Serializable{
+public class MetricsCollector implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	

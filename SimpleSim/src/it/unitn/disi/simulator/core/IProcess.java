@@ -10,7 +10,20 @@ public abstract class IProcess extends Schedulable {
 
 	public static enum State {
 		up, down;
+		
+		private State fOpposite;
+		
+		public State opposite() {
+			return fOpposite;
+		}
+		
+		static {
+			up.fOpposite = down;
+			down.fOpposite = up;
+		}
 	}
+
+	private final ArrayList<IEventObserver> fObservers;
 
 	private final ArrayList<Object> fProtocols;
 
@@ -19,6 +32,7 @@ public abstract class IProcess extends Schedulable {
 	}
 
 	public IProcess(Object[] protocols) {
+		fObservers = new ArrayList<IEventObserver>();
 		fProtocols = new ArrayList<Object>();
 		if (protocols != null) {
 			for (Object protocol : protocols) {
@@ -78,6 +92,25 @@ public abstract class IProcess extends Schedulable {
 	public int addProtocol(Object protocol) {
 		fProtocols.add(protocol);
 		return fProtocols.size() - 1;
+	}
+
+	/**
+	 * Subscribes an observer to the state changes of this process. <BR>
+	 * Subscribing an observer directly to a process is useful for observers
+	 * that are not interested in state changes from all processes, for
+	 * efficiency reasons. <BR>
+	 * Process-specific observers can also be binding, as long as they are
+	 * registered as non-listening (see
+	 * {@link EngineBuilder#addObserver(IEventObserver, int, boolean, boolean)}.
+	 */
+	public void addObserver(IEventObserver observer) {
+		fObservers.add(observer);
+	}
+
+	protected void notifyObservers(ISimulationEngine state, double next) {
+		for (IEventObserver observer : fObservers) {
+			observer.eventPerformed(state, this, next);
+		}
 	}
 
 	@Override

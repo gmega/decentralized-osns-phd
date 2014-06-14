@@ -38,7 +38,7 @@ public class SimulationTask implements Callable<SimulationTask>, Serializable {
 			Serializable id,
 			EDSimulationEngine engine,
 			Map<String, ? extends Object> parameters,
-			Pair<Integer, List<? extends INodeMetric<? extends Object>>>[] metrics) {
+			Pair<Integer, List<? extends INodeMetric<? extends Object>>>... metrics) {
 		fMetrics = metrics;
 		fEngine = engine;
 		fId = id;

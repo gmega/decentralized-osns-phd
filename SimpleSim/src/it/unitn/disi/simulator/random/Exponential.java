@@ -27,11 +27,15 @@ public class Exponential implements IDistribution {
 
 	@Override
 	public double sample() {
-		return -((1.0 / fLambda) * Math.log(fU.sample()));
+		return sample(fLambda, fU);
 	}
 
 	@Override
 	public double expectation() {
 		return 1.0 / fLambda;
+	}
+
+	public static double sample(double rate, IDistribution uniform) {
+		return -((1.0 / rate) * Math.log(uniform.sample()));
 	}
 }

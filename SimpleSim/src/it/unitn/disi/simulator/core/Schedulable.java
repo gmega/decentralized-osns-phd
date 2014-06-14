@@ -1,10 +1,11 @@
 package it.unitn.disi.simulator.core;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 /**
- * Abstract class for something that can be scheduled by the simulator.
+ * Abstract class for something that can be scheduled by the simulator. The base
+ * class is deprived of any fields so as to keep it as lightweight as possible,
+ * delegating the option of adding features to subclasses.
  * 
  * @author giuliano
  */
@@ -12,12 +13,8 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 		Serializable {
 
 	private static final long serialVersionUID = 1L;
-
-	private final ArrayList<IEventObserver> fObservers;
-
-	public Schedulable() {
-		fObservers = new ArrayList<IEventObserver>();
-	}
+	
+	public static final int UNTYPED = -1;
 
 	/**
 	 * An expired {@link Schedulable} will not be re-scheduled by the simulator
@@ -52,25 +49,6 @@ public abstract class Schedulable implements Comparable<Schedulable>,
 	 * 
 	 */
 	public abstract int type();
-
-	/**
-	 * Subscribes an observer to the state changes of this process. <BR>
-	 * Subscribing an observer directly to a process is useful for observers
-	 * that are not interested in state changes from all processes, for
-	 * efficiency reasons. <BR>
-	 * Process-specific observers can also be binding, as long as they are
-	 * registered as non-listening (see
-	 * {@link EngineBuilder#addObserver(IEventObserver, int, boolean, boolean)}.
-	 */
-	public void addObserver(IEventObserver observer) {
-		fObservers.add(observer);
-	}
-
-	protected void notifyObservers(ISimulationEngine state, double next) {
-		for (IEventObserver observer : fObservers) {
-			observer.eventPerformed(state, this, next);
-		}
-	}
 
 	@Override
 	public int compareTo(Schedulable other) {

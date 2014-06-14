@@ -29,7 +29,14 @@ public class SimulationTaskException extends Exception {
 	}
 	
 	public void dumpProperties(PrintStream stream) {
+		
 		stream.println("# Simulation property dump");
+
+		if (fProperties == null) {
+			stream.println("-- no properties defined --");
+			return;
+		}
+
 		for (String key : fProperties.keySet()) {
 			stream.print(key);
 			stream.print(" ");
